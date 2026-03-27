@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<!-- saved from url=(0035)https://arxiv.org/html/2603.01896v2 -->
+<html lang="en" data-theme="dark" style="--vsc-domain: &quot;arxiv.org&quot;;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<title>Agentic Code Reasoning</title>
+<!--Generated on Wed Mar  4 01:19:07 2026 by LaTeXML (version 0.8.8) http://dlmf.nist.gov/LaTeXML/.-->
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="stylesheet" href="./Agentic Code Reasoning_files/arxiv-html-papers-20260131.css" type="text/css">
+<script src="./Agentic Code Reasoning_files/arxiv-html-papers-20260131.js"></script>
+<script>
+  // Restore the saved color scheme preference, or
+  // enact the browser preference if "automatic", 
+  // without expecting DOM load to have completed.
+  //
+  // Also restore any saved readingmode and ToC display preferences.
+  function initializeReadingPreferences() {
+    let saved_theme = localStorage.getItem("ar5iv_theme") || "automatic";
+    if (saved_theme === "automatic") {
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        saved_theme = "dark";
+      }
+    }
+    if (saved_theme == "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+
+    const tocDisplay = localStorage.getItem('arxiv_html_paper_toc_display');
+    if (tocDisplay) {
+      document.documentElement.setAttribute("data-toc-display", tocDisplay);
+    }
+    const readingMode = localStorage.getItem('arxiv_html_paper_reading_mode');
+    if (readingMode) {
+      document.documentElement.setAttribute("data-reading-mode", readingMode);
+    }
+  }
+  // Run as soon as JS starts, to minimize repainting
+  initializeReadingPreferences();
+</script>
+<link rel="apple-touch-icon" sizes="180x180" href="https://arxiv.org/static/browse/0.3.4/images/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://arxiv.org/static/browse/0.3.4/images/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://arxiv.org/static/browse/0.3.4/images/icons/favicon-16x16.png">
+<link rel="manifest" href="https://arxiv.org/static/browse/0.3.4/images/icons/site.webmanifest">
+<link rel="mask-icon" href="https://arxiv.org/static/browse/0.3.4/images/icons/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="stylesheet" type="text/css" media="screen" href="./Agentic Code Reasoning_files/utz6mli.css">
+</head>
+<body>
+<dialog id="modal-form" aria-labelledby="modal-title" closedby="any">
+  <form id="modal-form-content" method="dialog" enctype="multipart/form-data">
+    <header class="modal-header">
+      <h5 id="modal-title" class="modal-title">Report GitHub Issue</h5>
+      <button type="submit" formnovalidate="" class="modal-close" aria-label="Close">×</button>
+    </header>
+
+    <div class="modal-body">
+      <label for="form_title">Title:</label>
+      <input class="form-control" id="form_title" name="form_title" required="" placeholder="Enter title">
+
+      <p id="selectedTextModalDescription" hidden="">Content selection saved. Describe the issue below:</p>
+
+      <label for="description">Description:</label>
+      <textarea class="form-control" id="description" name="description" required="" maxlength="500" placeholder="500 characters maximum"></textarea>
+    </div>
+
+    <footer class="modal-footer">
+      <button type="submit" value="internal-report" class="sr-only modal-submit">Submit without GitHub</button>
+      <button type="submit" value="github-report" class="modal-submit">Submit in GitHub</button>
+    </footer>
+  </form>
+</dialog>
+
+<header class="arxiv-html-header">
+  <div class="html-header-logo">
+    <a href="https://arxiv.org/">
+      <img alt="arXiv logo" class="logo desktop-only" width="100" src="./Agentic Code Reasoning_files/arxiv-logo-one-color-white.svg">
+      <span class="sr-only">Back to arXiv</span>
+    </a>
+  </div>
+  <!--TOC, dark mode, links-->
+  <nav class="html-header-nav">
+    <a class="header-button hover-effect desktop-only" href="https://info.arxiv.org/about/accessible_HTML.html" target="_blank">Why HTML?</a>
+    <a class="header-button" title="Report an Issue" href="https://arxiv.org/html/2603.01896v2#" onclick="event.preventDefault(); showModalForm();">
+      <svg role="presentation" class="mobile-only toggle-icon" aria-hidden="true" height="1.25rem" viewBox="0 0 640 640">
+        <path d="M224 160C224 107 267 64 320 64C373 64 416 107 416 160L416 163.6C416 179.3 403.3 192 387.6 192L252.5 192C236.8 192 224.1 179.3 224.1 163.6L224.1 160zM569.6 172.8C580.2 186.9 577.3 207 563.2 217.6L465.4 290.9C470.7 299.8 474.7 309.6 477.2 320L576 320C593.7 320 608 334.3 608 352C608 369.7 593.7 384 576 384L480 384L480 416C480 418.6 479.9 421.3 479.8 423.9L563.2 486.4C577.3 497 580.2 517.1 569.6 531.2C559 545.3 538.9 548.2 524.8 537.6L461.7 490.3C438.5 534.5 395.2 566.5 344 574.2L344 344C344 330.7 333.3 320 320 320C306.7 320 296 330.7 296 344L296 574.2C244.8 566.5 201.5 534.5 178.3 490.3L115.2 537.6C101.1 548.2 81 545.3 70.4 531.2C59.8 517.1 62.7 497 76.8 486.4L160.2 423.9C160.1 421.3 160 418.7 160 416L160 384L64 384C46.3 384 32 369.7 32 352C32 334.3 46.3 320 64 320L162.8 320C165.3 309.6 169.3 299.8 174.6 290.9L76.8 217.6C62.7 207 59.8 186.9 70.4 172.8C81 158.7 101.1 155.8 115.2 166.4L224 248C236.3 242.9 249.8 240 264 240L376 240C390.2 240 403.7 242.8 416 248L524.8 166.4C538.9 155.8 559 158.7 569.6 172.8z"></path>
+      </svg>
+      <span class="desktop-only">Report Issue</span></a>
+    <!--back to abstract-->
+    <a class="header-button" title="Back to abstract page" aria-label="Back to abstract page" href="https://arxiv.org/abs/2603.01896v2">
+      <svg class="mobile-only toggle-icon" role="presentation" height="1.25rem" viewBox="0 0 512 512" fill="#ffffff" aria-hidden="true">
+        <path d="M502.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-128-128c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 224 192 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l210.7 0-73.4 73.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l128-128zM160 96c17.7 0 32-14.3 32-32s-14.3-32-32-32L96 32C43 32 0 75 0 128L0 384c0 53 43 96 96 96l64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0c-17.7 0-32-14.3-32-32l0-256c0-17.7 14.3-32 32-32l64 0z">
+        </path>
+      </svg>
+      <span class="desktop-only">Back to Abstract</span>
+    </a>
+    <!-- PDF download link -->
+    <a class="header-button" title="Download PDF" href="https://arxiv.org/pdf/2603.01896v2" target="_blank">
+      <svg class="mobile-only toggle-icon" role="presentation" height="1.25rem" viewBox="0 0 576 542">
+        <path d="M208 48L96 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16l80 0 0 48-80 0c-35.3 0-64-28.7-64-64L32 64C32 28.7 60.7 0 96 0L229.5 0c17 0 33.3 6.7 45.3 18.7L397.3 141.3c12 12 18.7 28.3 18.7 45.3l0 149.5-48 0 0-128-88 0c-39.8 0-72-32.2-72-72l0-88zM348.1 160L256 67.9 256 136c0 13.3 10.7 24 24 24l68.1 0zM240 380l32 0c33.1 0 60 26.9 60 60s-26.9 60-60 60l-12 0 0 28c0 11-9 20-20 20s-20-9-20-20l0-128c0-11 9-20 20-20zm32 80c11 0 20-9 20-20s-9-20-20-20l-12 0 0 40 12 0zm96-80l32 0c28.7 0 52 23.3 52 52l0 64c0 28.7-23.3 52-52 52l-32 0c-11 0-20-9-20-20l0-128c0-11 9-20 20-20zm32 128c6.6 0 12-5.4 12-12l0-64c0-6.6-5.4-12-12-12l-12 0 0 88 12 0zm76-108c0-11 9-20 20-20l48 0c11 0 20 9 20 20s-9 20-20 20l-28 0 0 24 28 0c11 0 20 9 20 20s-9 20-20 20l-28 0 0 44c0 11-9 20-20 20s-20-9-20-20l0-128z"></path>
+      </svg>
+      <span class="desktop-only">Download PDF</span></a>
+    <!-- navigational table of contents toggle -->
+    <a class="header-button toggle-icon" href="javascript:toggleNavTOC();" title="Toggle navigation" aria-label="Toggle navigation">
+      <svg height="1.25rem" role="presentation" viewBox="0 0 512 512">
+        <path d="M40 48C26.7 48 16 58.7 16 72v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V72c0-13.3-10.7-24-24-24H40zM192 64c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H192zM16 232v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V232c0-13.3-10.7-24-24-24H40c-13.3 0-24 10.7-24 24zM40 368c-13.3 0-24 10.7-24 24v48c0 13.3 10.7 24 24 24H88c13.3 0 24-10.7 24-24V392c0-13.3-10.7-24-24-24H40z">
+        </path>
+      </svg>
+    </a>
+    <!--- collapsable header / reading mode toggle -->
+    <a class="header-button toggle-icon" href="javascript:toggleReadingMode();" title="Disable reading mode, show header and footer">
+      <svg role="presentation" height="1.25rem" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+        <path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32S0 334.3 0 352l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"></path>
+      </svg>
+    </a>
+    <!--- colored theme toggle -->
+    <a class="header-button color-tog" href="javascript:toggleColorScheme();" title="Toggle dark/light mode">
+      <label class="toggle-icon automatic-tog" title="Switch to light mode">
+        <svg role="presentation" height="1.25rem" viewBox="0 0 24 24">
+          <path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9h-1.9M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69m-9.15 3.96h2.3L12 9l-1.15 3.65Z">
+          </path>
+        </svg>
+      </label>
+      <label class="toggle-icon light-tog" title="Switch to dark mode">
+        <svg role="presentation" height="1.25rem" viewBox="0 0 24 24">
+          <path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z">
+          </path>
+        </svg>
+      </label>
+      <label class="toggle-icon dark-tog" title="Switch to system preference">
+        <svg role="presentation" height="1.25rem" viewBox="0 0 24 24">
+          <path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12c0-2.42-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69Z">
+          </path>
+        </svg>
+      </label>
+    </a>
+  </nav>
+</header><nav class="ltx_page_navbar">
+<nav class="ltx_TOC">
+<ol class="ltx_toclist">
+<li class="ltx_tocentry ltx_tocentry_abstract"><a href="https://arxiv.org/html/2603.01896v2#abstract1" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Abstract</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_section">
+<a href="https://arxiv.org/html/2603.01896v2#S1" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">1 </span>Introduction</span></a>
+<ol class="ltx_toclist ltx_toclist_section">
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S1.SS0.SSS0.Px1" title="In 1 Introduction ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Motivating Example.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S1.SS0.SSS0.Px2" title="In 1 Introduction ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Contributions.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S1.SS0.SSS0.Px3" title="In 1 Introduction ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Data Contamination.</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_section">
+<a href="https://arxiv.org/html/2603.01896v2#S2" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">2 </span>Background</span></a>
+<ol class="ltx_toclist ltx_toclist_section">
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2603.01896v2#S2.SS1" title="In 2 Background ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">2.1 </span>Agentic vs. Single-Shot Verification</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2603.01896v2#S2.SS2" title="In 2 Background ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">2.2 </span>Patch Equivalence</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2603.01896v2#S2.SS3" title="In 2 Background ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">2.3 </span>Defects4J for Fault Localization</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_subsection"><a href="https://arxiv.org/html/2603.01896v2#S2.SS4" title="In 2 Background ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">2.4 </span>Code Question Answering</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_section">
+<a href="https://arxiv.org/html/2603.01896v2#S3" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">3 </span>Semi-formal Reasoning</span></a>
+<ol class="ltx_toclist ltx_toclist_section">
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S3.SS0.SSS0.Px1" title="In 3 Semi-formal Reasoning ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Standard Reasoning</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S3.SS0.SSS0.Px2" title="In 3 Semi-formal Reasoning ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Semi-formal Reasoning</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_section">
+<a href="https://arxiv.org/html/2603.01896v2#S4" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4 </span>Evaluation</span></a>
+<ol class="ltx_toclist ltx_toclist_section">
+<li class="ltx_tocentry ltx_tocentry_subsection">
+<a href="https://arxiv.org/html/2603.01896v2#S4.SS1" title="In 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4.1 </span>Patch Equivalence</span></a>
+<ol class="ltx_toclist ltx_toclist_subsection">
+<li class="ltx_tocentry ltx_tocentry_subsubsection"><a href="https://arxiv.org/html/2603.01896v2#S4.SS1.SSS1" title="In 4.1 Patch Equivalence ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4.1.1 </span>Curated Dataset Evaluation</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_subsubsection"><a href="https://arxiv.org/html/2603.01896v2#S4.SS1.SSS2" title="In 4.1 Patch Equivalence ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4.1.2 </span>LLM Verifier With Test Specifications</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_subsection">
+<a href="https://arxiv.org/html/2603.01896v2#S4.SS2" title="In 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4.2 </span>Fault Localization</span></a>
+<ol class="ltx_toclist ltx_toclist_subsection">
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S4.SS2.SSS0.Px1" title="In 4.2 Fault Localization ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Metric</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S4.SS2.SSS0.Px2" title="In 4.2 Fault Localization ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Available Information.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S4.SS2.SSS0.Px3" title="In 4.2 Fault Localization ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Small-Scale Evaluation (50 bugs).</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S4.SS2.SSS0.Px4" title="In 4.2 Fault Localization ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Larger-Scale Validation (100 bugs).</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S4.SS2.SSS0.Px5" title="In 4.2 Fault Localization ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Error Analysis.</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_subsection">
+<a href="https://arxiv.org/html/2603.01896v2#S4.SS3" title="In 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">4.3 </span>Code Question Answering</span></a>
+<ol class="ltx_toclist ltx_toclist_subsection">
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S4.SS3.SSS0.Px1" title="In 4.3 Code Question Answering ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Available Information.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S4.SS3.SSS0.Px2" title="In 4.3 Code Question Answering ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Evaluation.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S4.SS3.SSS0.Px3" title="In 4.3 Code Question Answering ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Reasoning Modes.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S4.SS3.SSS0.Px4" title="In 4.3 Code Question Answering ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Error Analysis.</span></a></li>
+</ol>
+</li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_section">
+<a href="https://arxiv.org/html/2603.01896v2#S5" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">5 </span>Related Work</span></a>
+<ol class="ltx_toclist ltx_toclist_section">
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S5.SS0.SSS0.Px1" title="In 5 Related Work ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">LLM-Based Software Engineering Agents.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S5.SS0.SSS0.Px2" title="In 5 Related Work ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Execution-Free Verification for Code.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S5.SS0.SSS0.Px3" title="In 5 Related Work ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">LLM-Based Fault Localization and Code Understanding.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S5.SS0.SSS0.Px4" title="In 5 Related Work ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Program Equivalence and Formal Verification.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S5.SS0.SSS0.Px5" title="In 5 Related Work ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">LLM Reasoning and Chain-of-Thought.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#S5.SS0.SSS0.Px6" title="In 5 Related Work ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Training and Scaling SWE Agents.</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_section"><a href="https://arxiv.org/html/2603.01896v2#S6" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">6 </span>Conclusion and Future Work</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_bibliography"><a href="https://arxiv.org/html/2603.01896v2#bib" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">References</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_appendix">
+<a href="https://arxiv.org/html/2603.01896v2#A1" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">A </span>Patch Equivalence Semi-formal Reasoning Template</span></a>
+<ol class="ltx_toclist ltx_toclist_appendix">
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A1.SS0.SSS0.Px1" title="In Appendix A Patch Equivalence Semi-formal Reasoning Template ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Semi-formal Prompt Template.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A1.SS0.SSS0.Px2" title="In Appendix A Patch Equivalence Semi-formal Reasoning Template ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Example: Semi-formal Analysis Discovers Name Shadowing (django-13670).</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_appendix">
+<a href="https://arxiv.org/html/2603.01896v2#A2" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">B </span>Fault Localization Semi-formal Reasoning Template</span></a>
+<ol class="ltx_toclist ltx_toclist_appendix">
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A2.SS0.SSS0.Px1" title="In Appendix B Fault Localization Semi-formal Reasoning Template ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Semi-formal Prompt Template.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A2.SS0.SSS0.Px2" title="In Appendix B Fault Localization Semi-formal Reasoning Template ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Structured Exploration Format.</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_appendix">
+<a href="https://arxiv.org/html/2603.01896v2#A3" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">C </span>Case Study for Mockito_8</span></a>
+<ol class="ltx_toclist ltx_toclist_appendix">
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A3.SS0.SSS0.Px1" title="In Appendix C Case Study for Mockito_8 ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Why the structured template mattered.</span></a></li>
+</ol>
+</li>
+<li class="ltx_tocentry ltx_tocentry_appendix">
+<a href="https://arxiv.org/html/2603.01896v2#A4" title="In Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title"><span class="ltx_tag ltx_tag_ref">D </span>Code Question Answering Details</span></a>
+<ol class="ltx_toclist ltx_toclist_appendix">
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A4.SS0.SSS0.Px1" title="In Appendix D Code Question Answering Details ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Semi-formal Prompt Template.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A4.SS0.SSS0.Px2" title="In Appendix D Code Question Answering Details ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Example: Semi-formal vs. Standard Reasoning.</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A4.SS0.SSS0.Px3" title="In Appendix D Code Question Answering Details ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Success Case: Verifying Code Invariants (cpp_3).</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A4.SS0.SSS0.Px4" title="In Appendix D Code Question Answering Details ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Failure Case: Confident Wrong Answer (py_5).</span></a></li>
+<li class="ltx_tocentry ltx_tocentry_paragraph"><a href="https://arxiv.org/html/2603.01896v2#A4.SS0.SSS0.Px5" title="In Appendix D Code Question Answering Details ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_title">Per-Language Breakdown.</span></a></li>
+</ol>
+</li>
+</ol></nav>
+</nav>
+<div class="ltx_page_main">
+<div id="infobox" class="infobox">
+  <a id="license-tr" href="https://info.arxiv.org/help/license/index.html#licenses-available">
+    License: arXiv.org perpetual non-exclusive license
+  </a>
+  <div id="watermark-tr">
+arXiv:2603.01896v2 [cs.SE] 04 Mar 2026</div>
+</div><div class="ltx_page_content">
+<article class="ltx_document ltx_authors_1line" lang="en">
+<div id="p1" class="ltx_para">
+<span id="p1.1" class="ltx_ERROR undefined">\correspondence</span>
+<p id="p1.2" class="ltx_p">Shubham Ugare at</p>
+</div>
+<h1 class="ltx_title ltx_title_document">Agentic Code Reasoning</h1>
+<div class="ltx_authors">
+<span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">Shubham Ugare
+</span></span>
+<span class="ltx_author_before">  </span><span class="ltx_creator ltx_role_author">
+<span class="ltx_personname">Satish Chandra
+</span><span class="ltx_author_notes">
+<span class="ltx_contact ltx_role_affiliation">Meta, USA
+</span>
+<span class="ltx_contact ltx_role_email"><a href="https://arxiv.org/html/2603.01896v2/mailto:sugare@meta.com">sugare@meta.com</a>
+</span></span></span>
+</div>
+
+<div id="abstract1" class="ltx_abstract">
+<h6 class="ltx_title ltx_title_abstract">Abstract</h6>
+<p class="ltx_p"><span class="ltx_text">Can LLM agents explore codebases and reason about code semantics without executing the code? We study this capability, which we call <em class="ltx_emph ltx_font_italic">agentic code reasoning</em>, and introduce <em class="ltx_emph ltx_font_italic">semi-formal reasoning</em>: a structured prompting methodology that requires agents to construct explicit premises, trace execution paths, and derive formal conclusions. Unlike unstructured chain-of-thought, semi-formal reasoning acts as a certificate: the agent cannot skip cases or make unsupported claims.
+We evaluate across three tasks (patch equivalence verification, fault localization, and code question answering) and show that semi-formal reasoning consistently improves accuracy on all of them.
+For patch equivalence, accuracy improves from 78% to 88% on curated examples and reaches 93% on real-world agent-generated patches, approaching the reliability needed for execution-free RL reward signals. For code question answering on RubberDuckBench <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">rubberduckbench</span></cite>, semi-formal reasoning achieves 87% accuracy, a 9 percentage point gain over standard agentic reasoning. For fault localization on Defects4J <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">just2014defects4j</span></cite>, semi-formal reasoning improves Top-5 accuracy by 5 percentage points over standard reasoning. These results demonstrate that structured agentic reasoning enables meaningful semantic code analysis without execution, opening practical applications in RL training pipelines, code review, and static program analysis.</span></p>
+</div>
+<section id="S1" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">1 </span>Introduction</h2>
+
+<div id="S1.p1" class="ltx_para">
+<p id="S1.p1.1" class="ltx_p">Can an LLM agent explore a codebase and determine whether two patches are semantically equivalent, without ever running them? We study this capability, which we call <em id="S1.p1.1.1" class="ltx_emph ltx_font_italic">agentic code reasoning</em>: an agent’s ability to navigate files, trace dependencies, and gather context iteratively to perform deep semantic analysis without executing code. This capability is essential for tasks like bug detection, code review, and patch verification in complex repositories where relevant context spans multiple files.
+However, evaluating whether an agent’s reasoning is <em id="S1.p1.1.2" class="ltx_emph ltx_font_italic">correct</em> presents a fundamental challenge: how do we establish ground truth for code understanding? And how do we ensure agents reason thoroughly rather than guess?</p>
+</div>
+<div id="S1.p2" class="ltx_para">
+<p id="S1.p2.1" class="ltx_p">Recent work has explored execution-free verification for code agents. SWE-RM <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">shum2025swerm</span></cite> trains reward models to approximate test outcomes, Agentic Rubrics <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">raghavendra2025rubrics</span></cite> decompose verification into LLM-generated criteria, and CodeJudge <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">tong2024codejudge</span></cite> uses LLMs directly as evaluators. However, these approaches use unstructured reasoning, allowing models to make claims about code behavior without explicit justification.
+At the other extreme, formal verification approaches translate code or reasoning into formal languages like Lean <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">ye2025verinabenchmarkingverifiablecode</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">thakur2025clevercuratedbenchmarkformally</span></cite>, Coq <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">kasibatla2025cobblestonedivideandconquerapproachautomating</span></cite> or Datalog <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">sistla2025verifiedcodereasoningllms</span></cite>, enabling automated proof checking.
+But fully formal methods require formalizing language semantics, which is impractical for arbitrary repository code spanning multiple frameworks and languages.
+Sultan et al. <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">sultan2026llmsversushaltingproblem</span></cite> highlight this gap: LLMs can predict program properties like termination with competitive accuracy, yet often fail to provide valid proofs. Moreover, existing approaches tend to be task-specific, requiring separate architectures or training for each problem domain.</p>
+</div>
+<div id="S1.p3" class="ltx_para">
+<p id="S1.p3.1" class="ltx_p">We introduce <em id="S1.p3.1.1" class="ltx_emph ltx_font_italic">semi-formal reasoning</em>, a general approach that bridges this gap.
+Rather than training specialized models or formalizing semantics, we prompt agents with structured reasoning templates that require explicit evidence for each claim.
+These templates act as <em id="S1.p3.1.2" class="ltx_emph ltx_font_italic">certificates</em>: the agent must state premises, trace relevant code paths, and provide formal conclusions.
+The structured format naturally encourages interprocedural reasoning, as tracing program paths requires the agent to follow function calls rather than guess their behavior.</p>
+</div>
+<section id="S1.SS0.SSS0.Px1" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Motivating Example.</h5>
+
+<div id="S1.SS0.SSS0.Px1.p1" class="ltx_para">
+<p id="S1.SS0.SSS0.Px1.p1.2" class="ltx_p">Figure <a href="https://arxiv.org/html/2603.01896v2#S1.F1" title="Figure 1 ‣ Motivating Example. ‣ 1 Introduction ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> illustrates how these techniques work together on a real patch equivalence task (django_django-13670). Two patches both attempt to fix 2-digit year formatting for years before 1000 CE:</p>
+<div id="S1.SS0.SSS0.Px1.p1.1" class="ltx_logical-block">
+<div id="S1.SS0.SSS0.Px1.p1.1.1.p1" class="ltx_para ltx_minipage ltx_align_center ltx_align_middle" style="width:368.6pt;">
+<span class="ltx_inline-block"><svg id="S1.SS0.SSS0.Px1.p1.1.1.p1.pic1" class="ltx_picture" height="149.12" overflow="visible" version="1.1" viewBox="0 0 600 149.12" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,149.12) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 1.8 L 0 147.32 C 0 148.31 0.81 149.12 1.8 149.12 L 598.2 149.12 C 599.19 149.12 600 148.31 600 147.32 L 600 1.8 C 600 0.81 599.19 0 598.2 0 L 1.8 0 C 0.81 0 0 0.81 0 1.8 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 1.8 L 0.42 147.32 C 0.42 148.08 1.03 148.7 1.8 148.7 L 598.2 148.7 C 598.97 148.7 599.58 148.08 599.58 147.32 L 599.58 1.8 C 599.58 1.03 598.97 0.42 598.2 0.42 L 1.8 0.42 C 1.03 0.42 0.42 1.03 0.42 1.8 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 7.12 9.89)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:42.33em;--ltx-fo-height:9.55em;--ltx-fo-depth:0.2em;" width="585.76" height="134.88" transform="matrix(1 0 0 -1 0 132.11)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S1.SS0.SSS0.Px1.p1.1.1.p1.pic1.1.1.1.1.1" class="ltx_inline-block ltx_minipage ltx_align_bottom" style="width:45.77em;">
+<span id="S1.SS0.SSS0.Px1.p1.1.1.p1.pic1.1.1.1.1.1.1" class="ltx_p"><span id="S1.SS0.SSS0.Px1.p1.1.1.p1.pic1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">Patch 1:<span id="S1.SS0.SSS0.Px1.p1.1.1.p1.pic1.1.1.1.1.1.1.1.1" class="ltx_text ltx_font_medium"> <span id="S1.SS0.SSS0.Px1.p1.1.1.p1.pic1.1.1.1.1.1.1.1.1.1" class="ltx_text ltx_font_typewriter">return format(self.data.year, "04d")[-2:]
+<br class="ltx_break"></span></span>Patch 2:<span id="S1.SS0.SSS0.Px1.p1.1.1.p1.pic1.1.1.1.1.1.1.1.2" class="ltx_text ltx_font_medium"> <span id="S1.SS0.SSS0.Px1.p1.1.1.p1.pic1.1.1.1.1.1.1.1.2.1" class="ltx_text ltx_font_typewriter">return ’%02d’ % (self.data.year % 100)</span></span></span></span>
+</span></span></span></foreignobject></g></g></svg></span>
+</div>
+</div>
+<p id="S1.SS0.SSS0.Px1.p1.3" class="ltx_p">Standard reasoning incorrectly concludes the patches are equivalent, assuming <span id="S1.SS0.SSS0.Px1.p1.3.1" class="ltx_text ltx_font_typewriter">format()</span> is Python’s builtin and both produce the same output. With semi-formal analysis, the agent discovers that <span id="S1.SS0.SSS0.Px1.p1.3.2" class="ltx_text ltx_font_typewriter">format</span> is shadowed by a module-level function in Django’s <span id="S1.SS0.SSS0.Px1.p1.3.3" class="ltx_text ltx_font_typewriter">dateformat.py</span> that expects a datetime object, not an integer. This causes Patch 1 to raise an <span id="S1.SS0.SSS0.Px1.p1.3.4" class="ltx_text ltx_font_typewriter">AttributeError</span> while Patch 2 succeeds.
+Unlike chain-of-thought prompting, which lets the model reason freely, our semi-formal approach requires filling in a structured certificate template with explicit premises, per-test execution traces, and a formal conclusion.
+This enforces completeness, ensuring the agent cannot skip cases or make unsupported claims, while remaining in natural language rather than requiring a fully formal proof language.</p>
+</div>
+<figure id="S1.F1" class="ltx_figure"><span class="ltx_inline-block"><svg id="S1.F1.pic1" class="ltx_picture ltx_centering" height="798.88" overflow="visible" version="1.1" viewBox="0 0 600 798.88" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,798.88) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#A6A6A6;" fill="#A6A6A6" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.84 L 0 794.04 C 0 796.71 2.17 798.88 4.84 798.88 L 595.16 798.88 C 597.83 798.88 600 796.71 600 794.04 L 600 4.84 C 600 2.17 597.83 0 595.16 0 L 4.84 0 C 2.17 0 0 2.17 0 4.84 Z"></path></g><g style="--ltx-fill-color:#FFFFFF;" fill="#FFFFFF" fill-opacity="1.0"><path style="stroke:none" d="M 0.69 4.84 L 0.69 711.9 L 599.31 711.9 L 599.31 4.84 C 599.31 2.55 597.45 0.69 595.16 0.69 L 4.84 0.69 C 2.55 0.69 0.69 2.55 0.69 4.84 Z"></path></g><g style="--ltx-fill-color:#ECECEC;" fill="#ECECEC" fill-opacity="1.0"><path style="stroke:none" d="M 0.69 712.59 L 0.69 794.04 C 0.69 796.33 2.55 798.19 4.84 798.19 L 595.16 798.19 C 597.45 798.19 599.31 796.33 599.31 794.04 L 599.31 712.59 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.38 719.64)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.42em;--ltx-fo-height:5.39em;--ltx-fo-depth:0.22em;" width="559.25" height="77.73" transform="matrix(1 0 0 -1 0 74.62)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S1.F1.pic1.4.4.4.1.1" class="ltx_inline-block ltx_minipage ltx_align_bottom" style="width:43.69em;">
+<span id="S1.F1.pic1.4.4.4.1.1.1" class="ltx_p"><span id="S1.F1.pic1.4.4.4.1.1.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">Task:<span id="S1.F1.pic1.4.4.4.1.1.1.1.1" class="ltx_text ltx_font_medium"> Are these two patches equivalent (same test outcomes)?</span></span></span>
+</span></span></span></foreignobject></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.38 12.5)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.42em;--ltx-fo-height:49.69em;--ltx-fo-depth:0em;" width="559.25" height="687.58" transform="matrix(1 0 0 -1 0 687.58)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3" class="ltx_inline-logical-block ltx_minipage ltx_align_bottom" style="width:43.69em;">
+<span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1" class="ltx_para ltx_noindent"><span class="ltx_inline-block"><svg id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1" class="ltx_picture" height="50.22" overflow="visible" version="1.1" viewBox="0 0 600 50.22" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,50.22) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#B3B3FF;" fill="#B3B3FF" fill-opacity="1.0"><path style="stroke:none" d="M 0 3.18 L 0 47.03 C 0 48.79 1.42 50.22 3.18 50.22 L 596.82 50.22 C 598.58 50.22 600 48.79 600 47.03 L 600 3.18 C 600 1.42 598.58 0 596.82 0 L 3.18 0 C 1.42 0 0 1.42 0 3.18 Z"></path></g><g style="--ltx-fill-color:#F7F7FF;" fill="#F7F7FF" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 3.18 L 0.42 47.03 C 0.42 48.56 1.65 49.8 3.18 49.8 L 596.82 49.8 C 598.35 49.8 599.58 48.56 599.58 47.03 L 599.58 3.18 C 599.58 1.65 598.35 0.42 596.82 0.42 L 3.18 0.42 C 1.65 0.42 0.42 1.65 0.42 3.18 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 8.5 21.99)"><foreignobject style="--ltx-fo-width:45.55em;--ltx-fo-height:1.54em;--ltx-fo-depth:1.05em;" class="ltx_minipage" width="45.55em" height="33.21" transform="matrix(1 0 0 -1 0 19.72)" overflow="visible"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<table id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1" class="ltx_tabular ltx_align_middle">
+<tbody class="ltx_tbody">
+<tr id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.1.1" class="ltx_tr">
+<td id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.1.1.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r" style="padding-bottom:2.77501pt;">
+<span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.1.1.1.1.1" class="ltx_p" style="width:203.8pt;"><span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">Patch 1</span></span>
+</span>
+</td>
+<td id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.1.1.2" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top" style="padding-bottom:2.77501pt;">
+<span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.1.1.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.1.1.2.1.1" class="ltx_p" style="width:203.8pt;"><span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.1.1.2.1.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">Patch 2</span></span>
+</span>
+</td>
+</tr>
+<tr id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.2.2" class="ltx_tr">
+<td id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.2.2.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_r">
+<span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.2.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.2.2.1.1.1" class="ltx_p" style="width:203.8pt;"></span><pre id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.2.2.1.1.2" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">def y(self):
+  return format(
+    self.data.year, "04d"
+  )[-2:]</pre>
+</span>
+</td>
+<td id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.2.2.2" class="ltx_td ltx_nopad_r ltx_align_justify ltx_align_top">
+<span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.2.2.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.2.2.2.1.1" class="ltx_p" style="width:203.8pt;"></span><pre id="S1.F1.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.p1.pic1.1.1.1.1.1.2.2.2.1.2" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">def y(self):
+  return ’%02d’ % (
+    self.data.year % 100
+  )</pre>
+</span>
+</td>
+</tr>
+</tbody>
+</table></span></span></foreignobject></g></g></svg></span>
+</span>
+<span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2" class="ltx_para ltx_noindent"><span class="ltx_inline-block"><svg id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1" class="ltx_picture" height="286.52" overflow="visible" version="1.1" viewBox="0 0 600 286.52" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,286.52) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#FF9999;" fill="#FF9999" fill-opacity="1.0"><path style="stroke:none" d="M 0 3.18 L 0 283.34 C 0 285.1 1.42 286.52 3.18 286.52 L 596.82 286.52 C 598.58 286.52 600 285.1 600 283.34 L 600 3.18 C 600 1.42 598.58 0 596.82 0 L 3.18 0 C 1.42 0 0 1.42 0 3.18 Z"></path></g><g style="--ltx-fill-color:#FFF2F2;" fill="#FFF2F2" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 3.18 L 0.42 283.34 C 0.42 284.87 1.65 286.11 3.18 286.11 L 596.82 286.11 C 598.35 286.11 599.58 284.87 599.58 283.34 L 599.58 3.18 C 599.58 1.65 598.35 0.42 596.82 0.42 L 3.18 0.42 C 1.65 0.42 0.42 1.65 0.42 3.18 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 8.5 9.27)"><foreignobject style="--ltx-fo-width:45.55em;--ltx-fo-height:21.11em;--ltx-fo-depth:0.17em;" width="582.99" height="272.29" transform="matrix(1 0 0 -1 0 270.13)" overflow="visible"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1" class="ltx_inline-block ltx_minipage ltx_align_bottom" style="width:49.57em;">
+<span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1" class="ltx_p"><span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">Standard Reasoning</span><span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1.2" class="ltx_text" style="font-size:90%;">  </span><span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1.3" class="ltx_text" style="font-size:90%;--ltx-fg-color:#FF0000;">✗ WRONG
+<br class="ltx_break"></span><span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1.4" class="ltx_text" style="font-size:90%;">
+</span><span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1.5" class="ltx_text" style="font-size:80%;">“Both patches produce identical output: <span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1.5.1" class="ltx_text ltx_font_typewriter">format(476, ’04d’)[-2:]</span> = <span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1.5.2" class="ltx_text ltx_font_typewriter">’76’</span> and <span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1.5.3" class="ltx_text ltx_font_typewriter">’%02d’ % 76</span> = <span id="S1.F1.pic1.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.2.p2.pic1.1.1.1.1.1.1.5.4" class="ltx_text ltx_font_typewriter">’76’</span>”</span></span>
+</span></span></span></foreignobject></g></g></svg></span>
+</span>
+<span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3" class="ltx_para ltx_noindent"><span class="ltx_inline-block"><svg id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1" class="ltx_picture" height="314.87" overflow="visible" version="1.1" viewBox="0 0 600 314.87" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,314.87) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#008000;" fill="#008000" fill-opacity="1.0"><path style="stroke:none" d="M 0 3.18 L 0 311.68 C 0 313.44 1.42 314.87 3.18 314.87 L 596.82 314.87 C 598.58 314.87 600 313.44 600 311.68 L 600 3.18 C 600 1.42 598.58 0 596.82 0 L 3.18 0 C 1.42 0 0 1.42 0 3.18 Z"></path></g><g style="--ltx-fill-color:#F2FFF2;" fill="#F2FFF2" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 3.18 L 0.42 311.68 C 0.42 313.21 1.65 314.45 3.18 314.45 L 596.82 314.45 C 598.35 314.45 599.58 313.21 599.58 311.68 L 599.58 3.18 C 599.58 1.65 598.35 0.42 596.82 0.42 L 3.18 0.42 C 1.65 0.42 0.42 1.65 0.42 3.18 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 8.5 9.33)"><foreignobject style="--ltx-fo-width:45.55em;--ltx-fo-height:23.32em;--ltx-fo-depth:0.17em;" width="582.99" height="300.63" transform="matrix(1 0 0 -1 0 298.41)" overflow="visible"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1" class="ltx_inline-block ltx_minipage ltx_align_bottom" style="width:49.57em;">
+<span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2" class="ltx_p"><span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2.1" class="ltx_text ltx_font_bold" style="font-size:90%;">Semi-formal (Ours)</span><span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2.2" class="ltx_text" style="font-size:90%;">  </span><span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2.3" class="ltx_text" style="font-size:90%;--ltx-fg-color:#008000;">✓ CORRECT
+<br class="ltx_break"></span><span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2.4" class="ltx_text" style="font-size:90%;">
+</span><em id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2.5" class="ltx_emph ltx_font_italic" style="font-size:80%;">Excerpt from the agent’s final structured proof:</em></span>
+<span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1" class="ltx_p"><span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1" class="ltx_text" style="font-size:80%;">“… <span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1" class="ltx_text ltx_font_typewriter">grep -n ’def format’ dateformat.py</span> <math id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.m1" class="ltx_Math" alttext="\rightarrow" display="inline" intent=":literal"><semantics><mo stretchy="false">→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math> line 340: module-level <span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.2" class="ltx_text ltx_font_typewriter">format()</span> shadows Python builtin. This function expects a datetime, not int. <span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.3" class="ltx_text ltx_font_typewriter">format(476, ’04d’)</span> raises <span id="S1.F1.pic1.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.3.p3.pic1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.1.4" class="ltx_text ltx_font_typewriter">AttributeError</span>. …”</span></span>
+</span></span></span></foreignobject></g></g></svg></span>
+</span></span></span></span></foreignobject></g></g></svg></span>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure"><span id="S1.F1.4.1.1" class="ltx_text" style="font-size:90%;">Figure 1</span>: </span><span id="S1.F1.5.2" class="ltx_text" style="font-size:90%;">Motivating example from Django (django-13670): Standard reasoning assumes <span id="S1.F1.5.2.1" class="ltx_text ltx_font_typewriter">format()</span> is Python’s builtin; semi-formal analysis traces the actual definition and discovers a module-level function with different semantics, causing Patch 1 to raise <span id="S1.F1.5.2.2" class="ltx_text ltx_font_typewriter">AttributeError</span>. See Appendix <a href="https://arxiv.org/html/2603.01896v2#A3" title="Appendix C Case Study for Mockito_8 ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">C</span></a> for a detailed semi-formal proof walkthrough.</span></figcaption>
+</figure>
+<div id="S1.SS0.SSS0.Px1.p2" class="ltx_para">
+<p id="S1.SS0.SSS0.Px1.p2.1" class="ltx_p">We evaluate these techniques on three tasks that test different aspects of code reasoning.
+Our primary focus is <em id="S1.SS0.SSS0.Px1.p2.1.1" class="ltx_emph ltx_font_italic">patch equivalence verification</em>: given two patches addressing the same specification, do they produce the same test outcomes? This task provides rigorous ground truth through test execution without requiring expensive human annotation.
+We additionally evaluate on <em id="S1.SS0.SSS0.Px1.p2.1.2" class="ltx_emph ltx_font_italic">code question answering</em> (RubberDuckBench) and <em id="S1.SS0.SSS0.Px1.p2.1.3" class="ltx_emph ltx_font_italic">fault localization</em> (Defects4J), which test nuanced semantic understanding and bug finding respectively.
+Patch equivalence and fault localization benefit from robust, objective ground truth (test execution outcomes and known buggy lines, respectively), while code question answering relies on expert-written rubrics evaluated by LLM graders.</p>
+</div>
+</section>
+<section id="S1.SS0.SSS0.Px2" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Contributions.</h5>
+
+<div id="S1.SS0.SSS0.Px2.p1" class="ltx_para">
+<ul id="S1.I1" class="ltx_itemize">
+<li id="S1.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S1.I1.i1.p1" class="ltx_para">
+<p id="S1.I1.i1.p1.1" class="ltx_p">We demonstrate that semi-formal structured reasoning consistently improves agentic code reasoning across three diverse tasks.</p>
+</div>
+</li>
+<li id="S1.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S1.I1.i2.p1" class="ltx_para">
+<p id="S1.I1.i2.p1.1" class="ltx_p">For patch equivalence on curated challenging examples, we improve accuracy from 78% (standard reasoning) to 88% (semi-formal), a 10 percentage point gain.</p>
+</div>
+</li>
+<li id="S1.I1.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S1.I1.i3.p1" class="ltx_para">
+<p id="S1.I1.i3.p1.1" class="ltx_p">For patch equivalence on real-world agent-generated patches with test specifications, we achieve 93% verification accuracy with Opus-4.5, compared to 86% for single-shot and 73% for difflib-based similarity. This enables execution-free feedback for RL training pipelines.</p>
+</div>
+</li>
+<li id="S1.I1.i4" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S1.I1.i4.p1" class="ltx_para">
+<p id="S1.I1.i4.p1.1" class="ltx_p">For code question answering on RubberDuckBench <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">rubberduckbench</span></cite>, semi-formal reasoning achieves 87% accuracy with Opus-4.5, a 10.8 percentage point improvement over single-shot (76%) and 8.7 percentage points over standard agentic reasoning.</p>
+</div>
+</li>
+<li id="S1.I1.i5" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S1.I1.i5.p1" class="ltx_para">
+<p id="S1.I1.i5.p1.1" class="ltx_p">For fault localization on Defects4J <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">just2014defects4j</span></cite>, semi-formal reasoning improves Top-5 accuracy by 5–12 percentage points over standard agentic reasoning.</p>
+</div>
+</li>
+</ul>
+</div>
+<div id="S1.SS0.SSS0.Px2.p2" class="ltx_para">
+<p id="S1.SS0.SSS0.Px2.p2.1" class="ltx_p">These results demonstrate that LLM agents can perform meaningful semantic code analysis without execution, potentially reducing verification costs in RL training pipelines by avoiding expensive sandbox execution. More broadly, structured agentic reasoning may offer a flexible alternative to classical static analysis tools: rather than encoding analysis logic in specialized algorithms, we can prompt LLM agents with task-specific reasoning templates that generalize across languages and frameworks.</p>
+</div>
+</section>
+<section id="S1.SS0.SSS0.Px3" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Data Contamination.</h5>
+
+<div id="S1.SS0.SSS0.Px3.p1" class="ltx_para">
+<p id="S1.SS0.SSS0.Px3.p1.1" class="ltx_p">SWE-bench instances may appear in LLM training corpora, which could inflate absolute performance numbers. However, our primary conclusions are based on relative comparisons (ablations across reasoning formats) using the same model, where contamination affects all configurations equally. Additionally, our agentic setup requires the model to actively explore repository code at runtime rather than recall memorized solutions.</p>
+</div>
+</section>
+</section>
+<section id="S2" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">2 </span>Background</h2>
+
+<div id="S2.p1" class="ltx_para">
+<p id="S2.p1.1" class="ltx_p">We describe our experimental setup and define the three evaluation tasks.</p>
+</div>
+<section id="S2.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">2.1 </span>Agentic vs. Single-Shot Verification</h3>
+
+<div id="S2.SS1.p1" class="ltx_para">
+<p id="S2.SS1.p1.1" class="ltx_p">We distinguish between single-shot verification, where the model reasons from a static code snapshot, and agentic verification, where the model can actively explore the repository.
+Our work focuses on agentic verification using a minimal SWE-agent <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">yang2024sweagent</span></cite> setup with access to bash tools.
+We set the maximum number of steps to 100 in all experiments. This allows the verifier to navigate the codebase, trace dependencies, and gather context that would otherwise be unavailable in a single-shot setting.
+Crucially, the agent cannot execute repository code or run its test suite: dependencies are not installed and the environment is not sandboxed. The agent may run independent Python scripts to probe general language behavior (e.g., how regex handles edge cases), but its primary mode of analysis is static. Git commands are also disabled to prevent investigating commit history.</p>
+</div>
+</section>
+<section id="S2.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">2.2 </span>Patch Equivalence</h3>
+
+<div id="S2.SS2.p1" class="ltx_para">
+<p id="S2.SS2.p1.1" class="ltx_p">True semantic equivalence (determining whether two programs produce identical behavior for all valid inputs) is undecidable in the general case. Real-world code often lacks formal specifications, and developers may hold latent assumptions (e.g., a field <span id="S2.SS2.p1.1.1" class="ltx_text ltx_font_typewriter">self.year: int</span> should only contain positive integers) that LLMs must infer from context. To make this problem tractable, we focus on patch equivalence: given two patches (code diffs that modify a repository) addressing the same task specification, do they produce the same test outcomes? Patches are well-suited for this study because they come with shared specifications (the problem statement) and associated test suites that define expected behavior.</p>
+</div>
+<div id="Thmdefinition1" class="ltx_theorem ltx_theorem_definition">
+<h6 class="ltx_title ltx_runin ltx_title_theorem">
+<span class="ltx_tag ltx_tag_theorem"><span id="Thmdefinition1.1.1.1" class="ltx_text ltx_font_bold">Definition 1</span></span><span id="Thmdefinition1.2.2" class="ltx_text ltx_font_bold"> </span>(Patch Equivalence Modulo Tests)<span id="Thmdefinition1.3.3" class="ltx_text ltx_font_bold">.</span>
+</h6>
+<div id="Thmdefinition1.p1" class="ltx_para">
+<p id="Thmdefinition1.p1.1" class="ltx_p"><span id="Thmdefinition1.p1.1.1" class="ltx_text ltx_font_italic">Two patches are equivalent modulo tests if and only if executing the repository’s test suite (F2P <math id="Thmdefinition1.p1.1.1.m1" class="ltx_Math" alttext="\cup" display="inline" intent=":literal"><semantics><mo>∪</mo><annotation encoding="application/x-tex">\cup</annotation></semantics></math> P2P) produces identical pass/fail outcomes for both patches.</span></p>
+</div>
+</div>
+<figure id="S2.T1" class="ltx_table">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table"><span id="S2.T1.2.1.1" class="ltx_text" style="font-size:90%;">Table 1</span>: </span><span id="S2.T1.3.2" class="ltx_text" style="font-size:90%;">Key terminology for patch equivalence</span></figcaption>
+<table id="S2.T1.4" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S2.T1.4.1.1" class="ltx_tr">
+<th id="S2.T1.4.1.1.1" class="ltx_td ltx_align_justify ltx_align_top ltx_th ltx_th_column ltx_border_tt">
+<span id="S2.T1.4.1.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.1.1.1.1.1" class="ltx_p" style="width:99.6pt;"><span id="S2.T1.4.1.1.1.1.1.1" class="ltx_text ltx_font_bold">Term</span></span>
+</span>
+</th>
+<th id="S2.T1.4.1.1.2" class="ltx_td ltx_align_justify ltx_align_top ltx_th ltx_th_column ltx_border_tt">
+<span id="S2.T1.4.1.1.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.1.1.2.1.1" class="ltx_p" style="width:256.1pt;"><span id="S2.T1.4.1.1.2.1.1.1" class="ltx_text ltx_font_bold">Definition</span></span>
+</span>
+</th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S2.T1.4.2.1" class="ltx_tr">
+<td id="S2.T1.4.2.1.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_t">
+<span id="S2.T1.4.2.1.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.2.1.1.1.1" class="ltx_p" style="width:99.6pt;">Code Patch</span>
+</span>
+</td>
+<td id="S2.T1.4.2.1.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_t">
+<span id="S2.T1.4.2.1.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.2.1.2.1.1" class="ltx_p" style="width:256.1pt;">A diff that modifies repository source code to fix a bug or add functionality.</span>
+</span>
+</td>
+</tr>
+<tr id="S2.T1.4.3.2" class="ltx_tr">
+<td id="S2.T1.4.3.2.1" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="S2.T1.4.3.2.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.3.2.1.1.1" class="ltx_p" style="width:99.6pt;">Test Patch</span>
+</span>
+</td>
+<td id="S2.T1.4.3.2.2" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="S2.T1.4.3.2.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.3.2.2.1.1" class="ltx_p" style="width:256.1pt;">A diff that adds or modifies test files (the F2P tests introduced with a bug fix).</span>
+</span>
+</td>
+</tr>
+<tr id="S2.T1.4.4.3" class="ltx_tr">
+<td id="S2.T1.4.4.3.1" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="S2.T1.4.4.3.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.4.3.1.1.1" class="ltx_p" style="width:99.6pt;">Fail-to-Pass (F2P) Tests</span>
+</span>
+</td>
+<td id="S2.T1.4.4.3.2" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="S2.T1.4.4.3.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.4.3.2.1.1" class="ltx_p" style="width:256.1pt;">Tests introduced alongside a bug fix that fail before the patch and pass after. These validate that the fix addresses the reported issue.</span>
+</span>
+</td>
+</tr>
+<tr id="S2.T1.4.5.4" class="ltx_tr">
+<td id="S2.T1.4.5.4.1" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="S2.T1.4.5.4.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.5.4.1.1.1" class="ltx_p" style="width:99.6pt;">Pass-to-Pass (P2P) / Regression Tests</span>
+</span>
+</td>
+<td id="S2.T1.4.5.4.2" class="ltx_td ltx_align_justify ltx_align_top">
+<span id="S2.T1.4.5.4.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.5.4.2.1.1" class="ltx_p" style="width:256.1pt;">Existing tests in the repository that must continue passing after the patch is applied.</span>
+</span>
+</td>
+</tr>
+<tr id="S2.T1.4.6.5" class="ltx_tr">
+<td id="S2.T1.4.6.5.1" class="ltx_td ltx_align_justify ltx_align_top ltx_border_bb">
+<span id="S2.T1.4.6.5.1.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.6.5.1.1.1" class="ltx_p" style="width:99.6pt;">Correct Patch</span>
+</span>
+</td>
+<td id="S2.T1.4.6.5.2" class="ltx_td ltx_align_justify ltx_align_top ltx_border_bb">
+<span id="S2.T1.4.6.5.2.1" class="ltx_inline-block ltx_align_top">
+<span id="S2.T1.4.6.5.2.1.1" class="ltx_p" style="width:256.1pt;">A patch that causes all F2P tests to pass while not breaking any P2P tests.</span>
+</span>
+</td>
+</tr>
+</tbody>
+</table>
+</figure>
+</section>
+<section id="S2.SS3" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">2.3 </span>Defects4J for Fault Localization</h3>
+
+<div id="S2.SS3.p1" class="ltx_para">
+<p id="S2.SS3.p1.1" class="ltx_p">Defects4J <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">just2014defects4j</span></cite> is a collection of reproducible bugs from real-world Java projects, widely used for evaluating fault localization and program repair techniques. Each bug includes the buggy and fixed versions of the code, along with at least one failing test that exposes the bug. For fault localization, the task is to identify the exact lines of buggy code given only the failing test, without access to stack traces, error messages, or execution information. Evaluation measures Top-N accuracy: the percentage of bugs where all ground-truth buggy lines are covered within the top N predictions.</p>
+</div>
+</section>
+<section id="S2.SS4" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">2.4 </span>Code Question Answering</h3>
+
+<div id="S2.SS4.p1" class="ltx_para">
+<p id="S2.SS4.p1.1" class="ltx_p">RubberDuckBench <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">rubberduckbench</span></cite> is a benchmark of 15 code understanding questions across Python, Java, and C++ repositories, each with expert-written rubrics for evaluation. The questions require nuanced understanding of code behavior, including project-specific logic, library semantics, and edge cases. Unlike patch equivalence where ground truth is determined by test execution, code QA requires free-form answers that are evaluated against expert rubrics.</p>
+</div>
+</section>
+</section>
+<section id="S3" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">3 </span>Semi-formal Reasoning</h2>
+
+<div id="S3.p1" class="ltx_para">
+<p id="S3.p1.1" class="ltx_p">Given our evaluation tasks, we consider how the verifier should structure its reasoning.
+Recent work <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">achim2025aristotleimolevelautomatedtheorem</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">olympiaddeepmind</span>; <span class="ltx_ref ltx_missing_citation ltx_ref_self">yang2025position</span></cite> on LLM-based mathematical reasoning has shown that semi-formal approaches, which combine natural language intuition with structured logical steps, often outperform both purely informal and fully formal methods. Fully formal verification in Lean or Coq is tempting but introduces significant overhead: translating arbitrary repository code into a formal representation is nontrivial, and current LLMs still struggle with the precise syntax and proof tactics these systems demand. We therefore compare two reasoning approaches that introduce increasing structure in the agent’s reasoning through templates provided in the prompt.</p>
+</div>
+<section id="S3.SS0.SSS0.Px1" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Standard Reasoning</h5>
+
+<div id="S3.SS0.SSS0.Px1.p1" class="ltx_para">
+<p id="S3.SS0.SSS0.Px1.p1.1" class="ltx_p">The agent receives a minimal prompt asking it to determine equivalence, with no structural constraints on its reasoning. It explains its thinking in natural language and concludes with YES/NO. This is fast but allows the agent to make claims without verifying them. For example, an agent might note that one patch modifies extra files but simply assume no tests depend on those changes.</p>
+</div>
+</section>
+<section id="S3.SS0.SSS0.Px2" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Semi-formal Reasoning</h5>
+
+<div id="S3.SS0.SSS0.Px2.p1" class="ltx_para">
+<p id="S3.SS0.SSS0.Px2.p1.1" class="ltx_p">Semi-formal reasoning adds structure: the agent must state explicit premises, trace execution for each test, and write a formal conclusion. In practice, we enforce this by including a structured template in the agent’s initial prompt that specifies the required format.
+The key insight is that by structuring the reasoning process, not just the output format, we force the agent to gather evidence before concluding, preventing the premature judgments common in unconstrained reasoning.
+We observed that this forces the agent to actually enumerate the program paths rather than make guesses, which naturally leads to deeper interprocedural reasoning as the agent traces function calls to justify its claims.
+For instance, in one example (django-13195), semi-formal reasoning caught that session-related tests existed and would fail when one patch omitted changes to the session middleware, something the informal mode missed.
+Figure <a href="https://arxiv.org/html/2603.01896v2#S1.F1" title="Figure 1 ‣ Motivating Example. ‣ 1 Introduction ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">1</span></a> illustrates this with a concrete example where tracing a function call reveals a shadowed definition that causes one patch to fail.</p>
+</div>
+<div id="S3.SS0.SSS0.Px2.p2" class="ltx_para">
+<p id="S3.SS0.SSS0.Px2.p2.1" class="ltx_p">The certificate template is task-specific: for patch equivalence, premises describe what each patch modifies and claims trace per-test behavior; for fault localization, premises describe suspicious code regions and claims trace whether each region could cause the observed test failure; for code question answering, the template requires a function trace table, data flow analysis, and semantic properties with explicit evidence. While the specific sections vary by task, all templates enforce the same principle: the agent must document verifiable evidence before reaching a conclusion. Figure <a href="https://arxiv.org/html/2603.01896v2#S3.F2" title="Figure 2 ‣ Semi-formal Reasoning ‣ 3 Semi-formal Reasoning ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a> shows a condensed example for patch equivalence.</p>
+</div>
+<figure id="S3.F2" class="ltx_figure"><span class="ltx_inline-block"><svg id="S3.F2.pic1" class="ltx_picture ltx_centering" height="644.72" overflow="visible" version="1.1" viewBox="0 0 600 644.72" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,644.72) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#666666;" fill="#666666" fill-opacity="1.0"><path style="stroke:none" d="M 0 3.46 L 0 641.26 C 0 643.17 1.55 644.72 3.46 644.72 L 596.54 644.72 C 598.45 644.72 600 643.17 600 641.26 L 600 3.46 C 600 1.55 598.45 0 596.54 0 L 3.46 0 C 1.55 0 0 1.55 0 3.46 Z"></path></g><g style="--ltx-fill-color:#FFFFFF;" fill="#FFFFFF" fill-opacity="1.0"><path style="stroke:none" d="M 0.69 3.46 L 0.69 184.13 L 599.31 184.13 L 599.31 3.46 C 599.31 1.93 598.07 0.69 596.54 0.69 L 3.46 0.69 C 1.93 0.69 0.69 1.93 0.69 3.46 Z"></path></g><g style="--ltx-fill-color:#ECECEC;" fill="#ECECEC" fill-opacity="1.0"><path style="stroke:none" d="M 0.69 184.82 L 0.69 641.26 C 0.69 642.79 1.93 644.03 3.46 644.03 L 596.54 644.03 C 598.07 644.03 599.31 642.79 599.31 641.26 L 599.31 184.82 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.38 191.87)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.42em;--ltx-fo-height:32.39em;--ltx-fo-depth:0.22em;" width="559.25" height="451.33" transform="matrix(1 0 0 -1 0 448.22)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="S3.F2.pic1.1.1.1.1.1" class="ltx_inline-block ltx_minipage ltx_align_bottom" style="width:43.69em;">
+<span id="S3.F2.pic1.1.1.1.1.1.1" class="ltx_p"><span id="S3.F2.pic1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold" style="font-size:90%;">Semi-formal Certificate Template<span id="S3.F2.pic1.1.1.1.1.1.1.1.1" class="ltx_text ltx_font_medium"> (patch equivalence)</span></span></span>
+</span></span></span></foreignobject></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.38 15.27)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.42em;--ltx-fo-height:11.35em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.77em" height="159.82" transform="matrix(1 0 0 -1 0 157.05)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="S3.F2.pic1.2.2.2.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">DEFINITIONS:
+D1: Two patches are EQUIVALENT MODULO TESTS iff
+    the test suite produces identical pass/fail
+    outcomes for both patches.
+
+PREMISES (state what each patch does):
+P1: Patch 1 modifies [file(s)] by [change]
+P2: Patch 2 modifies [file(s)] by [change]
+P3: The FAIL_TO_PASS tests check [behavior]
+
+ANALYSIS OF TEST BEHAVIOR:
+For each test:
+  Claim: With Patch 1, test [name] will [PASS/FAIL]
+         because [execution trace]
+  Claim: With Patch 2, test [name] will [PASS/FAIL]
+         because [execution trace]
+  Comparison: [SAME/DIFFERENT] outcome
+
+COUNTEREXAMPLE (if NOT EQUIVALENT):
+  Test [name] produces different outcomes because
+  [specific code trace evidence]
+
+FORMAL CONCLUSION:
+By D1, since test outcomes are [IDENTICAL/DIFFERENT],
+patches are [EQUIVALENT/NOT EQUIVALENT].
+</pre></span></span></foreignobject></g></g></svg></span>
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_figure"><span id="S3.F2.2.1.1" class="ltx_text" style="font-size:90%;">Figure 2</span>: </span><span id="S3.F2.3.2" class="ltx_text" style="font-size:90%;">Condensed semi-formal certificate template for patch equivalence. The agent must fill in every bracketed field with evidence gathered from the codebase. The full template includes additional fields for pass-to-pass tests, confidence levels, and alternative hypothesis checks. Templates for other tasks follow the same structure but with task-specific premises and claims. The full prompt appears in Appendix <a href="https://arxiv.org/html/2603.01896v2#A1" title="Appendix A Patch Equivalence Semi-formal Reasoning Template ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">A</span></a>.</span></figcaption>
+</figure>
+</section>
+</section>
+<section id="S4" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">4 </span>Evaluation</h2>
+
+<div id="S4.p1" class="ltx_para">
+<p id="S4.p1.1" class="ltx_p">We present our experimental results on the three evaluation tasks: patch equivalence verification, code question answering, and fault localization.</p>
+</div>
+<section id="S4.SS1" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">4.1 </span>Patch Equivalence</h3>
+
+<section id="S4.SS1.SSS1" class="ltx_subsubsection">
+<h4 class="ltx_title ltx_title_subsubsection">
+<span class="ltx_tag ltx_tag_subsubsection">4.1.1 </span>Curated Dataset Evaluation</h4>
+
+<div id="S4.SS1.SSS1.p1" class="ltx_para">
+<p id="S4.SS1.SSS1.p1.1" class="ltx_p">We construct a challenging evaluation dataset as follows. A uniformly sampled dataset would be dominated by easily distinguishable patch pairs, offering limited signal for evaluating nuanced reasoning. To better stress-test the verifier, we deliberately curate a more challenging distribution that emphasizes subtle distinctions. We source patches from SWE-bench-Verified, drawing on the community-contributed collection of agent traces, generated patches, and test execution results. From this repository, we sample pairs of patches produced by different agents for the same underlying bug.</p>
+</div>
+<div id="S4.SS1.SSS1.p2" class="ltx_para">
+<p id="S4.SS1.SSS1.p2.2" class="ltx_p">Our curation pipeline proceeds as follows. We first score each pair’s surface-level similarity using both an LLM-based rating (0 to 10 scale) and difflib-based text similarity. We then exclude pairs with invalid test outcomes. Finally, we balance the dataset to include both high-similarity pairs where patches appear similar (LLM score <math id="S4.SS1.SSS1.p2.1.m1" class="ltx_Math" alttext="\geq" display="inline" intent=":literal"><semantics><mo>≥</mo><annotation encoding="application/x-tex">\geq</annotation></semantics></math>7, difflib <math id="S4.SS1.SSS1.p2.2.m2" class="ltx_Math" alttext="&gt;" display="inline" intent=":literal"><semantics><mo>&gt;</mo><annotation encoding="application/x-tex">&gt;</annotation></semantics></math>0.3) yet differ in resolution status, and positive pairs where both patches pass all tests. The resulting dataset contains 170 challenging examples designed to probe the boundary between superficial code similarity and true semantic equivalence.</p>
+</div>
+<div id="S4.SS1.SSS1.p3" class="ltx_para">
+<p id="S4.SS1.SSS1.p3.1" class="ltx_p">Evaluating whether an agent’s reasoning is correct step-by-step is difficult as it requires expert review. Hence, in our evaluation we only focus on the final binary answer. Given two patches and a test suite, does the agent correctly predict whether both patches produce the same test outcomes? This is a binary task, and a random baseline achieves 50% accuracy. We acknowledge that an agent might sometimes arrive at the right answer through flawed reasoning, but the structured formats we introduce next are designed to reduce this by requiring explicit evidence for each claim.</p>
+</div>
+<div id="S4.SS1.SSS1.p4" class="ltx_para">
+<p id="S4.SS1.SSS1.p4.1" class="ltx_p">For the experiments in this section the verifier has access to (1) both code patches, (2) the test patch applied to the codebase, and (3) the full repository. The verifier cannot execute tests but can read test implementations.</p>
+</div>
+<figure id="S4.T2" class="ltx_table">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table"><span id="S4.T2.2.1.1" class="ltx_text" style="font-size:90%;">Table 2</span>: </span><span id="S4.T2.3.2" class="ltx_text" style="font-size:90%;">Comparison of reasoning approaches using Opus-4.5 as the verifier model</span></figcaption>
+<table id="S4.T2.4" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S4.T2.4.1.1" class="ltx_tr">
+<th id="S4.T2.4.1.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt"><span id="S4.T2.4.1.1.1.1" class="ltx_text ltx_font_bold">Reasoning</span></th>
+<th id="S4.T2.4.1.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="S4.T2.4.1.1.2.1" class="ltx_text ltx_font_bold">Overall Accuracy</span></th>
+<th id="S4.T2.4.1.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="S4.T2.4.1.1.3.1" class="ltx_text ltx_font_bold">Avg Steps</span></th>
+<th id="S4.T2.4.1.1.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="S4.T2.4.1.1.4.1" class="ltx_text ltx_font_bold">Non-Equiv Acc</span></th>
+<th id="S4.T2.4.1.1.5" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="S4.T2.4.1.1.5.1" class="ltx_text ltx_font_bold">Equiv Acc</span></th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S4.T2.4.2.1" class="ltx_tr">
+<th id="S4.T2.4.2.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">Standard</th>
+<td id="S4.T2.4.2.1.2" class="ltx_td ltx_align_center ltx_border_t">78.2%</td>
+<td id="S4.T2.4.2.1.3" class="ltx_td ltx_align_center ltx_border_t">10.08</td>
+<td id="S4.T2.4.2.1.4" class="ltx_td ltx_align_center ltx_border_t">78.6%</td>
+<td id="S4.T2.4.2.1.5" class="ltx_td ltx_align_center ltx_border_t">78.0%</td>
+</tr>
+<tr id="S4.T2.4.3.2" class="ltx_tr">
+<th id="S4.T2.4.3.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">Semi-formal</th>
+<td id="S4.T2.4.3.2.2" class="ltx_td ltx_align_center ltx_border_bb">88.8%</td>
+<td id="S4.T2.4.3.2.3" class="ltx_td ltx_align_center ltx_border_bb">28.17</td>
+<td id="S4.T2.4.3.2.4" class="ltx_td ltx_align_center ltx_border_bb">82.9%</td>
+<td id="S4.T2.4.3.2.5" class="ltx_td ltx_align_center ltx_border_bb">93.0%</td>
+</tr>
+</tbody>
+</table>
+</figure>
+<div id="S4.SS1.SSS1.p5" class="ltx_para">
+<p id="S4.SS1.SSS1.p5.1" class="ltx_p">Semi-formal reasoning reduces errors by nearly half, improving overall accuracy from 78.2% to 88.8% and performing well on both equivalent and non-equivalent cases. This yields a roughly 10-point improvement over informal reasoning but requires about 2.8<math id="S4.SS1.SSS1.p5.1.m1" class="ltx_Math" alttext="\times" display="inline" intent=":literal"><semantics><mo>×</mo><annotation encoding="application/x-tex">\times</annotation></semantics></math> as many steps. Even with semi-formal analysis, 19 cases are incorrect. The primary issue (roughly half) is missed execution differences in non-equivalent cases. The agent claims the patches are equivalent when only one actually passes the tests. This typically happens because the agent fails to trace all relevant code paths or misses some assertions in tests.</p>
+</div>
+</section>
+<section id="S4.SS1.SSS2" class="ltx_subsubsection">
+<h4 class="ltx_title ltx_title_subsubsection">
+<span class="ltx_tag ltx_tag_subsubsection">4.1.2 </span>LLM Verifier With Test Specifications</h4>
+
+<div id="S4.SS1.SSS2.p1" class="ltx_para">
+<p id="S4.SS1.SSS2.p1.1" class="ltx_p">One practical use of patch equivalence is checking whether an LLM-generated patch matches a known reference solution i.e. the gold patch. If we can do this without actually running tests, we get much cheaper feedback for training pipelines. We could avoid the overhead of setting up the execution environment which involves running sandboxes or CI systems for each repository.</p>
+</div>
+<div id="S4.SS1.SSS2.p2" class="ltx_para">
+<p id="S4.SS1.SSS2.p2.1" class="ltx_p">The verifier has access to (1) the generated patch, (2) the reference (gold) patch, (3) the test patch applied to the codebase (i.e., F2P test code is visible), and (4) the full repository including all P2P tests. Ground truth is determined by actual test execution.</p>
+</div>
+<div id="S4.SS1.SSS2.p3" class="ltx_para">
+<p id="S4.SS1.SSS2.p3.1" class="ltx_p">We tested this by comparing patches from live-swe-agent (gemini-3-pro) against the correct patches from SWE-bench-Verified dataset. Unlike the curated dataset in the previous section, here we sample randomly: we selected a balanced dataset of 200 examples, evenly split between correct and incorrect patches (100 each). The verifier’s task is to check if the agent’s patch is equivalent to the reference solution. We evaluate the following verification modes:</p>
+<ul id="S4.I1" class="ltx_itemize">
+<li id="S4.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S4.I1.i1.p1" class="ltx_para">
+<p id="S4.I1.i1.p1.1" class="ltx_p"><span id="S4.I1.i1.p1.1.1" class="ltx_text ltx_font_bold">difflib (No LLM):</span> Recent work from SWE-RL <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">wei2025swerl</span></cite> used the Python difflib library to compute a similarity score as the RL reward. For binary classification, one could set a threshold on this score, above which patches are considered equivalent. We evaluated various threshold values on the test set and found that a threshold of 0.4 yields the maximum accuracy. However, note that this optimal threshold may not be known a priori for a given benchmark. We present this value here in the table for reference.</p>
+</div>
+</li>
+<li id="S4.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S4.I1.i2.p1" class="ltx_para">
+<p id="S4.I1.i2.p1.1" class="ltx_p"><span id="S4.I1.i2.p1.1.1" class="ltx_text ltx_font_bold">Single LLM Call:</span> One LLM call with just the problem statement and patches. No tool use or codebase exploration.</p>
+</div>
+</li>
+<li id="S4.I1.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S4.I1.i3.p1" class="ltx_para">
+<p id="S4.I1.i3.p1.1" class="ltx_p"><span id="S4.I1.i3.p1.1.1" class="ltx_text ltx_font_bold">Single LLM Call + File Context:</span> Same as above, but the prompt includes the full contents of all files modified by the patches.</p>
+</div>
+</li>
+<li id="S4.I1.i4" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S4.I1.i4.p1" class="ltx_para">
+<p id="S4.I1.i4.p1.1" class="ltx_p"><span id="S4.I1.i4.p1.1.1" class="ltx_text ltx_font_bold">Agentic:</span> The verifier explores the codebase using tools over multiple steps, reasoning from the problem description and existing code. We evaluate both standard reasoning and semi-formal reasoning formats.</p>
+</div>
+</li>
+</ul>
+<p id="S4.SS1.SSS2.p3.2" class="ltx_p">In all settings, accuracy is computed against actual test execution results.</p>
+</div>
+<figure id="S4.T3" class="ltx_table">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table"><span id="S4.T3.2.1.1" class="ltx_text" style="font-size:90%;">Table 3</span>: </span><span id="S4.T3.3.2" class="ltx_text" style="font-size:90%;">Verification accuracy with test patches available</span></figcaption>
+<table id="S4.T3.4" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S4.T3.4.1.1" class="ltx_tr">
+<th id="S4.T3.4.1.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_border_tt"><span id="S4.T3.4.1.1.1.1" class="ltx_text ltx_font_bold">Model</span></th>
+<th id="S4.T3.4.1.1.2" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_border_tt"><span id="S4.T3.4.1.1.2.1" class="ltx_text ltx_font_bold">Mode</span></th>
+<th id="S4.T3.4.1.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="S4.T3.4.1.1.3.1" class="ltx_text ltx_font_bold">Accuracy</span></th>
+<th id="S4.T3.4.1.1.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="S4.T3.4.1.1.4.1" class="ltx_text ltx_font_bold">Avg Steps</span></th>
+</tr>
+<tr id="S4.T3.4.2.2" class="ltx_tr">
+<th id="S4.T3.4.2.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_border_t">difflib</th>
+<th id="S4.T3.4.2.2.2" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_border_t">Best threshold=0.4</th>
+<th id="S4.T3.4.2.2.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t">73%</th>
+<th id="S4.T3.4.2.2.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t">-</th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S4.T3.4.3.1" class="ltx_tr">
+<td id="S4.T3.4.3.1.1" class="ltx_td ltx_align_left ltx_border_t">Sonnet-4.5</td>
+<td id="S4.T3.4.3.1.2" class="ltx_td ltx_align_left ltx_border_t">Single Call (Standard)</td>
+<td id="S4.T3.4.3.1.3" class="ltx_td ltx_align_center ltx_border_t">80.0%</td>
+<td id="S4.T3.4.3.1.4" class="ltx_td ltx_align_center ltx_border_t">1</td>
+</tr>
+<tr id="S4.T3.4.4.2" class="ltx_tr">
+<td id="S4.T3.4.4.2.1" class="ltx_td ltx_align_left">Sonnet-4.5</td>
+<td id="S4.T3.4.4.2.2" class="ltx_td ltx_align_left">+ File Context (Standard)</td>
+<td id="S4.T3.4.4.2.3" class="ltx_td ltx_align_center">82.0%</td>
+<td id="S4.T3.4.4.2.4" class="ltx_td ltx_align_center">1</td>
+</tr>
+<tr id="S4.T3.4.5.3" class="ltx_tr">
+<td id="S4.T3.4.5.3.1" class="ltx_td ltx_align_left">Sonnet-4.5</td>
+<td id="S4.T3.4.5.3.2" class="ltx_td ltx_align_left">Agentic (Standard)</td>
+<td id="S4.T3.4.5.3.3" class="ltx_td ltx_align_center">84.5%</td>
+<td id="S4.T3.4.5.3.4" class="ltx_td ltx_align_center">20.67</td>
+</tr>
+<tr id="S4.T3.4.6.4" class="ltx_tr">
+<td id="S4.T3.4.6.4.1" class="ltx_td ltx_align_left">Sonnet-4.5</td>
+<td id="S4.T3.4.6.4.2" class="ltx_td ltx_align_left">Agentic (Semi-formal)</td>
+<td id="S4.T3.4.6.4.3" class="ltx_td ltx_align_center"><span id="S4.T3.4.6.4.3.1" class="ltx_text ltx_font_bold">91.5%</span></td>
+<td id="S4.T3.4.6.4.4" class="ltx_td ltx_align_center">43.23</td>
+</tr>
+<tr id="S4.T3.4.7.5" class="ltx_tr">
+<td id="S4.T3.4.7.5.1" class="ltx_td ltx_align_left ltx_border_t">Opus-4.5</td>
+<td id="S4.T3.4.7.5.2" class="ltx_td ltx_align_left ltx_border_t">Single Call (Standard)</td>
+<td id="S4.T3.4.7.5.3" class="ltx_td ltx_align_center ltx_border_t">86.0%</td>
+<td id="S4.T3.4.7.5.4" class="ltx_td ltx_align_center ltx_border_t">1</td>
+</tr>
+<tr id="S4.T3.4.8.6" class="ltx_tr">
+<td id="S4.T3.4.8.6.1" class="ltx_td ltx_align_left">Opus-4.5</td>
+<td id="S4.T3.4.8.6.2" class="ltx_td ltx_align_left">+ File Context (Standard)</td>
+<td id="S4.T3.4.8.6.3" class="ltx_td ltx_align_center">87.5%</td>
+<td id="S4.T3.4.8.6.4" class="ltx_td ltx_align_center">1</td>
+</tr>
+<tr id="S4.T3.4.9.7" class="ltx_tr">
+<td id="S4.T3.4.9.7.1" class="ltx_td ltx_align_left">Opus-4.5</td>
+<td id="S4.T3.4.9.7.2" class="ltx_td ltx_align_left">Agentic (Standard)</td>
+<td id="S4.T3.4.9.7.3" class="ltx_td ltx_align_center">87.0%</td>
+<td id="S4.T3.4.9.7.4" class="ltx_td ltx_align_center">19.7</td>
+</tr>
+<tr id="S4.T3.4.10.8" class="ltx_tr">
+<td id="S4.T3.4.10.8.1" class="ltx_td ltx_align_left ltx_border_bb">Opus-4.5</td>
+<td id="S4.T3.4.10.8.2" class="ltx_td ltx_align_left ltx_border_bb">Agentic (Semi-formal)</td>
+<td id="S4.T3.4.10.8.3" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T3.4.10.8.3.1" class="ltx_text ltx_font_bold">93.0%</span></td>
+<td id="S4.T3.4.10.8.4" class="ltx_td ltx_align_center ltx_border_bb">37.82</td>
+</tr>
+</tbody>
+</table>
+</figure>
+<div id="S4.SS1.SSS2.p4" class="ltx_para">
+<p id="S4.SS1.SSS2.p4.1" class="ltx_p">Opus-4.5 achieves 93.0% accuracy with semi-formal reasoning when given the fail-to-pass test patch. The single-call modes (80–87% accuracy) confirm that many verification tasks require exploring code beyond the immediate patch context.</p>
+</div>
+<div id="S4.SS1.SSS2.p5" class="ltx_para">
+<p id="S4.SS1.SSS2.p5.1" class="ltx_p"><span id="S4.SS1.SSS2.p5.1.1" class="ltx_text ltx_font_bold">Error Analysis for Verifier With Tests.</span>
+We closely analyzed the remaining errors for Opus-4.5 with Semi-formal and found three primary failure modes:</p>
+<ol id="S4.I2" class="ltx_enumerate">
+<li id="S4.I2.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">1.</span> 
+<div id="S4.I2.i1.p1" class="ltx_para">
+<p id="S4.I2.i1.p1.1" class="ltx_p"><span id="S4.I2.i1.p1.1.1" class="ltx_text ltx_font_bold">Incomplete execution tracing despite the given instructions:</span> The agent assumed function behavior without fully tracing concrete execution paths.</p>
+</div>
+</li>
+<li id="S4.I2.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">2.</span> 
+<div id="S4.I2.i2.p1" class="ltx_para">
+<p id="S4.I2.i2.p1.1" class="ltx_p"><span id="S4.I2.i2.p1.1.1" class="ltx_text ltx_font_bold">Third-party library semantics:</span> The agent guessed behavior from function names when source code was unavailable.</p>
+</div>
+</li>
+<li id="S4.I2.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">3.</span> 
+<div id="S4.I2.i3.p1" class="ltx_para">
+<p id="S4.I2.i3.p1.1" class="ltx_p"><span id="S4.I2.i3.p1.1.1" class="ltx_text ltx_font_bold">Dismissing subtle differences:</span> The agent identified semantic differences but incorrectly concluded they were irrelevant to test outcomes.</p>
+</div>
+</li>
+</ol>
+<p id="S4.SS1.SSS2.p5.2" class="ltx_p">While these results demonstrate strong verification performance when fail-to-pass test patches are available, this dependency limits applicability to scenarios without well-defined test patches. In the following section, we explore extending our approach to scenarios where test patches are unavailable.</p>
+</div>
+</section>
+</section>
+<section id="S4.SS2" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">4.2 </span>Fault Localization</h3>
+
+<div id="S4.SS2.p1" class="ltx_para">
+<p id="S4.SS2.p1.1" class="ltx_p">We evaluate fault localization on Defects4J (see Section <a href="https://arxiv.org/html/2603.01896v2#S2" title="2 Background ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a>). Unlike patch equivalence where both patches are provided, fault localization requires the agent to <em id="S4.SS2.p1.1.1" class="ltx_emph ltx_font_italic">find</em> the relevant code in a large search space, then reason about why it causes the test failure.
+Appendix <a href="https://arxiv.org/html/2603.01896v2#A2" title="Appendix B Fault Localization Semi-formal Reasoning Template ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">B</span></a> shows the prompt we use for structured reasoning.</p>
+</div>
+<section id="S4.SS2.SSS0.Px1" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Metric</h5>
+
+<div id="S4.SS2.SSS0.Px1.p1" class="ltx_para">
+<p id="S4.SS2.SSS0.Px1.p1.2" class="ltx_p">For matching, we compare overlaps against buggy file regions: the lines in the patch, grouped per hunk into (file, min_deleted, max_deleted) ranges for deletions, and (file, insert_pos, insert_pos) for insertions. A prediction matches a region if their ranges overlap: pred_start <math id="S4.SS2.SSS0.Px1.p1.1.m1" class="ltx_Math" alttext="\leq" display="inline" intent=":literal"><semantics><mo>≤</mo><annotation encoding="application/x-tex">\leq</annotation></semantics></math> region_end and pred_end <math id="S4.SS2.SSS0.Px1.p1.2.m2" class="ltx_Math" alttext="\geq" display="inline" intent=":literal"><semantics><mo>≥</mo><annotation encoding="application/x-tex">\geq</annotation></semantics></math> region_start. This works for all patch types including deletion-only cases, which can be an issue with matching based on line number in the ground truth patch. We report two variants: <span id="S4.SS2.SSS0.Px1.p1.2.1" class="ltx_text ltx_font_bold">All</span>, where a bug is solved at Top-N only when every ground-truth hunk is covered by predictions in positions 1..N, and <span id="S4.SS2.SSS0.Px1.p1.2.2" class="ltx_text ltx_font_bold">Any</span>, where at least one ground-truth hunk must be covered. The All metric is stricter and penalizes multi-hunk bugs; the Any metric better reflects partial localization success.</p>
+</div>
+</section>
+<section id="S4.SS2.SSS0.Px2" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Available Information.</h5>
+
+<div id="S4.SS2.SSS0.Px2.p1" class="ltx_para">
+<p id="S4.SS2.SSS0.Px2.p1.1" class="ltx_p">The agent has access to (1) the failing test name and source code, (2) source files scoped to classes loaded during test execution, and (3) the full repository. No stack traces, error messages, or execution information are provided (to avoid trivializing the task).</p>
+</div>
+</section>
+<section id="S4.SS2.SSS0.Px3" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Small-Scale Evaluation (50 bugs).</h5>
+
+<div id="S4.SS2.SSS0.Px3.p1" class="ltx_para">
+<p id="S4.SS2.SSS0.Px3.p1.1" class="ltx_p">We first evaluate on 50 bugs from Defects4J where all relevant source files fit within the context window, enabling comparison between single-shot (all code provided upfront) and agentic (iterative file exploration) modes. We do this by estimating the token count in loaded classes and cap it to 100K.
+These projects contained 43 unique bugs that were evaluable; others had missing source or test files, or other errors.</p>
+</div>
+<figure id="S4.T4" class="ltx_table">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table"><span id="S4.T4.2.1.1" class="ltx_text" style="font-size:90%;">Table 4</span>: </span><span id="S4.T4.3.2" class="ltx_text" style="font-size:90%;">Fault localization accuracy on Defects4J (Opus-4.5). “All” requires every ground-truth hunk to be covered; “Any” requires at least one.</span></figcaption>
+<table id="S4.T4.4" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S4.T4.4.1.1" class="ltx_tr">
+<th id="S4.T4.4.1.1.1" class="ltx_td ltx_th ltx_th_row ltx_border_tt"></th>
+<th id="S4.T4.4.1.1.2" class="ltx_td ltx_th ltx_th_column ltx_th_row ltx_border_tt"></th>
+<th id="S4.T4.4.1.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="3"><span id="S4.T4.4.1.1.3.1" class="ltx_text ltx_font_bold">All</span></th>
+<th id="S4.T4.4.1.1.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="3"><span id="S4.T4.4.1.1.4.1" class="ltx_text ltx_font_bold">Any</span></th>
+</tr>
+<tr id="S4.T4.4.2.2" class="ltx_tr">
+<th id="S4.T4.4.2.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row"><span id="S4.T4.4.2.2.1.1" class="ltx_text ltx_font_bold">Mode</span></th>
+<th id="S4.T4.4.2.2.2" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row"><span id="S4.T4.4.2.2.2.1" class="ltx_text ltx_font_bold">Exploration</span></th>
+<th id="S4.T4.4.2.2.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T4.4.2.2.3.1" class="ltx_text ltx_font_bold">Top-1</span></th>
+<th id="S4.T4.4.2.2.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T4.4.2.2.4.1" class="ltx_text ltx_font_bold">Top-3</span></th>
+<th id="S4.T4.4.2.2.5" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T4.4.2.2.5.1" class="ltx_text ltx_font_bold">Top-5</span></th>
+<th id="S4.T4.4.2.2.6" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T4.4.2.2.6.1" class="ltx_text ltx_font_bold">Top-1</span></th>
+<th id="S4.T4.4.2.2.7" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T4.4.2.2.7.1" class="ltx_text ltx_font_bold">Top-3</span></th>
+<th id="S4.T4.4.2.2.8" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T4.4.2.2.8.1" class="ltx_text ltx_font_bold">Top-5</span></th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S4.T4.4.3.1" class="ltx_tr">
+<th id="S4.T4.4.3.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">Standard</th>
+<th id="S4.T4.4.3.1.2" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">Single-shot</th>
+<td id="S4.T4.4.3.1.3" class="ltx_td ltx_align_center ltx_border_t">36.1%</td>
+<td id="S4.T4.4.3.1.4" class="ltx_td ltx_align_center ltx_border_t">55.6%</td>
+<td id="S4.T4.4.3.1.5" class="ltx_td ltx_align_center ltx_border_t">55.6%</td>
+<td id="S4.T4.4.3.1.6" class="ltx_td ltx_align_center ltx_border_t">47.2%</td>
+<td id="S4.T4.4.3.1.7" class="ltx_td ltx_align_center ltx_border_t">69.4%</td>
+<td id="S4.T4.4.3.1.8" class="ltx_td ltx_align_center ltx_border_t">69.4%</td>
+</tr>
+<tr id="S4.T4.4.4.2" class="ltx_tr">
+<th id="S4.T4.4.4.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Semi-formal</th>
+<th id="S4.T4.4.4.2.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">Single-shot</th>
+<td id="S4.T4.4.4.2.3" class="ltx_td ltx_align_center">41.7%</td>
+<td id="S4.T4.4.4.2.4" class="ltx_td ltx_align_center">58.3%</td>
+<td id="S4.T4.4.4.2.5" class="ltx_td ltx_align_center">63.9%</td>
+<td id="S4.T4.4.4.2.6" class="ltx_td ltx_align_center">55.6%</td>
+<td id="S4.T4.4.4.2.7" class="ltx_td ltx_align_center">75.0%</td>
+<td id="S4.T4.4.4.2.8" class="ltx_td ltx_align_center">77.8%</td>
+</tr>
+<tr id="S4.T4.4.5.3" class="ltx_tr">
+<th id="S4.T4.4.5.3.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Standard</th>
+<th id="S4.T4.4.5.3.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">Agentic</th>
+<td id="S4.T4.4.5.3.3" class="ltx_td ltx_align_center">46.5%</td>
+<td id="S4.T4.4.5.3.4" class="ltx_td ltx_align_center">60.5%</td>
+<td id="S4.T4.4.5.3.5" class="ltx_td ltx_align_center">60.5%</td>
+<td id="S4.T4.4.5.3.6" class="ltx_td ltx_align_center">65.1%</td>
+<td id="S4.T4.4.5.3.7" class="ltx_td ltx_align_center">79.1%</td>
+<td id="S4.T4.4.5.3.8" class="ltx_td ltx_align_center">81.4%</td>
+</tr>
+<tr id="S4.T4.4.6.4" class="ltx_tr">
+<th id="S4.T4.4.6.4.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">Semi-formal</th>
+<th id="S4.T4.4.6.4.2" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">Agentic</th>
+<td id="S4.T4.4.6.4.3" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T4.4.6.4.3.1" class="ltx_text ltx_font_bold">53.5%</span></td>
+<td id="S4.T4.4.6.4.4" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T4.4.6.4.4.1" class="ltx_text ltx_font_bold">67.4%</span></td>
+<td id="S4.T4.4.6.4.5" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T4.4.6.4.5.1" class="ltx_text ltx_font_bold">72.1%</span></td>
+<td id="S4.T4.4.6.4.6" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T4.4.6.4.6.1" class="ltx_text ltx_font_bold">72.1%</span></td>
+<td id="S4.T4.4.6.4.7" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T4.4.6.4.7.1" class="ltx_text ltx_font_bold">83.7%</span></td>
+<td id="S4.T4.4.6.4.8" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T4.4.6.4.8.1" class="ltx_text ltx_font_bold">88.4%</span></td>
+</tr>
+</tbody>
+</table>
+</figure>
+<div id="S4.SS2.SSS0.Px3.p2" class="ltx_para">
+<p id="S4.SS2.SSS0.Px3.p2.1" class="ltx_p">Semi-formal reasoning improves accuracy across both metrics and exploration modes. Under the stricter All metric, Top-5 accuracy improves by +8pp for single-shot and +12pp for agentic. Under the Any metric, the gains are similar: +8pp for single-shot and +7pp for agentic. Agentic exploration with semi-formal reasoning achieves the best overall accuracy at 72.1% Top-5 (All) and 88.4% Top-5 (Any).</p>
+</div>
+</section>
+<section id="S4.SS2.SSS0.Px4" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Larger-Scale Validation (100 bugs).</h5>
+
+<div id="S4.SS2.SSS0.Px4.p1" class="ltx_para">
+<p id="S4.SS2.SSS0.Px4.p1.1" class="ltx_p">To validate our findings on a larger sample, we evaluated on 100 Defects4J bugs randomly sampled across 14 Java projects (of which 90 were evaluable). Unlike the small-scale study, many of these bugs involve source files exceeding context limits, requiring genuine agentic exploration. Standard mode sometimes makes a quick, correct prediction on turn 1 from just the test code (e.g., Closure_129, where the agent predicts correctly from the test code alone without reading any source files).</p>
+</div>
+<div id="S4.SS2.SSS0.Px4.p2" class="ltx_para">
+<p id="S4.SS2.SSS0.Px4.p2.1" class="ltx_p">Table <a href="https://arxiv.org/html/2603.01896v2#S4.T5" title="Table 5 ‣ Larger-Scale Validation (100 bugs). ‣ 4.2 Fault Localization ‣ 4 Evaluation ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">5</span></a> shows semi-formal reasoning improves accuracy by +5pp Top-5 (All) over standard, confirming that semi-formal reasoning consistently outperforms standard mode across dataset sizes. The Any metric, which requires at least one ground-truth hunk to be covered, shows the same trend with higher absolute numbers.</p>
+</div>
+<figure id="S4.T5" class="ltx_table">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table"><span id="S4.T5.2.1.1" class="ltx_text" style="font-size:90%;">Table 5</span>: </span><span id="S4.T5.3.2" class="ltx_text" style="font-size:90%;">Agentic fault localization on 100-bug sample. “All” requires every ground-truth hunk to be covered; “Any” requires at least one.</span></figcaption>
+<table id="S4.T5.4" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S4.T5.4.1.1" class="ltx_tr">
+<th id="S4.T5.4.1.1.1" class="ltx_td ltx_th ltx_th_row ltx_border_tt"></th>
+<th id="S4.T5.4.1.1.2" class="ltx_td ltx_th ltx_th_column ltx_th_row ltx_border_tt"></th>
+<th id="S4.T5.4.1.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="3"><span id="S4.T5.4.1.1.3.1" class="ltx_text ltx_font_bold">All</span></th>
+<th id="S4.T5.4.1.1.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt" colspan="3"><span id="S4.T5.4.1.1.4.1" class="ltx_text ltx_font_bold">Any</span></th>
+</tr>
+<tr id="S4.T5.4.2.2" class="ltx_tr">
+<th id="S4.T5.4.2.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row"><span id="S4.T5.4.2.2.1.1" class="ltx_text ltx_font_bold">Model</span></th>
+<th id="S4.T5.4.2.2.2" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row"><span id="S4.T5.4.2.2.2.1" class="ltx_text ltx_font_bold">Mode</span></th>
+<th id="S4.T5.4.2.2.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T5.4.2.2.3.1" class="ltx_text ltx_font_bold">Top-1</span></th>
+<th id="S4.T5.4.2.2.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T5.4.2.2.4.1" class="ltx_text ltx_font_bold">Top-3</span></th>
+<th id="S4.T5.4.2.2.5" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T5.4.2.2.5.1" class="ltx_text ltx_font_bold">Top-5</span></th>
+<th id="S4.T5.4.2.2.6" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T5.4.2.2.6.1" class="ltx_text ltx_font_bold">Top-1</span></th>
+<th id="S4.T5.4.2.2.7" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T5.4.2.2.7.1" class="ltx_text ltx_font_bold">Top-3</span></th>
+<th id="S4.T5.4.2.2.8" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_t"><span id="S4.T5.4.2.2.8.1" class="ltx_text ltx_font_bold">Top-5</span></th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S4.T5.4.3.1" class="ltx_tr">
+<th id="S4.T5.4.3.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">Sonnet-4.5</th>
+<th id="S4.T5.4.3.1.2" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">Standard</th>
+<td id="S4.T5.4.3.1.3" class="ltx_td ltx_align_center ltx_border_t">20.0%</td>
+<td id="S4.T5.4.3.1.4" class="ltx_td ltx_align_center ltx_border_t">30.0%</td>
+<td id="S4.T5.4.3.1.5" class="ltx_td ltx_align_center ltx_border_t">31.1%</td>
+<td id="S4.T5.4.3.1.6" class="ltx_td ltx_align_center ltx_border_t">35.6%</td>
+<td id="S4.T5.4.3.1.7" class="ltx_td ltx_align_center ltx_border_t">51.1%</td>
+<td id="S4.T5.4.3.1.8" class="ltx_td ltx_align_center ltx_border_t">51.1%</td>
+</tr>
+<tr id="S4.T5.4.4.2" class="ltx_tr">
+<th id="S4.T5.4.4.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Sonnet-4.5</th>
+<th id="S4.T5.4.4.2.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">Semi-formal</th>
+<td id="S4.T5.4.4.2.3" class="ltx_td ltx_align_center">16.7%</td>
+<td id="S4.T5.4.4.2.4" class="ltx_td ltx_align_center">25.6%</td>
+<td id="S4.T5.4.4.2.5" class="ltx_td ltx_align_center">30.0%</td>
+<td id="S4.T5.4.4.2.6" class="ltx_td ltx_align_center">30.0%</td>
+<td id="S4.T5.4.4.2.7" class="ltx_td ltx_align_center">43.3%</td>
+<td id="S4.T5.4.4.2.8" class="ltx_td ltx_align_center">50.0%</td>
+</tr>
+<tr id="S4.T5.4.5.3" class="ltx_tr">
+<th id="S4.T5.4.5.3.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Opus-4.5</th>
+<th id="S4.T5.4.5.3.2" class="ltx_td ltx_align_left ltx_th ltx_th_row">Standard</th>
+<td id="S4.T5.4.5.3.3" class="ltx_td ltx_align_center">30.0%</td>
+<td id="S4.T5.4.5.3.4" class="ltx_td ltx_align_center">42.2%</td>
+<td id="S4.T5.4.5.3.5" class="ltx_td ltx_align_center">43.3%</td>
+<td id="S4.T5.4.5.3.6" class="ltx_td ltx_align_center">53.3%</td>
+<td id="S4.T5.4.5.3.7" class="ltx_td ltx_align_center">64.4%</td>
+<td id="S4.T5.4.5.3.8" class="ltx_td ltx_align_center">65.6%</td>
+</tr>
+<tr id="S4.T5.4.6.4" class="ltx_tr">
+<th id="S4.T5.4.6.4.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">Opus-4.5</th>
+<th id="S4.T5.4.6.4.2" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">Semi-formal</th>
+<td id="S4.T5.4.6.4.3" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T5.4.6.4.3.1" class="ltx_text ltx_font_bold">34.4%</span></td>
+<td id="S4.T5.4.6.4.4" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T5.4.6.4.4.1" class="ltx_text ltx_font_bold">47.8%</span></td>
+<td id="S4.T5.4.6.4.5" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T5.4.6.4.5.1" class="ltx_text ltx_font_bold">47.8%</span></td>
+<td id="S4.T5.4.6.4.6" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T5.4.6.4.6.1" class="ltx_text ltx_font_bold">58.9%</span></td>
+<td id="S4.T5.4.6.4.7" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T5.4.6.4.7.1" class="ltx_text ltx_font_bold">68.9%</span></td>
+<td id="S4.T5.4.6.4.8" class="ltx_td ltx_align_center ltx_border_bb"><span id="S4.T5.4.6.4.8.1" class="ltx_text ltx_font_bold">68.9%</span></td>
+</tr>
+</tbody>
+</table>
+</figure>
+</section>
+<section id="S4.SS2.SSS0.Px5" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Error Analysis.</h5>
+
+<div id="S4.SS2.SSS0.Px5.p1" class="ltx_para">
+<p id="S4.SS2.SSS0.Px5.p1.1" class="ltx_p">We analyzed failures for Opus-4.5 with semi-formal reasoning and identified four primary failure modes:</p>
+<ol id="S4.I3" class="ltx_enumerate">
+<li id="S4.I3.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">1.</span> 
+<div id="S4.I3.i1.p1" class="ltx_para">
+<p id="S4.I3.i1.p1.1" class="ltx_p"><span id="S4.I3.i1.p1.1.1" class="ltx_text ltx_font_bold">Indirection bugs:</span> The bug is in a class not directly invoked by the test. For example, in Csv_12, the test calls <span id="S4.I3.i1.p1.1.2" class="ltx_text ltx_font_typewriter">CSVParser.parse()</span> but the bug is in <span id="S4.I3.i1.p1.1.3" class="ltx_text ltx_font_typewriter">CSVFormat.withHeader()</span>—a configuration class the model consistently overlooks.</p>
+</div>
+</li>
+<li id="S4.I3.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">2.</span> 
+<div id="S4.I3.i2.p1" class="ltx_para">
+<p id="S4.I3.i2.p1.1" class="ltx_p"><span id="S4.I3.i2.p1.1.1" class="ltx_text ltx_font_bold">Multi-file bugs:</span> Bugs spanning multiple files require identifying all locations. Large ground-truth sets (5+ lines across 2+ files) are systematically harder.</p>
+</div>
+</li>
+<li id="S4.I3.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">3.</span> 
+<div id="S4.I3.i3.p1" class="ltx_para">
+<p id="S4.I3.i3.p1.1" class="ltx_p"><span id="S4.I3.i3.p1.1.1" class="ltx_text ltx_font_bold">Domain-specific bugs:</span> Algorithmic bugs requiring specialized knowledge, such as numerical analysis issues in Math_81 (EigenDecomposition), exceed the model’s domain expertise.</p>
+</div>
+</li>
+<li id="S4.I3.i4" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">4.</span> 
+<div id="S4.I3.i4.p1" class="ltx_para">
+<p id="S4.I3.i4.p1.1" class="ltx_p"><span id="S4.I3.i4.p1.1.1" class="ltx_text ltx_font_bold">More than 5 fix regions:</span>
+In a few cases (5/90), the number of distinct regions of changes in the ground truth was more than 5, which will result in a miss by our metric.</p>
+</div>
+</li>
+</ol>
+</div>
+<div id="S4.SS2.SSS0.Px5.p2" class="ltx_para">
+<p id="S4.SS2.SSS0.Px5.p2.1" class="ltx_p">Appendix <a href="https://arxiv.org/html/2603.01896v2#A3" title="Appendix C Case Study for Mockito_8 ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">C</span></a> gives a walkthrough of how semi-formal reasoning helps in the case of mockito_8.</p>
+</div>
+</section>
+</section>
+<section id="S4.SS3" class="ltx_subsection">
+<h3 class="ltx_title ltx_title_subsection">
+<span class="ltx_tag ltx_tag_subsection">4.3 </span>Code Question Answering</h3>
+
+<div id="S4.SS3.p1" class="ltx_para">
+<p id="S4.SS3.p1.1" class="ltx_p">We evaluate code question answering on RubberDuckBench (see Section <a href="https://arxiv.org/html/2603.01896v2#S2" title="2 Background ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">2</span></a>).</p>
+</div>
+<section id="S4.SS3.SSS0.Px1" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Available Information.</h5>
+
+<div id="S4.SS3.SSS0.Px1.p1" class="ltx_para">
+<p id="S4.SS3.SSS0.Px1.p1.1" class="ltx_p">In single-shot mode, the agent receives only the function containing the code in question (approximately 20–50 lines of context). In agentic mode, the agent can explore the full repository using bash tools to read files, search for definitions, and trace dependencies.</p>
+</div>
+</section>
+<section id="S4.SS3.SSS0.Px2" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Evaluation.</h5>
+
+<div id="S4.SS3.SSS0.Px2.p1" class="ltx_para">
+<p id="S4.SS3.SSS0.Px2.p1.1" class="ltx_p">Since code QA requires nuanced assessment, we use multi-model LLM grading with rubric-based evaluation. Each answer is graded independently by Gemini-3-Pro and GPT-5.2 against the expert rubric, with weighted averaging to handle disagreements. The graders achieved 85% agreement across all evaluations, indicating consistent assessment.</p>
+</div>
+</section>
+<section id="S4.SS3.SSS0.Px3" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Reasoning Modes.</h5>
+
+<div id="S4.SS3.SSS0.Px3.p1" class="ltx_para">
+<p id="S4.SS3.SSS0.Px3.p1.1" class="ltx_p">We evaluate two reasoning approaches:</p>
+<ul id="S4.I4" class="ltx_itemize">
+<li id="S4.I4.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S4.I4.i1.p1" class="ltx_para">
+<p id="S4.I4.i1.p1.1" class="ltx_p"><span id="S4.I4.i1.p1.1.1" class="ltx_text ltx_font_bold">Standard</span>: Simple prompt asking for a code-grounded answer.</p>
+</div>
+</li>
+<li id="S4.I4.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S4.I4.i2.p1" class="ltx_para">
+<p id="S4.I4.i2.p1.1" class="ltx_p"><span id="S4.I4.i2.p1.1.1" class="ltx_text ltx_font_bold">Semi-formal</span>: Structured output template requiring function trace tables, data flow analysis, and explicit evidence citations.</p>
+</div>
+</li>
+</ul>
+</div>
+<figure id="S4.T6" class="ltx_table">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table"><span id="S4.T6.2.1.1" class="ltx_text" style="font-size:90%;">Table 6</span>: </span><span id="S4.T6.3.2" class="ltx_text" style="font-size:90%;">Code question answering accuracy on RubberDuckBench</span></figcaption>
+<table id="S4.T6.4" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="S4.T6.4.1.1" class="ltx_tr">
+<th id="S4.T6.4.1.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_border_tt"><span id="S4.T6.4.1.1.1.1" class="ltx_text ltx_font_bold">Model</span></th>
+<th id="S4.T6.4.1.1.2" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_border_tt"><span id="S4.T6.4.1.1.2.1" class="ltx_text ltx_font_bold">Mode</span></th>
+<th id="S4.T6.4.1.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="S4.T6.4.1.1.3.1" class="ltx_text ltx_font_bold">Accuracy</span></th>
+<th id="S4.T6.4.1.1.4" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="S4.T6.4.1.1.4.1" class="ltx_text ltx_font_bold">Avg Steps</span></th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="S4.T6.4.2.1" class="ltx_tr">
+<td id="S4.T6.4.2.1.1" class="ltx_td ltx_align_left ltx_border_t">Opus-4.5</td>
+<td id="S4.T6.4.2.1.2" class="ltx_td ltx_align_left ltx_border_t">Single-shot</td>
+<td id="S4.T6.4.2.1.3" class="ltx_td ltx_align_center ltx_border_t">76.2%</td>
+<td id="S4.T6.4.2.1.4" class="ltx_td ltx_align_center ltx_border_t">1</td>
+</tr>
+<tr id="S4.T6.4.3.2" class="ltx_tr">
+<td id="S4.T6.4.3.2.1" class="ltx_td ltx_align_left">Opus-4.5</td>
+<td id="S4.T6.4.3.2.2" class="ltx_td ltx_align_left">Agentic (Standard)</td>
+<td id="S4.T6.4.3.2.3" class="ltx_td ltx_align_center">78.3%</td>
+<td id="S4.T6.4.3.2.4" class="ltx_td ltx_align_center">10.8</td>
+</tr>
+<tr id="S4.T6.4.4.3" class="ltx_tr">
+<td id="S4.T6.4.4.3.1" class="ltx_td ltx_align_left">Opus-4.5</td>
+<td id="S4.T6.4.4.3.2" class="ltx_td ltx_align_left">Agentic (Semi-formal)</td>
+<td id="S4.T6.4.4.3.3" class="ltx_td ltx_align_center"><span id="S4.T6.4.4.3.3.1" class="ltx_text ltx_font_bold">87.0%</span></td>
+<td id="S4.T6.4.4.3.4" class="ltx_td ltx_align_center">19.7</td>
+</tr>
+<tr id="S4.T6.4.5.4" class="ltx_tr">
+<td id="S4.T6.4.5.4.1" class="ltx_td ltx_align_left ltx_border_t">Sonnet-4.5</td>
+<td id="S4.T6.4.5.4.2" class="ltx_td ltx_align_left ltx_border_t">Single-shot</td>
+<td id="S4.T6.4.5.4.3" class="ltx_td ltx_align_center ltx_border_t">78.7%</td>
+<td id="S4.T6.4.5.4.4" class="ltx_td ltx_align_center ltx_border_t">1</td>
+</tr>
+<tr id="S4.T6.4.6.5" class="ltx_tr">
+<td id="S4.T6.4.6.5.1" class="ltx_td ltx_align_left">Sonnet-4.5</td>
+<td id="S4.T6.4.6.5.2" class="ltx_td ltx_align_left">Agentic (Standard)</td>
+<td id="S4.T6.4.6.5.3" class="ltx_td ltx_align_center">84.2%</td>
+<td id="S4.T6.4.6.5.4" class="ltx_td ltx_align_center">17.6</td>
+</tr>
+<tr id="S4.T6.4.7.6" class="ltx_tr">
+<td id="S4.T6.4.7.6.1" class="ltx_td ltx_align_left ltx_border_bb">Sonnet-4.5</td>
+<td id="S4.T6.4.7.6.2" class="ltx_td ltx_align_left ltx_border_bb">Agentic (Semi-formal)</td>
+<td id="S4.T6.4.7.6.3" class="ltx_td ltx_align_center ltx_border_bb">84.8%</td>
+<td id="S4.T6.4.7.6.4" class="ltx_td ltx_align_center ltx_border_bb">25.3</td>
+</tr>
+</tbody>
+</table>
+</figure>
+<div id="S4.SS3.SSS0.Px3.p2" class="ltx_para">
+<p id="S4.SS3.SSS0.Px3.p2.1" class="ltx_p">The results reveal that <em id="S4.SS3.SSS0.Px3.p2.1.1" class="ltx_emph ltx_font_italic">structured semi-formal reasoning provides substantial gains</em>: Opus improves from 78.3% (standard agentic) to 87.0% with the semi-formal template (+8.7pp). For Sonnet, standard agentic reasoning already achieves 85.3%, and the semi-formal template does not yield further gains (84.8%), suggesting that the benefit of structured reasoning varies by model capability and may plateau when the base model is already strong. For Opus, the structured template forces the agent to document evidence systematically before answering, correcting its tendency to guess based on function names.</p>
+</div>
+<div id="S4.SS3.SSS0.Px3.p3" class="ltx_para">
+<p id="S4.SS3.SSS0.Px3.p3.1" class="ltx_p">The structured template requires the agent to fill in a function trace table (listing every function examined with file:line locations and verified behavior), data flow analysis (tracing how key variables flow through the code), semantic properties with explicit evidence, and an alternative hypothesis check. This structured format reduces the tendency to guess based on function names, a common failure mode we observed in unstructured reasoning.</p>
+</div>
+</section>
+<section id="S4.SS3.SSS0.Px4" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Error Analysis.</h5>
+
+<div id="S4.SS3.SSS0.Px4.p1" class="ltx_para">
+<p id="S4.SS3.SSS0.Px4.p1.1" class="ltx_p">The structured template forces the agent to document evidence systematically before reaching conclusions. For example, on a question about whether two API calls differ (cpp_3), standard reasoning stated “it provides proper error handling if an invalid key is somehow passed”—implying edge cases could occur. The semi-formal template required tracing both the map initialization and variable assignments, revealing they use the same enum values, thus proving invalid keys are impossible. This explicit verification step eliminated a deduction that standard reasoning incurred. Conversely, semi-formal reasoning can fail when agents construct elaborate but incomplete reasoning chains: on py_5, the agent thoroughly traced five functions but missed that downstream code already handled the edge case it identified, leading to a confident but wrong answer. See Appendix <a href="https://arxiv.org/html/2603.01896v2#A4" title="Appendix D Code Question Answering Details ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">D</span></a> for detailed examples with full reasoning traces.</p>
+</div>
+</section>
+</section>
+</section>
+<section id="S5" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">5 </span>Related Work</h2>
+
+<section id="S5.SS0.SSS0.Px1" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">LLM-Based Software Engineering Agents.</h5>
+
+<div id="S5.SS0.SSS0.Px1.p1" class="ltx_para">
+<p id="S5.SS0.SSS0.Px1.p1.1" class="ltx_p">The emergence of LLM-based coding agents has transformed automated software engineering.
+SWE-agent <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">yang2024sweagent</span></cite> introduced an agent-computer interface that enables LLMs to interact with codebases through specialized commands, achieving strong results on SWE-bench <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">jimenez2024swebench</span></cite>.
+OpenHands <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">wang2024openhands</span></cite> provides an open platform for building software development agents.
+Agentless <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">xia2024agentless</span></cite> takes a different approach, decomposing bug fixing into localization and repair phases without persistent agent state.
+These systems rely on test execution for validation, which our work aims to reduce through semantic code reasoning.</p>
+</div>
+</section>
+<section id="S5.SS0.SSS0.Px2" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Execution-Free Verification for Code.</h5>
+
+<div id="S5.SS0.SSS0.Px2.p1" class="ltx_para">
+<p id="S5.SS0.SSS0.Px2.p1.1" class="ltx_p">Most closely related to our work are recent approaches to verifying code without execution.
+SWE-RM <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">shum2025swerm</span></cite> trains a reward model to provide execution-free feedback for software engineering agents, showing that learned verifiers can approximate test outcomes.
+Agentic Rubrics <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">raghavendra2025rubrics</span></cite> propose using LLM-generated rubrics as contextual verifiers, decomposing verification into interpretable criteria.
+CodeJudge <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">tong2024codejudge</span></cite> explores LLM-as-a-judge for evaluating generated code quality.
+Our approach differs by emphasizing structured semi-formal reasoning to improve verification accuracy, achieving 93% accuracy on real-world patches.</p>
+</div>
+</section>
+<section id="S5.SS0.SSS0.Px3" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">LLM-Based Fault Localization and Code Understanding.</h5>
+
+<div id="S5.SS0.SSS0.Px3.p1" class="ltx_para">
+<p id="S5.SS0.SSS0.Px3.p1.1" class="ltx_p">Beyond patch verification, agentic code reasoning encompasses fault localization and code understanding.
+AgentFL <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">qin2024agentfl</span></cite> uses LLM agents for project-level fault localization, while FlexFL <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">xu2025flexflflexibleeffectivefault</span></cite> demonstrates effective fault localization with open-source LLMs.
+For repository-level code understanding, CodePlan <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">bairi2024codeplan</span></cite> combines LLMs with planning for multi-step repository edits.
+RubberDuckBench <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">rubberduckbench</span></cite> provides a benchmark for evaluating AI coding assistants on code understanding tasks, measuring how well LLMs can answer questions about codebases.
+These works highlight the broader applicability of agentic reasoning for code analysis tasks beyond verification.</p>
+</div>
+</section>
+<section id="S5.SS0.SSS0.Px4" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Program Equivalence and Formal Verification.</h5>
+
+<div id="S5.SS0.SSS0.Px4.p1" class="ltx_para">
+<p id="S5.SS0.SSS0.Px4.p1.1" class="ltx_p">Program equivalence is a fundamental problem in computer science, known to be undecidable in the general case <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">rice1953classes</span></cite>.
+Traditional approaches rely on formal methods such as translation validation <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">pnueli1998translation</span></cite> and equivalence checking <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">necula2000translation</span></cite>.
+Recent work has explored using LLMs for formal verification <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">first2023baldur</span></cite>, though translating arbitrary code to formal specifications remains challenging.
+EquiBench <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">wei-etal-2025-equibench</span></cite> benchmarks LLM reasoning about program equivalence across several transformation types, but focuses on small self-contained code pairs rather than repository-level patches with test suites.
+Sultan et al. <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">sultan2026llmsversushaltingproblem</span></cite> show that LLMs can predict program termination with surprising accuracy, ranking competitively with specialized tools on SV-Comp benchmarks, though they often fail to provide valid proofs.</p>
+</div>
+<div id="S5.SS0.SSS0.Px4.p2" class="ltx_para">
+<p id="S5.SS0.SSS0.Px4.p2.1" class="ltx_p">A complementary line of work focuses on post-hoc verification of LLM reasoning <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">sistla2025verifiedcodereasoningllms</span></cite>, translating LLM responses into Datalog facts and using static analysis to verify reasoning steps, successfully validating judgments on uninitialized variable errors and catching incorrect equivalence judgments.
+Our approach differs in focusing on the “input side”: improving what the agent is asked to do through structured semi-formal reasoning, rather than post-facto output verification. The semi-formal certificates we require are designed to be easier to manually validate than examining full agent trajectories, though they lack the automated checkability of fully formal approaches. These approaches are complementary: structured reasoning improves agent thoroughness during analysis, while formal verification can provide additional guarantees on outputs.</p>
+</div>
+</section>
+<section id="S5.SS0.SSS0.Px5" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">LLM Reasoning and Chain-of-Thought.</h5>
+
+<div id="S5.SS0.SSS0.Px5.p1" class="ltx_para">
+<p id="S5.SS0.SSS0.Px5.p1.1" class="ltx_p">Our semi-formal reasoning approach builds on work showing that structured reasoning improves LLM performance.
+Chain-of-thought prompting <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">wei2022chain</span></cite> demonstrated that intermediate reasoning steps improve mathematical problem solving. ReAct <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">yao2023react</span></cite> combines reasoning with action for agent tasks. CodeAct <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">wang2024codeact</span></cite> shows that executable code actions improve agent performance.
+We extend these ideas to code reasoning, showing that task-specific structured templates (requiring premises, execution traces, and formal conclusions) improve semantic verification accuracy by up to 11 percentage points.</p>
+</div>
+</section>
+<section id="S5.SS0.SSS0.Px6" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Training and Scaling SWE Agents.</h5>
+
+<div id="S5.SS0.SSS0.Px6.p1" class="ltx_para">
+<p id="S5.SS0.SSS0.Px6.p1.1" class="ltx_p">Recent work has focused on training pipelines for software engineering agents.
+SWE-Gym <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">pan2024swegym</span></cite> provides a training environment with 2,438 real-world Python tasks, enabling both agent and verifier training through reinforcement learning.
+R2E-Gym <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">jain2025r2egym</span></cite> scales this further with procedural environment generation and hybrid verifiers combining execution-based and LLM-based feedback, training agents on 89K instances.
+SWE-RL <cite class="ltx_cite ltx_citemacro_cite"><span class="ltx_ref ltx_missing_citation ltx_ref_self">wei2025swerl</span></cite> advances reasoning capabilities through reinforcement learning on open software evolution, using difflib-based similarity as a reward signal.
+Our work complements these efforts by providing execution-free verification that could reduce the computational cost of RL training.</p>
+</div>
+</section>
+</section>
+<section id="S6" class="ltx_section">
+<h2 class="ltx_title ltx_title_section">
+<span class="ltx_tag ltx_tag_section">6 </span>Conclusion and Future Work</h2>
+
+<div id="S6.p1" class="ltx_para">
+<p id="S6.p1.1" class="ltx_p">We studied agentic code reasoning across three tasks: patch equivalence verification, code question answering, and fault localization. Our key findings include:</p>
+<ul id="S6.I1" class="ltx_itemize">
+<li id="S6.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S6.I1.i1.p1" class="ltx_para">
+<p id="S6.I1.i1.p1.1" class="ltx_p">Semi-formal structured reasoning consistently improves agentic code reasoning across all three tasks, with gains of 5–12 percentage points over standard agentic baselines.</p>
+</div>
+</li>
+<li id="S6.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S6.I1.i2.p1" class="ltx_para">
+<p id="S6.I1.i2.p1.1" class="ltx_p">For patch equivalence, we achieve 93% verification accuracy on real-world patches, a 7 percentage point improvement over single-shot baselines, enabling execution-free feedback for RL training pipelines.</p>
+</div>
+</li>
+<li id="S6.I1.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S6.I1.i3.p1" class="ltx_para">
+<p id="S6.I1.i3.p1.1" class="ltx_p">For code question answering, semi-formal reasoning achieves 87% accuracy on RubberDuckBench, a 9 percentage point gain over standard agentic reasoning.</p>
+</div>
+</li>
+<li id="S6.I1.i4" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S6.I1.i4.p1" class="ltx_para">
+<p id="S6.I1.i4.p1.1" class="ltx_p">For fault localization on Defects4J, semi-formal reasoning consistently improves accuracy over standard reasoning, with gains of up to 12 percentage points on fit-in-context bugs and 5 percentage points on a larger 90-bug evaluation.</p>
+</div>
+</li>
+</ul>
+<p id="S6.p1.2" class="ltx_p">These results demonstrate that LLM agents can perform meaningful semantic code analysis without execution. Structured reasoning templates offer a complementary approach to classical static analysis: rather than encoding analysis logic in specialized algorithms, we can prompt agents with task-specific formats that generalize across languages and frameworks, though without the formal guarantees of traditional tools.</p>
+</div>
+<div id="S6.p2" class="ltx_para">
+<p id="S6.p2.1" class="ltx_p">Several directions for future work emerge:</p>
+<ul id="S6.I2" class="ltx_itemize">
+<li id="S6.I2.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S6.I2.i1.p1" class="ltx_para">
+<p id="S6.I2.i1.p1.1" class="ltx_p"><span id="S6.I2.i1.p1.1.1" class="ltx_text ltx_font_bold">Post-training for code reasoning:</span> Fine-tuning models to internalize the semi-formal template structure could further improve accuracy while potentially eliminating the prompt overhead.</p>
+</div>
+</li>
+<li id="S6.I2.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S6.I2.i2.p1" class="ltx_para">
+<p id="S6.I2.i2.p1.1" class="ltx_p"><span id="S6.I2.i2.p1.1.1" class="ltx_text ltx_font_bold">Extending to other static analysis tasks:</span> The semi-formal reasoning approach could be applied to other code analysis tasks such as security vulnerability detection, code smell identification, and API misuse detection.</p>
+</div>
+</li>
+<li id="S6.I2.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">•</span> 
+<div id="S6.I2.i3.p1" class="ltx_para">
+<p id="S6.I2.i3.p1.1" class="ltx_p"><span id="S6.I2.i3.p1.1.1" class="ltx_text ltx_font_bold">Hybrid verification:</span> Combining LLM-based reasoning with lightweight formal methods or symbolic execution could provide stronger guarantees while maintaining flexibility.</p>
+</div>
+</li>
+</ul>
+</div>
+</section>
+<section id="bib" class="ltx_bibliography">
+<h2 class="ltx_title ltx_title_bibliography">References</h2>
+
+<ul id="bib.L1" class="ltx_biblist">
+</ul>
+</section>
+<section id="A1" class="ltx_appendix">
+<h2 class="ltx_title ltx_title_appendix">
+<span class="ltx_tag ltx_tag_appendix">Appendix A </span>Patch Equivalence Semi-formal Reasoning Template</h2>
+
+<section id="A1.SS0.SSS0.Px1" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Semi-formal Prompt Template.</h5>
+
+<div id="A1.SS0.SSS0.Px1.p1" class="ltx_para">
+<p id="A1.SS0.SSS0.Px1.p1.1" class="ltx_p">The structured template used for semi-formal reasoning in patch equivalence verification requires the agent to construct a formal proof of equivalence or non-equivalence:</p>
+</div>
+<div id="A1.SS0.SSS0.Px1.p2" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A1.SS0.SSS0.Px1.p2.pic1" class="ltx_picture" height="509.55" overflow="visible" version="1.1" viewBox="0 0 600 509.55" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,509.55) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#606060;" fill="#606060" fill-opacity="1.0"><path style="stroke:none" d="M 0 5.91 L 0 503.65 C 0 506.91 2.64 509.55 5.91 509.55 L 594.09 509.55 C 597.36 509.55 600 506.91 600 503.65 L 600 5.91 C 600 2.64 597.36 0 594.09 0 L 5.91 0 C 2.64 0 0 2.64 0 5.91 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 1.97 5.91 L 1.97 485.44 L 598.03 485.44 L 598.03 5.91 C 598.03 3.73 596.27 1.97 594.09 1.97 L 5.91 1.97 C 3.73 1.97 1.97 3.73 1.97 5.91 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 21.65 494.04)"><foreignobject style="--ltx-fg-color:#FFFFFF;--ltx-fo-width:40.23em;--ltx-fo-height:0.69em;--ltx-fo-depth:0.19em;" width="556.69" height="12.3" transform="matrix(1 0 0 -1 0 9.61)" overflow="visible" color="#FFFFFF"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="A1.SS0.SSS0.Px1.p2.pic1.1.1.1.1.1" class="ltx_inline-block ltx_minipage ltx_align_bottom" style="width:34.98em;">
+<span id="A1.SS0.SSS0.Px1.p2.pic1.1.1.1.1.1.1" class="ltx_p"><span id="A1.SS0.SSS0.Px1.p2.pic1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold">Semi-formal Proof of Patch Equivalence</span></span>
+</span></span></span></foreignobject></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 21.65 16.85)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.23em;--ltx-fo-height:33.01em;--ltx-fo-depth:0.22em;" class="ltx_minipage" width="38.32em" height="459.85" transform="matrix(1 0 0 -1 0 456.77)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A1.SS0.SSS0.Px1.p2.pic1.2.2.2.1.1" class="ltx_verbatim ltx_font_typewriter">DEFINITIONS:
+D1: Two patches are EQUIVALENT MODULO TESTS iff executing the
+    existing repository test suite produces identical pass/fail
+    outcomes for both patches.
+D2: The relevant tests are ONLY those in FAIL_TO_PASS and
+    PASS_TO_PASS (the existing test suite in the repository).
+
+PREMISES (state what each patch does):
+P1: Patch 1 modifies [file(s)] by [specific change description]
+P2: Patch 2 modifies [file(s)] by [specific change description]
+P3: The FAIL_TO_PASS tests check [specific behavior being tested]
+P4: The PASS_TO_PASS tests check [specific behavior, if relevant]
+
+ANALYSIS OF TEST BEHAVIOR:
+
+For FAIL_TO_PASS test(s):
+  Claim 1.1: With Patch 1 applied, test [name] will [PASS/FAIL]
+             because [trace through the code behavior]
+  Claim 1.2: With Patch 2 applied, test [name] will [PASS/FAIL]
+             because [trace through the code behavior]
+  Comparison: [SAME/DIFFERENT] outcome
+
+For PASS_TO_PASS test(s) (if patches could affect them differently):
+  Claim 2.1: With Patch 1 applied, test behavior is [description]
+  Claim 2.2: With Patch 2 applied, test behavior is [description]
+  Comparison: [SAME/DIFFERENT] outcome
+
+EDGE CASES RELEVANT TO EXISTING TESTS:
+(Only analyze edge cases that the ACTUAL tests exercise)
+
+E1: [Edge case that existing tests exercise]
+  - Patch 1 behavior: [specific output/behavior]
+  - Patch 2 behavior: [specific output/behavior]
+  - Test outcome same: [YES/NO]
+
+COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+Test [name] will [PASS/FAIL] with Patch 1 because [reason]
+Test [name] will [FAIL/PASS] with Patch 2 because [reason]
+Therefore patches produce DIFFERENT test outcomes.
+
+OR
+
+NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+All existing tests produce identical outcomes because [reason]
+
+FORMAL CONCLUSION:
+By Definition D1:
+- Test outcomes with Patch 1: [PASS/FAIL for each test]
+- Test outcomes with Patch 2: [PASS/FAIL for each test]
+- Since test outcomes are [IDENTICAL/DIFFERENT], patches are
+  [EQUIVALENT/NOT EQUIVALENT] modulo the existing tests.
+
+ANSWER: [YES/NO]
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A1.SS0.SSS0.Px1.p3" class="ltx_para">
+<p id="A1.SS0.SSS0.Px1.p3.1" class="ltx_p">This template requires the agent to explicitly state premises about each patch, trace test execution for both patches, and provide either a counterexample (for non-equivalence) or a proof that no counterexample exists (for equivalence). The structured format ensures the agent cannot make unsupported claims about patch behavior.</p>
+</div>
+</section>
+<section id="A1.SS0.SSS0.Px2" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Example: Semi-formal Analysis Discovers Name Shadowing (django-13670).</h5>
+
+<div id="A1.SS0.SSS0.Px2.p1" class="ltx_para">
+<p id="A1.SS0.SSS0.Px2.p1.1" class="ltx_p">This example demonstrates how semi-formal reasoning detects subtle bugs that surface-level reasoning misses.</p>
+</div>
+<div id="A1.SS0.SSS0.Px2.p2" class="ltx_para">
+<p id="A1.SS0.SSS0.Px2.p2.1" class="ltx_p"><em id="A1.SS0.SSS0.Px2.p2.1.1" class="ltx_emph ltx_font_italic">Task:</em> Determine if two patches that fix 2-digit year formatting for years <math id="A1.SS0.SSS0.Px2.p2.1.m1" class="ltx_Math" alttext="&lt;" display="inline" intent=":literal"><semantics><mo>&lt;</mo><annotation encoding="application/x-tex">&lt;</annotation></semantics></math> 1000 produce identical test outcomes.</p>
+</div>
+<div id="A1.SS0.SSS0.Px2.p3" class="ltx_para">
+<p id="A1.SS0.SSS0.Px2.p3.1" class="ltx_p"><em id="A1.SS0.SSS0.Px2.p3.1.1" class="ltx_emph ltx_font_italic">Ground Truth:</em> NOT EQUIVALENT (Patch 1 calls wrong <span id="A1.SS0.SSS0.Px2.p3.1.2" class="ltx_text ltx_font_typewriter">format</span> function causing AttributeError)</p>
+</div>
+<div id="A1.SS0.SSS0.Px2.p4" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A1.SS0.SSS0.Px2.p4.pic1" class="ltx_picture" height="73.13" overflow="visible" version="1.1" viewBox="0 0 600 73.13" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,73.13) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.35 L 0 68.78 C 0 71.18 1.95 73.13 4.35 73.13 L 595.65 73.13 C 598.05 73.13 600 71.18 600 68.78 L 600 4.35 C 600 1.95 598.05 0 595.65 0 L 4.35 0 C 1.95 0 0 1.95 0 4.35 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 4.35 L 0.42 52.13 L 599.58 52.13 L 599.58 4.35 C 599.58 2.18 597.82 0.42 595.65 0.42 L 4.35 0.42 C 2.18 0.42 0.42 2.18 0.42 4.35 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 59.17)"><foreignobject style="--ltx-fg-color:#FFFFFF;--ltx-fo-width:40.46em;--ltx-fo-height:0.69em;--ltx-fo-depth:0.19em;" width="559.8" height="12.3" transform="matrix(1 0 0 -1 0 9.61)" overflow="visible" color="#FFFFFF"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="A1.SS0.SSS0.Px2.p4.pic1.1.1.1.1.1" class="ltx_inline-block ltx_minipage ltx_align_bottom" style="width:40.46em;">
+<span id="A1.SS0.SSS0.Px2.p4.pic1.1.1.1.1.1.1" class="ltx_p">Patch Comparison</span>
+</span></span></span></foreignobject></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 14.99)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.46em;--ltx-fo-height:1.83em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.81em" height="28.09" transform="matrix(1 0 0 -1 0 25.32)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A1.SS0.SSS0.Px2.p4.pic1.2.2.2.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;"># Patch 1 (FAILS):
+def y(self):
+    return format(self.data.year, "04d")[-2:]
+
+# Patch 2 (WORKS):
+def y(self):
+    return ’%02d’ % (self.data.year % 100)
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A1.SS0.SSS0.Px2.p5" class="ltx_para">
+<p id="A1.SS0.SSS0.Px2.p5.1" class="ltx_p"><span id="A1.SS0.SSS0.Px2.p5.1.1" class="ltx_text ltx_font_bold">Standard reasoning</span> (INCORRECT) concluded:</p>
+<blockquote id="A1.SS0.SSS0.Px2.p5.2" class="ltx_quote">
+<p id="A1.SS0.SSS0.Px2.p5.2.1" class="ltx_p"><em id="A1.SS0.SSS0.Px2.p5.2.1.1" class="ltx_emph ltx_font_italic">“Both patches fix the same bug. Patch 1 uses <span id="A1.SS0.SSS0.Px2.p5.2.1.1.1" class="ltx_text ltx_font_typewriter">format(self.data.year, ’04d’)[-2:]</span> which pads to 4 digits and takes the last 2, while Patch 2 uses modulo 100 and pads to 2 digits. For year 476: Patch 1 gives <span id="A1.SS0.SSS0.Px2.p5.2.1.1.2" class="ltx_text ltx_font_typewriter">’0476’[-2:] = ’76’</span> and Patch 2 gives <span id="A1.SS0.SSS0.Px2.p5.2.1.1.3" class="ltx_text ltx_font_typewriter">’76’</span>. Both produce identical results.”</em></p>
+</blockquote>
+</div>
+<div id="A1.SS0.SSS0.Px2.p6" class="ltx_para">
+<p id="A1.SS0.SSS0.Px2.p6.1" class="ltx_p">The agent assumed <span id="A1.SS0.SSS0.Px2.p6.1.1" class="ltx_text ltx_font_typewriter">format()</span> refers to Python’s builtin, which would produce the expected behavior.</p>
+</div>
+<div id="A1.SS0.SSS0.Px2.p7" class="ltx_para">
+<p id="A1.SS0.SSS0.Px2.p7.1" class="ltx_p"><span id="A1.SS0.SSS0.Px2.p7.1.1" class="ltx_text ltx_font_bold">Semi-formal reasoning</span> (CORRECT) mandated checking function definitions:</p>
+</div>
+<div id="A1.SS0.SSS0.Px2.p8" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A1.SS0.SSS0.Px2.p8.pic1" class="ltx_picture" height="251.72" overflow="visible" version="1.1" viewBox="0 0 600 251.72" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,251.72) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.35 L 0 247.37 C 0 249.78 1.95 251.72 4.35 251.72 L 595.65 251.72 C 598.05 251.72 600 249.78 600 247.37 L 600 4.35 C 600 1.95 598.05 0 595.65 0 L 4.35 0 C 1.95 0 0 1.95 0 4.35 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 4.35 L 0.42 247.37 C 0.42 249.55 2.18 251.31 4.35 251.31 L 595.65 251.31 C 597.82 251.31 599.58 249.55 599.58 247.37 L 599.58 4.35 C 599.58 2.18 597.82 0.42 595.65 0.42 L 4.35 0.42 C 2.18 0.42 0.42 2.18 0.42 4.35 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 14.99)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.46em;--ltx-fo-height:16.22em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.81em" height="227.27" transform="matrix(1 0 0 -1 0 224.51)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A1.SS0.SSS0.Px2.p8.pic1.1.1.1.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">STEP 1: METHOD DEFINITIONS (read from source code)
+
+For Patch 1, method y() calls format(). Checking module imports...
+
+CRITICAL DISCOVERY: Module-level format function (line 340-343):
+    def format(value, format_string):
+        "Convenience function"
+        df = DateFormat(value)
+        return df.format(format_string)
+
+STEP 2: FRAMEWORK SEMANTICS ANALYSIS
+
+- Property 1: Module defines function named ’format’ at line 340
+- Property 2: Python name resolution: local -&gt; module -&gt; builtins
+- Property 3: When y() calls format(), Python finds MODULE-LEVEL
+  format() BEFORE the builtin format()
+- Property 4: Module-level format(value, format_string) expects
+  ’value’ to be a datetime/date object
+- Property 5: format(476, ’04d’) creates DateFormat(476)
+- Property 6: DateFormat(476).format(’04d’) accesses self.data.day
+  but 476 (int) has no .day attribute
+
+COUNTEREXAMPLE:
+Test test_year_before_1000 will FAIL with Patch 1:
+- format(476, ’04d’) -&gt; DateFormat(476).format(’04d’)
+- Raises AttributeError: ’int’ object has no attribute ’day’
+
+Test will PASS with Patch 2:
+- ’%02d’ % (476 % 100) = ’76’ (no external function calls)
+
+ANSWER: NO (patches are NOT equivalent)
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A1.SS0.SSS0.Px2.p9" class="ltx_para">
+<p id="A1.SS0.SSS0.Px2.p9.1" class="ltx_p">The structured template required tracing the execution path through each patch. This led the agent to check the local <span id="A1.SS0.SSS0.Px2.p9.1.1" class="ltx_text ltx_font_typewriter">format</span> definition, read the complete function, and derive that passing an integer would cause AttributeError, uncovering that <span id="A1.SS0.SSS0.Px2.p9.1.2" class="ltx_text ltx_font_typewriter">format</span> is shadowed by a module-level function with completely different semantics than Python’s builtin.</p>
+</div>
+</section>
+</section>
+<section id="A2" class="ltx_appendix">
+<h2 class="ltx_title ltx_title_appendix">
+<span class="ltx_tag ltx_tag_appendix">Appendix B </span>Fault Localization Semi-formal Reasoning Template</h2>
+
+<div id="A2.p1" class="ltx_para">
+<p id="A2.p1.2" class="ltx_p">The semi-formal template for fault localization enforces a structured reasoning process that traces from test semantics through code paths to divergence claims. The key insight is the PREMISE <math id="A2.p1.1.m1" class="ltx_Math" alttext="\rightarrow" display="inline" intent=":literal"><semantics><mo stretchy="false">→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math> CLAIM <math id="A2.p1.2.m2" class="ltx_Math" alttext="\rightarrow" display="inline" intent=":literal"><semantics><mo stretchy="false">→</mo><annotation encoding="application/x-tex">\rightarrow</annotation></semantics></math> PREDICTION chain: every prediction must trace back through a divergence claim to a specific test premise.</p>
+</div>
+<section id="A2.SS0.SSS0.Px1" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Semi-formal Prompt Template.</h5>
+
+<div id="A2.SS0.SSS0.Px1.p1" class="ltx_para">
+<p id="A2.SS0.SSS0.Px1.p1.1" class="ltx_p">The agent receives the failing test name, test method code, list of available source files, and list of passing tests. The structured reasoning template requires four phases:</p>
+</div>
+<div id="A2.SS0.SSS0.Px1.p2" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A2.SS0.SSS0.Px1.p2.pic1" class="ltx_picture" height="326.9" overflow="visible" version="1.1" viewBox="0 0 600 326.9" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,326.9) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#606060;" fill="#606060" fill-opacity="1.0"><path style="stroke:none" d="M 0 5.91 L 0 321 C 0 324.26 2.64 326.9 5.91 326.9 L 594.09 326.9 C 597.36 326.9 600 324.26 600 321 L 600 5.91 C 600 2.64 597.36 0 594.09 0 L 5.91 0 C 2.64 0 0 2.64 0 5.91 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 1.97 5.91 L 1.97 302.79 L 598.03 302.79 L 598.03 5.91 C 598.03 3.73 596.27 1.97 594.09 1.97 L 5.91 1.97 C 3.73 1.97 1.97 3.73 1.97 5.91 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 21.65 311.39)"><foreignobject style="--ltx-fg-color:#FFFFFF;--ltx-fo-width:40.23em;--ltx-fo-height:0.69em;--ltx-fo-depth:0.19em;" width="556.69" height="12.3" transform="matrix(1 0 0 -1 0 9.61)" overflow="visible" color="#FFFFFF"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="A2.SS0.SSS0.Px1.p2.pic1.1.1.1.1.1" class="ltx_inline-block ltx_minipage ltx_align_bottom" style="width:34.98em;">
+<span id="A2.SS0.SSS0.Px1.p2.pic1.1.1.1.1.1.1" class="ltx_p"><span id="A2.SS0.SSS0.Px1.p2.pic1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold">Semi-formal Fault Localization Template</span></span>
+</span></span></span></foreignobject></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 21.65 16.85)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.23em;--ltx-fo-height:19.81em;--ltx-fo-depth:0.22em;" class="ltx_minipage" width="38.32em" height="277.2" transform="matrix(1 0 0 -1 0 274.13)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A2.SS0.SSS0.Px1.p2.pic1.2.2.2.1.1" class="ltx_verbatim ltx_font_typewriter">## Phase 1: Test Semantics Analysis
+- What does the failing test method do step by step?
+- What are the explicit assertions / expected exceptions?
+- What is the expected behavior vs. the observed failure mode?
+- State these as formal PREMISES:
+  PREMISE T1: The test calls X.method(args) and expects [behavior]
+  PREMISE T2: The test asserts [condition]
+  ...
+
+## Phase 2: Code Path Tracing
+- Trace the execution path from the test’s entry point into
+  production code
+- For each significant method call, document:
+  METHOD: ClassName.methodName(params)
+  LOCATION: file:line
+  BEHAVIOR: what this method does
+  RELEVANT: why it matters to the test
+- Build a call sequence showing the flow from test -&gt; production code
+
+## Phase 3: Divergence Analysis
+- For each code path traced, identify where the implementation
+  could diverge from the test’s expectations
+- State divergences as formal claims:
+  CLAIM D1: At [file:line], [code] would produce [behavior]
+            which contradicts PREMISE T[N] because [reason]
+  CLAIM D2: ...
+- Each claim must reference a specific PREMISE and a specific
+  code location
+
+## Phase 4: Ranked Predictions
+- Based on the divergence claims, produce ranked predictions
+- Each prediction must cite the supporting CLAIM(s)
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+</section>
+<section id="A2.SS0.SSS0.Px2" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Structured Exploration Format.</h5>
+
+<div id="A2.SS0.SSS0.Px2.p1" class="ltx_para">
+<p id="A2.SS0.SSS0.Px2.p1.1" class="ltx_p">During agentic exploration, each file request and observation must follow a structured format:</p>
+</div>
+<div id="A2.SS0.SSS0.Px2.p2" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A2.SS0.SSS0.Px2.p2.pic1" class="ltx_picture" height="189.68" overflow="visible" version="1.1" viewBox="0 0 600 189.68" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,189.68) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#606060;" fill="#606060" fill-opacity="1.0"><path style="stroke:none" d="M 0 5.91 L 0 183.78 C 0 187.04 2.64 189.68 5.91 189.68 L 594.09 189.68 C 597.36 189.68 600 187.04 600 183.78 L 600 5.91 C 600 2.64 597.36 0 594.09 0 L 5.91 0 C 2.64 0 0 2.64 0 5.91 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 1.97 5.91 L 1.97 183.78 C 1.97 185.95 3.73 187.71 5.91 187.71 L 594.09 187.71 C 596.27 187.71 598.03 185.95 598.03 183.78 L 598.03 5.91 C 598.03 3.73 596.27 1.97 594.09 1.97 L 5.91 1.97 C 3.73 1.97 1.97 3.73 1.97 5.91 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 21.65 16.85)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.23em;--ltx-fo-height:11.49em;--ltx-fo-depth:0.22em;" class="ltx_minipage" width="38.32em" height="162.12" transform="matrix(1 0 0 -1 0 159.05)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A2.SS0.SSS0.Px2.p2.pic1.1.1.1.1.1" class="ltx_verbatim ltx_font_typewriter">### When requesting a file:
+
+HYPOTHESIS H[N]: [What you expect to find and why it may
+                  contain the bug]
+EVIDENCE: [What from the test or previously read files
+           supports this hypothesis]
+CONFIDENCE: [high/medium/low]
+
+### After reading a file:
+
+OBSERVATIONS from [filename]:
+  O[N]: [Key observation about the code, with line numbers]
+  O[N]: [Another observation]
+
+HYPOTHESIS UPDATE:
+  H[M]: [CONFIRMED | REFUTED | REFINED] - [Explanation]
+
+UNRESOLVED:
+  - [What questions remain unanswered]
+  - [What other files/functions might need examination]
+
+NEXT ACTION RATIONALE: [Why reading another file, or why
+                        enough evidence to predict]
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A2.SS0.SSS0.Px2.p3" class="ltx_para">
+<p id="A2.SS0.SSS0.Px2.p3.1" class="ltx_p">This structured format forces the agent to: (1) form explicit hypotheses before exploring code, (2) document observations with precise line numbers, (3) update hypotheses based on evidence rather than intuition, and (4) justify each action in the exploration process. The explicit hypothesis tracking reduces the tendency to pattern-match on function names or make unsupported claims about code behavior.</p>
+</div>
+</section>
+</section>
+<section id="A3" class="ltx_appendix">
+<h2 class="ltx_title ltx_title_appendix">
+<span class="ltx_tag ltx_tag_appendix">Appendix C </span>Case Study for Mockito_8</h2>
+
+<div id="A3.p1" class="ltx_para">
+<p id="A3.p1.1" class="ltx_p">Mockito_8 involves a StackOverflowError caused by infinite recursion in Java generic type resolution.
+The bug is in GenericMetadataSupport.java.
+When processing a self-referential type like SelfRef&lt;T extends SelfRef&lt;T&gt;&gt;, the method registerTypeVariablesOn at line 80 overwrites a safe T → TypeVarBoundedType(T) mapping with a self-referential T → T, causing getActualTypeArgumentFor to recurse infinitely. The ground-truth fix is at line 79.</p>
+</div>
+<div id="A3.p2" class="ltx_para">
+<p id="A3.p2.1" class="ltx_p"><span id="A3.p2.1.1" class="ltx_text ltx_font_bold">Standard reasoning</span> (INCORRECT) predicted getActualTypeArgumentFor (lines 181-189), the crash site where the StackOverflowError manifests. The agent used only a single turn and all 3 predictions targeted the recursive method and its immediate callers. The reasoning correctly identified the infinite recursion but stopped at the symptom:</p>
+</div>
+<div id="A3.p3" class="ltx_para">
+<p id="A3.p3.1" class="ltx_p">"StackOverflowError due to infinite recursion. When a TypeVariable maps to itself in contextualActualTypeParameters, getActualTypeArgumentFor recurses endlessly at line 185."</p>
+</div>
+<div id="A3.p4" class="ltx_para">
+<p id="A3.p4.1" class="ltx_p"><span id="A3.p4.1.1" class="ltx_text ltx_font_bold">Semi-formal reasoning</span> (CORRECT) correctly identified the root cause at Top-1. The 4-phase template drove a more thorough investigation across 2 turns, tracing back from the crash to its root cause.</p>
+</div>
+<div id="A3.p5" class="ltx_para">
+<p id="A3.p5.1" class="ltx_p"><span id="A3.p5.1.1" class="ltx_text ltx_font_bold">Phase 1: Test Semantics Analysis.</span> The agent established formal premises about the test:</p>
+</div>
+<div id="A3.p6" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A3.p6.pic1" class="ltx_picture" height="102.35" overflow="visible" version="1.1" viewBox="0 0 600 102.35" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,102.35) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.35 L 0 98 C 0 100.41 1.95 102.35 4.35 102.35 L 595.65 102.35 C 598.05 102.35 600 100.41 600 98 L 600 4.35 C 600 1.95 598.05 0 595.65 0 L 4.35 0 C 1.95 0 0 1.95 0 4.35 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 4.35 L 0.42 98 C 0.42 100.18 2.18 101.94 4.35 101.94 L 595.65 101.94 C 597.82 101.94 599.58 100.18 599.58 98 L 599.58 4.35 C 599.58 2.18 597.82 0.42 595.65 0.42 L 4.35 0.42 C 2.18 0.42 0.42 2.18 0.42 4.35 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 14.99)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.46em;--ltx-fo-height:5.43em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.81em" height="77.9" transform="matrix(1 0 0 -1 0 75.13)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A3.p6.pic1.1.1.1.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">PREMISE T1: The test typeVariable_of_self_type tests a method
+where the return type is a type variable that references itself
+(self-referential type, like &lt;T extends Comparable&lt;T&gt;&gt;).
+
+PREMISE T2: Based on the GenericsNest interface,
+two_type_params() returns T where &lt;S, T extends S&gt;.
+
+PREMISE T3: The test would call
+inferFrom(...).resolveGenericReturnType(...)
+and make assertions about the result.
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A3.p7" class="ltx_para">
+<p id="A3.p7.1" class="ltx_p">These premises guided the agent toward self-referential type patterns rather than immediately fixating on the crash site.</p>
+</div>
+<div id="A3.p8" class="ltx_para">
+<p id="A3.p8.1" class="ltx_p"><span id="A3.p8.1.1" class="ltx_text ltx_font_bold">Phase 2: Code Path Tracing.</span> The agent produced 10 formal observations (O1–O10) tracing the full execution path:</p>
+</div>
+<div id="A3.p9" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A3.p9.pic1" class="ltx_picture" height="152.1" overflow="visible" version="1.1" viewBox="0 0 600 152.1" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,152.1) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.35 L 0 147.75 C 0 150.15 1.95 152.1 4.35 152.1 L 595.65 152.1 C 598.05 152.1 600 150.15 600 147.75 L 600 4.35 C 600 1.95 598.05 0 595.65 0 L 4.35 0 C 1.95 0 0 1.95 0 4.35 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 4.35 L 0.42 147.75 C 0.42 149.92 2.18 151.68 4.35 151.68 L 595.65 151.68 C 597.82 151.68 599.58 149.92 599.58 147.75 L 599.58 4.35 C 599.58 2.18 597.82 0.42 595.65 0.42 L 4.35 0.42 C 2.18 0.42 0.42 2.18 0.42 4.35 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 14.99)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.46em;--ltx-fo-height:9.02em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.81em" height="127.65" transform="matrix(1 0 0 -1 0 124.88)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A3.p9.pic1.1.1.1.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">O1-O3: inferFrom(Type) -&gt; FromClassGenericMetadataSupport -&gt;
+  resolveGenericReturnType(Method) creates TypeVariableReturnType
+
+O4-O5: TypeVariableReturnType constructor calls
+  readTypeParameters() -&gt; registerTypeParametersOn
+
+O6-O8: registerTypeVariableIfNotPresent stores
+  boundsOf(typeVariable) -- for &lt;S, T extends S&gt;,
+  T maps to TypeVarBoundedType(S) (safe, wrapped in BoundedType)
+
+O9-O10: readTypeVariables() iterates bounds and calls
+  registerTypeVariablesOn(type) for each, then
+  registerTypeVariablesOn(getActualTypeArgumentFor(typeVariable))
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A3.p10" class="ltx_para">
+<p id="A3.p10.1" class="ltx_p">The agent then traced multiple concrete type scenarios (<span id="A3.p10.1.1" class="ltx_text ltx_font_typewriter">&lt;S, T extends S&gt;</span>, <span id="A3.p10.1.2" class="ltx_text ltx_font_typewriter">K extends Comparable&lt;K&gt;</span>, <span id="A3.p10.1.3" class="ltx_text ltx_font_typewriter">UpperBoundedTypeWithClass&lt;E extends Number &amp; Comparable&lt;E&gt;&gt;</span>) and verified each worked correctly, systematically ruling out false leads.</p>
+</div>
+<div id="A3.p11" class="ltx_para">
+<p id="A3.p11.1" class="ltx_p"><span id="A3.p11.1.1" class="ltx_text ltx_font_bold">Phase 3: Divergence Analysis.</span> The agent formulated and tested three hypotheses:</p>
+</div>
+<div id="A3.p12" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A3.p12.pic1" class="ltx_picture" height="101.25" overflow="visible" version="1.1" viewBox="0 0 600 101.25" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,101.25) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.35 L 0 96.9 C 0 99.3 1.95 101.25 4.35 101.25 L 595.65 101.25 C 598.05 101.25 600 99.3 600 96.9 L 600 4.35 C 600 1.95 598.05 0 595.65 0 L 4.35 0 C 1.95 0 0 1.95 0 4.35 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 4.35 L 0.42 96.9 C 0.42 99.07 2.18 100.83 4.35 100.83 L 595.65 100.83 C 597.82 100.83 599.58 99.07 599.58 96.9 L 599.58 4.35 C 599.58 2.18 597.82 0.42 595.65 0.42 L 4.35 0.42 C 2.18 0.42 0.42 2.18 0.42 4.35 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 14.99)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.46em;--ltx-fo-height:5.35em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.81em" height="76.8" transform="matrix(1 0 0 -1 0 74.03)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A3.p12.pic1.1.1.1.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">HYPOTHESIS H1: getActualTypeArgumentFor enters infinite
+  recursion when a TypeVariable maps to itself.
+  Evidence: no cycle detection at lines 181-189.
+
+HYPOTHESIS H2: readTypeVariables at line 379 might receive
+  a BoundedType and silently skip necessary registration.
+
+HYPOTHESIS H3: extractRawTypeOf at line 405 could return null
+  for an unregistered TypeVariable.
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A3.p13" class="ltx_para">
+<p id="A3.p13.1" class="ltx_p">The agent then tested each hypothesis against the self-referential pattern <span id="A3.p13.1.1" class="ltx_text ltx_font_typewriter">SelfRef&lt;T extends SelfRef&lt;T&gt;&gt;</span>:</p>
+</div>
+<div id="A3.p14" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A3.p14.pic1" class="ltx_picture" height="152.1" overflow="visible" version="1.1" viewBox="0 0 600 152.1" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,152.1) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.35 L 0 147.75 C 0 150.15 1.95 152.1 4.35 152.1 L 595.65 152.1 C 598.05 152.1 600 150.15 600 147.75 L 600 4.35 C 600 1.95 598.05 0 595.65 0 L 4.35 0 C 1.95 0 0 1.95 0 4.35 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 4.35 L 0.42 147.75 C 0.42 149.92 2.18 151.68 4.35 151.68 L 595.65 151.68 C 597.82 151.68 599.58 149.92 599.58 147.75 L 599.58 4.35 C 599.58 2.18 597.82 0.42 595.65 0.42 L 4.35 0.42 C 2.18 0.42 0.42 2.18 0.42 4.35 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 14.99)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.46em;--ltx-fo-height:9.02em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.81em" height="127.65" transform="matrix(1 0 0 -1 0 124.88)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A3.p14.pic1.1.1.1.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">Step 1: registerTypeParametersOn([T]) stores
+  T -&gt; TypeVarBoundedType(T) (safe).
+
+Step 2: readTypeVariables() processes T.getBounds() =
+  [SelfRef&lt;T&gt;], calls registerTypeVariablesOn(SelfRef&lt;T&gt;).
+  This is a ParameterizedType -- rawType = SelfRef,
+  typeParameters = [T_SelfRef],
+  actualTypeArguments = [T_current].
+  But T_SelfRef and T_current are the SAME TypeVariable!
+  So contextualActualTypeParameters.put(T, T)
+  -- mapping T to itself!
+  This OVERWRITES the existing T -&gt; TypeVarBoundedType(T)!
+
+Step 3: getActualTypeArgumentFor(T) looks up T -&gt; gets T
+  (a TypeVariable!) -&gt; recurses -&gt; INFINITE RECURSION!
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A3.p15" class="ltx_para">
+<p id="A3.p15.2" class="ltx_p">The agent verified this does <em id="A3.p15.2.1" class="ltx_emph ltx_font_italic">not</em> happen for non-self-referential cases like <span id="A3.p15.2.2" class="ltx_text ltx_font_typewriter">UpperBoundedTypeWithClass&lt;E extends Number &amp; Comparable&lt;E&gt;&gt;</span>: there, <span id="A3.p15.2.3" class="ltx_text ltx_font_typewriter">registerTypeVariablesOn(Comparable&lt;E&gt;)</span> maps <span id="A3.p15.2.4" class="ltx_text ltx_font_typewriter">T_Comparable</span> <math id="A3.p15.1.m1" class="ltx_Math" alttext="\to" display="inline" intent=":literal"><semantics><mo stretchy="false">→</mo><annotation encoding="application/x-tex">\to</annotation></semantics></math> <span id="A3.p15.2.5" class="ltx_text ltx_font_typewriter">E</span>, but <span id="A3.p15.2.6" class="ltx_text ltx_font_typewriter">T_Comparable</span> <math id="A3.p15.2.m2" class="ltx_Math" alttext="\neq" display="inline" intent=":literal"><semantics><mo>≠</mo><annotation encoding="application/x-tex">\neq</annotation></semantics></math> <span id="A3.p15.2.7" class="ltx_text ltx_font_typewriter">E</span> (different declarations), so <span id="A3.p15.2.8" class="ltx_text ltx_font_typewriter">E</span>’s existing <span id="A3.p15.2.9" class="ltx_text ltx_font_typewriter">BoundedType</span> mapping is preserved.</p>
+</div>
+<div id="A3.p16" class="ltx_para">
+<p id="A3.p16.1" class="ltx_p"><span id="A3.p16.1.1" class="ltx_text ltx_font_bold">Phase 4: Ranked Predictions.</span> The agent produced two formal claims and 5 ranked predictions:</p>
+</div>
+<div id="A3.p17" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A3.p17.pic1" class="ltx_picture" height="184.27" overflow="visible" version="1.1" viewBox="0 0 600 184.27" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,184.27) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.35 L 0 179.92 C 0 182.32 1.95 184.27 4.35 184.27 L 595.65 184.27 C 598.05 184.27 600 182.32 600 179.92 L 600 4.35 C 600 1.95 598.05 0 595.65 0 L 4.35 0 C 1.95 0 0 1.95 0 4.35 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 4.35 L 0.42 179.92 C 0.42 182.09 2.18 183.85 4.35 183.85 L 595.65 183.85 C 597.82 183.85 599.58 182.09 599.58 179.92 L 599.58 4.35 C 599.58 2.18 597.82 0.42 595.65 0.42 L 4.35 0.42 C 2.18 0.42 0.42 2.18 0.42 4.35 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 14.99)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.46em;--ltx-fo-height:11.35em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.81em" height="159.82" transform="matrix(1 0 0 -1 0 157.05)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A3.p17.pic1.1.1.1.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">CLAIM D1: At lines 73-81, registerTypeVariablesOn overwrites
+  T -&gt; TypeVarBoundedType(T) with T -&gt; T for self-referential
+  types, causing infinite recursion.
+
+CLAIM D2: At lines 181-189, getActualTypeArgumentFor has no
+  cycle detection.
+
+Rank 1 (high): registerTypeVariablesOn lines 73-81
+  -- the root cause (overwrite at line 80). [CORRECT]
+Rank 2 (high): getActualTypeArgumentFor lines 181-189
+  -- the crash site (alternative fix location).
+Rank 3 (medium): readTypeVariables lines 375-379
+  -- the caller that triggers the overwrite.
+Rank 4 (low): WildCardBoundedType.equals lines 600-606
+  -- an unrelated bug also found during analysis.
+Rank 5 (low): extractRawTypeOf lines 400-406
+  -- potential NPE from incomplete registration.
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<section id="A3.SS0.SSS0.Px1" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Why the structured template mattered.</h5>
+
+<div id="A3.SS0.SSS0.Px1.p1" class="ltx_para">
+<p id="A3.SS0.SSS0.Px1.p1.1" class="ltx_p">Without Phase 2’s systematic code path tracing, the agent in standard mode stopped at the crash site, since <span id="A3.SS0.SSS0.Px1.p1.1.1" class="ltx_text ltx_font_typewriter">getActualTypeArgumentFor</span> is where the StackOverflowError manifests and is the obvious answer.
+The semi-formal template forced the agent to trace the full registration pipeline (O1–O10), test multiple type scenarios, formulate competing hypotheses (H1–H3), and ultimately discover that the overwrite at line 80 is the root cause, not the recursive method that crashes.
+The agent explicitly tested <span id="A3.SS0.SSS0.Px1.p1.1.2" class="ltx_text ltx_font_typewriter">SelfRef&lt;T extends SelfRef&lt;T&gt;&gt;</span> against <span id="A3.SS0.SSS0.Px1.p1.1.3" class="ltx_text ltx_font_typewriter">UpperBoundedTypeWithClass&lt;E extends Number &amp; Comparable&lt;E&gt;&gt;</span> to confirm why self-referential types uniquely trigger the bug, a differential analysis that standard mode never attempted.</p>
+</div>
+</section>
+</section>
+<section id="A4" class="ltx_appendix">
+<h2 class="ltx_title ltx_title_appendix">
+<span class="ltx_tag ltx_tag_appendix">Appendix D </span>Code Question Answering Details</h2>
+
+<section id="A4.SS0.SSS0.Px1" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Semi-formal Prompt Template.</h5>
+
+<div id="A4.SS0.SSS0.Px1.p1" class="ltx_para">
+<p id="A4.SS0.SSS0.Px1.p1.1" class="ltx_p">The structured template used for semi-formal reasoning in code question answering requires the agent to fill in the following sections:</p>
+</div>
+<div id="A4.SS0.SSS0.Px1.p2" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A4.SS0.SSS0.Px1.p2.pic1" class="ltx_picture" height="243.88" overflow="visible" version="1.1" viewBox="0 0 600 243.88" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,243.88) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#606060;" fill="#606060" fill-opacity="1.0"><path style="stroke:none" d="M 0 5.91 L 0 237.97 C 0 241.24 2.64 243.88 5.91 243.88 L 594.09 243.88 C 597.36 243.88 600 241.24 600 237.97 L 600 5.91 C 600 2.64 597.36 0 594.09 0 L 5.91 0 C 2.64 0 0 2.64 0 5.91 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 1.97 5.91 L 1.97 219.77 L 598.03 219.77 L 598.03 5.91 C 598.03 3.73 596.27 1.97 594.09 1.97 L 5.91 1.97 C 3.73 1.97 1.97 3.73 1.97 5.91 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 21.65 228.37)"><foreignobject style="--ltx-fg-color:#FFFFFF;--ltx-fo-width:40.23em;--ltx-fo-height:0.69em;--ltx-fo-depth:0.19em;" width="556.69" height="12.3" transform="matrix(1 0 0 -1 0 9.61)" overflow="visible" color="#FFFFFF"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content">
+<span id="A4.SS0.SSS0.Px1.p2.pic1.1.1.1.1.1" class="ltx_inline-block ltx_minipage ltx_align_bottom" style="width:34.98em;">
+<span id="A4.SS0.SSS0.Px1.p2.pic1.1.1.1.1.1.1" class="ltx_p"><span id="A4.SS0.SSS0.Px1.p2.pic1.1.1.1.1.1.1.1" class="ltx_text ltx_font_bold">Semi-formal Reasoning Template</span></span>
+</span></span></span></foreignobject></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 21.65 14.93)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.23em;--ltx-fo-height:13.95em;--ltx-fo-depth:0.08em;" class="ltx_minipage" width="38.32em" height="194.18" transform="matrix(1 0 0 -1 0 193.03)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A4.SS0.SSS0.Px1.p2.pic1.2.2.2.1.1" class="ltx_verbatim ltx_font_typewriter">FUNCTION TRACE TABLE:
+| Function/Method | File:Line | Parameter Types | Return Type | Behavior (VERIFIED) |
+|-----------------|-----------|-----------------|-------------|---------------------|
+| [function1]     | [file:N]  | [param types]   | [ret type]  | [ACTUAL behavior]   |
+
+DATA FLOW ANALYSIS:
+Variable: [key variable name]
+- Created at: [file:line]
+- Modified at: [file:line(s), or ’NEVER MODIFIED’]
+- Used at: [file:line(s)]
+
+SEMANTIC PROPERTIES:
+Property 1: [e.g., ’HashMap is mutable’]
+- Evidence: [specific file:line]
+
+ALTERNATIVE HYPOTHESIS CHECK:
+If the opposite answer were true, what evidence would exist?
+- Searched for: [what you looked for]
+- Found: [what you found - cite file:line]
+- Conclusion: [REFUTED / SUPPORTED]
+
+&lt;answer&gt;[Final answer with explicit evidence]&lt;/answer&gt;
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A4.SS0.SSS0.Px1.p3" class="ltx_para">
+<p id="A4.SS0.SSS0.Px1.p3.1" class="ltx_p">This template forces the agent to document evidence systematically before committing to an answer, reducing the tendency to guess based on function names.</p>
+</div>
+</section>
+<section id="A4.SS0.SSS0.Px2" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Example: Semi-formal vs. Standard Reasoning.</h5>
+
+<div id="A4.SS0.SSS0.Px2.p1" class="ltx_para">
+<p id="A4.SS0.SSS0.Px2.p1.1" class="ltx_p">Consider a question asking about the difference between two similar API calls. With standard reasoning, the agent might guess based on naming conventions. With semi-formal, the agent must:</p>
+<ol id="A4.I1" class="ltx_enumerate">
+<li id="A4.I1.i1" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">1.</span> 
+<div id="A4.I1.i1.p1" class="ltx_para">
+<p id="A4.I1.i1.p1.1" class="ltx_p">Locate and read both function implementations</p>
+</div>
+</li>
+<li id="A4.I1.i2" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">2.</span> 
+<div id="A4.I1.i2.p1" class="ltx_para">
+<p id="A4.I1.i2.p1.1" class="ltx_p">Document their exact signatures and behavior in the trace table</p>
+</div>
+</li>
+<li id="A4.I1.i3" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">3.</span> 
+<div id="A4.I1.i3.p1" class="ltx_para">
+<p id="A4.I1.i3.p1.1" class="ltx_p">Identify semantic differences with specific file:line evidence</p>
+</div>
+</li>
+<li id="A4.I1.i4" class="ltx_item" style="list-style-type:none;">
+<span class="ltx_tag ltx_tag_item">4.</span> 
+<div id="A4.I1.i4.p1" class="ltx_para">
+<p id="A4.I1.i4.p1.1" class="ltx_p">Check whether the opposite conclusion is supported by evidence</p>
+</div>
+</li>
+</ol>
+</div>
+<div id="A4.SS0.SSS0.Px2.p2" class="ltx_para">
+<p id="A4.SS0.SSS0.Px2.p2.1" class="ltx_p">We present two concrete examples: one where semi-formal reasoning succeeds by forcing explicit verification, and one where it fails despite thorough analysis.</p>
+</div>
+</section>
+<section id="A4.SS0.SSS0.Px3" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Success Case: Verifying Code Invariants (cpp_3).</h5>
+
+<div id="A4.SS0.SSS0.Px3.p1" class="ltx_para">
+<p id="A4.SS0.SSS0.Px3.p1.1" class="ltx_p"><em id="A4.SS0.SSS0.Px3.p1.1.1" class="ltx_emph ltx_font_italic">Question:</em> “Is there a difference between using <span id="A4.SS0.SSS0.Px3.p1.1.2" class="ltx_text ltx_font_typewriter">m_sliceTypeStrMap.at(m_sliceType)</span> vs <span id="A4.SS0.SSS0.Px3.p1.1.3" class="ltx_text ltx_font_typewriter">m_sliceTypeStrMap[m_sliceType]</span>?”</p>
+</div>
+<div id="A4.SS0.SSS0.Px3.p2" class="ltx_para">
+<p id="A4.SS0.SSS0.Px3.p2.1" class="ltx_p"><span id="A4.SS0.SSS0.Px3.p2.1.1" class="ltx_text ltx_font_bold">Standard reasoning</span> (79% score) correctly identified that <span id="A4.SS0.SSS0.Px3.p2.1.2" class="ltx_text ltx_font_typewriter">at()</span> is required for const-correctness, but stated: “it provides proper error handling if an invalid SliceType is somehow passed”—implying non-existent keys could occur, which earned a deduction for making an irrelevant consideration seem important.</p>
+</div>
+<div id="A4.SS0.SSS0.Px3.p3" class="ltx_para">
+<p id="A4.SS0.SSS0.Px3.p3.1" class="ltx_p"><span id="A4.SS0.SSS0.Px3.p3.1.1" class="ltx_text ltx_font_bold">Semi-formal reasoning</span> (100% score) produced:</p>
+</div>
+<div id="A4.SS0.SSS0.Px3.p4" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A4.SS0.SSS0.Px3.p4.pic1" class="ltx_picture" height="186" overflow="visible" version="1.1" viewBox="0 0 600 186" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,186) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.35 L 0 181.65 C 0 184.05 1.95 186 4.35 186 L 595.65 186 C 598.05 186 600 184.05 600 181.65 L 600 4.35 C 600 1.95 598.05 0 595.65 0 L 4.35 0 C 1.95 0 0 1.95 0 4.35 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 4.35 L 0.42 181.65 C 0.42 183.82 2.18 185.58 4.35 185.58 L 595.65 185.58 C 597.82 185.58 599.58 183.82 599.58 181.65 L 599.58 4.35 C 599.58 2.18 597.82 0.42 595.65 0.42 L 4.35 0.42 C 2.18 0.42 0.42 2.18 0.42 4.35 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 14.99)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.46em;--ltx-fo-height:11.47em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.81em" height="161.55" transform="matrix(1 0 0 -1 0 158.78)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A4.SS0.SSS0.Px3.p4.pic1.1.1.1.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">FUNCTION TRACE TABLE:
+| Function             | File:Line               | Behavior (VERIFIED)                 |
+|----------------------|-------------------------|-------------------------------------|
+| toggleSlicingOptions | QtReflEventView.cpp:99  | Sets m_sliceType to SliceType enum  |
+
+DATA FLOW ANALYSIS:
+Variable: m_sliceTypeStrMap
+- Created at: QtReflEventView.h:69-73 (initialized with 4 SliceType mappings)
+- Modified at: NEVER MODIFIED
+
+Variable: m_sliceType
+- Modified at: QtReflEventView.cpp:99 (only assigned from SliceType enum)
+
+SEMANTIC PROPERTIES:
+Property: The map is pre-populated with all valid SliceType values
+- Evidence: Header shows UniformEven, Uniform, Custom, LogValue in map
+- Evidence: toggleSlicingOptions only assigns these 4 values
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<div id="A4.SS0.SSS0.Px3.p5" class="ltx_para">
+<p id="A4.SS0.SSS0.Px3.p5.1" class="ltx_p">The template forced the agent to trace both the map initialization AND the <span id="A4.SS0.SSS0.Px3.p5.1.1" class="ltx_text ltx_font_typewriter">m_sliceType</span> assignments, revealing they use exactly the same enum values—proving non-existent keys are impossible.</p>
+</div>
+</section>
+<section id="A4.SS0.SSS0.Px4" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Failure Case: Confident Wrong Answer (py_5).</h5>
+
+<div id="A4.SS0.SSS0.Px4.p1" class="ltx_para">
+<p id="A4.SS0.SSS0.Px4.p1.1" class="ltx_p"><em id="A4.SS0.SSS0.Px4.p1.1.1" class="ltx_emph ltx_font_italic">Question:</em> “Do we need the check for ‘if not build_directory’?”</p>
+</div>
+<div id="A4.SS0.SSS0.Px4.p2" class="ltx_para">
+<p id="A4.SS0.SSS0.Px4.p2.1" class="ltx_p">The correct answer is that the check is <em id="A4.SS0.SSS0.Px4.p2.1.1" class="ltx_emph ltx_font_italic">not</em> needed because the <span id="A4.SS0.SSS0.Px4.p2.1.2" class="ltx_text ltx_font_typewriter">Runner</span> constructor already handles this case. However, semi-formal reasoning (57% score) produced:</p>
+</div>
+<div id="A4.SS0.SSS0.Px4.p3" class="ltx_para ltx_noindent">
+<span class="ltx_inline-block"><svg id="A4.SS0.SSS0.Px4.p3.pic1" class="ltx_picture" height="186" overflow="visible" version="1.1" viewBox="0 0 600 186" width="600"><g style="--ltx-stroke-color:#000000;--ltx-fill-color:#000000;" transform="translate(0,186) matrix(1 0 0 -1 0 0)" fill="#000000" stroke="#000000" stroke-width="0.4pt"><g style="--ltx-fill-color:#BFBFBF;" fill="#BFBFBF" fill-opacity="1.0"><path style="stroke:none" d="M 0 4.35 L 0 181.65 C 0 184.05 1.95 186 4.35 186 L 595.65 186 C 598.05 186 600 184.05 600 181.65 L 600 4.35 C 600 1.95 598.05 0 595.65 0 L 4.35 0 C 1.95 0 0 1.95 0 4.35 Z"></path></g><g style="--ltx-fill-color:#F9F9F9;" fill="#F9F9F9" fill-opacity="1.0"><path style="stroke:none" d="M 0.42 4.35 L 0.42 181.65 C 0.42 183.82 2.18 185.58 4.35 185.58 L 595.65 185.58 C 597.82 185.58 599.58 183.82 599.58 181.65 L 599.58 4.35 C 599.58 2.18 597.82 0.42 595.65 0.42 L 4.35 0.42 C 2.18 0.42 0.42 2.18 0.42 4.35 Z"></path></g><g fill-opacity="1.0" transform="matrix(1.0 0.0 0.0 1.0 20.1 14.99)"><foreignobject style="--ltx-fg-color:#000000;--ltx-fo-width:40.46em;--ltx-fo-height:11.47em;--ltx-fo-depth:0.2em;" class="ltx_minipage" width="42.81em" height="161.55" transform="matrix(1 0 0 -1 0 158.78)" overflow="visible" color="#000000"><span class="ltx_foreignobject_container"><span class="ltx_foreignobject_content"><pre id="A4.SS0.SSS0.Px4.p3.pic1.1.1.1.1.1" class="ltx_verbatim ltx_font_typewriter" style="font-size:90%;">FUNCTION TRACE TABLE:
+| Function            | File:Line           | Behavior (VERIFIED)                     |
+|---------------------|---------------------|-----------------------------------------|
+| setup_build         | build_manager:1397  | Returns Build object on success         |
+| setup_system_binary | build_manager:1387  | Creates SystemBuild with SYSTEM_BINARY_DIR |
+| SystemBuild.setup   | build_manager:1001  | Always returns True                     |
+
+SEMANTIC PROPERTIES:
+Property: setup_build can return truthy value while BUILD_DIR is empty
+- Evidence: SystemBuild uses get_value(’SYSTEM_BINARY_DIR’, ’’) defaulting to ’’
+
+&lt;answer&gt;
+Yes, the check IS NEEDED because setup_build() can return truthy
+even when BUILD_DIR is empty string.
+&lt;/answer&gt;
+
+CONFIDENCE: HIGH
+</pre></span></span></foreignobject></g></g></svg></span>
+</div>
+<figure id="A4.T7" class="ltx_table">
+<figcaption class="ltx_caption ltx_centering"><span class="ltx_tag ltx_tag_table"><span id="A4.T7.2.1.1" class="ltx_text" style="font-size:90%;">Table 7</span>: </span><span id="A4.T7.3.2" class="ltx_text" style="font-size:90%;">Code QA accuracy by language (Opus-4.5, Semi-formal)</span></figcaption>
+<table id="A4.T7.4" class="ltx_tabular ltx_centering ltx_guessed_headers ltx_align_middle">
+<thead class="ltx_thead">
+<tr id="A4.T7.4.1.1" class="ltx_tr">
+<th id="A4.T7.4.1.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_column ltx_th_row ltx_border_tt"><span id="A4.T7.4.1.1.1.1" class="ltx_text ltx_font_bold">Language</span></th>
+<th id="A4.T7.4.1.1.2" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="A4.T7.4.1.1.2.1" class="ltx_text ltx_font_bold">Questions</span></th>
+<th id="A4.T7.4.1.1.3" class="ltx_td ltx_align_center ltx_th ltx_th_column ltx_border_tt"><span id="A4.T7.4.1.1.3.1" class="ltx_text ltx_font_bold">Accuracy</span></th>
+</tr>
+</thead>
+<tbody class="ltx_tbody">
+<tr id="A4.T7.4.2.1" class="ltx_tr">
+<th id="A4.T7.4.2.1.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_t">C++</th>
+<td id="A4.T7.4.2.1.2" class="ltx_td ltx_align_center ltx_border_t">5</td>
+<td id="A4.T7.4.2.1.3" class="ltx_td ltx_align_center ltx_border_t">88.0%</td>
+</tr>
+<tr id="A4.T7.4.3.2" class="ltx_tr">
+<th id="A4.T7.4.3.2.1" class="ltx_td ltx_align_left ltx_th ltx_th_row">Python</th>
+<td id="A4.T7.4.3.2.2" class="ltx_td ltx_align_center">5</td>
+<td id="A4.T7.4.3.2.3" class="ltx_td ltx_align_center">87.5%</td>
+</tr>
+<tr id="A4.T7.4.4.3" class="ltx_tr">
+<th id="A4.T7.4.4.3.1" class="ltx_td ltx_align_left ltx_th ltx_th_row ltx_border_bb">Java</th>
+<td id="A4.T7.4.4.3.2" class="ltx_td ltx_align_center ltx_border_bb">5</td>
+<td id="A4.T7.4.4.3.3" class="ltx_td ltx_align_center ltx_border_bb">85.5%</td>
+</tr>
+</tbody>
+</table>
+</figure>
+<div id="A4.SS0.SSS0.Px4.p4" class="ltx_para">
+<p id="A4.SS0.SSS0.Px4.p4.1" class="ltx_p">The agent thoroughly traced five functions and found a real edge case where <span id="A4.SS0.SSS0.Px4.p4.1.1" class="ltx_text ltx_font_typewriter">BUILD_DIR</span> could be empty. However, it <em id="A4.SS0.SSS0.Px4.p4.1.2" class="ltx_emph ltx_font_italic">missed</em> that <span id="A4.SS0.SSS0.Px4.p4.1.3" class="ltx_text ltx_font_typewriter">Runner</span>’s constructor also checks <span id="A4.SS0.SSS0.Px4.p4.1.4" class="ltx_text ltx_font_typewriter">build_directory</span> (indirectly through <span id="A4.SS0.SSS0.Px4.p4.1.5" class="ltx_text ltx_font_typewriter">find_fuzzer_path</span>, which returns <span id="A4.SS0.SSS0.Px4.p4.1.6" class="ltx_text ltx_font_typewriter">None</span> if <span id="A4.SS0.SSS0.Px4.p4.1.7" class="ltx_text ltx_font_typewriter">build_directory</span> is falsy, triggering a <span id="A4.SS0.SSS0.Px4.p4.1.8" class="ltx_text ltx_font_typewriter">CorpusPruningException</span>). This illustrates how deeper reasoning can lead to <em id="A4.SS0.SSS0.Px4.p4.1.9" class="ltx_emph ltx_font_italic">more confident wrong answers</em> when the agent follows a plausible-but-incorrect chain without verifying all downstream code paths.</p>
+</div>
+</section>
+<section id="A4.SS0.SSS0.Px5" class="ltx_paragraph">
+<h5 class="ltx_title ltx_title_paragraph">Per-Language Breakdown.</h5>
+
+<div id="A4.SS0.SSS0.Px5.p1" class="ltx_para">
+<p id="A4.SS0.SSS0.Px5.p1.1" class="ltx_p">Table <a href="https://arxiv.org/html/2603.01896v2#A4.T7" title="Table 7 ‣ Failure Case: Confident Wrong Answer (py_5). ‣ Appendix D Code Question Answering Details ‣ Agentic Code Reasoning" class="ltx_ref"><span class="ltx_text ltx_ref_tag">7</span></a> shows accuracy varies by programming language, with Java questions being most challenging due to their reliance on framework-specific semantics.</p>
+</div>
+</section>
+</section>
+</article>
+</div>
+</div>
+<footer class="arxiv-html-footer">
+  <div class="ltx_page_logo">
+    Experimental support, please
+    <a href="https://arxiv.org/html/2603.01896v2/__stdout.txt" class="ltx_ref" target="_blank" rel="nofollow">view the build logs</a>
+    for errors. Generated by
+    <a href="https://math.nist.gov/~BMiller/LaTeXML/" target="_blank" class="ltx_ref ltx_LaTeXML_logo">
+      <span style="letter-spacing: -0.2em; margin-right: 0.1em;">
+        L
+        <span style="font-size: 70%; position: relative; bottom: 2.2pt;">A</span>
+        T
+        <span style="position: relative; bottom: -0.4ex;">E</span>
+      </span>
+      <span class="ltx_font_smallcaps">xml</span>
+      <img alt="[LOGO]" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAOCAYAAAD5YeaVAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wKExQZLWTEaOUAAAAddEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIFRoZSBHSU1Q72QlbgAAAdpJREFUKM9tkL+L2nAARz9fPZNCKFapUn8kyI0e4iRHSR1Kb8ng0lJw6FYHFwv2LwhOpcWxTjeUunYqOmqd6hEoRDhtDWdA8ApRYsSUCDHNt5ul13vz4w0vWCgUnnEc975arX6ORqN3VqtVZbfbTQC4uEHANM3jSqXymFI6yWazP2KxWAXAL9zCUa1Wy2tXVxheKA9YNoR8Pt+aTqe4FVVVvz05O6MBhqUIBGk8Hn8HAOVy+T+XLJfLS4ZhTiRJgqIoVBRFIoric47jPnmeB1mW/9rr9ZpSSn3Lsmir1fJZlqWlUonKsvwWwD8ymc/nXwVBeLjf7xEKhdBut9Hr9WgmkyGEkJwsy5eHG5vN5g0AKIoCAEgkEkin0wQAfN9/cXPdheu6P33fBwB4ngcAcByHJpPJl+fn54mD3Gg0NrquXxeLRQAAwzAYj8cwTZPwPH9/sVg8PXweDAauqqr2cDjEer1GJBLBZDJBs9mE4zjwfZ85lAGg2+06hmGgXq+j3+/DsixYlgVN03a9Xu8jgCNCyIegIAgx13Vfd7vdu+FweG8YRkjXdWy329+dTgeSJD3ieZ7RNO0VAXAPwDEAO5VKndi2fWrb9jWl9Esul6PZbDY9Go1OZ7PZ9z/lyuD3OozU2wAAAABJRU5ErkJggg==">
+    </a>.
+  </div>
+  <div class="keyboard-glossary">
+    <h2>Instructions for reporting errors</h2>
+    <p>We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:</p>
+    <ul>
+      <li>Click the "Report Issue" <span class="mobile-only">(<svg role="presentation" style="display: inline-block; vertical-align: middle; fill: var(--text-color);" aria-hidden="true" height="1em" viewBox="0 0 640 640">
+            <path d="M224 160C224 107 267 64 320 64C373 64 416 107 416 160L416 163.6C416 179.3 403.3 192 387.6 192L252.5 192C236.8 192 224.1 179.3 224.1 163.6L224.1 160zM569.6 172.8C580.2 186.9 577.3 207 563.2 217.6L465.4 290.9C470.7 299.8 474.7 309.6 477.2 320L576 320C593.7 320 608 334.3 608 352C608 369.7 593.7 384 576 384L480 384L480 416C480 418.6 479.9 421.3 479.8 423.9L563.2 486.4C577.3 497 580.2 517.1 569.6 531.2C559 545.3 538.9 548.2 524.8 537.6L461.7 490.3C438.5 534.5 395.2 566.5 344 574.2L344 344C344 330.7 333.3 320 320 320C306.7 320 296 330.7 296 344L296 574.2C244.8 566.5 201.5 534.5 178.3 490.3L115.2 537.6C101.1 548.2 81 545.3 70.4 531.2C59.8 517.1 62.7 497 76.8 486.4L160.2 423.9C160.1 421.3 160 418.7 160 416L160 384L64 384C46.3 384 32 369.7 32 352C32 334.3 46.3 320 64 320L162.8 320C165.3 309.6 169.3 299.8 174.6 290.9L76.8 217.6C62.7 207 59.8 186.9 70.4 172.8C81 158.7 101.1 155.8 115.2 166.4L224 248C236.3 242.9 249.8 240 264 240L376 240C390.2 240 403.7 242.8 416 248L524.8 166.4C538.9 155.8 559 158.7 569.6 172.8z"></path>
+          </svg>)</span> button, located in the page header.</li>
+    </ul>
+    <p><strong>Tip:</strong> You can select the relevant text first, to include it in your report.</p>
+    <p>Our team has already identified <a class="ltx_ref" href="https://github.com/arXiv/html_feedback/issues" target="_blank">the following issues</a>. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.</p>
+    <p>Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a <a class="ltx_ref" href="https://github.com/brucemiller/LaTeXML/wiki/Porting-LaTeX-packages-for-LaTeXML" target="_blank">list of packages that need conversion</a>, and welcome <a class="ltx_ref" href="https://github.com/brucemiller/LaTeXML/issues" target="_blank">developer contributions</a>.</p>
+  </div>
+</footer>
+<div id="fixed-buttons-container">
+  <div id="beta-badge">BETA</div>
+  <a id="disable-reading-mode-btn" class="header-button" href="javascript:toggleReadingMode();" title="Disable reading mode, show header and footer">
+    <svg role="presentation" height="1.25rem" viewBox="0 0 448 512"><!--!Font Awesome Free v7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+      <path d="M0 96C0 78.3 14.3 64 32 64l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 128C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32l384 0c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 288c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32L32 448c-17.7 0-32-14.3-32-32s14.3-32 32-32l384 0c17.7 0 32 14.3 32 32z"></path>
+    </svg>
+  </a>
+</div>
+
+</body></html>
