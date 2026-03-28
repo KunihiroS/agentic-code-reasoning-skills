@@ -2,6 +2,31 @@
 
 An agent skill that translates the **Agentic Code Reasoning** paper into a practical, unified workflow for evidence-based code analysis without executing repository code.
 
+## Original Paper
+
+**Agentic Code Reasoning** by Shubham Ugare and Satish Chandra (Meta)
+- arXiv: https://arxiv.org/abs/2603.01896
+- Key results: semi-formal reasoning improves accuracy by 5–12 percentage points across patch equivalence verification, fault localization, and code question answering tasks
+
+## Installation
+
+Copy `SKILL.md` into your project's Claude Code skills directory:
+
+```bash
+# Create the skills directory if it doesn't exist
+mkdir -p .claude/skills
+
+# Option 1: Download directly from GitHub
+curl -o .claude/skills/agentic-code-reasoning.md \
+  https://raw.githubusercontent.com/KunihiroS/agentic-code-reasoning-skills/main/SKILL.md
+
+# Option 2: Clone and copy
+git clone https://github.com/KunihiroS/agentic-code-reasoning-skills.git
+cp agentic-code-reasoning-skills/SKILL.md .claude/skills/agentic-code-reasoning.md
+```
+
+The skill activates automatically when Claude Code detects code reasoning tasks (e.g., "are these equivalent?", "where is the bug?", "what does this code do?").
+
 ## What This Is
 
 This repository contains a single agent skill (`SKILL.md`) that implements **semi-formal reasoning** — a structured prompting methodology where the agent must state explicit premises, trace concrete code paths with file:line evidence, and derive formal conclusions before making any claim.
@@ -92,31 +117,23 @@ This skill has been evaluated on [SWE-bench-Verified](https://github.com/princet
 
 **Key finding:** The skill's structured refutation check prevents the agent from incorrectly concluding that equivalent patches are different (+20pp on equivalent pairs). On not-equivalent pairs, performance is the same — the agent detects differences reliably with or without the skill.
 
+*Note: The sample size is limited to 20 pairs due to computational resource constraints (each pair requires two full Claude Code agent runs). Larger-scale evaluation is planned.*
+
 Full results and raw outputs: [`benchmark/swebench/`](benchmark/swebench/)
 
 ## Repository Structure
 
 ```
 ├── SKILL.md                    # The skill (install this)
-├── PLAN.md                     # Development status and roadmap
-├── benchmark/
-│   ├── swebench/               # SWE-bench patch equivalence benchmark
-│   └── legacy/                 # Earlier custom fixture benchmarks (iteration 1-3)
-├── docs/
-│   └── evaluation/
-│       ├── rubric-v1.md        # Evaluation rubric (20 criteria from the paper)
-│       ├── skill-v1-evaluation.md  # v1 evaluation (62/100)
-│       └── skill-v2-evaluation.md  # v2 evaluation (93/100)
-└── resources/
-    ├── arXiv-2603.01896v2/     # Paper source (LaTeX)
-    └── pre_draft.md            # Initial design notes
+└── benchmark/
+    └── swebench/               # SWE-bench patch equivalence benchmark
+        ├── prepare_pairs.py    # Generate patch pairs from SWE-bench data
+        ├── run_benchmark.sh    # Run with-skill / without-skill evaluation
+        ├── grade.py            # Grade agent outputs against ground truth
+        ├── report.py           # Generate summary report
+        ├── data/               # Benchmark input (pairs.json, prompt template)
+        └── runs/iter-1/        # Results (report.md, grades.json)
 ```
-
-## Original Paper
-
-**Agentic Code Reasoning** by Shubham Ugare and Satish Chandra (Meta)
-- arXiv: https://arxiv.org/abs/2603.01896
-- Key results: semi-formal reasoning improves accuracy by 5–12 percentage points across patch equivalence verification, fault localization, and code question answering tasks
 
 ## License
 
