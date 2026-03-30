@@ -55,6 +55,10 @@ benchmark.json
 benchmark.md
 grading.json
 
+# Private / local files
+CLAUDE.md
+amc-activity.log
+
 # Temporary files
 *.tmp
 *.temp
