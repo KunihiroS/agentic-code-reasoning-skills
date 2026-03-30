@@ -1,6 +1,6 @@
 ---
 name: agentic-code-reasoning
-description: Use when you need to compare two code changes for behavioral equivalence, localize a bug from a failing test or report, answer a question about code semantics with verified evidence, or audit code for security vulnerabilities, API misuse, or maintainability issues — all without executing repository code.
+description: Use this skill whenever code behavior must be reasoned about without executing it — especially when code is provided and needs careful tracing. Invoke it to: trace what a function or program returns step by step, identify which exact operation causes a test failure or wrong value, determine whether two implementations are behaviorally equivalent, simulate an algorithm's execution order manually, or audit for security vulnerabilities like SQL injection or race conditions. Use any time someone asks "what does this code return?", "which step caused the failure?", "are these equivalent?", "what's the execution order?", or "is this vulnerable?" — even when the answer seems obvious without a skill.
 ---
 
 # Agentic Code Reasoning
@@ -103,6 +103,14 @@ If the opposite answer were true, what evidence would exist?
 - Found: [what — cite file:line]
 - Conclusion: REFUTED / SUPPORTED
 ```
+
+### Step 5.5: Pre-conclusion self-check (required)
+
+Before writing the formal conclusion, answer this single question:
+
+> **Is there any claim in my analysis that I stated without explicitly computing it?**
+
+If yes — go back and compute it, or mark it UNVERIFIED. Do not proceed to the conclusion until all claims are either derived from evidence or explicitly flagged as unverified.
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
