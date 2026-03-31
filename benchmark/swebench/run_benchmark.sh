@@ -64,8 +64,6 @@ run_single() {
   if [[ "$VARIANT" == "with_skill" ]]; then
     FULL_PROMPT="まず以下のスキルを読み、その手順に厳密に従って分析してください。スキルの 'compare' モードを使用してください。
 
-REVIEWER_SCRIPT_PATH: $REPO_ROOT/benchmark/swebench/invoke_reviewer.sh
-
 ---SKILL START---
 $(cat "$SKILL_PATH")
 ---SKILL END---
@@ -98,13 +96,6 @@ try:
     print(d.get('result', ''))
 except: print(open('$OUT_DIR/output.json').read())
 " > "$OUT_DIR/output.md" 2>/dev/null || true
-
-  # Step 5.5: External Audit Gate (with_skill only)
-  local REVIEWER_SCRIPT="$REPO_ROOT/benchmark/swebench/invoke_reviewer.sh"
-  if [[ "$VARIANT" == "with_skill" ]] && [[ -f "$REVIEWER_SCRIPT" ]]; then
-    bash "$REVIEWER_SCRIPT" "$OUT_DIR/output.md" \
-      > "$OUT_DIR/review.md" 2>> "$OUT_DIR/stderr.log" || true
-  fi
 
   printf '{"instance":"%s","variant":"%s","model":"%s","duration_sec":%d}\n' \
     "$INSTANCE" "$VARIANT" "$MODEL" "$DURATION" > "$OUT_DIR/timing.json"

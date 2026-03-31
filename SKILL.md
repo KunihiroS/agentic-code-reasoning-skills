@@ -105,58 +105,13 @@ If the opposite answer were true, what evidence would exist?
 - Conclusion: REFUTED / SUPPORTED
 ```
 
-### Step 5.5: External Audit Gate (required)
+### Step 5.5: Pre-conclusion self-check (required)
 
-Do not write the formal conclusion until this gate passes.
+Before writing the formal conclusion, answer this single question:
 
-**[1] Write a context file for the reviewer**
+> **Is there any claim in my analysis that I stated without explicitly computing it?**
 
-Write the following to `/tmp/review_context.md`, filling in each section:
-
-```
-[ROLE]
-You are a reasoning quality auditor, not a code analyst.
-Your job is NOT to re-analyze the code yourself.
-Your job IS to evaluate whether the main AI's reasoning is trustworthy:
-  - Are conclusions derived from explicit evidence (file:line citations)?
-  - Are logical steps traceable, or do they jump to conclusions?
-  - Are edge cases and OOD inputs considered?
-  - Does the Pass condition rubric hold?
-You are a second opinion on REASONING QUALITY, not on code correctness.
-Adopt an adversarial stance: assume there may be errors until evidence proves otherwise.
-
-[TASK CONTEXT]
-Skill: Agentic Code Reasoning — <mode> mode
-Task: <restate the original question or task in one sentence>
-Pass conditions (what would make this analysis sufficient):
-  PC1: <derived from this task>
-  PC2: <derived from this task>
-  PC3: ...
-
-[ANALYSIS TO REVIEW]
-<paste the full content of Step 1 through Step 5 here>
-```
-
-**[2] Call the reviewer script**
-
-```bash
-bash <REVIEWER_SCRIPT_PATH> /tmp/review_context.md
-```
-
-`REVIEWER_SCRIPT_PATH` is provided at the top of this prompt. If not provided, look for `invoke_reviewer.sh` in the skill repository under `benchmark/swebench/`.
-
-**[3] Act on the result**
-
-Regardless of PASS or FAIL, always proceed to Step 6. The reviewer is an advisor, not a gatekeeper.
-
-```
-AUDIT_RESULT: PASS  → proceed to Step 6 as normal
-
-AUDIT_RESULT: FAIL  → proceed to Step 6, but:
-                       - explicitly list each finding in the conclusion
-                       - downgrade confidence level accordingly
-                       - state what was NOT verified due to the finding
-```
+If yes — go back and compute it, or mark it UNVERIFIED. Do not proceed to the conclusion until all claims are either derived from evidence or explicitly flagged as unverified.
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
@@ -237,7 +192,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
-- Complete Step 5.5 External Audit Gate before writing the formal conclusion
 
 ---
 
@@ -301,7 +255,6 @@ Use the hypothesis-driven format from Step 3 during exploration. Number hypothes
 - Rank candidates and cite supporting claims (Phase 4)
 - Distinguish symptom site from root cause — if the crash site differs from the origin of incorrect state, investigate upstream
 - Check for indirection: is the bug in a class not directly called by the test?
-- Complete Step 5.5 External Audit Gate before writing the formal conclusion
 
 ---
 
@@ -356,7 +309,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Check the opposite answer before finalizing
 - After identifying an edge case, verify whether downstream code already handles it before reporting it as a finding
 - State uncertainty when downstream behavior is not fully verified
-- Complete Step 5.5 External Audit Gate before writing the final answer
 
 ---
 
@@ -416,7 +368,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - For refactoring, propose the safest minimal change first
 - Do not report speculative security issues as confirmed vulnerabilities
 - For API misuse, read the actual API definition or documentation before claiming misuse
-- Complete Step 5.5 External Audit Gate before writing the formal conclusion
 
 ---
 
@@ -434,7 +385,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
-10. **Do not skip the External Audit Gate.** It is mandatory in every mode before writing the formal conclusion. Invoke an external reviewer; do not substitute a self-review.
 
 ---
 
@@ -449,7 +399,6 @@ Every response using this skill must include:
 | Interprocedural trace table | All (when functions are on the code path) |
 | Per-item analysis (per-test, per-method, or per-function) | compare, localize, explain |
 | Refutation / alternative-hypothesis check | All |
-| External audit gate result (Pass condition rubric + reviewer findings) | All |
 | Formal conclusion with premise/claim references | All |
 | Confidence level | All |
 
