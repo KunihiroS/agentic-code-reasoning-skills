@@ -241,6 +241,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+- Complete Step 5.5 External Audit Gate before writing the formal conclusion
 
 ---
 
@@ -304,6 +305,7 @@ Use the hypothesis-driven format from Step 3 during exploration. Number hypothes
 - Rank candidates and cite supporting claims (Phase 4)
 - Distinguish symptom site from root cause — if the crash site differs from the origin of incorrect state, investigate upstream
 - Check for indirection: is the bug in a class not directly called by the test?
+- Complete Step 5.5 External Audit Gate before writing the formal conclusion
 
 ---
 
@@ -358,6 +360,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Check the opposite answer before finalizing
 - After identifying an edge case, verify whether downstream code already handles it before reporting it as a finding
 - State uncertainty when downstream behavior is not fully verified
+- Complete Step 5.5 External Audit Gate before writing the final answer
 
 ---
 
@@ -417,6 +420,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - For refactoring, propose the safest minimal change first
 - Do not report speculative security issues as confirmed vulnerabilities
 - For API misuse, read the actual API definition or documentation before claiming misuse
+- Complete Step 5.5 External Audit Gate before writing the formal conclusion
 
 ---
 
@@ -434,6 +438,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
+10. **Do not skip the External Audit Gate.** It is mandatory in every mode before writing the formal conclusion. Invoke an external reviewer; do not substitute a self-review.
 
 ---
 
@@ -448,6 +453,7 @@ Every response using this skill must include:
 | Interprocedural trace table | All (when functions are on the code path) |
 | Per-item analysis (per-test, per-method, or per-function) | compare, localize, explain |
 | Refutation / alternative-hypothesis check | All |
+| External audit gate result (Pass condition rubric + reviewer findings) | All |
 | Formal conclusion with premise/claim references | All |
 | Confidence level | All |
 
