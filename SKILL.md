@@ -147,13 +147,15 @@ bash <REVIEWER_SCRIPT_PATH> /tmp/review_context.md
 
 **[3] Act on the result**
 
+Regardless of PASS or FAIL, always proceed to Step 6. The reviewer is an advisor, not a gatekeeper.
+
 ```
-AUDIT_RESULT: PASS  → proceed to Step 6
-AUDIT_RESULT: FAIL  → return to the step indicated by the finding:
-                       premise gap      → Step 2
-                       exploration gap  → Step 3
-                       trace gap        → Step 4
-                       refutation gap   → Step 5
+AUDIT_RESULT: PASS  → proceed to Step 6 as normal
+
+AUDIT_RESULT: FAIL  → proceed to Step 6, but:
+                       - explicitly list each finding in the conclusion
+                       - downgrade confidence level accordingly
+                       - state what was NOT verified due to the finding
 ```
 
 ### Step 6: Formal conclusion
