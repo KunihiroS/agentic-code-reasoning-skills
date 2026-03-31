@@ -45,7 +45,7 @@ $(cat "$ANALYSIS_FILE")
 # ── Priority 1: codex ──────────────────────────────────────────────────────
 if command -v codex &>/dev/null 2>&1; then
   echo "[reviewer] trying codex..." >&2
-  result=$(printf '%s' "$FULL_PROMPT" | codex --quiet 2>/dev/null) \
+  result=$(printf '%s' "$FULL_PROMPT" | codex exec - 2>/dev/null) \
     && [ -n "$result" ] && {
       echo "$result"
       exit 0
