@@ -97,6 +97,13 @@ try:
 except: print(open('$OUT_DIR/output.json').read())
 " > "$OUT_DIR/output.md" 2>/dev/null || true
 
+  # Step 5.5: External Audit Gate (with_skill only)
+  local REVIEWER_SCRIPT="$REPO_ROOT/benchmark/swebench/invoke_reviewer.sh"
+  if [[ "$VARIANT" == "with_skill" ]] && [[ -f "$REVIEWER_SCRIPT" ]]; then
+    bash "$REVIEWER_SCRIPT" "$OUT_DIR/output.md" \
+      > "$OUT_DIR/review.md" 2>> "$OUT_DIR/stderr.log" || true
+  fi
+
   printf '{"instance":"%s","variant":"%s","model":"%s","duration_sec":%d}\n' \
     "$INSTANCE" "$VARIANT" "$MODEL" "$DURATION" > "$OUT_DIR/timing.json"
 
