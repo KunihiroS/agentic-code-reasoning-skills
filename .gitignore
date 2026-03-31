@@ -56,6 +56,9 @@ benchmark.md
 grading.json
 
 # Private / local files
+PLAN.md
+docs/evaluation/
+resources/
 CLAUDE.md
 amc-activity.log
 
