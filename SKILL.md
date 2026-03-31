@@ -105,13 +105,62 @@ If the opposite answer were true, what evidence would exist?
 - Conclusion: REFUTED / SUPPORTED
 ```
 
-### Step 5.5: Pre-conclusion self-check (required)
+### Step 5.5: External Audit Gate (required)
 
-Before writing the formal conclusion, answer this single question:
+Do not write the formal conclusion until this gate passes.
 
-> **Is there any claim in my analysis that I stated without explicitly computing it?**
+**[1] Create a task-specific Pass condition rubric**
 
-If yes — go back and compute it, or mark it UNVERIFIED. Do not proceed to the conclusion until all claims are either derived from evidence or explicitly flagged as unverified.
+Based on the current task statement, mode, and target code, write the conditions that must be true for this analysis to be considered sufficient. Do not use a fixed template — derive the conditions from what this particular task requires.
+
+```
+PASS CONDITION RUBRIC (task-specific):
+PC1: [condition derived from this task — e.g., "all fail-to-pass tests traced for both patches"]
+PC2: [condition derived from this task — e.g., "divergence claim references a specific premise"]
+PC3: ...
+```
+
+**[2] Assemble the review package**
+
+Collect everything produced so far:
+- Task description and constraints (Step 1)
+- Numbered premises (Step 2)
+- Hypotheses, observations, and next-action rationale (Step 3)
+- Interprocedural trace table (Step 4)
+- Refutation / alternative hypothesis check (Step 5)
+- The Pass condition rubric from [1]
+
+**[3] Invoke an external reviewer**
+
+Use the first available option in this order:
+1. `claude` CLI (Claude Code) — if installed
+2. `codex` CLI — if installed
+3. `copilot` CLI — if installed
+4. Sub-agent (if no CLI is available, launch a sub-agent with the review package)
+
+**[4] Instructions to the reviewer**
+
+Pass the full review package from [2] and instruct the reviewer to:
+- Adopt a critical, adversarial perspective
+- Evaluate each Pass condition in the rubric as PASS or FAIL with a brief reason
+- Explicitly evaluate OOD (out-of-distribution) cases: inputs, code paths, or conditions outside the obvious scope of this task
+- Identify any claim made without sufficient evidence
+
+**[5] Act on the result**
+
+```
+AUDIT RESULT: PASS / FAIL
+Reviewer findings:
+  [summarize what the reviewer flagged]
+
+Action:
+  PASS  → proceed to Step 6
+  FAIL  → return to the step indicated by the finding:
+           premise gap      → Step 2
+           exploration gap  → Step 3
+           trace gap        → Step 4
+           refutation gap   → Step 5
+```
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
