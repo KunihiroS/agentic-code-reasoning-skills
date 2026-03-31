@@ -79,6 +79,7 @@ if command -v claude &>/dev/null 2>&1; then
   result=$(printf '%s' "$FULL_PROMPT" | claude \
     --model haiku \
     --print \
+    --permission-mode bypassPermissions \
     --max-turns 5 2>/dev/null) \
     && [ -n "$result" ] && {
       echo "$result"
