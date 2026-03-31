@@ -109,57 +109,51 @@ If the opposite answer were true, what evidence would exist?
 
 Do not write the formal conclusion until this gate passes.
 
-**[1] Create a task-specific Pass condition rubric**
+**[1] Write a context file for the reviewer**
 
-Based on the current task statement, mode, and target code, write the conditions that must be true for this analysis to be considered sufficient. Do not use a fixed template — derive the conditions from what this particular task requires.
-
-```
-PASS CONDITION RUBRIC (task-specific):
-PC1: [condition derived from this task — e.g., "all fail-to-pass tests traced for both patches"]
-PC2: [condition derived from this task — e.g., "divergence claim references a specific premise"]
-PC3: ...
-```
-
-**[2] Assemble the review package**
-
-Collect everything produced so far:
-- Task description and constraints (Step 1)
-- Numbered premises (Step 2)
-- Hypotheses, observations, and next-action rationale (Step 3)
-- Interprocedural trace table (Step 4)
-- Refutation / alternative hypothesis check (Step 5)
-- The Pass condition rubric from [1]
-
-**[3] Invoke an external reviewer**
-
-Use the first available option in this order:
-1. `claude` CLI (Claude Code) — if installed
-2. `codex` CLI — if installed
-3. `copilot` CLI — if installed
-4. Sub-agent (if no CLI is available, launch a sub-agent with the review package)
-
-**[4] Instructions to the reviewer**
-
-Pass the full review package from [2] and instruct the reviewer to:
-- Adopt a critical, adversarial perspective
-- Evaluate each Pass condition in the rubric as PASS or FAIL with a brief reason
-- Explicitly evaluate OOD (out-of-distribution) cases: inputs, code paths, or conditions outside the obvious scope of this task
-- Identify any claim made without sufficient evidence
-
-**[5] Act on the result**
+Write the following to `/tmp/review_context.md`, filling in each section:
 
 ```
-AUDIT RESULT: PASS / FAIL
-Reviewer findings:
-  [summarize what the reviewer flagged]
+[ROLE]
+You are a reasoning quality auditor, not a code analyst.
+Your job is NOT to re-analyze the code yourself.
+Your job IS to evaluate whether the main AI's reasoning is trustworthy:
+  - Are conclusions derived from explicit evidence (file:line citations)?
+  - Are logical steps traceable, or do they jump to conclusions?
+  - Are edge cases and OOD inputs considered?
+  - Does the Pass condition rubric hold?
+You are a second opinion on REASONING QUALITY, not on code correctness.
+Adopt an adversarial stance: assume there may be errors until evidence proves otherwise.
 
-Action:
-  PASS  → proceed to Step 6
-  FAIL  → return to the step indicated by the finding:
-           premise gap      → Step 2
-           exploration gap  → Step 3
-           trace gap        → Step 4
-           refutation gap   → Step 5
+[TASK CONTEXT]
+Skill: Agentic Code Reasoning — <mode> mode
+Task: <restate the original question or task in one sentence>
+Pass conditions (what would make this analysis sufficient):
+  PC1: <derived from this task>
+  PC2: <derived from this task>
+  PC3: ...
+
+[ANALYSIS TO REVIEW]
+<paste the full content of Step 1 through Step 5 here>
+```
+
+**[2] Call the reviewer script**
+
+```bash
+bash <REVIEWER_SCRIPT_PATH> /tmp/review_context.md
+```
+
+`REVIEWER_SCRIPT_PATH` is provided at the top of this prompt. If not provided, look for `invoke_reviewer.sh` in the skill repository under `benchmark/swebench/`.
+
+**[3] Act on the result**
+
+```
+AUDIT_RESULT: PASS  → proceed to Step 6
+AUDIT_RESULT: FAIL  → return to the step indicated by the finding:
+                       premise gap      → Step 2
+                       exploration gap  → Step 3
+                       trace gap        → Step 4
+                       refutation gap   → Step 5
 ```
 
 ### Step 6: Formal conclusion

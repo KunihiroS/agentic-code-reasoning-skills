@@ -17,30 +17,23 @@ if [ ! -f "$ANALYSIS_FILE" ]; then
   exit 1
 fi
 
-REVIEWER_INSTRUCTIONS="You are an adversarial code reasoning reviewer. Review the following analysis critically.
+OUTPUT_FORMAT_REMINDER="
+---
+Respond ONLY with the following format — no preamble, no explanation outside this structure:
 
-Instructions:
-1. Adopt a critical, adversarial perspective — look for weak spots, not just confirmation
-2. Evaluate whether each Pass condition rubric item (if present) is PASS or FAIL, with a brief reason
-3. Explicitly evaluate OOD (out-of-distribution) cases: edge inputs, rare code paths, or conditions outside the obvious task scope
-4. Identify any claim made without sufficient evidence — no file:line citation, or logic that jumps to a conclusion
-
-Required output format (use exactly):
 AUDIT_RESULT: PASS
 FINDINGS:
-- [finding or N/A]
+- (N/A or brief note)
 
 or:
+
 AUDIT_RESULT: FAIL
 FINDINGS:
-- [specific issue 1 with step reference, e.g. Step 3: hypothesis H2 has no file:line evidence]
-- [specific issue 2]"
+- [specific issue, reference the step it belongs to, e.g. Step 3: H2 has no file:line evidence]
+- [next issue]
+"
 
-FULL_PROMPT="${REVIEWER_INSTRUCTIONS}
-
---- BEGIN ANALYSIS ---
-$(cat "$ANALYSIS_FILE")
---- END ANALYSIS ---"
+FULL_PROMPT="$(cat "$ANALYSIS_FILE")${OUTPUT_FORMAT_REMINDER}"
 
 # ── Priority 1: codex ──────────────────────────────────────────────────────
 if command -v codex &>/dev/null 2>&1; then

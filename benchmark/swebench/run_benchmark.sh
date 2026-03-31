@@ -64,6 +64,8 @@ run_single() {
   if [[ "$VARIANT" == "with_skill" ]]; then
     FULL_PROMPT="まず以下のスキルを読み、その手順に厳密に従って分析してください。スキルの 'compare' モードを使用してください。
 
+REVIEWER_SCRIPT_PATH: $REPO_ROOT/benchmark/swebench/invoke_reviewer.sh
+
 ---SKILL START---
 $(cat "$SKILL_PATH")
 ---SKILL END---
