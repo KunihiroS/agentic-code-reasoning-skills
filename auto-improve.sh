@@ -72,7 +72,7 @@ check_goal() {
 run_codex() {
   local prompt_file="$1"
   local log_file="$2"
-  cat "$prompt_file" | codex --dangerously-bypass-approvals-and-sandbox -p - 2>&1 | tee "$log_file"
+  codex --dangerously-bypass-approvals-and-sandbox "$(cat "$prompt_file")" 2>&1 | tee "$log_file"
 }
 
 run_claude() {
