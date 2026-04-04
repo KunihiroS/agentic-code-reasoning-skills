@@ -32,6 +32,8 @@ Choose a mode before exploring files. If unsure, prefer `explain`.
 ## Core Method
 Apply this process in every mode. **Complete each section in order. Do not write a later section before completing earlier ones.**
 
+When a certificate template exists for your selected mode (see the mode sections below), **use that template as your primary guide** — it is the concrete implementation of Steps 1–6 for that mode.
+
 ### Step 1: Task and constraints
 Write a short task statement and list constraints (e.g., no repository execution, static inspection only, file:line evidence required).
 
@@ -71,7 +73,11 @@ UNRESOLVED:
 NEXT ACTION RATIONALE: [why the next file or step is justified]
 ```
 
+Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
+
 ### Step 4: Interprocedural tracing
+Update this table **in real time during Step 3** — add each row the moment you read a function definition. Do not write this table all at once from memory.
+
 For every function or method encountered on a relevant code path, record:
 
 | Function/Method | File:Line | Behavior (VERIFIED) |
@@ -107,11 +113,12 @@ If the opposite answer were true, what evidence would exist?
 
 ### Step 5.5: Pre-conclusion self-check (required)
 
-Before writing the formal conclusion, answer this single question:
+Before writing the formal conclusion, check each item below. If any answer is **NO**, fix it before Step 6.
 
-> **Is there any claim in my analysis that I stated without explicitly computing it?**
-
-If yes — go back and compute it, or mark it UNVERIFIED. Do not proceed to the conclusion until all claims are either derived from evidence or explicitly flagged as unverified.
+- [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
+- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
+- [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
@@ -126,6 +133,8 @@ Write a conclusion that:
 
 Goal: determine whether two changes produce the same relevant behavior.
 
+*This template implements Steps 1–6 of the Core Method for `compare` mode.*
+
 ### Certificate template
 
 Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
@@ -134,8 +143,14 @@ Complete every section. Do not skip to FORMAL CONCLUSION without completing ANAL
 DEFINITIONS:
 D1: Two changes are EQUIVALENT MODULO TESTS iff executing the relevant
     test suite produces identical pass/fail outcomes for both.
-D2: The relevant tests are [list of test categories — e.g., fail-to-pass,
-    pass-to-pass, integration, etc.]
+D2: The relevant tests are:
+    (a) Fail-to-pass tests: tests that fail on the unpatched code and are
+        expected to pass after the fix — always relevant.
+    (b) Pass-to-pass tests: tests that already pass before the fix — relevant
+        only if the changed code lies in their call path.
+    To identify them: search for tests referencing the changed function, class,
+    or variable. If the test suite is not provided, state this as a constraint
+    in P[N] and restrict the scope of D1 accordingly.
 
 PREMISES:
 P1: Change A modifies [file(s)] by [specific description]
@@ -322,6 +337,15 @@ Goal: inspect code for risks or improvement opportunities, grounded in traced ev
 - `code-smell-check` — hidden coupling, dead branches, poor naming, hard-to-test design
 - `api-misuse-check` — incorrect API usage, wrong assumptions about library semantics
 
+### Sub-mode focus
+
+| Sub-mode | Primary question | Key requirement |
+|---|---|---|
+| `security-audit` | Is this unsafe operation reachable? | Verify a concrete call path for every confirmed finding |
+| `refactor-review` | What is the safest minimal change? | Always propose the smallest effective refactoring first |
+| `code-smell-check` | Is there concrete coupling or testability harm? | Trace coupling to a specific dependency — do not flag patterns without evidence |
+| `api-misuse-check` | Does the usage violate the documented contract? | Read the API definition or documentation before claiming misuse |
+
 ### Certificate template
 
 ```
@@ -402,7 +426,3 @@ Every response using this skill must include:
 | Formal conclusion with premise/claim references | All |
 | Confidence level | All |
 
----
-
-## Design Intent
-This skill translates the Agentic Code Reasoning paper's semi-formal reasoning into one unified, mode-selected workflow. The certificate templates enforce structured evidence gathering — per-item iteration, interprocedural tracing, and mandatory refutation — to prevent the premature judgments and case-skipping that unstructured reasoning allows. The `audit-improve` mode extends the same reasoning discipline into security analysis, refactoring review, and API misuse detection, as indicated by the paper's future-work directions.
