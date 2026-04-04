@@ -27,7 +27,7 @@ GOAL_WINDOW=5
 GOAL_PERFECT_COUNT=2
 START_ITER=6
 
-COPILOT_MODEL="gpt-5.2"
+COPILOT_MODEL="claude-sonnet-4.6"
 
 # オプション解析
 while getopts "n:s:" opt; do
