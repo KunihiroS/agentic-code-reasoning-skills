@@ -1,0 +1,14 @@
+Let me look at a few more iterations to understand the full picture:
+
+Now I have enough context to formulate a clear hypothesis. Let me analyze the failures:
+- **3 UNKNOWN** cases (15315, 14122, 12663) — all at 31 turns (turn limit exhausted)
+- **2 false NOT_EQUIVALENT** (15368, 15382) — over-detection of differences
+
+The dominant failure is UNKNOWN (3/5). The agent exhausts turns without committing to a conclusion. The FORMAL CONCLUSION template allows UNKNOWN by not explicitly prohibiting it.
+
+Now verify the change:
+
+Good. Now create the iter-18 directory and write the rationale:
+
+変更内容を確認しました。最後にコミットします:
+
