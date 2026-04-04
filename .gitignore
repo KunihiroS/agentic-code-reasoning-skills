@@ -54,6 +54,8 @@ timing.json
 benchmark.json
 benchmark.md
 grading.json
+benchmark/swebench/runs/iter-[2-9]/
+benchmark/swebench/runs/iter-[1-9][0-9]/
 
 # Private / local files
 PLAN.md
