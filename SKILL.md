@@ -191,8 +191,6 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Test [name] will [PASS/FAIL] with Change A because [reason]
   Test [name] will [FAIL/PASS] with Change B because [reason]
   Therefore changes produce DIFFERENT test outcomes.
-  STOP: Once this counterexample is confirmed via traced code paths, proceed
-  directly to FORMAL CONCLUSION. Do not continue exploring additional tests.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
