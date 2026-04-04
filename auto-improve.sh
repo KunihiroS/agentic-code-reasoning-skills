@@ -3,6 +3,16 @@ set -euo pipefail
 
 # =============================================================================
 # auto-improve.sh — SKILL.md 自動改善ループ
+#
+# 実装者: GitHub Copilot CLI (gpt-5.2)
+# 監査役: Claude Code
+#
+# Usage:
+#   ./auto-improve.sh              # デフォルト: 最大20イテレーション
+#   ./auto-improve.sh -n 1         # 1イテレーションだけ実行
+#   ./auto-improve.sh -n 5         # 5イテレーションまで実行
+#   ./auto-improve.sh -s 8         # iter-8 から開始
+#   ./auto-improve.sh -n 1 -s 8    # iter-8 を1回だけ実行
 # =============================================================================
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -17,9 +27,24 @@ GOAL_WINDOW=5
 GOAL_PERFECT_COUNT=2
 START_ITER=6
 
+COPILOT_MODEL="gpt-5.2"
+
+# オプション解析
+while getopts "n:s:" opt; do
+  case $opt in
+    n) MAX_ITER="$OPTARG" ;;
+    s) START_ITER="$OPTARG" ;;
+    *) echo "Usage: $0 [-n max_iterations] [-s start_iter]"; exit 1 ;;
+  esac
+done
+
 export PATH="$HOME/.npm-global/bin:$PATH"
 
 cd "$REPO_DIR"
+
+# =============================================================================
+# ユーティリティ
+# =============================================================================
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] [iter-$current_iter] $1"
@@ -69,10 +94,10 @@ check_goal() {
   [ "$perfect" -ge "$GOAL_PERFECT_COUNT" ]
 }
 
-run_codex() {
+run_copilot() {
   local prompt_file="$1"
   local log_file="$2"
-  codex --dangerously-bypass-approvals-and-sandbox "$(cat "$prompt_file")" 2>&1 | tee "$log_file"
+  copilot -p "$(cat "$prompt_file")" --yolo --model "$COPILOT_MODEL" -s 2>&1 | tee "$log_file"
 }
 
 run_claude() {
@@ -84,6 +109,13 @@ run_claude() {
 # =============================================================================
 # メインループ
 # =============================================================================
+
+echo "=== auto-improve.sh ==="
+echo "  実装者: Copilot CLI ($COPILOT_MODEL)"
+echo "  監査役: Claude Code"
+echo "  開始: iter-$START_ITER"
+echo "  最大: ${MAX_ITER} イテレーション"
+echo "========================"
 
 for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   log "========== イテレーション開始 =========="
@@ -97,7 +129,7 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   log "前回スコア: ${prev_score}%"
 
   # === 1. 分析 + 2. 改善案作成 ===
-  log "Codex: 分析・改善案作成中..."
+  log "Copilot ($COPILOT_MODEL): 分析・改善案作成中..."
 
   if [ "$current_iter" -eq "$START_ITER" ]; then
     ANALYSIS_CONTEXT="docs/evaluation/benchmark-progression.md の全履歴を分析してください。初回イテレーションです。前回スコアは ${prev_score}% です。"
@@ -120,8 +152,8 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
 - 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持すること
 PROMPT
 
-  run_codex "$PROMPT_DIR/implement.txt" "$ITER_DIR/codex-implement.log"
-  log "Codex: 改善完了"
+  run_copilot "$PROMPT_DIR/implement.txt" "$ITER_DIR/copilot-implement.log"
+  log "Copilot: 改善完了"
 
   # === 3. 監査 ===
   log "Claude: 監査中..."
@@ -162,13 +194,13 @@ PROMPT
     else
       log "監査 FAIL (試行 $retry)"
       if [ "$retry" -lt "$MAX_AUDIT_RETRY" ]; then
-        log "Codex: 監査指摘を反映して再改善..."
+        log "Copilot: 監査指摘を反映して再改善..."
         cat > "$PROMPT_DIR/revise.txt" << PROMPT
 audit.md の指摘を読み、SKILL.md を修正してください。
 監査結果: $(cat "$ITER_DIR/audit.md" 2>/dev/null)
 rationale.md も更新してください。
 PROMPT
-        run_codex "$PROMPT_DIR/revise.txt" "$ITER_DIR/codex-revise-${retry}.log"
+        run_copilot "$PROMPT_DIR/revise.txt" "$ITER_DIR/copilot-revise-${retry}.log"
       fi
     fi
   done
