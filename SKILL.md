@@ -89,9 +89,15 @@ For every function or method encountered on a relevant code path, record:
 - Mark the Behavior column VERIFIED only after reading the source.
 - If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
 - Trace through conditionals, mapping tables, and configuration — not just the happy path.
+- For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
 
 ### Step 5: Refutation check (required)
 This step is **mandatory**, not optional.
+
+**Scope**: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim — especially:
+- "No test exercises this difference" — before asserting this, describe what such a test would look like and show you searched for exactly that pattern.
+- "This behavior is X" for a non-trivial control flow — before asserting this, ask what evidence would exist if the behavior were not X.
+- "These test outcomes are identical/different" — before asserting this, state what evidence would refute it.
 
 For `compare` and `audit-improve`:
 ```
@@ -187,7 +193,12 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
-  All existing tests produce identical outcomes because [reason with evidence]
+  If NOT EQUIVALENT were true, a counterexample would look like:
+    [describe concretely: what test, what input, what diverging behavior]
+  I searched for exactly that pattern:
+    Searched for: [specific pattern — test name, code path, or input type]
+    Found: [result — cite file:line, or NONE FOUND with search details]
+  Conclusion: no counterexample exists because [brief reason]
 
 FORMAL CONCLUSION:
 By Definition D1:
