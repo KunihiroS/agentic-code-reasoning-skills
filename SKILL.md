@@ -208,8 +208,6 @@ By Definition D1:
     [EQUIVALENT/NOT EQUIVALENT] modulo the existing tests.
 
 ANSWER: [YES equivalent / NO not equivalent]
-  (UNKNOWN is not a valid answer — if certainty is unachievable after thorough exploration,
-   commit to the best-supported answer and set CONFIDENCE: LOW, stating what evidence is missing.)
 CONFIDENCE: [HIGH / MEDIUM / LOW]
 ```
 
