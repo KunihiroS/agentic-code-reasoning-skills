@@ -62,15 +62,23 @@ This skill has been evaluated on [SWE-bench-Verified](https://github.com/princet
 
 Setup summary: 20 patch pairs from `django/django` (10 equivalent + 10 not equivalent), comparing with-skill vs without-skill accuracy.
 
+**Latest results (iter-5):**
+
 | | without skill | with skill | Delta |
 |---|---|---|---|
-| **Overall** | 75.0% | **85.0%** | **+10pp** |
-| Equivalent pairs | 60.0% | **80.0%** | +20pp |
-| Not-equivalent pairs | 90.0% | 90.0% | 0pp |
+| **Overall** | 80.0% | **85.0%** | **+5pp** |
+| Equivalent pairs | 60.0% | 70.0% | +10pp |
+| Not-equivalent pairs | 100.0% | **100.0%** | 0pp |
+| Avg cost per run | $2.70 | $2.95 | — |
 
-**Key finding:** The skill most clearly improves equivalent-pair judgments by enforcing a structured refutation step before concluding that two changes differ.
+**Key findings:**
+- The skill consistently improves accuracy over bare prompting across 5 benchmark iterations.
+- Extending counterfactual reasoning from a final gate to a continuous obligation (iter-5) fixed a persistent failure while reducing cost by 15% vs baseline.
+- Two persistent failures remain — both involve EQUIVALENT pairs where the AI's code trace or scope judgment is incorrect.
 
-Full results and raw outputs: [`benchmark/swebench/`](benchmark/swebench/)
+Full progression across all iterations: [`docs/evaluation/benchmark-progression.md`](docs/evaluation/benchmark-progression.md)
+
+Raw outputs from baseline run: [`benchmark/swebench/`](benchmark/swebench/)
 
 ## Repository Structure
 
@@ -85,7 +93,9 @@ Full results and raw outputs: [`benchmark/swebench/`](benchmark/swebench/)
 │       ├── data/               # Benchmark input (pairs.json, prompt template)
 │       └── runs/iter-1/        # Results (report.md, grades.json)
 ├── docs/
-│   └── design.md               # Design rationale and paper-to-skill interpretation
+│   ├── design.md               # Design rationale and paper-to-skill interpretation
+│   └── evaluation/
+│       └── benchmark-progression.md  # Full benchmark history across iterations
 └── LICENSE
 ```
 
