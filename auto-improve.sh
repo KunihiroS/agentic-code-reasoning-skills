@@ -3,9 +3,6 @@ set -euo pipefail
 
 # =============================================================================
 # auto-improve.sh — SKILL.md 自動改善ループ
-#
-# Codex が実装者、Claude が監査役。
-# Objective.md に定義されたプロセスに従う。
 # =============================================================================
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -24,86 +21,64 @@ export PATH="$HOME/.npm-global/bin:$PATH"
 
 cd "$REPO_DIR"
 
-# =============================================================================
-# ユーティリティ
-# =============================================================================
-
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] [iter-$current_iter] $1"
 }
 
 get_score_from_json() {
-  local json_file="$1"
   python3 -c "
-import json, sys
-with open('$json_file') as f:
+import json
+with open('$1') as f:
     data = json.load(f)
-print(data.get('with_skill', {}).get('overall_accuracy_pct', 0))
+print(int(data.get('with_skill', {}).get('overall_accuracy_pct', 0)))
 " 2>/dev/null || echo "0"
-}
-
-get_recent_scores() {
-  local count="$1"
-  local scores=()
-  for i in $(seq $((current_iter - 1)) -1 $START_ITER); do
-    local sf="$RUNS_DIR/iter-$i/scores.json"
-    if [ -f "$sf" ]; then
-      scores+=("$(get_score_from_json "$sf")")
-    fi
-    if [ ${#scores[@]} -ge "$count" ]; then break; fi
-  done
-  echo "${scores[*]}"
 }
 
 get_prev_score() {
   if [ "$current_iter" -eq "$START_ITER" ]; then
     echo "$INITIAL_SCORE"
   else
-    local prev_iter=$((current_iter - 1))
-    local sf="$RUNS_DIR/iter-$prev_iter/scores.json"
-    if [ -f "$sf" ]; then
-      get_score_from_json "$sf"
-    else
-      echo "$INITIAL_SCORE"
-    fi
+    local sf="$RUNS_DIR/iter-$((current_iter - 1))/scores.json"
+    [ -f "$sf" ] && get_score_from_json "$sf" || echo "$INITIAL_SCORE"
   fi
 }
 
 check_full_rollback() {
-  local scores_str
-  scores_str=$(get_recent_scores 3)
-  local scores=($scores_str)
-  if [ ${#scores[@]} -lt 3 ]; then return 1; fi
-
-  local sum=0
-  for s in "${scores[@]}"; do
-    sum=$((sum + ${s%.*}))
+  local scores=()
+  for i in $(seq $((current_iter - 1)) -1 $START_ITER); do
+    local sf="$RUNS_DIR/iter-$i/scores.json"
+    [ -f "$sf" ] && scores+=("$(get_score_from_json "$sf")")
+    [ ${#scores[@]} -ge 3 ] && break
   done
-  local avg=$((sum / 3))
-
-  if [ "$avg" -le "$ROLLBACK_THRESHOLD" ]; then
-    return 0  # ロールバック必要
-  fi
-  return 1
+  [ ${#scores[@]} -lt 3 ] && return 1
+  local sum=0
+  for s in "${scores[@]}"; do sum=$((sum + s)); done
+  [ $((sum / 3)) -le "$ROLLBACK_THRESHOLD" ]
 }
 
 check_goal() {
-  local scores_str
-  scores_str=$(get_recent_scores "$GOAL_WINDOW")
-  local scores=($scores_str)
-  if [ ${#scores[@]} -lt "$GOAL_WINDOW" ]; then return 1; fi
-
-  local perfect=0
-  for s in "${scores[@]}"; do
-    if [ "${s%.*}" -eq 100 ]; then
-      perfect=$((perfect + 1))
-    fi
+  local scores=()
+  for i in $(seq $((current_iter)) -1 $START_ITER); do
+    local sf="$RUNS_DIR/iter-$i/scores.json"
+    [ -f "$sf" ] && scores+=("$(get_score_from_json "$sf")")
+    [ ${#scores[@]} -ge "$GOAL_WINDOW" ] && break
   done
+  [ ${#scores[@]} -lt "$GOAL_WINDOW" ] && return 1
+  local perfect=0
+  for s in "${scores[@]}"; do [ "$s" -eq 100 ] && perfect=$((perfect + 1)); done
+  [ "$perfect" -ge "$GOAL_PERFECT_COUNT" ]
+}
 
-  if [ "$perfect" -ge "$GOAL_PERFECT_COUNT" ]; then
-    return 0  # ゴール達成
-  fi
-  return 1
+run_codex() {
+  local prompt_file="$1"
+  local log_file="$2"
+  cat "$prompt_file" | codex --dangerously-bypass-approvals-and-sandbox -p - 2>&1 | tee "$log_file"
+}
+
+run_claude() {
+  local prompt_file="$1"
+  local log_file="$2"
+  claude --dangerously-skip-permissions -p "$(cat "$prompt_file")" 2>&1 | tee "$log_file"
 }
 
 # =============================================================================
@@ -115,6 +90,8 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
 
   ITER_DIR="$RUNS_DIR/iter-$current_iter"
   mkdir -p "$ITER_DIR"
+  PROMPT_DIR="$ITER_DIR/.prompts"
+  mkdir -p "$PROMPT_DIR"
 
   prev_score=$(get_prev_score)
   log "前回スコア: ${prev_score}%"
@@ -128,7 +105,7 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
     ANALYSIS_CONTEXT="benchmark/swebench/runs/iter-$((current_iter - 1))/scores.json と前回の rationale.md を分析してください。前回スコアは ${prev_score}% です。"
   fi
 
-  codex --dangerously-bypass-approvals-and-sandbox -p "
+  cat > "$PROMPT_DIR/implement.txt" << PROMPT
 あなたは SKILL.md の改善担当です。以下の手順で作業してください。
 
 1. Objective.md を読み、ゴールと制約を理解する
@@ -141,28 +118,27 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
 注意:
 - 特定のベンチマークケースを狙い撃ちする変更は禁止
 - 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持すること
-" 2>&1 | tee "$ITER_DIR/codex-implement.log"
+PROMPT
 
+  run_codex "$PROMPT_DIR/implement.txt" "$ITER_DIR/codex-implement.log"
   log "Codex: 改善完了"
 
   # === 3. 監査 ===
   log "Claude: 監査中..."
-
   audit_passed=false
+
   for retry in $(seq 1 "$MAX_AUDIT_RETRY"); do
     log "監査 試行 $retry/$MAX_AUDIT_RETRY"
-
-    # diff を生成
     git diff -- SKILL.md > "$ITER_DIR/diff.patch"
 
-    claude --dangerously-skip-permissions -p "
+    cat > "$PROMPT_DIR/audit.txt" << PROMPT
 あなたは SKILL.md の変更に対する監査役です。
 
 以下のファイルを参照してください:
 - Objective.md の Audit Rubric セクション
-- README.md（スキルの概要と研究の要約）
-- docs/design.md（論文からスキルへの翻訳設計）
-- docs/reference/agentic-code-reasoning.pdf（原論文）
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
 
 以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
 Objective.md に定義された audit.md フォーマットに従って
@@ -175,9 +151,10 @@ $(cat "$ITER_DIR/diff.patch")
 
 rationale:
 $(cat "$ITER_DIR/rationale.md" 2>/dev/null || echo '(未作成)')
-" 2>&1 | tee "$ITER_DIR/claude-audit-${retry}.log"
+PROMPT
 
-    # 判定を確認
+    run_claude "$PROMPT_DIR/audit.txt" "$ITER_DIR/claude-audit-${retry}.log"
+
     if grep -q "判定: PASS" "$ITER_DIR/audit.md" 2>/dev/null; then
       audit_passed=true
       log "監査 PASS"
@@ -186,11 +163,12 @@ $(cat "$ITER_DIR/rationale.md" 2>/dev/null || echo '(未作成)')
       log "監査 FAIL (試行 $retry)"
       if [ "$retry" -lt "$MAX_AUDIT_RETRY" ]; then
         log "Codex: 監査指摘を反映して再改善..."
-        codex --dangerously-bypass-approvals-and-sandbox -p "
+        cat > "$PROMPT_DIR/revise.txt" << PROMPT
 audit.md の指摘を読み、SKILL.md を修正してください。
 監査結果: $(cat "$ITER_DIR/audit.md" 2>/dev/null)
 rationale.md も更新してください。
-" 2>&1 | tee "$ITER_DIR/codex-revise-${retry}.log"
+PROMPT
+        run_codex "$PROMPT_DIR/revise.txt" "$ITER_DIR/codex-revise-${retry}.log"
       fi
     fi
   done
@@ -200,8 +178,8 @@ rationale.md も更新してください。
     git checkout -- SKILL.md
     echo "監査を ${MAX_AUDIT_RETRY} 回パスできず、改善を断念" > "$ITER_DIR/rationale.md"
     git add "$ITER_DIR"
-    git commit -m "iter-${current_iter}: 監査 FAIL — ロールバック"
-    git push
+    git commit -m "iter-${current_iter}: 監査 FAIL — ロールバック" || true
+    git push || true
     continue
   fi
 
@@ -210,15 +188,15 @@ rationale.md も更新してください。
   cp SKILL.md "$ITER_DIR/SKILL.md.snapshot"
 
   cd "$BENCH_DIR"
-  bash run_benchmark.sh --variant with_skill 2>&1 | tee "$ITER_DIR/benchmark.log"
-  python3 grade.py > "$ITER_DIR/scores.json" 2>&1
+  bash run_benchmark.sh --variant with_skill 2>&1 | tee "$ITER_DIR/benchmark.log" || true
+  python3 grade.py > "$ITER_DIR/scores.json" 2>&1 || true
   cd "$REPO_DIR"
 
   # === 5. 結果評価 ===
   current_score=$(get_score_from_json "$ITER_DIR/scores.json")
   log "今回スコア: ${current_score}% (前回: ${prev_score}%)"
 
-  if [ "${current_score%.*}" -lt "${prev_score%.*}" ]; then
+  if [ "$current_score" -lt "$prev_score" ]; then
     log "スコア低下 — SKILL.md を前イテレーションに戻す"
     git checkout -- SKILL.md
   fi
@@ -233,11 +211,11 @@ rationale.md も更新してください。
   log "コミット・プッシュ..."
   git add -A
   git commit -m "iter-${current_iter}: score=${current_score}% (prev=${prev_score}%)" || true
-  git push
+  git push || true
 
   # === 8. ゴール判定 ===
   if check_goal; then
-    log "🎉 ゴール達成！ 直近${GOAL_WINDOW}回中${GOAL_PERFECT_COUNT}回以上 100%"
+    log "ゴール達成！ 直近${GOAL_WINDOW}回中${GOAL_PERFECT_COUNT}回以上 100%"
     exit 0
   fi
 
