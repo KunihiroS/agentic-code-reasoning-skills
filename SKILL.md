@@ -125,6 +125,7 @@ Before writing the formal conclusion, check each item below. If any answer is **
 - [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
 - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
 - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+- [ ] When claiming NOT EQUIVALENT: the counterexample test's **assertion** (expected vs actual value, return check, or exception type) has been explicitly traced to produce different outcomes — a code path that diverges in intermediate state but converges before the test's assert statement is **not** a valid counterexample.
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
@@ -420,6 +421,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
+10. **Commit to a conclusion.** Do not answer UNKNOWN. When evidence is incomplete or exhausted before full tracing is possible, answer with the strongest conclusion the traced evidence supports and assign LOW confidence. An incomplete trace that strongly favors one answer is more useful than no answer.
 
 ---
 
