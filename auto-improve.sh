@@ -52,10 +52,18 @@ log() {
 
 get_score_from_json() {
   python3 -c "
-import json
+import json, sys
 with open('$1') as f:
     data = json.load(f)
-print(int(data.get('with_skill', {}).get('overall_accuracy_pct', 0)))
+# grades.json format: list of dicts with 'correct' field
+if isinstance(data, list):
+    total = len([r for r in data if r.get('variant') == 'with_skill'])
+    correct = len([r for r in data if r.get('variant') == 'with_skill' and r.get('correct')])
+    print(int(100 * correct / total) if total > 0 else 0)
+elif isinstance(data, dict):
+    print(int(data.get('with_skill', {}).get('overall_accuracy_pct', 0)))
+else:
+    print(0)
 " 2>/dev/null || echo "0"
 }
 
@@ -219,10 +227,11 @@ PROMPT
   log "ベンチマーク実行中..."
   cp SKILL.md "$ITER_DIR/SKILL.md.snapshot"
 
-  cd "$BENCH_DIR"
-  bash run_benchmark.sh --variant with_skill 2>&1 | tee "$ITER_DIR/benchmark.log" || true
-  python3 grade.py > "$ITER_DIR/scores.json" 2>&1 || true
   cd "$REPO_DIR"
+  bash benchmark/swebench/run_benchmark.sh --variant with_skill --runs-dir "$ITER_DIR" 2>&1 | tee "$ITER_DIR/benchmark.log" || true
+  python3 benchmark/swebench/grade.py "$ITER_DIR" benchmark/swebench/data/pairs.json 2>&1 | tee "$ITER_DIR/grade.log" || true
+  # grades.json を scores.json としてコピー（スクリプト内の参照用）
+  cp "$ITER_DIR/grades.json" "$ITER_DIR/scores.json" 2>/dev/null || true
 
   # === 5. 結果評価 ===
   current_score=$(get_score_from_json "$ITER_DIR/scores.json")
