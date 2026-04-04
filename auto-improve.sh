@@ -128,7 +128,7 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
     ANALYSIS_CONTEXT="benchmark/swebench/runs/iter-$((current_iter - 1))/scores.json と前回の rationale.md を分析してください。前回スコアは ${prev_score}% です。"
   fi
 
-  codex -p "
+  codex --dangerously-bypass-approvals-and-sandbox -p "
 あなたは SKILL.md の改善担当です。以下の手順で作業してください。
 
 1. Objective.md を読み、ゴールと制約を理解する
@@ -141,7 +141,7 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
 注意:
 - 特定のベンチマークケースを狙い撃ちする変更は禁止
 - 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持すること
-" --dangerously-skip-permissions 2>&1 | tee "$ITER_DIR/codex-implement.log"
+" 2>&1 | tee "$ITER_DIR/codex-implement.log"
 
   log "Codex: 改善完了"
 
@@ -155,7 +155,7 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
     # diff を生成
     git diff -- SKILL.md > "$ITER_DIR/diff.patch"
 
-    claude -p "
+    claude --dangerously-skip-permissions -p "
 あなたは SKILL.md の変更に対する監査役です。
 
 以下のファイルを参照してください:
@@ -175,7 +175,7 @@ $(cat "$ITER_DIR/diff.patch")
 
 rationale:
 $(cat "$ITER_DIR/rationale.md" 2>/dev/null || echo '(未作成)')
-" --dangerously-skip-permissions 2>&1 | tee "$ITER_DIR/claude-audit-${retry}.log"
+" 2>&1 | tee "$ITER_DIR/claude-audit-${retry}.log"
 
     # 判定を確認
     if grep -q "判定: PASS" "$ITER_DIR/audit.md" 2>/dev/null; then
@@ -186,11 +186,11 @@ $(cat "$ITER_DIR/rationale.md" 2>/dev/null || echo '(未作成)')
       log "監査 FAIL (試行 $retry)"
       if [ "$retry" -lt "$MAX_AUDIT_RETRY" ]; then
         log "Codex: 監査指摘を反映して再改善..."
-        codex -p "
+        codex --dangerously-bypass-approvals-and-sandbox -p "
 audit.md の指摘を読み、SKILL.md を修正してください。
 監査結果: $(cat "$ITER_DIR/audit.md" 2>/dev/null)
 rationale.md も更新してください。
-" --dangerously-skip-permissions 2>&1 | tee "$ITER_DIR/codex-revise-${retry}.log"
+" 2>&1 | tee "$ITER_DIR/codex-revise-${retry}.log"
       fi
     fi
   done
