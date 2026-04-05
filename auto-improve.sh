@@ -303,6 +303,29 @@ PROMPT
   if [ "$current_score" -lt "$prev_score" ]; then
     log "スコア低下 — SKILL.md を前イテレーションに戻す"
     git checkout -- SKILL.md
+
+    # failed-approaches.md に失敗を自動追記
+    log "Claude: 失敗分析・ブラックリスト更新中..."
+    cat > "$PROMPT_DIR/update-bl.txt" << BLPROMPT
+今回のイテレーション(iter-${current_iter})で SKILL.md を改善したが、スコアが ${prev_score}% から ${current_score}% に低下した。
+
+以下のファイルを参照し、failed-approaches.md に新しいエントリを追記してください:
+- benchmark/swebench/runs/iter-${current_iter}/proposal.md（改善案）
+- benchmark/swebench/runs/iter-${current_iter}/rationale.md（変更理由）
+- benchmark/swebench/runs/iter-${current_iter}/diff.patch（実際の変更差分）
+
+追記フォーマット（既存エントリに倣うこと）:
+### BL-{次の番号}: {変更の要約}
+- 試行: iter-${current_iter}
+- 内容: {何を変えたか}
+- 結果: スコア ${prev_score}% → ${current_score}%
+- 原因: {なぜスコアが下がったか}
+- Fail Core: {この失敗の本質は何か。表現を変えても同じ失敗になる根本的なメカニズムを記述せよ。既存の共通原則（判定の非対称操作、出力側の制約、探索量の削減、同方向の変形）のいずれかに該当するか、もしくは新たな原則が必要か検討せよ}
+
+また、共通の失敗パターンに新たな原則を追加すべきか検討し、必要なら追記せよ。
+BLPROMPT
+    run_claude "$PROMPT_DIR/update-bl.txt" "$ITER_DIR/claude-bl-update.log"
+    log "ブラックリスト更新完了"
   fi
 
   # === 6. フルロールバック判定 ===
