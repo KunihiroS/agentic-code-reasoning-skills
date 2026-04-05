@@ -324,7 +324,7 @@ PROMPT
 
 また、共通の失敗パターンに新たな原則を追加すべきか検討し、必要なら追記せよ。
 BLPROMPT
-    run_claude "$PROMPT_DIR/update-bl.txt" "$ITER_DIR/claude-bl-update.log"
+    run_claude "$PROMPT_DIR/update-bl.txt" "$ITER_DIR/claude-bl-update.log" || log "ブラックリスト更新失敗（続行）"
     log "ブラックリスト更新完了"
   fi
 
