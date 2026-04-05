@@ -191,3 +191,135 @@ nohup bash auto-improve.sh > /tmp/auto-improve.log 2>&1 &
 1. **Web 検索が実行されない**: ディスカッションで既存研究の調査を指示しているが、Claude Code の `-p` モードで Web 検索が動作していない
 2. **改善方向の収束**: エージェントが NOT_EQ のハードルを上げる方向に収束しやすい。Fail Core と共通原則で抑制を試みている
 3. **ベンチマークの確率的変動**: 同じ SKILL.md でもベンチマーク結果が実行ごとに変動する可能性がある（未検証）
+
+## プロンプト一覧
+
+各ステップで AI エージェントに渡されるプロンプトの全文。
+`${current_iter}` はイテレーション番号、`${prev_score}` は前回スコア、`${ANALYSIS_CONTEXT}` は初回/2回目以降で分岐する分析指示に置換される。
+
+### Step 3: 提案（propose.txt → Copilot CLI）
+
+```
+あなたは SKILL.md の改善担当です。まだ SKILL.md を編集しないでください。まず改善案を提案してください。
+
+1. Objective.md を読み、ゴールと制約を理解する
+2. failed-approaches.md を読み、過去に失敗した改善方向を確認する。ブラックリストに含まれる方向は提案しないこと
+3. {ANALYSIS_CONTEXT}
+4. README.md と docs/design.md を参照し、研究のコア構造を確認する
+5. 失敗原因を特定し、汎用的な改善仮説を1つだけ立てる
+6. 改善案を benchmark/swebench/runs/iter-{N}/proposal.md に書く。以下を含むこと:
+   - 改善仮説（1つだけ）
+   - SKILL.md のどこをどう変えるか（具体的な変更内容）
+   - EQUIV と NOT_EQ の両方の正答率にどう影響するかの予測
+   - failed-approaches.md のどのブラックリストにも該当しないことの確認
+   - 変更規模（20行以内を目安）
+
+注意:
+- 特定のベンチマークケースを狙い撃ちする変更は禁止
+- 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持すること
+- 失敗ケースの修正に固執しない。推論品質の全体的な向上を目指すこと
+- NOT_EQ のハードルを上げる方向の変更は過去に全て失敗している。別のアプローチを考えること
+```
+
+### Step 4: ディスカッション（discuss.txt → Claude Code）
+
+```
+あなたは SKILL.md の改善に対する監査役です。実装者から改善案が提案されました。
+
+以下を参照して改善案を評価してください:
+- benchmark/swebench/runs/iter-{N}/proposal.md（実装者の改善案）
+- failed-approaches.md（過去の失敗履歴）
+- Objective.md（ゴール・制約・ルーブリック）
+- README.md、docs/design.md
+
+以下の観点で意見を述べ、benchmark/swebench/runs/iter-{N}/discussion.md に書いてください:
+1. この改善案に関連する既存研究やコード推論の知見を Web 検索して調査し、改善案の妥当性を
+   学術的・実務的観点から評価せよ（検索結果のURLと要点を記載すること）
+2. この変更は EQUIV と NOT_EQ の両方の正答率に対してどう影響するか？
+3. failed-approaches.md のブラックリストとの類似性を厳密にチェックせよ。以下の観点で判定すること:
+   - 表現や用語が違っていても、実質的な効果が同じではないか？
+   - この変更は結果的に NOT_EQ と判定するハードルを上げることにならないか？
+   - 過去の失敗と同じメカニズム（EQUIV 改善のために NOT_EQ を犠牲にする）に陥っていないか？
+   上記のいずれかに該当する場合は「承認: NO」とし、全く異なるアプローチを提案せよ。
+4. 全体の推論品質がどう向上すると期待できるか？
+5. 承認するか、修正を求めるか（修正を求める場合は、過去と全く異なる方向の具体的な改善案を提示せよ）
+
+最後に「承認: YES」または「承認: NO（理由）」を明記してください。
+```
+
+### Step 4（却下時）: 再提案（repropose.txt → Copilot CLI）
+
+```
+監査役から改善案が却下されました。フィードバックを読み、新しい改善案を提案してください。
+
+監査役のフィードバック: {discussion.md の内容}
+failed-approaches.md も再度参照してください。
+
+benchmark/swebench/runs/iter-{N}/proposal.md を上書きしてください。
+```
+
+### Step 5: 実装（implement.txt → Copilot CLI）
+
+```
+benchmark/swebench/runs/iter-{N}/proposal.md の改善案に従い、以下を実行してください:
+
+1. SKILL.md を編集する（proposal.md に記載した変更のみ）
+2. benchmark/swebench/runs/iter-{N}/rationale.md を Objective.md のフォーマットに従い作成する
+
+proposal.md に書いた内容以外の変更は行わないでください。
+```
+
+### Step 6: 監査（audit.txt → Claude Code）
+
+```
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-{N}/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+{diff.patch の内容}
+
+rationale:
+{rationale.md の内容}
+```
+
+### Step 6（FAIL時）: 修正（revise.txt → Copilot CLI）
+
+```
+audit.md の指摘を読み、SKILL.md を修正してください。
+監査結果: {audit.md の内容}
+rationale.md も更新してください。
+```
+
+### Step 8（スコア低下時）: BL 更新（update-bl.txt → Claude Code）
+
+```
+今回のイテレーション(iter-{N})で SKILL.md を改善したが、スコアが {prev}% から {current}% に低下した。
+
+以下のファイルを参照し、failed-approaches.md に新しいエントリを追記してください:
+- benchmark/swebench/runs/iter-{N}/proposal.md（改善案）
+- benchmark/swebench/runs/iter-{N}/rationale.md（変更理由）
+- benchmark/swebench/runs/iter-{N}/diff.patch（実際の変更差分）
+
+追記フォーマット（既存エントリに倣うこと）:
+### BL-{次の番号}: {変更の要約}
+- 試行: iter-{N}
+- 内容: {何を変えたか}
+- 結果: スコア {prev}% → {current}%
+- 原因: {なぜスコアが下がったか}
+- Fail Core: {この失敗の本質は何か。表現を変えても同じ失敗になる根本的なメカニズムを記述せよ。
+  既存の共通原則（判定の非対称操作、出力側の制約、探索量の削減、同方向の変形）のいずれかに
+  該当するか、もしくは新たな原則が必要か検討せよ}
+
+また、共通の失敗パターンに新たな原則を追加すべきか検討し、必要なら追記せよ。
+```
