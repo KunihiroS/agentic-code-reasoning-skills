@@ -168,23 +168,16 @@ ANALYSIS OF TEST BEHAVIOR:
 
 For each relevant test:
   Test: [name]
-  Divergence: Identify the first point in this test's code path where
-              Change A and Change B produce different values or behavior.
-    A at [file:line]: [specific value or behavior — VERIFIED by reading source]
-    B at [file:line]: [specific value or behavior — VERIFIED by reading source]
-    (If values are identical at every traced point through the test assertion:
-     Comparison is SAME — omit Claim below)
-  Claim C[N]: Test will [PASS with A / FAIL with B] or [FAIL with A / PASS with B]
-              because [trace from divergence point to test assertion — cite file:line]
+  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                because [trace through code — cite file:line]
+  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+                because [trace through code — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
-  Divergence: Where in this test's code path do A and B produce different values?
-    A at [file:line]: [value or behavior — VERIFIED]
-    B at [file:line]: [value or behavior — VERIFIED]
-    (If identical at every traced point: Comparison is SAME — omit Claim below)
-  Claim C[N]: behavior differs because [trace from divergence to assertion — cite file:line]
+  Claim C[N].1: With Change A, behavior is [description]
+  Claim C[N].2: With Change B, behavior is [description]
   Comparison: SAME / DIFFERENT outcome
 
 EDGE CASES RELEVANT TO EXISTING TESTS:
