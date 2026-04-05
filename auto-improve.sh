@@ -149,23 +149,24 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   cat > "$PROMPT_DIR/propose.txt" << PROMPT
 あなたは SKILL.md の改善担当です。まだ SKILL.md を編集しないでください。まず改善案を提案してください。
 
-1. Objective.md を読み、ゴールと制約を理解する
-2. failed-approaches.md を読み、過去に失敗した改善方向を確認する。ブラックリストに含まれる方向は提案しないこと
+1. Objective.md を読み、ゴール・制約・Exploration Framework を理解する
+2. failed-approaches.md を読み、過去に失敗した改善方向と共通原則を確認する
 3. ${ANALYSIS_CONTEXT}
-4. README.md と docs/design.md を参照し、研究のコア構造を確認する
-5. 失敗原因を特定し、汎用的な改善仮説を1つだけ立てる
+4. README.md と docs/design.md と docs/reference/agentic-code-reasoning.pdf を参照し、研究のコア構造と未活用のアイデアを確認する
+5. Exploration Framework の6カテゴリ（A〜F）から、過去に試されていないカテゴリのアプローチを選択する
 6. 改善案を benchmark/swebench/runs/iter-${current_iter}/proposal.md に書く。以下を含むこと:
+   - 選択した Exploration Framework のカテゴリ（A〜F）とその理由
    - 改善仮説（1つだけ）
    - SKILL.md のどこをどう変えるか（具体的な変更内容）
    - EQUIV と NOT_EQ の両方の正答率にどう影響するかの予測
-   - failed-approaches.md のどのブラックリストにも該当しないことの確認
+   - failed-approaches.md のブラックリストおよび共通原則との照合結果
    - 変更規模（20行以内を目安）
 
 注意:
 - 特定のベンチマークケースを狙い撃ちする変更は禁止
 - 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持すること
-- 失敗ケースの修正に固執しない。推論品質の全体的な向上を目指すこと
-- NOT_EQ のハードルを上げる方向の変更は過去に全て失敗している。別のアプローチを考えること
+- 失敗ケースの修正に固執しない。SKILL.md の推論フレームワークとしての質の向上を目指すこと
+- failed-approaches.md の共通原則に抵触する変更は提案しないこと
 PROMPT
 
   run_copilot "$PROMPT_DIR/propose.txt" "$ITER_DIR/copilot-propose.log"
@@ -184,14 +185,14 @@ PROMPT
 
 以下の観点で意見を述べ、benchmark/swebench/runs/iter-${current_iter}/discussion.md に書いてください:
 1. この改善案に関連する既存研究やコード推論の知見を Web 検索して調査し、改善案の妥当性を学術的・実務的観点から評価せよ（検索結果のURLと要点を記載すること）
-2. この変更は EQUIV と NOT_EQ の両方の正答率に対してどう影響するか？
-3. failed-approaches.md のブラックリストとの類似性を厳密にチェックせよ。以下の観点で判定すること:
+2. Exploration Framework のカテゴリ選択は適切か？過去のイテレーションで同一カテゴリが既に試されていないか？
+3. この変更は EQUIV と NOT_EQ の両方の正答率に対してどう影響するか？変更の実効的差分（変更前との差分）を分析し、その差分が一方向にしか作用しないか確認せよ。
+4. failed-approaches.md のブラックリストおよび共通原則との照合:
    - 表現や用語が違っていても、実質的な効果が同じではないか？
-   - この変更は結果的に NOT_EQ と判定するハードルを上げることにならないか？
-   - 過去の失敗と同じメカニズム（EQUIV 改善のために NOT_EQ を犠牲にする）に陥っていないか？
-   上記のいずれかに該当する場合は「承認: NO」とし、全く異なるアプローチを提案せよ。
-4. 全体の推論品質がどう向上すると期待できるか？
-5. 承認するか、修正を求めるか（修正を求める場合は、過去と全く異なる方向の具体的な改善案を提示せよ）
+   - 共通原則（判定の非対称操作、出力側の制約、探索量の削減、同方向の変形、入力テンプレートの過剰規定、対称化の実効差分）のいずれかに抵触しないか？
+   - 上記に該当する場合は「承認: NO」とし、未試行のカテゴリから別のアプローチを提案せよ。
+5. 全体の推論品質がどう向上すると期待できるか？
+6. 承認するか、修正を求めるか
 
 最後に「承認: YES」または「承認: NO（理由）」を明記してください。
 PROMPT
