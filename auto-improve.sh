@@ -145,23 +145,81 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
     ANALYSIS_CONTEXT="benchmark/swebench/runs/iter-$((current_iter - 1))/scores.json と前回の rationale.md を分析してください。前回スコアは ${prev_score}% です。"
   fi
 
-  cat > "$PROMPT_DIR/implement.txt" << PROMPT
-あなたは SKILL.md の改善担当です。以下の手順で作業してください。
+  # === 2. 失敗履歴確認 + 3. 改善案提案 ===
+  cat > "$PROMPT_DIR/propose.txt" << PROMPT
+あなたは SKILL.md の改善担当です。まだ SKILL.md を編集しないでください。まず改善案を提案してください。
 
 1. Objective.md を読み、ゴールと制約を理解する
-2. ${ANALYSIS_CONTEXT}
-3. README.md と docs/design.md を参照し、研究のコア構造を確認する
-4. 失敗原因を特定し、汎用的な改善仮説を立てる
-5. SKILL.md を改善する（直接ファイルを編集）
-6. benchmark/swebench/runs/iter-${current_iter}/rationale.md を Objective.md のフォーマットに従い作成する
+2. failed-approaches.md を読み、過去に失敗した改善方向を確認する。ブラックリストに含まれる方向は提案しないこと
+3. ${ANALYSIS_CONTEXT}
+4. README.md と docs/design.md を参照し、研究のコア構造を確認する
+5. 失敗原因を特定し、汎用的な改善仮説を1つだけ立てる
+6. 改善案を benchmark/swebench/runs/iter-${current_iter}/proposal.md に書く。以下を含むこと:
+   - 改善仮説（1つだけ）
+   - SKILL.md のどこをどう変えるか（具体的な変更内容）
+   - EQUIV と NOT_EQ の両方の正答率にどう影響するかの予測
+   - failed-approaches.md のどのブラックリストにも該当しないことの確認
+   - 変更規模（20行以内を目安）
 
 注意:
 - 特定のベンチマークケースを狙い撃ちする変更は禁止
 - 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持すること
+- 失敗ケースの修正に固執しない。推論品質の全体的な向上を目指すこと
+- NOT_EQ のハードルを上げる方向の変更は過去に全て失敗している。別のアプローチを考えること
+PROMPT
+
+  run_copilot "$PROMPT_DIR/propose.txt" "$ITER_DIR/copilot-propose.log"
+  log "Copilot: 改善案提案完了"
+
+  # === 4. ディスカッション ===
+  log "Claude: ディスカッション..."
+  cat > "$PROMPT_DIR/discuss.txt" << PROMPT
+あなたは SKILL.md の改善に対する監査役です。実装者から改善案が提案されました。
+
+以下を参照して改善案を評価してください:
+- benchmark/swebench/runs/iter-${current_iter}/proposal.md（実装者の改善案）
+- failed-approaches.md（過去の失敗履歴）
+- Objective.md（ゴール・制約・ルーブリック）
+- README.md、docs/design.md
+
+以下の観点で意見を述べ、benchmark/swebench/runs/iter-${current_iter}/discussion.md に書いてください:
+1. この変更は EQUIV と NOT_EQ の両方の正答率に対してどう影響するか？
+2. failed-approaches.md のブラックリストに類似していないか？
+3. 全体の推論品質がどう向上すると期待できるか？
+4. 承認するか、修正を求めるか（修正を求める場合は具体的な改善案を提示）
+
+最後に「承認: YES」または「承認: NO（理由）」を明記してください。
+PROMPT
+
+  run_claude "$PROMPT_DIR/discuss.txt" "$ITER_DIR/claude-discuss.log"
+
+  if grep -q "承認: NO" "$ITER_DIR/discussion.md" 2>/dev/null; then
+    log "ディスカッション: 改善案が却下されました。再提案..."
+    cat > "$PROMPT_DIR/repropose.txt" << PROMPT
+監査役から改善案が却下されました。フィードバックを読み、新しい改善案を提案してください。
+
+監査役のフィードバック: $(cat "$ITER_DIR/discussion.md" 2>/dev/null)
+failed-approaches.md も再度参照してください。
+
+benchmark/swebench/runs/iter-${current_iter}/proposal.md を上書きしてください。
+PROMPT
+    run_copilot "$PROMPT_DIR/repropose.txt" "$ITER_DIR/copilot-repropose.log"
+    log "Copilot: 再提案完了"
+  fi
+
+  # === 5. 実装 ===
+  log "Copilot: 実装中..."
+  cat > "$PROMPT_DIR/implement.txt" << PROMPT
+benchmark/swebench/runs/iter-${current_iter}/proposal.md の改善案に従い、以下を実行してください:
+
+1. SKILL.md を編集する（proposal.md に記載した変更のみ）
+2. benchmark/swebench/runs/iter-${current_iter}/rationale.md を Objective.md のフォーマットに従い作成する
+
+proposal.md に書いた内容以外の変更は行わないでください。
 PROMPT
 
   run_copilot "$PROMPT_DIR/implement.txt" "$ITER_DIR/copilot-implement.log"
-  log "Copilot: 改善完了"
+  log "Copilot: 実装完了"
 
   # === 3. 監査 ===
   log "Claude: 監査中..."
