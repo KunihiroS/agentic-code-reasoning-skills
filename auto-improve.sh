@@ -5,7 +5,7 @@ set -euo pipefail
 # auto-improve.sh — SKILL.md 自動改善ループ
 #
 # 実装者: GitHub Copilot CLI (gpt-5.2)
-# 監査役: Claude Code
+# 監査役: Pi (pi-coding-agent, openai-codex/gpt-5.4)
 #
 # Usage:
 #   ./auto-improve.sh              # デフォルト: 最大20イテレーション
@@ -108,10 +108,10 @@ run_copilot() {
   copilot -p "$(cat "$prompt_file")" --yolo --model "$COPILOT_MODEL" -s 2>&1 | tee "$log_file"
 }
 
-run_claude() {
+run_pi() {
   local prompt_file="$1"
   local log_file="$2"
-  claude --dangerously-skip-permissions -p "$(cat "$prompt_file")" 2>&1 | tee "$log_file"
+  pi -p --no-session "$(cat "$prompt_file")" 2>&1 | tee "$log_file"
 }
 
 # =============================================================================
@@ -120,7 +120,7 @@ run_claude() {
 
 echo "=== auto-improve.sh ==="
 echo "  実装者: Copilot CLI ($COPILOT_MODEL)"
-echo "  監査役: Claude Code"
+echo "  監査役: Pi (gpt-5.4)"
 echo "  開始: iter-$START_ITER"
 echo "  最大: ${MAX_ITER} イテレーション"
 echo "========================"
@@ -173,7 +173,7 @@ PROMPT
   log "Copilot: 改善案提案完了"
 
   # === 4. ディスカッション ===
-  log "Claude: ディスカッション..."
+  log "Pi: ディスカッション..."
   cat > "$PROMPT_DIR/discuss.txt" << PROMPT
 あなたは SKILL.md の改善に対する監査役です。実装者から改善案が提案されました。
 
@@ -184,7 +184,7 @@ PROMPT
 - README.md、docs/design.md
 
 以下の観点で意見を述べ、benchmark/swebench/runs/iter-${current_iter}/discussion.md に書いてください:
-1. この改善案に関連する既存研究やコード推論の知見を Web 検索して調査し、改善案の妥当性を学術的・実務的観点から評価せよ（検索結果のURLと要点を記載すること）
+1. この改善案に関連する既存研究やコード推論の知見を mcp ツール（DuckDuckGo MCP サーバー）を使って Web 検索し、改善案の妥当性を学術的・実務的観点から評価せよ（検索結果のURLと要点を記載すること）
 2. Exploration Framework のカテゴリ選択は適切か？過去のイテレーションで同一カテゴリが既に試されていないか？
 3. この変更は EQUIV と NOT_EQ の両方の正答率に対してどう影響するか？変更の実効的差分（変更前との差分）を分析し、その差分が一方向にしか作用しないか確認せよ。
 4. failed-approaches.md のブラックリストおよび共通原則との照合:
@@ -197,7 +197,7 @@ PROMPT
 最後に「承認: YES」または「承認: NO（理由）」を明記してください。
 PROMPT
 
-  run_claude "$PROMPT_DIR/discuss.txt" "$ITER_DIR/claude-discuss.log"
+  run_pi "$PROMPT_DIR/discuss.txt" "$ITER_DIR/claude-discuss.log"
 
   if grep -q "承認: NO" "$ITER_DIR/discussion.md" 2>/dev/null; then
     log "ディスカッション: 改善案が却下されました。再提案..."
@@ -228,7 +228,7 @@ PROMPT
   log "Copilot: 実装完了"
 
   # === 3. 監査 ===
-  log "Claude: 監査中..."
+  log "Pi: 監査中..."
   audit_passed=false
 
   for retry in $(seq 1 "$MAX_AUDIT_RETRY"); do
@@ -257,7 +257,7 @@ rationale:
 $(cat "$ITER_DIR/rationale.md" 2>/dev/null || echo '(未作成)')
 PROMPT
 
-    run_claude "$PROMPT_DIR/audit.txt" "$ITER_DIR/claude-audit-${retry}.log"
+    run_pi "$PROMPT_DIR/audit.txt" "$ITER_DIR/claude-audit-${retry}.log"
 
     if grep -q "判定: PASS" "$ITER_DIR/audit.md" 2>/dev/null; then
       audit_passed=true
@@ -306,7 +306,7 @@ PROMPT
     git checkout -- SKILL.md
 
     # failed-approaches.md に失敗を自動追記
-    log "Claude: 失敗分析・ブラックリスト更新中..."
+    log "Pi: 失敗分析・ブラックリスト更新中..."
     cat > "$PROMPT_DIR/update-bl.txt" << BLPROMPT
 今回のイテレーション(iter-${current_iter})で SKILL.md を改善したが、スコアが ${prev_score}% から ${current_score}% に低下した。
 
@@ -325,7 +325,7 @@ PROMPT
 
 また、共通の失敗パターンに新たな原則を追加すべきか検討し、必要なら追記せよ。
 BLPROMPT
-    run_claude "$PROMPT_DIR/update-bl.txt" "$ITER_DIR/claude-bl-update.log" || log "ブラックリスト更新失敗（続行）"
+    run_pi "$PROMPT_DIR/update-bl.txt" "$ITER_DIR/claude-bl-update.log" || log "ブラックリスト更新失敗（続行）"
     log "ブラックリスト更新完了"
   fi
 
