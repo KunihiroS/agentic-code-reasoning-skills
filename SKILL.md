@@ -217,7 +217,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference produces a different observable test outcome by tracing through at least one test
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
