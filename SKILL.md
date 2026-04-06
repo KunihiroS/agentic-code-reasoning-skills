@@ -153,9 +153,7 @@ D2: The relevant tests are:
     (a) Fail-to-pass tests: tests that fail on the unpatched code and are
         expected to pass after the fix — always relevant.
     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
-        only if the changed code lies in their call path. Verify this by
-        tracing the test's execution; do not assume relevance from file
-        proximity, shared module, or test-level changes such as deletion.
+        only if the changed code lies in their call path.
     To identify them: search for tests referencing the changed function, class,
     or variable. If the test suite is not provided, state this as a constraint
     in P[N] and restrict the scope of D1 accordingly.
@@ -190,13 +188,14 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
     - Test outcome same: YES / NO
 
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-  Test [name] will [PASS/FAIL] with Change A because [reason]
-  Test [name] will [FAIL/PASS] with Change B because [reason]
+  Test [name] will [PASS/FAIL] with Change A because [trace — cite file:line]
+  Test [name] will [FAIL/PASS] with Change B because [trace — cite file:line]
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
-    [describe concretely: what test, what input, what diverging behavior]
+    [describe concretely: what test, what assertion in P[N], what code difference
+     would cause that assertion to produce a different result]
   I searched for exactly that pattern:
     Searched for: [specific pattern — test name, code path, or input type]
     Found: [result — cite file:line, or NONE FOUND with search details]
@@ -422,7 +421,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
-10. **Commit to a conclusion.** Do not answer UNKNOWN. When evidence is incomplete or exhausted before full tracing is possible, answer with the strongest conclusion the traced evidence supports and assign LOW confidence. An incomplete trace that strongly favors one answer is more useful than no answer.
 
 ---
 
