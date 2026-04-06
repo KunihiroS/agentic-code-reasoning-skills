@@ -169,9 +169,9 @@ ANALYSIS OF TEST BEHAVIOR:
 For each relevant test:
   Test: [name]
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
+                because [trace through changed code to the assertion or exception — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
+                because [trace through changed code to the assertion or exception — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
@@ -188,8 +188,8 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
     - Test outcome same: YES / NO
 
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-  Test [name] will [PASS/FAIL] with Change A because [reason]
-  Test [name] will [FAIL/PASS] with Change B because [reason]
+  Test [name] will [PASS/FAIL] with Change A because [trace from changed code to the assertion or exception — cite file:line]
+  Test [name] will [FAIL/PASS] with Change B because [trace from changed code to the assertion or exception — cite file:line]
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
@@ -215,9 +215,9 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
-- After reading a directly changed function, read how its immediate caller uses the changed return value or side-effect — trace at least one step toward the test assertion
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+- Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference produces a different observable test outcome by tracing through at least one test
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
@@ -414,7 +414,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
-5. **Do not trust incomplete chains.** After building a reasoning chain, verify both that callers do not already normalize or absorb the identified difference before the test observes it, and that the chain connects the change to a test-observable outcome — not just to the changed function's boundary. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
 
 ### General
