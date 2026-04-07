@@ -14,7 +14,8 @@ TEMPLATE="$REPO_ROOT/benchmark/swebench/data/prompt_template.md"
 RUNS_DIR="$REPO_ROOT/benchmark/swebench/runs/iter-1"
 DJANGO_REPO="/tmp/bench_workspace/django"
 
-MODEL="haiku"
+MODEL="claude-haiku-4.5"
+PROVIDER="github-copilot"
 VARIANT_FILTER=""
 LIMIT=0
 OFFSET=0
@@ -76,26 +77,32 @@ $PROMPT_BODY"
   echo "[START] $INSTANCE / $VARIANT  $(date '+%H:%M:%S')"
   local START_SEC=$(date +%s)
 
+  # Pi 経由で github-copilot/claude-haiku-4.5 を呼ぶ。
+  # @file 構文を使うため、プロンプトをファイルに書き出してから渡す。
+  echo "$FULL_PROMPT" > "$OUT_DIR/prompt.txt"
+
   cd "$WORK_DIR"
-  echo "$FULL_PROMPT" | claude --model "$MODEL" \
-    --print \
-    --output-format json \
-    --permission-mode bypassPermissions \
+  pi -p --no-session \
+    --provider "$PROVIDER" \
+    --model "$MODEL" \
     --max-turns 30 \
-    > "$OUT_DIR/output.json" 2> "$OUT_DIR/stderr.log" || true
+    "@$OUT_DIR/prompt.txt" \
+    > "$OUT_DIR/output.md" 2> "$OUT_DIR/stderr.log" || true
   cd "$REPO_ROOT"
 
   local END_SEC=$(date +%s)
   local DURATION=$(( END_SEC - START_SEC ))
 
-  # Extract text from JSON
+  # grade.py 互換のスタブ output.json を生成（cost/turns は Pi では取得できないため 0）
   python3 -c "
 import json
 try:
-    d = json.load(open('$OUT_DIR/output.json'))
-    print(d.get('result', ''))
-except: print(open('$OUT_DIR/output.json').read())
-" > "$OUT_DIR/output.md" 2>/dev/null || true
+    text = open('$OUT_DIR/output.md').read()
+except Exception:
+    text = ''
+json.dump({'result': text, 'total_cost_usd': 0, 'num_turns': 0},
+          open('$OUT_DIR/output.json', 'w'))
+" || true
 
   printf '{"instance":"%s","variant":"%s","model":"%s","duration_sec":%d}\n' \
     "$INSTANCE" "$VARIANT" "$MODEL" "$DURATION" > "$OUT_DIR/timing.json"
