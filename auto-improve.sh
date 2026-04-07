@@ -298,100 +298,85 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   # === 1. 改善案提案 ===
   log "Copilot ($COPILOT_MODEL): 分析・改善案作成中..."
 
+  # 出力先ファイル (Copilot がここに書く)
+  PROPOSAL_PATH="benchmark/swebench/runs/iter-${current_iter}/proposal.md"
+
   if [ "$ESCAPE_MODE" -eq 1 ]; then
-    # エスケープモード: 構造改革を許可する proposal prompt
     cat > "$PROMPT_DIR/propose.txt" << PROMPT
 あなたは SKILL.md という汎用コード推論フレームワークの改善担当です。
-まだ SKILL.md を編集しないでください。まず改善案を提案してください。
 
-【重要: ベンチマーク情報の隔離】
-あなたはこの SKILL.md がどのようなテストデータで評価されるかを **一切知らされていません**。
-特定のテストケース、リポジトリ、コード断片、失敗パターンを根拠にした提案は禁止です。
-以下のファイル/ディレクトリを **読まないでください**:
-- benchmark/swebench/data/ 以下のすべて
-- benchmark/swebench/runs/ 以下のすべて (archive.jsonl, scores.json, per-case 結果を含む) (過去のイテレーション結果)
-- failed-approaches-historical.md (もし存在しても無視)
-あなたが見るべきはあくまで「汎用的なコード推論フレームワークとしての SKILL.md の質」だけです。
+【参照してよいファイルの完全なリスト】
+- SKILL.md
+- Objective.md
+- README.md
+- failed-approaches.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
 
-【重要: 今回は構造改革エスケープモード】
-通常イテレーションは 5 行 hard limit の下で文言精緻化レベルの改善に限定されているが、
-今回は構造改革を 1 回だけ試行する特別なイテレーションです。
+この 6 ファイル以外を read / search / list してはいけません。
+現在のディレクトリ構造を ls / find / grep で探索する必要もありません。
 
-現在の SKILL.md は過去の高スコア時点 (集約スコア ${prev_score}%) から復元されています。
+【出力先】
+${PROPOSAL_PATH}
 
-1. Objective.md を読み、ゴール・制約を理解する
-2. failed-approaches.md (汎用原則のみ) を読み、過去に試して失敗した方向を確認する
-3. README.md と docs/design.md と docs/reference/agentic-code-reasoning.pdf を参照し、
-   研究のコア構造を把握する
-4. SKILL.md 自体を読み、汎用的な改良点を考える
-5. 改善案を benchmark/swebench/runs/iter-${current_iter}/proposal.md に書く
+【今回のモード】
+構造改革エスケープモード。通常の 5 行 hard limit を解除し、新規セクション
+追加も許可します。ただし以下の制約は維持されます。
 
-【制約の緩和】
-- 追加行数の 5 行制限を解除 (構造改革を許可)
-- 新規ステップ・新規セクション・新規テンプレート要素の追加を許可
+【提案ルール】
+- SKILL.md は特定の言語・フレームワーク・テストデータに依存しない汎用フレームワークである。
+  改善案も同様に汎用原則として正当化できなければならない。
+- 提案には具体的な数値 ID, リポジトリ名, テスト名, コード断片を一切含めないこと。
+- failed-approaches.md の汎用原則のいずれかに抵触する変更は提案しない。
+- 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持する。
+- 改善仮説は 1 つだけ。
 
-【維持される制約】
-- 特定のベンチマークケース・リポジトリ・言語に依存する変更は禁止
-- 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持
-- 汎用的なコード推論フレームワークの改良であること (ドメイン・言語非依存)
-- failed-approaches.md の汎用原則 (1〜23) に抵触する変更は提案しない
-- Objective.md の Audit Rubric R1 (汎化性) と R7 (ケース非依存性) に準拠
-
-【参考にしてよい情報】
-- SKILL.md (現状)
-- failed-approaches.md (汎用原則のみ、ケース ID は含まない)
-- Objective.md, README.md, docs/design.md, 原論文 PDF
-- 公開されているコード推論研究の一般知識
+現在の SKILL.md の集約スコアは過去最高水準にある。汎用的な観点から、
+推論プロセスのどこに改良余地があるかを検討してください。
 PROMPT
   else
-    # 通常モード
     cat > "$PROMPT_DIR/propose.txt" << PROMPT
 あなたは SKILL.md という汎用コード推論フレームワークの改善担当です。
-まだ SKILL.md を編集しないでください。まず改善案を提案してください。
 
-【最重要: ベンチマーク情報の隔離】
-あなたはこの SKILL.md がどのようなテストデータで評価されるかを **一切知らされていません**。
-特定のテストケース、リポジトリ、コード断片、失敗パターンを根拠にした提案は禁止です。
-以下のファイル/ディレクトリを **読まないでください**:
-- benchmark/swebench/data/ 以下のすべて (テストケース定義)
-- benchmark/swebench/runs/ 以下のすべて (archive.jsonl, scores.json, per-case 結果を含む) (過去のイテレーション結果、per-case スコア)
-- failed-approaches-historical.md (もし存在しても無視。サニタイズ済みの failed-approaches.md のみ参照)
-- 過去のイテレーションの proposal.md / rationale.md / discussion.md
-あなたが見るべきはあくまで「汎用的なコード推論フレームワークとしての SKILL.md の質」だけです。
-具体的なテストケース ID (例: 数字の連番) を proposal に書くことは厳禁です。
+【参照してよいファイルの完全なリスト】
+- SKILL.md
+- Objective.md
+- README.md
+- failed-approaches.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
 
-現在の SKILL.md は過去の高スコア時点 (集約スコア ${prev_score}%) から復元されています。
-今回のフォーカスドメインは ${focus_domain} です。これは compare モードの判定方向を意味します:
+この 6 ファイル以外を read / search / list してはいけません。
+現在のディレクトリ構造を ls / find / grep で探索する必要もありません。
+
+【出力先】
+${PROPOSAL_PATH}
+
+【今回のフォーカスドメイン】
+${focus_domain}
+これは compare モードの判定方向を意味します:
 - overall: 全体的な推論品質の向上
-- equiv: EQUIVALENT 判定 (2つの実装が同じ振る舞いを持つ) の精度向上
-- not_eq: NOT_EQUIVALENT 判定 (2つの実装が異なる振る舞いを持つ) の精度向上
+- equiv: 2 つの実装が同じ振る舞いを持つと判定する精度の向上
+- not_eq: 2 つの実装が異なる振る舞いを持つと判定する精度の向上
 
-1. Objective.md を読み、ゴール・制約・Exploration Framework を理解する
-2. failed-approaches.md を読み、過去に失敗した汎用的な改善方向を確認する
-   (ファイルにはケース ID も iter 番号も含まれない。汎用原則のみが書かれている)
-3. README.md と docs/design.md と docs/reference/agentic-code-reasoning.pdf を参照し、
-   研究のコア構造と未活用のアイデアを確認する
-4. SKILL.md 自体を読み、改良できる点を一般原理から検討する
-5. Exploration Framework の6カテゴリ（A〜F）から、未試行に近いアプローチを選択する
-6. 改善案を benchmark/swebench/runs/iter-${current_iter}/proposal.md に書く。以下を含むこと:
-   - 選択した Exploration Framework のカテゴリ（A〜F）とその理由
-   - 改善仮説（1つだけ、抽象的で汎用的な記述）
-   - SKILL.md のどこをどう変えるか（具体的な変更内容）
-   - 一般的な推論品質への期待効果 (どのカテゴリ的失敗パターンが減るか)
-   - failed-approaches.md の汎用原則との照合結果
-   - 変更規模の宣言
+【提案ルール】
+- SKILL.md は特定の言語・フレームワーク・テストデータに依存しない汎用フレームワークである。
+  改善案も同様に汎用原則として正当化できなければならない。
+- 提案には具体的な数値 ID, リポジトリ名, テスト名, コード断片を一切含めないこと。
+- failed-approaches.md の汎用原則のいずれかに抵触する変更は提案しない。
+- 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持する。
+- 改善仮説は 1 つだけ。
+- 変更規模は ${MAX_ADDED_LINES} 行以内 (hard limit、超過時は自動リジェクト)。
+  既存行への文言追加・精緻化のみ可。新規ステップ・新規フィールド・新規セクション
+  の追加は原則不可。削除行はこの制限に含めない。
 
-【変更規模の制約（重要）】
-- 追加行数は ${MAX_ADDED_LINES} 行以内（hard limit、超過時は自動リジェクト）
-- 既存行への文言追加・精緻化のみ可
-- 新規ステップ・新規フィールド・新規セクション・新規テンプレート要素の追加は原則不可
-- 削除行はこの制限に含めない
-
-注意:
-- 特定のベンチマークケース・リポジトリ・言語に依存する変更は禁止
-- 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持すること
-- 失敗ケースの修正に固執しない。SKILL.md の推論フレームワークとしての汎用的な質の向上を目指すこと
-- failed-approaches.md の共通原則に抵触する変更は提案しないこと
+【proposal.md に含めるべき内容】
+- Exploration Framework のカテゴリ (Objective.md 参照) と選定理由
+- 改善仮説 (1 つだけ、抽象的・汎用的な記述)
+- SKILL.md のどこをどう変えるか (具体的な変更内容)
+- 一般的な推論品質への期待効果 (どのカテゴリ的失敗パターンが減るか)
+- failed-approaches.md の汎用原則との照合結果
+- 変更規模の宣言
 PROMPT
   fi
 
@@ -400,35 +385,36 @@ PROMPT
 
   # === 2. ディスカッション ===
   log "Pi: ディスカッション..."
+  DISCUSSION_PATH="benchmark/swebench/runs/iter-${current_iter}/discussion.md"
   cat > "$PROMPT_DIR/discuss.txt" << PROMPT
 あなたは SKILL.md という汎用コード推論フレームワークの改善に対する監査役です。
 実装者から改善案が提案されました。
 
-【最重要: ベンチマーク情報の隔離】
-あなたもベンチマークの中身を **一切知らされていません**。
-以下のファイル/ディレクトリを **読まないでください**:
-- benchmark/swebench/data/ 以下のすべて
-- benchmark/swebench/runs/iter-N/ 以下の per-case 結果 (scores.json, django__django-* 等)
-- failed-approaches-historical.md
-- 過去のイテレーションの proposal.md / rationale.md / discussion.md
-- 提案中に具体的なテストケース ID への言及があれば、それは実装者のルール違反です。指摘してください。
+【参照してよいファイルの完全なリスト】
+- ${PROPOSAL_PATH}
+- SKILL.md
+- failed-approaches.md
+- Objective.md
+- README.md
+- docs/design.md
 
-以下を参照して改善案を評価してください:
-- benchmark/swebench/runs/iter-${current_iter}/proposal.md（今回の改善案。これは読んで OK）
-- failed-approaches.md（汎用原則のみ。サニタイズ済み）
-- Objective.md（ゴール・制約・ルーブリック）
-- README.md、docs/design.md
+この 6 ファイル以外を read / search / list してはいけません。
+DuckDuckGo MCP による Web 検索は許可します (改善案の汎用的妥当性の調査用)。
 
-以下の観点で意見を述べ、benchmark/swebench/runs/iter-${current_iter}/discussion.md に書いてください:
-1. この改善案に関連する既存研究やコード推論の知見を mcp ツール（DuckDuckGo MCP サーバー）を使って Web 検索し、改善案の妥当性を学術的・実務的観点から評価せよ（検索結果のURLと要点を記載すること）
-2. Exploration Framework のカテゴリ選択は適切か？汎用原則として理にかなっているか？
-3. この変更は EQUIVALENT と NOT_EQUIVALENT 両方の判定品質に対してどう影響するか？変更の実効的差分を分析し、その差分が一方向にしか作用しないか確認せよ。
-4. failed-approaches.md の共通原則との照合:
-   - 表現や用語が違っていても、実質的な効果が同じではないか？
-   - 共通原則（判定の非対称操作、出力側の制約、探索量の削減、同方向の変形、入力テンプレートの過剰規定、対称化の実効差分、ネガティブプロンプト等）のいずれかに抵触しないか？
-5. **オーバーフィットチェック**: 提案が特定のテストケース・リポジトリ・言語の振る舞いを念頭に置いていないか？汎用的なコード推論フレームワークの改良として正当化できるか？
-6. 全体の推論品質がどう向上すると期待できるか？
-7. 承認するか、修正を求めるか
+【出力先】
+${DISCUSSION_PATH}
+
+【監査観点】
+1. 既存研究との整合性 (mcp ツール DuckDuckGo MCP で Web 検索し URL と要点を記載)
+2. Exploration Framework のカテゴリ選定は適切か。汎用原則として理にかなっているか。
+3. この変更は EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方に対してどう作用するか。
+   変更前との実効的差分を分析し、片方向にしか作用しないか確認する。
+4. failed-approaches.md の汎用原則との照合。表現を変えても本質が同じ過去失敗の
+   再演になっていないか。
+5. **汎化性チェック**: 提案文中に具体的な数値 ID, リポジトリ名, テスト名, コード断片
+   が含まれていないか。含まれていれば実装者のルール違反であり指摘すること。
+   提案が特定のドメイン・言語・テストパターンを暗黙に想定していないか。
+6. 全体の推論品質がどう向上すると期待できるか。
 
 最後に「承認: YES」または「承認: NO（理由）」を明記してください。
 PROMPT
@@ -450,14 +436,24 @@ PROMPT
 
   # === 3. 実装 ===
   log "Copilot: 実装中..."
+  RATIONALE_PATH="benchmark/swebench/runs/iter-${current_iter}/rationale.md"
   cat > "$PROMPT_DIR/implement.txt" << PROMPT
-benchmark/swebench/runs/iter-${current_iter}/proposal.md の改善案に従い、以下を実行してください:
+${PROPOSAL_PATH} の改善案に従い、以下を実行してください:
 
-1. SKILL.md を編集する（proposal.md に記載した変更のみ）
-2. benchmark/swebench/runs/iter-${current_iter}/rationale.md を Objective.md のフォーマットに従い作成する
+1. SKILL.md を編集する (proposal.md に記載した変更のみ)
+2. ${RATIONALE_PATH} を Objective.md の rationale.md フォーマットに従い作成する
 
-【重要】変更規模は ${MAX_ADDED_LINES} 行以内（hard limit）。既存行への文言追加・精緻化のみ。
-proposal.md に書いた内容以外の変更は行わないでください。
+【参照してよいファイルの完全なリスト】
+- ${PROPOSAL_PATH}
+- SKILL.md
+- Objective.md (rationale フォーマットのため)
+
+この 3 ファイル以外を read / search / list する必要はありません。
+
+【制約】
+- 変更規模は ${MAX_ADDED_LINES} 行以内 (hard limit、escape モード時は解除)
+- proposal.md に記載のない変更は行わない
+- rationale.md にも具体的な数値 ID, リポジトリ名, テスト名は書かない
 PROMPT
 
   run_copilot "$PROMPT_DIR/implement.txt" "$ITER_DIR/copilot-implement.log"
@@ -485,26 +481,37 @@ PROMPT
     log "監査 試行 $retry/$MAX_AUDIT_RETRY"
     git diff -- SKILL.md > "$ITER_DIR/diff.patch"
 
+    AUDIT_PATH="benchmark/swebench/runs/iter-${current_iter}/audit.md"
     cat > "$PROMPT_DIR/audit.txt" << PROMPT
 あなたは SKILL.md の変更に対する監査役です。
 
-以下のファイルを参照してください:
-- Objective.md の Audit Rubric セクション
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
 - README.md
 - docs/design.md
 - docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
 
-以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
-Objective.md に定義された audit.md フォーマットに従って
-benchmark/swebench/runs/iter-${current_iter}/audit.md を作成してください。
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+${AUDIT_PATH}
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 7 項目 (R1〜R7) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
 
 合格基準: 全項目 2 以上、かつ合計 14/21 以上
 
-【重要: 出力フォーマット】
+【出力フォーマット】
 audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
 - 合格時: \`## 判定: PASS\` または \`## 監査結果: PASS\`
 - 不合格時: \`## 判定: FAIL\` または \`## 監査結果: FAIL\`
-スクリプトはこのパターンで判定を検出するため、形式を変えないでください。
+
+【追加チェック (R1, R7 の補強)】
+diff や rationale に具体的な数値 ID, リポジトリ名, テスト名, コード断片が
+含まれていないか確認してください。含まれていれば R1 と R7 を 1 点 (FAIL) にしてください。
 
 diff:
 $(cat "$ITER_DIR/diff.patch")
@@ -525,11 +532,24 @@ PROMPT
       if [ "$retry" -lt "$MAX_AUDIT_RETRY" ]; then
         log "Copilot: 監査指摘を反映して再改善..."
         cat > "$PROMPT_DIR/revise.txt" << PROMPT
-audit.md の指摘を読み、SKILL.md を修正してください。
-監査結果: $(cat "$ITER_DIR/audit.md" 2>/dev/null)
-rationale.md も更新してください。
+監査役が改善案を不合格と判断しました。指摘内容を読み、SKILL.md と rationale.md を修正してください。
 
-【重要】変更規模は ${MAX_ADDED_LINES} 行以内を維持すること。
+【参照してよいファイルの完全なリスト】
+- ${AUDIT_PATH} (監査結果)
+- ${PROPOSAL_PATH}
+- ${RATIONALE_PATH}
+- SKILL.md
+- failed-approaches.md
+- Objective.md
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【制約】
+- 変更規模は ${MAX_ADDED_LINES} 行以内を維持
+- 具体的な数値 ID, リポジトリ名, テスト名は書かない
+
+監査結果:
+$(cat "$ITER_DIR/audit.md" 2>/dev/null)
 PROMPT
         run_copilot "$PROMPT_DIR/revise.txt" "$ITER_DIR/copilot-revise-${retry}.log"
       fi
@@ -581,35 +601,36 @@ PROMPT
   # archive に追加
   append_archive "$current_iter" "$parent_genid" "$ITER_DIR/scores.json" "true"
 
-  # スコア低下時は BL 更新（汎用原則のみ追加、ケース ID は禁止）
+  # スコア低下時は failed-approaches.md に汎用原則を追記
   if [ "$current_score" -lt "$prev_score" ]; then
     log "スコア低下 — failed-approaches.md 更新中..."
+    DIFF_PATH="benchmark/swebench/runs/iter-${current_iter}/diff.patch"
     cat > "$PROMPT_DIR/update-bl.txt" << BLPROMPT
-今回の改善案 (iter-${current_iter}) で SKILL.md を変更したが、集約スコアが ${prev_score}% から ${current_score}% に低下した。
+今回試した SKILL.md の変更により、集約スコアが ${prev_score}% から ${current_score}% に低下しました。
 
-failed-approaches.md は **サニタイズ済みの汎用原則集** である。新しいエントリを追加する際は以下のルールを **絶対に守ること**:
+failed-approaches.md は **汎用原則集** です。新しいエントリを追加する場合、以下のルールを必ず守ってください。
 
-【追加してはいけない情報】
-- 特定のテストケース ID (django__django-12345 など)
-- 特定の iter 番号 (iter-50 など)
-- 特定のリポジトリ・言語・フレームワーク名
-- 特定のコード断片
-- per-case の正解/不正解の詳細
+【参照してよいファイルの完全なリスト】
+- ${PROPOSAL_PATH}
+- ${RATIONALE_PATH}
+- ${DIFF_PATH}
+- failed-approaches.md (追記対象)
 
-【書くべき内容】
+この 4 ファイル以外を read / search / list してはいけません。
+
+【追加してよい内容】
 - 試した変更の **抽象的な性質** (例: 「Guardrail に新しい禁止事項を追加した」)
 - 失敗の **汎用的なメカニズム** (例: 「ネガティブプロンプトによる過剰適応を引き起こした」)
-- 既存の共通原則との関連付け
+- 既存の汎用原則との関連付け
 - 新たな汎用原則として一般化できる場合のみ、新しい原則を追記
 
-参照情報源:
-- benchmark/swebench/runs/iter-${current_iter}/proposal.md (今回の改善案、汎用的な記述のみ参照)
-- benchmark/swebench/runs/iter-${current_iter}/diff.patch (SKILL.md の変更内容)
-- failed-approaches.md (現在の汎用原則集、追記対象)
+【書いてはいけない情報】
+- 具体的な数値 ID, リポジトリ名, テスト名, コード断片
+- iter 番号
+- per-case の正解/不正解の詳細
 
-**やってはいけない**: benchmark/swebench/runs/iter-N/ 内の他のファイルを読むこと、ケース ID を含むメモを書くこと。
-
-failed-approaches.md の末尾に新しい汎用原則を追記してください (もし既存の原則の単なる変種なら、既存原則に統合する形でも可)。
+既存の原則の単なる変種なら、既存原則に統合する形でも可。
+原則 1 つあたり数行程度の簡潔な記述で十分です。
 BLPROMPT
     run_pi "$PROMPT_DIR/update-bl.txt" "$ITER_DIR/pi-bl-update.log" || log "BL 更新失敗（続行）"
     log "BL 更新完了"
