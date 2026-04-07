@@ -89,11 +89,14 @@ $PROMPT_BODY"
   echo "$FULL_PROMPT" > "$OUT_DIR/prompt.txt"
 
   cd "$WORK_DIR"
+  # < /dev/null は必須: pi が stdin を継承すると親の while ループの残りを
+  # 食ってしまい、Staged Eval が 1 ケースで止まる
   pi -p --no-session \
     --provider "$PROVIDER" \
     --model "$MODEL" \
     --max-turns 30 \
     "@$OUT_DIR/prompt.txt" \
+    < /dev/null \
     > "$OUT_DIR/output.md" 2> "$OUT_DIR/stderr.log" || true
   cd "$REPO_ROOT"
 
