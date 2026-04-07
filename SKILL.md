@@ -155,7 +155,7 @@ D2: The relevant tests are:
     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
         only if the changed code lies in their call path.
     To identify them: search for tests referencing the changed function, class,
-    or variable. If the test suite is not provided, state this as a constraint
+    or variable, then confirm each pass-to-pass candidate actually invokes the changed code through its call chain before including it. If the test suite is not provided, state this as a constraint
     in P[N] and restrict the scope of D1 accordingly.
 
 PREMISES:
@@ -168,16 +168,29 @@ ANALYSIS OF TEST BEHAVIOR:
 
 For each relevant test:
   Test: [name]
-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through changed code to the assertion or exception — cite file:line]
-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through changed code to the assertion or exception — cite file:line]
+  Divergence: Identify the first point in this test's code path where
+              Change A and Change B produce different values or behavior.
+    A at [file:line]: [specific value or behavior — VERIFIED by reading source]
+    B at [file:line]: [specific value or behavior — VERIFIED by reading source]
+    Propagation: Does this divergence reach the test assertion?
+      Trace from divergence point to the test assertion that would detect this difference.
+      If no assertion receives a changed value: Comparison is SAME.
+    (If values are identical at every traced point through the test assertion:
+     Comparison is SAME — omit Claim below)
+  Claim C[N]: Test will [PASS with A / FAIL with B] or [FAIL with A / PASS with B]
+              because [trace from divergence point to test assertion — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
-  Claim C[N].1: With Change A, behavior is [description]
-  Claim C[N].2: With Change B, behavior is [description]
+  Divergence: Where in this test's code path do A and B produce different values?
+    A at [file:line]: [value or behavior — VERIFIED]
+    B at [file:line]: [value or behavior — VERIFIED]
+    Propagation: Does this divergence reach the test assertion?
+      Trace from divergence point to the test assertion that would detect this difference.
+      If no assertion receives a changed value: Comparison is SAME.
+    (If identical at every traced point: Comparison is SAME — omit Claim below)
+  Claim C[N]: behavior differs because [trace from divergence to assertion — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 EDGE CASES RELEVANT TO EXISTING TESTS:
@@ -187,16 +200,16 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
     - Change B behavior: [specific output/behavior]
     - Test outcome same: YES / NO
 
-COUNTEREXAMPLE (required if claiming NOT EQUIVALENT — identify the specific test where Comparison was DIFFERENT in ANALYSIS above, and build this trace from that claim):
-  Test [name] will [PASS/FAIL] with Change A because [trace from changed code to the assertion or exception — cite file:line]
-  Test [name] will [FAIL/PASS] with Change B because [trace from changed code to the assertion or exception — cite file:line]
+COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+  Test [name] will [PASS/FAIL] with Change A because [reason]
+  Test [name] will [FAIL/PASS] with Change B because [reason]
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
-    [describe concretely: what test, which execution path within that test reaches the semantic difference, what diverging behavior at the assertion]
+    [describe concretely: what test, what input, what diverging behavior]
   I searched for exactly that pattern:
-    Searched for: [whether the semantic differences between A and B propagate to a test assertion — which differences were checked and which assertion points they were traced against]
+    Searched for: [specific pattern — test name, code path, or input type]
     Found: [result — cite file:line, or NONE FOUND with search details]
   Conclusion: no counterexample exists because [brief reason]
 
@@ -217,7 +230,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference produces a different observable test outcome by tracing through at least one test
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
@@ -416,7 +428,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
-10. **Do not use unverified runtime-environment claims as evidence.** If a behavioral difference between changes is attributed to a specific database version, OS, interpreter version, or library version, that version constraint must be explicitly encoded in the test's skip decorators, setup fixtures, or CI configuration, cited at a specific file:line. A version range or environment assumption that cannot be grounded in the repository is UNVERIFIED and must not determine EQUIVALENT or NOT_EQUIVALENT conclusions.
 
 ### General
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
