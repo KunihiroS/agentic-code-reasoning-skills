@@ -20,6 +20,12 @@ VARIANT_FILTER=""
 LIMIT=0
 OFFSET=0
 INSTANCE_FILTER=""
+FAST_SUBSET=0
+
+# Phase 2: Staged Evaluation 用の fast subset (5 ケース、EQUIV 3 + NOT_EQ 2)
+# 選定基準: 失敗頻度が中程度のケースを混ぜて代表性を確保しつつ、
+# 持続的失敗ケース (15368) を含めて「ベースラインからの回帰」を検出できるようにする
+FAST_SUBSET_INSTANCES="django__django-15368 django__django-14089 django__django-15315 django__django-13417 django__django-11999"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -29,6 +35,7 @@ while [[ $# -gt 0 ]]; do
     --instance) INSTANCE_FILTER="$2"; shift 2 ;;
     --runs-dir) RUNS_DIR="$2"; shift 2 ;;
     --model) MODEL="$2"; shift 2 ;;
+    --fast-subset) FAST_SUBSET=1; shift ;;
     *) echo "Unknown: $1"; exit 1 ;;
   esac
 done
@@ -150,6 +157,11 @@ for i, p in enumerate(pairs):
 
     # Apply instance filter
     if [[ -n "$INSTANCE_FILTER" && "$INSTANCE" != "$INSTANCE_FILTER" ]]; then continue; fi
+
+    # Apply fast-subset filter (Phase 2 Staged Evaluation)
+    if [[ "$FAST_SUBSET" -eq 1 ]]; then
+      if ! [[ " $FAST_SUBSET_INSTANCES " == *" $INSTANCE "* ]]; then continue; fi
+    fi
 
     VARIANTS=("without_skill" "with_skill")
     if [[ -n "$VARIANT_FILTER" ]]; then VARIANTS=("$VARIANT_FILTER"); fi

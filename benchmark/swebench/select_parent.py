@@ -22,8 +22,21 @@ def load_archive(path):
                 nodes.append(json.loads(line))
     return nodes
 
+def get_score(candidate, score_key):
+    """Resolve a score key, supporting derived keys for domain split."""
+    s = candidate.get("scores", {})
+    if score_key == "equiv":
+        ok = s.get("equiv_ok", 0)
+        total = s.get("equiv_total", 0)
+        return int(100 * ok / total) if total else 0
+    if score_key == "not_eq":
+        ok = s.get("not_eq_ok", 0)
+        total = s.get("not_eq_total", 0)
+        return int(100 * ok / total) if total else 0
+    return s.get(score_key, 0)
+
 def compute_weights(candidates, score_key, steepness):
-    scores = [c["scores"].get(score_key, 0) for c in candidates]
+    scores = [get_score(c, score_key) for c in candidates]
     top3 = sorted(scores, reverse=True)[:3]
     mid_point = sum(top3) / len(top3)
     weights = [1 / (1 + math.exp(-steepness * ((s - mid_point) / 100.0))) for s in scores]
@@ -38,7 +51,7 @@ def score_prop(candidates, score_key, steepness):
     return random.choices(candidates, weights=probs, k=1)[0]
 
 def best(candidates, score_key="overall"):
-    return max(candidates, key=lambda n: n["scores"].get(score_key, 0))
+    return max(candidates, key=lambda n: get_score(n, score_key))
 
 def latest(candidates, score_key="overall"):
     return candidates[-1]
@@ -47,7 +60,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--archive", required=True)
     ap.add_argument("--method", default="score_prop", choices=["score_prop", "best", "latest"])
-    ap.add_argument("--score-key", default="overall")
+    ap.add_argument("--score-key", default="overall",
+                    choices=["overall", "equiv", "not_eq"],
+                    help="overall: 総合スコア / equiv: EQUIVALENT 正答率 / not_eq: NOT_EQUIVALENT 正答率")
     ap.add_argument("--steepness", type=float, default=20.0)
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--dry-run", action="store_true")
@@ -71,7 +86,7 @@ def main():
         pairs = sorted(zip(candidates, probs), key=lambda x: -x[1])
         by_score = {}
         for c, p in pairs:
-            s = c["scores"][args.score_key]
+            s = get_score(c, args.score_key)
             by_score.setdefault(s, []).append(p)
         print()
         print("Summary by score:")
@@ -81,7 +96,7 @@ def main():
         print()
         print("Top 15 candidates:")
         for c, p in pairs[:15]:
-            print(f"  iter-{c['genid']:<4} {c['scores'][args.score_key]:<6} {p*100:.2f}%")
+            print(f"  iter-{c['genid']:<4} {get_score(c, args.score_key):<6} {p*100:.2f}%")
         return
 
     if args.method == "score_prop":
