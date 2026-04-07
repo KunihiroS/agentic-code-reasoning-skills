@@ -71,11 +71,6 @@ UNRESOLVED:
   - [remaining questions]
 
 NEXT ACTION RATIONALE: [why the next file or step is justified]
-
-CONVERGENCE GATE (required after each observation set):
-  Working conclusion: [EQUIVALENT / NOT_EQUIVALENT / UNRESOLVED]
-  If EQUIVALENT or NOT_EQUIVALENT: cite the specific file:line evidence supporting this conclusion, then proceed to Step 5.
-  If UNRESOLVED: state exactly what missing evidence justifies reading another file.
 ```
 
 Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
@@ -174,9 +169,9 @@ ANALYSIS OF TEST BEHAVIOR:
 For each relevant test:
   Test: [name]
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
+                because [trace from changed code to test assertion outcome — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
+                because [trace from changed code to test assertion outcome — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
@@ -195,9 +190,8 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Test [name] will [PASS/FAIL] with Change A because [reason]
   Test [name] will [FAIL/PASS] with Change B because [reason]
+  Diverging assertion: [test_file:line — the specific assert/check that produces a different result]
   Therefore changes produce DIFFERENT test outcomes.
-  STOP: Once this counterexample is confirmed via traced code paths, proceed
-  directly to FORMAL CONCLUSION. Do not continue exploring additional tests.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
