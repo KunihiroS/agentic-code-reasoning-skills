@@ -154,8 +154,6 @@ D2: The relevant tests are:
         expected to pass after the fix — always relevant.
     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
         only if the changed code lies in their call path.
-        Verify this by tracing the test's execution; do not assume relevance
-        from file proximity, shared module, or test-level changes such as deletion.
     To identify them: search for tests referencing the changed function, class,
     or variable. If the test suite is not provided, state this as a constraint
     in P[N] and restrict the scope of D1 accordingly.
@@ -171,9 +169,9 @@ ANALYSIS OF TEST BEHAVIOR:
 For each relevant test:
   Test: [name]
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through changed code to the assertion or exception — cite file:line]
+                because [trace through code — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through changed code to the assertion or exception — cite file:line]
+                because [trace through code — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
@@ -190,9 +188,11 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
     - Test outcome same: YES / NO
 
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-  Test [name] will [PASS/FAIL] with Change A because [trace from changed code to the assertion or exception — cite file:line]
-  Test [name] will [FAIL/PASS] with Change B because [trace from changed code to the assertion or exception — cite file:line]
+  Test [name] will [PASS/FAIL] with Change A because [reason]
+  Test [name] will [FAIL/PASS] with Change B because [reason]
   Therefore changes produce DIFFERENT test outcomes.
+  STOP: Once this counterexample is confirmed via traced code paths, proceed
+  directly to FORMAL CONCLUSION. Do not continue exploring additional tests.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
@@ -219,7 +219,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference changes the PASS/FAIL result of at least one relevant test, not merely the internal execution path
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
@@ -423,6 +422,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
+10. **Do not construct counterexamples using hypothetical test environments.** A counterexample asserting test outcome differences must be grounded in the repository's actual test environment — not in environments that *could* exist (e.g., a database version between an old minimum and a new minimum, or a runtime version not pinned by the project). If a behavioral difference only manifests on a version, platform, or configuration not established by the test setup (CI config, tox.ini, pinned requirements, version constraint files), do not treat it as a confirmed counterexample. Instead, determine the actual environment from available configuration files, or mark the claim UNVERIFIED and set CONFIDENCE to LOW.
 
 ---
 
