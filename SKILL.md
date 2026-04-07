@@ -52,7 +52,7 @@ Do not treat guesses as premises. Every later claim must reference a premise by 
 Before opening any file, write:
 
 ```
-HYPOTHESIS H[N]: [what you expect to find and why]
+HYPOTHESIS H[N]: [what you expect to find, why, and what observable effect this would have on the conclusion if confirmed]
 EVIDENCE: [what supports this hypothesis — cite premises or prior observations]
 CONFIDENCE: high / medium / low
 ```
@@ -169,9 +169,9 @@ ANALYSIS OF TEST BEHAVIOR:
 For each relevant test:
   Test: [name]
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through changed code to the assertion or exception — cite file:line]
+                because [trace through code — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through changed code to the assertion or exception — cite file:line]
+                because [trace through code — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
@@ -188,8 +188,8 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
     - Test outcome same: YES / NO
 
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-  Test [name] will [PASS/FAIL] with Change A because [trace from changed code to the assertion or exception — cite file:line]
-  Test [name] will [FAIL/PASS] with Change B because [trace from changed code to the assertion or exception — cite file:line]
+  Test [name] will [PASS/FAIL] with Change A because [reason]
+  Test [name] will [FAIL/PASS] with Change B because [reason]
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
@@ -217,7 +217,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference produces a different observable test outcome by tracing through at least one test
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
@@ -421,6 +420,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
+10. **Commit to a conclusion.** Do not answer UNKNOWN. When evidence is incomplete or exhausted before full tracing is possible, answer with the strongest conclusion the traced evidence supports and assign LOW confidence. An incomplete trace that strongly favors one answer is more useful than no answer.
 
 ---
 
