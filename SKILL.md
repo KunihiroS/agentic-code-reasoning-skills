@@ -169,9 +169,9 @@ ANALYSIS OF TEST BEHAVIOR:
 For each relevant test:
   Test: [name]
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace from changed code to test assertion outcome — cite file:line]
+                because [trace through code — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace from changed code to test assertion outcome — cite file:line]
+                because [trace through code — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
@@ -190,7 +190,6 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Test [name] will [PASS/FAIL] with Change A because [reason]
   Test [name] will [FAIL/PASS] with Change B because [reason]
-  Diverging assertion: [test_file:line — the specific assert/check that produces a different result]
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
@@ -217,7 +216,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+- When a behavioral difference is found in a changed function (return value, exception, or side-effect), do not stop tracing at that function: read the function on the already-traced relevant test call path that consumes the changed output, and record whether it propagates or absorbs the difference before assigning the Claim outcome.
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
@@ -413,7 +412,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 1. **Do not assume behavior from names.** Read the actual function definition. The canonical failure: assuming Python's builtin `format()` when a module-level function with different semantics shadows it.
 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
-4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
+4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact on test outcomes or that it changes a test's pass/fail result.
 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
 
