@@ -65,7 +65,7 @@ OBSERVATIONS from [filename]:
   O[N]: [another finding with file:line]
 
 HYPOTHESIS UPDATE:
-  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]; if REFUTED, state H[M+1] targeting what the refutation exposed before reading the next file
+  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]
 
 UNRESOLVED:
   - [remaining questions]
@@ -216,7 +216,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- When a behavioral difference is found in a changed function (return value, exception, or side-effect), do not stop tracing at that function: read the function on the already-traced relevant test call path that consumes the changed output, and record whether it propagates or absorbs the difference before assigning the Claim outcome.
+- When a behavioral difference is found in a changed function (return value, exception, or side-effect), or when a changed function passes a different value to an unchanged downstream function, do not stop tracing at that point: read the consuming function on the already-traced relevant test call path, and record whether it propagates or absorbs the difference before assigning the Claim outcome.
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
