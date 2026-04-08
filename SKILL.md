@@ -169,9 +169,9 @@ ANALYSIS OF TEST BEHAVIOR:
 For each relevant test:
   Test: [name]
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through changed code to the assertion or exception — cite file:line]
+                because [trace through code — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through changed code to the assertion or exception — cite file:line]
+                because [trace through code — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
@@ -187,16 +187,18 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
     - Change B behavior: [specific output/behavior]
     - Test outcome same: YES / NO
 
-COUNTEREXAMPLE (required if claiming NOT EQUIVALENT — identify the specific test where Comparison was DIFFERENT in ANALYSIS above, and build this trace from that claim):
-  Test [name] will [PASS/FAIL] with Change A because [trace from changed code to the assertion or exception — cite file:line]
-  Test [name] will [FAIL/PASS] with Change B because [trace from changed code to the assertion or exception — cite file:line]
+COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+  Test [name] will [PASS/FAIL] with Change A because [reason]
+  Test [name] will [FAIL/PASS] with Change B because [reason]
   Therefore changes produce DIFFERENT test outcomes.
+  STOP: Once this counterexample is confirmed via traced code paths, proceed
+  directly to FORMAL CONCLUSION. Do not continue exploring additional tests.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
-    [describe concretely: what test, what input, what diverging behavior]
+    [describe concretely: what code condition enables divergence between the changes, what test reaches that condition, and what observable behavior differs]
   I searched for exactly that pattern:
-    Searched for: [whether the semantic differences between A and B propagate to a test assertion — which differences were checked and which assertion points they were traced against]
+    Searched for: [specific pattern — test name, code path, or input type]
     Found: [result — cite file:line, or NONE FOUND with search details]
   Conclusion: no counterexample exists because [brief reason]
 
@@ -217,7 +219,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference produces a different observable test outcome by tracing through at least one test
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
@@ -416,12 +417,12 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
-10. **Do not use unverified runtime-environment claims as evidence.** If a behavioral difference between changes is attributed to a specific database version, OS, interpreter version, or library version, that version constraint must be explicitly encoded in the test's skip decorators, setup fixtures, or CI configuration, cited at a specific file:line. A version range or environment assumption that cannot be grounded in the repository is UNVERIFIED and must not determine EQUIVALENT or NOT_EQUIVALENT conclusions.
 
 ### General
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
+10. **Do not construct counterexamples using hypothetical test environments.** A counterexample asserting test outcome differences must be grounded in the repository's actual test environment — not in environments that *could* exist (e.g., a database version between an old minimum and a new minimum, or a runtime version not pinned by the project). If a behavioral difference only manifests on a version, platform, or configuration not established by the test setup (CI config, tox.ini, pinned requirements, version constraint files), do not treat it as a confirmed counterexample. Instead, determine the actual environment from available configuration files, or mark the claim UNVERIFIED and set CONFIDENCE to LOW.
 
 ---
 
