@@ -71,6 +71,11 @@ UNRESOLVED:
   - [remaining questions]
 
 NEXT ACTION RATIONALE: [why the next file or step is justified]
+
+CONVERGENCE GATE (required after each observation set):
+  Working conclusion: [EQUIVALENT / NOT_EQUIVALENT / UNRESOLVED]
+  If EQUIVALENT or NOT_EQUIVALENT at any confidence: stop exploration and proceed to Step 5 now.
+  If UNRESOLVED: state exactly what missing evidence justifies reading another file.
 ```
 
 Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
@@ -191,6 +196,8 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Test [name] will [PASS/FAIL] with Change A because [reason]
   Test [name] will [FAIL/PASS] with Change B because [reason]
   Therefore changes produce DIFFERENT test outcomes.
+  STOP: Once this counterexample is confirmed via traced code paths, proceed
+  directly to FORMAL CONCLUSION. Do not continue exploring additional tests.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
@@ -420,7 +427,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
-10. **Commit to a conclusion.** Do not answer UNKNOWN. When evidence is incomplete or exhausted before full tracing is possible, answer with the strongest conclusion the traced evidence supports and assign LOW confidence. An incomplete trace that strongly favors one answer is more useful than no answer.
 
 ---
 
