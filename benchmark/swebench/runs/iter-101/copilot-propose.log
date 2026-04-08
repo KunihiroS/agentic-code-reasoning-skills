@@ -1,0 +1,11 @@
+`benchmark/swebench/runs/iter-101/proposal.md` を作成しました。提案の要点：
+
+**カテゴリ E（表現改善）**  
+`NO COUNTEREXAMPLE EXISTS` 内の `Searched for:` フィールドを1行修正：
+
+- 変更前：「アサーションへの *構造的到達*（propagate to a test assertion）」  
+- 変更後：「アサーションにおける *異なる観測可能な結果の有無*（produce different observable outcomes at a test assertion）」
+
+**仮説**：「コードパスが異なる → NOT_EQUIVALENT」という誤った推論ジャンプを、「テスト結果（PASS/FAIL）が実際に変わるか」という問いに誘導することで遮断し、EQUIV の false NOT_EQUIVALENT 判定を減らす。  
+変更規模：**1行**（hard limit 5行の20%使用）。
+
