@@ -155,7 +155,7 @@ D2: The relevant tests are:
     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
         only if the changed code lies in their call path.
     To identify them: search for tests referencing the changed function, class,
-    or variable, then confirm each pass-to-pass candidate actually invokes the changed code through its call chain before including it. If the test suite is not provided, state this as a constraint
+    or variable. If the test suite is not provided, state this as a constraint
     in P[N] and restrict the scope of D1 accordingly.
 
 PREMISES:
@@ -168,29 +168,16 @@ ANALYSIS OF TEST BEHAVIOR:
 
 For each relevant test:
   Test: [name]
-  Divergence: Identify the first point in this test's code path where
-              Change A and Change B produce different values or behavior.
-    A at [file:line]: [specific value or behavior — VERIFIED by reading source]
-    B at [file:line]: [specific value or behavior — VERIFIED by reading source]
-    Propagation: Does this divergence reach the test assertion?
-      Trace from divergence point to the test assertion that would detect this difference.
-      If no assertion receives a changed value: Comparison is SAME.
-    (If values are identical at every traced point through the test assertion:
-     Comparison is SAME — omit Claim below)
-  Claim C[N]: Test will [PASS with A / FAIL with B] or [FAIL with A / PASS with B]
-              because [trace from divergence point to test assertion — cite file:line]
+  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                because [trace through code — cite file:line]
+  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+                because [trace through code — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
-  Divergence: Where in this test's code path do A and B produce different values?
-    A at [file:line]: [value or behavior — VERIFIED]
-    B at [file:line]: [value or behavior — VERIFIED]
-    Propagation: Does this divergence reach the test assertion?
-      Trace from divergence point to the test assertion that would detect this difference.
-      If no assertion receives a changed value: Comparison is SAME.
-    (If identical at every traced point: Comparison is SAME — omit Claim below)
-  Claim C[N]: behavior differs because [trace from divergence to assertion — cite file:line]
+  Claim C[N].1: With Change A, behavior is [description]
+  Claim C[N].2: With Change B, behavior is [description]
   Comparison: SAME / DIFFERENT outcome
 
 EDGE CASES RELEVANT TO EXISTING TESTS:
@@ -229,7 +216,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+- When a behavioral difference is found in a changed function (return value, exception, or side-effect), do not stop tracing at that function: read the function on the already-traced relevant test call path that consumes the changed output, and record whether it propagates or absorbs the difference before assigning the Claim outcome.
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
@@ -425,7 +412,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 1. **Do not assume behavior from names.** Read the actual function definition. The canonical failure: assuming Python's builtin `format()` when a module-level function with different semantics shadows it.
 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
-4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
+4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact on test outcomes or that it changes a test's pass/fail result.
 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
 
