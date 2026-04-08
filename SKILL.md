@@ -168,29 +168,16 @@ ANALYSIS OF TEST BEHAVIOR:
 
 For each relevant test:
   Test: [name]
-  Divergence: Identify the first point in this test's code path where
-              Change A and Change B produce different values or behavior.
-    A at [file:line]: [specific value or behavior — VERIFIED by reading source]
-    B at [file:line]: [specific value or behavior — VERIFIED by reading source]
-    Propagation: Does this divergence reach the test assertion?
-      Trace from divergence point to the test assertion that would detect this difference.
-      If no assertion receives a changed value: Comparison is SAME.
-    (If values are identical at every traced point through the test assertion:
-     Comparison is SAME — omit Claim below)
-  Claim C[N]: Test will [PASS with A / FAIL with B] or [FAIL with A / PASS with B]
-              because [trace from divergence point to test assertion — cite file:line]
+  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                because [trace through code — cite file:line]
+  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+                because [trace through code — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
-  Divergence: Where in this test's code path do A and B produce different values?
-    A at [file:line]: [value or behavior — VERIFIED]
-    B at [file:line]: [value or behavior — VERIFIED]
-    Propagation: Does this divergence reach the test assertion?
-      Trace from divergence point to the test assertion that would detect this difference.
-      If no assertion receives a changed value: Comparison is SAME.
-    (If identical at every traced point: Comparison is SAME — omit Claim below)
-  Claim C[N]: behavior differs because [trace from divergence to assertion — cite file:line]
+  Claim C[N].1: With Change A, behavior is [description]
+  Claim C[N].2: With Change B, behavior is [description]
   Comparison: SAME / DIFFERENT outcome
 
 EDGE CASES RELEVANT TO EXISTING TESTS:
@@ -204,10 +191,12 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Test [name] will [PASS/FAIL] with Change A because [reason]
   Test [name] will [FAIL/PASS] with Change B because [reason]
   Therefore changes produce DIFFERENT test outcomes.
+  STOP: Once this counterexample is confirmed via traced code paths, proceed
+  directly to FORMAL CONCLUSION. Do not continue exploring additional tests.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
-    [describe concretely: what test, what input, what diverging behavior]
+    [describe concretely: what code condition enables divergence between the changes, what test reaches that condition, and what observable behavior differs]
   I searched for exactly that pattern:
     Searched for: [specific pattern — test name, code path, or input type]
     Found: [result — cite file:line, or NONE FOUND with search details]
@@ -433,6 +422,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
+10. **Do not construct counterexamples using hypothetical test environments.** A counterexample asserting test outcome differences must be grounded in the repository's actual test environment — not in environments that *could* exist (e.g., a database version between an old minimum and a new minimum, or a runtime version not pinned by the project). If a behavioral difference only manifests on a version, platform, or configuration not established by the test setup (CI config, tox.ini, pinned requirements, version constraint files), do not treat it as a confirmed counterexample. Instead, determine the actual environment from available configuration files, or mark the claim UNVERIFIED and set CONFIDENCE to LOW.
 
 ---
 
