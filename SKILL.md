@@ -185,19 +185,16 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
   E[N]: [edge case]
     - Change A behavior: [specific output/behavior]
     - Change B behavior: [specific output/behavior]
-    - Test outcome same: YES / NO — name the test assertion that determines PASS/FAIL under each change
+    - Test outcome same: YES / NO
 
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-  Test [name] will [PASS/FAIL] with Change A because [trace — cite file:line]
-  Test [name] will [FAIL/PASS] with Change B because [trace — cite file:line]
-  By P[N]: this test checks [assertion/behavior stated in P3 or P4], and the
-           divergence above causes that assertion to produce a different result.
+  Test [name] will [PASS/FAIL] with Change A because [reason]
+  Test [name] will [FAIL/PASS] with Change B because [reason]
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
-    [describe concretely: what test, what assertion in P[N], what code difference
-     would cause that assertion to produce a different result]
+    [describe concretely: what test, what input, what diverging behavior]
   I searched for exactly that pattern:
     Searched for: [specific pattern — test name, code path, or input type]
     Found: [result — cite file:line, or NONE FOUND with search details]
@@ -219,7 +216,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+- When a behavioral difference is found in a changed function (return value, exception, or side-effect), or when a changed function passes a different value to an unchanged downstream function, do not stop tracing at that point: read the consuming function on the already-traced relevant test call path, and record whether it propagates or absorbs the difference before assigning the Claim outcome.
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
@@ -413,9 +410,9 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 
 ### From the paper's error analysis
 1. **Do not assume behavior from names.** Read the actual function definition. The canonical failure: assuming Python's builtin `format()` when a module-level function with different semantics shadows it.
-2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path, reaching the assertion or condition that directly determines PASS or FAIL, before asserting either outcome.
+2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
-4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
+4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact on test outcomes or that it changes a test's pass/fail result.
 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
 
