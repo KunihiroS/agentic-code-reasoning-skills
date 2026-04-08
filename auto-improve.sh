@@ -33,6 +33,7 @@ START_ITER=47
 MAX_ADDED_LINES=5        # H1: 5行 hard limit (Phase 1)
 STAGED_GATE_THRESHOLD=3  # Phase 2: Staged Eval で 5ケース中 3 以上正答なら Full 実行
 ESCAPE_MODE=0            # Phase 2: 構造改革エスケープハッチ
+STEEPNESS=20             # 8.1.A: score_prop sigmoid steepness (高いほど高スコア親優先)
 
 COPILOT_MODEL="claude-sonnet-4.6"
 PI_PROVIDER="github-copilot"
@@ -45,7 +46,8 @@ while [[ $# -gt 0 ]]; do
     -n) MAX_ITER="$2"; shift 2 ;;
     -s) START_ITER="$2"; shift 2 ;;
     --escape) ESCAPE_MODE=1; shift ;;
-    *) echo "Usage: $0 [-n max_iterations] [-s start_iter] [--escape]"; exit 1 ;;
+    --steepness) STEEPNESS="$2"; shift 2 ;;
+    *) echo "Usage: $0 [-n max_iterations] [-s start_iter] [--escape] [--steepness N]"; exit 1 ;;
   esac
 done
 
@@ -86,7 +88,8 @@ select_parent_genid() {
   python3 "$BENCH_DIR/select_parent.py" \
     --archive "$ARCHIVE_FILE" \
     --method "$method" \
-    --score-key "$key" 2>/dev/null
+    --score-key "$key" \
+    --steepness "$STEEPNESS" 2>/dev/null
 }
 
 # Phase 2: フォーカスドメインをローテーション
@@ -247,7 +250,7 @@ echo "  監査役: Pi ($PI_PROVIDER/$PI_MODEL)"
 if [ "$ESCAPE_MODE" -eq 1 ]; then
   echo "  モード: 構造改革エスケープハッチ (5行制限解除、親=best)"
 else
-  echo "  親選択: score_prop (HyperAgents) + ドメインローテーション"
+  echo "  親選択: score_prop (HyperAgents, steepness=$STEEPNESS) + ドメインローテーション"
   echo "  変更制約: $MAX_ADDED_LINES 行以内 (hard limit)"
 fi
 echo "  監査 retry: $MAX_AUDIT_RETRY 回 (Phase 2 H2)"
