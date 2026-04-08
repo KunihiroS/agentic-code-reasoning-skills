@@ -190,13 +190,12 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Test [name] will [PASS/FAIL] with Change A because [reason]
   Test [name] will [FAIL/PASS] with Change B because [reason]
+  Call path from test to changed code: [test_file:line → ... → changed_file:line]
   Therefore changes produce DIFFERENT test outcomes.
-  STOP: Once this counterexample is confirmed via traced code paths, proceed
-  directly to FORMAL CONCLUSION. Do not continue exploring additional tests.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
-    [describe concretely: what code condition enables divergence between the changes, what test reaches that condition, and what observable behavior differs]
+    [describe concretely: what test, what input, what diverging behavior]
   I searched for exactly that pattern:
     Searched for: [specific pattern — test name, code path, or input type]
     Found: [result — cite file:line, or NONE FOUND with search details]
@@ -422,7 +421,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
-10. **Do not construct counterexamples using hypothetical test environments.** A counterexample asserting test outcome differences must be grounded in the repository's actual test environment — not in environments that *could* exist (e.g., a database version between an old minimum and a new minimum, or a runtime version not pinned by the project). If a behavioral difference only manifests on a version, platform, or configuration not established by the test setup (CI config, tox.ini, pinned requirements, version constraint files), do not treat it as a confirmed counterexample. Instead, determine the actual environment from available configuration files, or mark the claim UNVERIFIED and set CONFIDENCE to LOW.
 
 ---
 
