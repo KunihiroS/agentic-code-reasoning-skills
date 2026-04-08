@@ -65,7 +65,7 @@ OBSERVATIONS from [filename]:
   O[N]: [another finding with file:line]
 
 HYPOTHESIS UPDATE:
-  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]
+  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]; if REFUTED, state H[M+1] targeting what the refutation exposed before reading the next file
 
 UNRESOLVED:
   - [remaining questions]
