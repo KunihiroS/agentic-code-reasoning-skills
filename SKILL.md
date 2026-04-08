@@ -169,9 +169,9 @@ ANALYSIS OF TEST BEHAVIOR:
 For each relevant test:
   Test: [name]
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
+                because [trace through changed code to the assertion or exception — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
+                because [trace through changed code to the assertion or exception — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
@@ -187,16 +187,16 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
     - Change B behavior: [specific output/behavior]
     - Test outcome same: YES / NO
 
-COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-  Test [name] will [PASS/FAIL] with Change A because [reason]
-  Test [name] will [FAIL/PASS] with Change B because [reason]
+COUNTEREXAMPLE (required if claiming NOT EQUIVALENT — identify the specific test where Comparison was DIFFERENT in ANALYSIS above, and build this trace from that claim):
+  Test [name] will [PASS/FAIL] with Change A because [trace from changed code to the assertion or exception — cite file:line]
+  Test [name] will [FAIL/PASS] with Change B because [trace from changed code to the assertion or exception — cite file:line]
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
     [describe concretely: what test, what input, what diverging behavior]
   I searched for exactly that pattern:
-    Searched for: [specific pattern — test name, code path, or input type]
+    Searched for: [whether the semantic differences between A and B propagate to a test assertion — which differences were checked and which assertion points they were traced against]
     Found: [result — cite file:line, or NONE FOUND with search details]
   Conclusion: no counterexample exists because [brief reason]
 
@@ -216,7 +216,8 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- When a behavioral difference is found in a changed function (return value, exception, or side-effect), do not stop tracing at that function: read the function on the already-traced relevant test call path that consumes the changed output, and record whether it propagates or absorbs the difference before assigning the Claim outcome.
+- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+- Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference produces a different observable test outcome by tracing through at least one test
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
@@ -412,9 +413,10 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 1. **Do not assume behavior from names.** Read the actual function definition. The canonical failure: assuming Python's builtin `format()` when a module-level function with different semantics shadows it.
 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
-4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact on test outcomes or that it changes a test's pass/fail result.
+4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
+10. **Do not use unverified runtime-environment claims as evidence.** If a behavioral difference between changes is attributed to a specific database version, OS, interpreter version, or library version, that version constraint must be explicitly encoded in the test's skip decorators, setup fixtures, or CI configuration, cited at a specific file:line. A version range or environment assumption that cannot be grounded in the repository is UNVERIFIED and must not determine EQUIVALENT or NOT_EQUIVALENT conclusions.
 
 ### General
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
