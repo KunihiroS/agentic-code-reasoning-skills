@@ -164,13 +164,6 @@ P2: Change B modifies [file(s)] by [specific description]
 P3: The fail-to-pass tests check [specific behavior]
 P4: The pass-to-pass tests check [specific behavior, if relevant]
 
-CONTRACT SURVEY (one entry per changed function/symbol):
-  Function: [name — file:line]
-  Contract: return [value type/semantics]; raises [exception or NONE];
-            mutates [persistent state or NONE]; calls [observable side-effects or NONE]
-  Diff scope: which contract element(s) could this diff alter? [list or NONE]
-  Test focus: tests that directly assert the listed Diff scope element(s)
-
 ANALYSIS OF TEST BEHAVIOR:
 
 For each relevant test:
@@ -179,12 +172,18 @@ For each relevant test:
                 because [trace through code — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
                 because [trace through code — cite file:line]
+  (Base this on the first observation point the test can detect — returned value,
+   raised exception, mutated state, or assertion input — not merely on internal
+   code differences.)
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
   Claim C[N].1: With Change A, behavior is [description]
   Claim C[N].2: With Change B, behavior is [description]
+  (Base this on the first observation point the test can detect — returned value,
+   raised exception, mutated state, or assertion input — not merely on internal
+   code differences.)
   Comparison: SAME / DIFFERENT outcome
 
 EDGE CASES RELEVANT TO EXISTING TESTS:
@@ -195,13 +194,16 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
     - Test outcome same: YES / NO
 
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-  Test [name] will [PASS/FAIL] with Change A because [reason]
-  Test [name] will [FAIL/PASS] with Change B because [reason]
+  Test [name] will [PASS/FAIL] with Change A because [trace — cite file:line]
+  Test [name] will [FAIL/PASS] with Change B because [trace — cite file:line]
+  By P[N]: this test checks [assertion/behavior stated in P3 or P4], and the
+           divergence above causes that assertion to produce a different result.
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
   If NOT EQUIVALENT were true, a counterexample would look like:
-    [describe concretely: what test, what input, what diverging behavior]
+    [describe concretely: what test, what assertion in P[N], what code difference
+     would cause that assertion to produce a different result]
   I searched for exactly that pattern:
     Searched for: [specific pattern — test name, code path, or input type]
     Found: [result — cite file:line, or NONE FOUND with search details]
