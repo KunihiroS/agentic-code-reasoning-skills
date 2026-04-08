@@ -1,0 +1,12 @@
+`benchmark/swebench/runs/iter-100/proposal.md` を作成しました。
+
+**提案概要**:
+
+- **カテゴリ E**（表現・フォーマット改善）+ 論文定義との整合（カテゴリ F 関連）
+- **仮説**: `compare` テンプレートの per-test Claim のトレース指示を  
+  `trace through code` → `trace: change point → ... → assertion outcome`  
+  に精緻化することで、変更箇所発見でトレースを打ち切る誤判定を削減
+- **変更**: 2 行のみ（ANALYSIS セクション内の `because [...]` × 2）
+- **効果**: 変更箇所からアサーション結果までの因果連鎖の明示的なトレースを求めることで、EQUIV/NOT EQUIV 両方向の途中打ち切り誤判定を減らす
+- **failed-approaches 全 27 原則との照合**: 抵触なし（非対称変更なし・探索量削減なし・新規フィールド追加なし）
+
