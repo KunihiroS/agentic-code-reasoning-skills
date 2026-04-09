@@ -1,0 +1,12 @@
+`benchmark/swebench/runs/iter-111/proposal.md` を作成しました。
+
+**要約:**
+
+- **カテゴリ D のメカニズム**: 「弱い環の特定」を選択。YES/NO 自己評価（#9 の罠）を避け、具体的な Claim 名を生成させることで外部検証可能な出力を要求。
+
+- **改善仮説**: Step 5.5 の最終チェック項目に「推論チェーンの最も弱い未検証クレームを命名する」を付加することで、false NOT_EQ の典型経路（意味論的差分 → テスト到達性不完全トレース → NOT_EQ 断言）にブレーキをかける。
+
+- **変更**: Step 5.5 の既存最終行に `— name the single weakest unverified claim in the chain before proceeding` を追記（1 行、5 行以内）。
+
+- **failed-approaches.md との照合**: #1（非対称操作）・#9（自己チェック）・#23（ソフトフレーミング）の各リスクを検討し、「命名という具体的生成行為」によって回避可能と判断。
+

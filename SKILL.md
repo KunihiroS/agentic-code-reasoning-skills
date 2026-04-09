@@ -168,6 +168,10 @@ ANALYSIS OF TEST BEHAVIOR:
 
 For each relevant test:
   Test: [name]
+  Reachability: Does this test's call path reach the changed code?
+    [YES — cite the function call at file:line that leads to the changed code]
+    [NO  — state what was searched and where the path ends]
+  (If NO: Comparison is SAME — skip to next test)
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
                 because [trace through code — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
@@ -176,6 +180,10 @@ For each relevant test:
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
+  Reachability: Does this test's call path reach the changed code?
+    [YES — cite the function call at file:line that leads to the changed code]
+    [NO  — state what was searched and where the path ends]
+  (If NO: Comparison is SAME — skip to next test)
   Claim C[N].1: With Change A, behavior is [description]
   Claim C[N].2: With Change B, behavior is [description]
   Comparison: SAME / DIFFERENT outcome
@@ -190,7 +198,6 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Test [name] will [PASS/FAIL] with Change A because [reason]
   Test [name] will [FAIL/PASS] with Change B because [reason]
-  Diverging assertion: [test_file:line — the specific assert/check that produces a different result]
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
