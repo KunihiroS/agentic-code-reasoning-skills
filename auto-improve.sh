@@ -35,13 +35,19 @@ STAGED_GATE_THRESHOLD=3  # Phase 2: Staged Eval で 5ケース中 3 以上正答
 ESCAPE_MODE=0            # Phase 2: 構造改革エスケープハッチ
 STEEPNESS=20             # 8.1.A: score_prop sigmoid steepness (高いほど高スコア親優先)
 
-COPILOT_MODEL="claude-sonnet-4.6"
 PI_PROVIDER="github-copilot"
 PI_MODEL="gemini-3.1-pro-preview"
 
 # 8.8: 監査役を Hermes Agent に置換 (旧 Pi)
 HERMES_PROVIDER="openai-codex"
 HERMES_MODEL="gpt-5.4"
+
+# 8.8.2 (2026-04-09): 提案者/実装者も Hermes に統一。Copilot CLI の /critique が
+# 機能ゼロ (実測 70k〜120k tokens/call、品質改善ゼロ) かつプロセス制御が弱いため撤廃。
+# propose/implement は Hermes 経由 copilot provider + claude-sonnet-4.6 を使う
+# (認証は gh auth token 経由で自動解決)。
+HERMES_PROPOSER_PROVIDER="copilot"
+HERMES_PROPOSER_MODEL="claude-sonnet-4.6"
 
 # オプション解析
 PARSED_OPTS=()
@@ -231,12 +237,6 @@ exit(0 if perfect >= $GOAL_PERFECT_COUNT else 1)
 " 2>/dev/null
 }
 
-run_copilot() {
-  local prompt_file="$1"
-  local log_file="$2"
-  copilot -p "$(cat "$prompt_file")" --yolo --model "$COPILOT_MODEL" -s 2>&1 | tee "$log_file"
-}
-
 run_pi() {
   local prompt_file="$1"
   local log_file="$2"
@@ -244,8 +244,8 @@ run_pi() {
   pi -p --no-session --provider "$PI_PROVIDER" --model "$PI_MODEL" "$(cat "$prompt_file")" < /dev/null 2>&1 | tee "$log_file"
 }
 
-# 8.8: Hermes Agent をヘッドレス呼び出し (監査役)
-# 同じ理由で < /dev/null 必須
+# 8.8: Hermes Agent をヘッドレス呼び出し (監査役: openai-codex/gpt-5.4)
+# < /dev/null で stdin を切り、hermes が親の stdin を食わないようにする
 run_hermes() {
   local prompt_file="$1"
   local log_file="$2"
@@ -255,13 +255,23 @@ run_hermes() {
     < /dev/null 2>&1 | tee "$log_file"
 }
 
+# 8.8.2: Hermes 経由で提案者/実装者を呼び出す (copilot provider + claude-sonnet-4.6)
+run_hermes_proposer() {
+  local prompt_file="$1"
+  local log_file="$2"
+  hermes chat -Q -q "$(cat "$prompt_file")" \
+    --provider "$HERMES_PROPOSER_PROVIDER" \
+    -m "$HERMES_PROPOSER_MODEL" \
+    < /dev/null 2>&1 | tee "$log_file"
+}
+
 # =============================================================================
 # メインループ
 # =============================================================================
 
 echo "=== auto-improve.sh (Phase 2) ==="
-echo "  実装者: Copilot CLI ($COPILOT_MODEL)"
-echo "  監査役: Hermes ($HERMES_PROVIDER/$HERMES_MODEL)"
+echo "  提案/実装: Hermes ($HERMES_PROPOSER_PROVIDER/$HERMES_PROPOSER_MODEL)"
+echo "  監査役:    Hermes ($HERMES_PROVIDER/$HERMES_MODEL)"
 if [ "$ESCAPE_MODE" -eq 1 ]; then
   echo "  モード: 構造改革エスケープハッチ (5行制限解除、親=best)"
 else
@@ -325,7 +335,7 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
     4) FORCED_CAT="E"; FORCED_CAT_DESC="表現・フォーマットを改善する (曖昧文言の具体化、簡潔化、例示)" ;;
     5) FORCED_CAT="F"; FORCED_CAT_DESC="原論文の未活用アイデアを導入する (localize/explain 手法の compare 応用、エラー分析知見)" ;;
   esac
-  log "Copilot ($COPILOT_MODEL): 分析・改善案作成中... [強制カテゴリ: $FORCED_CAT]"
+  log "Hermes ($HERMES_PROPOSER_MODEL): 分析・改善案作成中... [強制カテゴリ: $FORCED_CAT]"
 
   # 出力先ファイル (Copilot がここに書く)
   PROPOSAL_PATH="benchmark/swebench/runs/iter-${current_iter}/proposal.md"
@@ -425,7 +435,7 @@ ${FORCED_CAT}. ${FORCED_CAT_DESC}
 PROMPT
   fi
 
-  run_copilot "$PROMPT_DIR/propose.txt" "$ITER_DIR/copilot-propose.log"
+  run_hermes_proposer "$PROMPT_DIR/propose.txt" "$ITER_DIR/hermes-propose.log"
   log "Copilot: 改善案提案完了"
 
   # === 2. ディスカッション ===
@@ -479,18 +489,15 @@ PROMPT
     continue
   fi
 
-  # === 3. 実装 (+ Rubber Duck self-critique) ===
-  log "Copilot: 実装中 (with /critique)..."
+  # === 3. 実装 ===
+  # 8.8.2: /critique (Rubber Duck) は撤廃 — 実測で品質改善ゼロ・70k〜120k tokens/call
+  log "Hermes ($HERMES_PROPOSER_MODEL): 実装中..."
   RATIONALE_PATH="benchmark/swebench/runs/iter-${current_iter}/rationale.md"
   cat > "$PROMPT_DIR/implement.txt" << PROMPT
 ${PROPOSAL_PATH} の改善案に従い、以下を順番に実行してください:
 
 1. SKILL.md を編集する (proposal.md に記載した変更のみ)
 2. ${RATIONALE_PATH} を Objective.md の rationale.md フォーマットに従い作成する
-3. 上記 2 つが完了した後、\`/critique\` で自分の SKILL.md 変更と rationale を批評してもらう
-4. critique で重大な指摘 (Blocking レベル) があれば SKILL.md と rationale.md を修正する。
-   軽微な指摘 (Minor / Style) は無視してよい。
-   critique 指摘なし、または軽微のみの場合は何もしない。
 
 【参照してよいファイルの完全なリスト】
 - ${PROPOSAL_PATH}
@@ -498,16 +505,17 @@ ${PROPOSAL_PATH} の改善案に従い、以下を順番に実行してくださ
 - Objective.md (rationale フォーマットのため)
 
 この 3 ファイル以外を read / search / list する必要はありません。
-(注: \`/critique\` の rubber-duck サブエージェントは独自にファイルを読みますが、それは subagent の動作なので主エージェントの allowlist には含まれません)
 
 【制約】
 - 変更規模は ${MAX_ADDED_LINES} 行以内 (hard limit、escape モード時は解除)
-- proposal.md に記載のない変更は行わない (critique で他の改善を提案されても、proposal の範囲外には踏み込まない)
-- rationale.md にも具体的な数値 ID, リポジトリ名, テスト名は書かない
+- proposal.md に記載のない変更は行わない
+- rationale.md には **ベンチマーク対象リポジトリの固有識別子** (リポジトリ名、
+  ファイルパス、関数名、クラス名、テスト名、テスト ID、実装コードの引用) を
+  一切含めない。SKILL.md 自身の文言引用や一般概念名は許可される。
 PROMPT
 
-  run_copilot "$PROMPT_DIR/implement.txt" "$ITER_DIR/copilot-implement.log"
-  log "Copilot: 実装完了"
+  run_hermes_proposer "$PROMPT_DIR/implement.txt" "$ITER_DIR/hermes-implement.log"
+  log "Hermes: 実装完了"
 
   # === 3.5 H1: 5行 hard limit チェック (escape モードでは skip) ===
   added_lines=$(count_added_lines)
@@ -614,7 +622,7 @@ PROMPT
 監査結果:
 $(cat "$ITER_DIR/audit.md" 2>/dev/null)
 PROMPT
-        run_copilot "$PROMPT_DIR/revise.txt" "$ITER_DIR/copilot-revise-${retry}.log"
+        run_hermes_proposer "$PROMPT_DIR/revise.txt" "$ITER_DIR/hermes-revise-${retry}.log"
       fi
     fi
   done
