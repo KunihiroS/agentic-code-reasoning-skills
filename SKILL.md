@@ -215,6 +215,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+- After reading a directly changed function, read how its immediate caller uses the changed return value or side-effect — trace at least one step toward the test assertion
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
@@ -420,7 +421,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
 8. Do not hide uncertainty — state what is unverified.
 9. Do not skip the refutation check. It is mandatory in every mode.
-10. **Commit to a conclusion.** Do not answer UNKNOWN. When evidence is incomplete or exhausted before full tracing is possible, answer with the strongest conclusion the traced evidence supports and assign LOW confidence. An incomplete trace that strongly favors one answer is more useful than no answer.
 
 ---
 
