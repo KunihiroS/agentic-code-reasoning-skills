@@ -314,7 +314,18 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   ANALYSIS_CONTEXT="現在の SKILL.md は過去の高スコア時点 (集約スコア ${prev_score}%、フォーカスドメイン: ${focus_domain}) から復元されています。SKILL.md 自体を読み、汎用的な改良点を検討してください。"
 
   # === 1. 改善案提案 ===
-  log "Copilot ($COPILOT_MODEL): 分析・改善案作成中..."
+  # 強制カテゴリローテーション (iter-87〜106 の観察で B/E に極端偏り、D/F が 0 回だったため)
+  # current_iter % 6: 0=A 1=B 2=C 3=D 4=E 5=F
+  cat_idx=$(( current_iter % 6 ))
+  case "$cat_idx" in
+    0) FORCED_CAT="A"; FORCED_CAT_DESC="推論の順序・構造を変える (ステップの順序、並列/直列、逆方向推論)" ;;
+    1) FORCED_CAT="B"; FORCED_CAT_DESC="情報の取得方法を改善する (読み方の具体化、探索の優先順位)" ;;
+    2) FORCED_CAT="C"; FORCED_CAT_DESC="比較の枠組みを変える (比較粒度、差異重要度、変更分類)" ;;
+    3) FORCED_CAT="D"; FORCED_CAT_DESC="メタ認知・自己チェックを強化する (思い込み検査、弱い環特定、確信度)" ;;
+    4) FORCED_CAT="E"; FORCED_CAT_DESC="表現・フォーマットを改善する (曖昧文言の具体化、簡潔化、例示)" ;;
+    5) FORCED_CAT="F"; FORCED_CAT_DESC="原論文の未活用アイデアを導入する (localize/explain 手法の compare 応用、エラー分析知見)" ;;
+  esac
+  log "Copilot ($COPILOT_MODEL): 分析・改善案作成中... [強制カテゴリ: $FORCED_CAT]"
 
   # 出力先ファイル (Copilot がここに書く)
   PROPOSAL_PATH="benchmark/swebench/runs/iter-${current_iter}/proposal.md"
@@ -394,8 +405,18 @@ ${focus_domain}
   既存行への文言追加・精緻化のみ可。新規ステップ・新規フィールド・新規セクション
   の追加は原則不可。削除行はこの制限に含めない。
 
+【強制カテゴリ (今回の提案はこのカテゴリに従うこと)】
+${FORCED_CAT}. ${FORCED_CAT_DESC}
+
+- このイテレーションではカテゴリ ${FORCED_CAT} のみを使用すること
+- 他のカテゴリに該当する変更は提案しないこと
+- カテゴリの定義は Objective.md の Exploration Framework セクションを参照
+- 強制ローテーションは iter-87〜106 の偏り (B/E に集中、D/F が 0 回) を
+  是正するための措置
+
 【proposal.md に含めるべき内容】
-- Exploration Framework のカテゴリ (Objective.md 参照) と選定理由
+- Exploration Framework のカテゴリ: ${FORCED_CAT} (強制指定) と、このカテゴリ内での
+  具体的なメカニズム選択理由
 - 改善仮説 (1 つだけ、抽象的・汎用的な記述)
 - SKILL.md のどこをどう変えるか (具体的な変更内容)
 - 一般的な推論品質への期待効果 (どのカテゴリ的失敗パターンが減るか)
