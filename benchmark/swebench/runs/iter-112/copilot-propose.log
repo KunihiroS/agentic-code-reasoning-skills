@@ -1,0 +1,11 @@
+`benchmark/swebench/runs/iter-112/proposal.md` を作成しました。
+
+---
+
+**提案サマリー**:
+
+- **対象**: Guardrail #5 末尾の1文
+- **変更**: `"thorough-but-incomplete analysis"` → `"chains that trace the right functions but stop before the final observation point"`
+- **理由**: 「thorough-but-incomplete（徹底的だが不完全）」は形容矛盾で曖昧。エージェントが「どこで止まると不完全なのか」を把握できない。具体物を例示せず **状態記述** に書き換えることで、failed-approaches #22 に準拠しつつ中間ノード打ち切り失敗を減らす。
+- **変更規模**: 1行修正（5行 hard limit 適合）
+

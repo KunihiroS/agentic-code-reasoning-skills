@@ -168,10 +168,6 @@ ANALYSIS OF TEST BEHAVIOR:
 
 For each relevant test:
   Test: [name]
-  Reachability: Does this test's call path reach the changed code?
-    [YES — cite the function call at file:line that leads to the changed code]
-    [NO  — state what was searched and where the path ends]
-  (If NO: Comparison is SAME — skip to next test)
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
                 because [trace through code — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
@@ -180,10 +176,6 @@ For each relevant test:
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
-  Reachability: Does this test's call path reach the changed code?
-    [YES — cite the function call at file:line that leads to the changed code]
-    [NO  — state what was searched and where the path ends]
-  (If NO: Comparison is SAME — skip to next test)
   Claim C[N].1: With Change A, behavior is [description]
   Claim C[N].2: With Change B, behavior is [description]
   Comparison: SAME / DIFFERENT outcome
@@ -224,7 +216,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+- When a behavioral difference is found in a changed function (return value, exception, or side-effect), do not stop tracing at that function: read the function on the already-traced relevant test call path that consumes the changed output, and record whether it propagates or absorbs the difference before assigning the Claim outcome.
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
