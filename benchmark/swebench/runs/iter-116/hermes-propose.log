@@ -1,0 +1,202 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/09/26 14:29:38] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+まず関連ファイルを読み込んで内容を把握します。
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ┊ 📖 preparing read_file…
+  ┊ 📖 preparing read_file…
+  ┊ 📖 read      SKILL.md  0.9s
+  ┊ 📖 read      Objective.md  0.9s
+  ┊ 📖 preparing read_file…
+  ┊ 📖 read      failed-approaches.md  0.8s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+内容を把握しました。次に README.md と docs/design.md も確認します。
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ┊ 📖 preparing read_file…
+  ┊ 📖 preparing read_file…
+  ┊ 📖 read      README.md  0.8s
+  ┊ 📖 read      docs/design.md  0.9s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+全ファイルを把握しました。分析を行い、proposal.md を作成します。
+
+---
+
+**分析まとめ:**
+
+**フォーカス: equiv (同等と判定する精度向上)**
+**カテゴリ C: 比較の枠組みを変える**
+
+カテゴリ C のメカニズム候補:
+1. テスト単位 → 関数単位・モジュール単位で比較
+2. 差異の重要度を段階的に評価
+3. 変更のカテゴリ分類を先に行う (→ failed #7 に抵触)
+
+equiv ミスの典型パターン: 意味的差異を見つけると Guardrail #4 により「差異 → 必ずトレース」となるが、その差異が **テスト観測境界に到達しない** ことを確認する手段が弱い。
+
+現在の NO_COUNTEREXAMPLE_EXISTS セクションは「反例の形を記述して探索」を求めるが、**差異が実際にテスト観測点まで伝播するか** という観点 (observable propagation) での判定基準が抽象的。
+
+カテゴリ C の「差異の重要度を段階的に評価する」メカニズムで、EDGE CASES RELEVANT TO EXISTING TESTS セクションの判定粒度を精緻化できる。
+
+具体的には、EDGE CASES の「Test outcome same: YES / NO」に対し、差異が **テストの観測点まで伝播するか (propagates to test assertion)** を問う文言を追加することで、「差異あり ≠ テスト結果相違」の判断を構造的に支援できる。
+
+**failed-approaches 照合:**
+- #1 非対称操作: NO (両方向に適用)
+- #7 中間ラベルのアンカリング: 注意が必要 → 分類ラベルではなく伝播経路の検証なので非該当
+- #8 受動的記録: 「YES/NO を答えさせる」だけでなく伝播経路を記述する形 → 注意が必要だが、既存フィールドの精緻化なので新規記録フィールドの追加ではない
+- 変更は既存行 `Test outcome same: YES / NO` の文言追加であり 5 行以内
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ┊ 💻 preparing terminal…
+  ┊ 💻 $         mkdir -p benchmark/swebench/runs/iter-116  0.3s
+  ┊ ✍️ preparing write_file…
+  ┊ ✍️  write     benchmark/swebench/runs/iter-116/proposal.md  0.6s
+  ┊ review diff
+a/benchmark/swebench/runs/iter-116/proposal.md → b/benchmark/swebench/runs/iter-116/proposal.md
+@@ -0,0 +1,115 @@
++# Iter-116 Proposal
++
++## Exploration Framework カテゴリ: C (強制指定)
++
++カテゴリ C「比較の枠組みを変える」の中から、今回は **差異の重要度を段階的に評価する** メカニズムを選択する。
++
++### メカニズム選択の理由
++
++compare モードの EQUIV 誤判定は次の二段構えの失敗で生じる:
++
++1. 意味的差異が存在する (Guardrail #4 が発動して差異を見つける)
++2. その差異が **テストの観測点 (assertion の評価式) まで伝播するか否か** の判断が粗い
++
++現在の `EDGE CASES RELEVANT TO EXISTING TESTS` セクションでは、各エッジケースの最終判定を
++`Test outcome same: YES / NO` という二値で記録する。しかしこの二値は
++「差異が存在すること」と「差異がテスト結果を変えること」を区別していない。
++差異の存在を確認した段階で NO と記入しがちになり、観測境界への到達可否を
++判断しないまま NOT_EQ に流れる。これが equiv 精度を損なう主要因の一つである。
++
++カテゴリ C の「差異の重要度を段階的に評価する」メカニズムは、
++差異の発生地点とテスト観測点の間の距離・伝播経路を明示させることで、
++この粗さを構造的に解消できる。
++
++---
++
++## 改善仮説 (1 つ)
++
++**エッジケース判定において「差異の存在」と「差異のテスト観測点への伝播」を
++分離して評価させることで、差異があっても観測されない EQUIV ケースの
++誤 NOT_EQ 判定が減少し、equiv 精度が向上する。**
++
++---
++
++## SKILL.md への具体的な変更
++
++### 変更箇所
++
++compare モードの Certificate template 内、`EDGE CASES RELEVANT TO EXISTING TESTS` ブロック。
++
++### 変更前
++
++```
++  E[N]: [edge case]
++    - Change A behavior: [specific output/behavior]
++    - Change B behavior: [specific output/behavior]
++    - Test outcome same: YES / NO
++```
++
++### 変更後
++
++```
++  E[N]: [edge case]
++    - Change A behavior: [specific output/behavior]
++    - Change B behavior: [specific output/behavior]
++    - Difference propagates to test assertion: YES / NO — [how or why not]
++    - Test outcome same: YES / NO
++```
++
++### 差分サイズ
++
++追加行: 1 行 (`Difference propagates to test assertion: YES / NO — [how or why not]`)
++削除行: 0 行
++合計変更: **1 行** (hard limit 5 行以内)
++
++---
++
++## 期待効果: どのカテゴリ的失敗パターンが減るか
++
++### 失敗パターン 1: 意味的差異の存在 → 即 NOT_EQ の推論ショートカット
++
++差異が観測点まで伝播するかを問うフィールドを挿入することで、
++エージェントは「差異を見つけた」→「テスト結果に影響する」の
++論理的ステップを明示的に踏まざるを得なくなる。
++これは docs/design.md が指摘する「Subtle difference dismissal」の逆パターン、
++つまり「差異の過剰評価」を抑制する効果を持つ。
++
++### 失敗パターン 2: EQUIVALENT の正当化不足
++
+… omitted 37 diff line(s) across 1 additional file(s)/section(s)
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+proposal.md を `benchmark/swebench/runs/iter-116/proposal.md` に出力しました。
+
+---
+
+**提案の要旨:**
+
+フォーカスドメイン: **equiv** (同等と判定する精度向上)
+カテゴリ: **C — 差異の重要度を段階的に評価する**
+
+**変更内容 (1行追加):**
+
+compare モードの `EDGE CASES RELEVANT TO EXISTING TESTS` ブロックに、
+既存の `Test outcome same: YES / NO` の直前に次の 1 行を追加する。
+
+```
+- Difference propagates to test assertion: YES / NO — [how or why not]
+```
+
+**なぜこれが効くか:**
+
+equiv の誤判定の多くは「意味的差異を見つけた → そのまま NOT_EQ」という
+推論ショートカットによる。現在のテンプレートは差異の *存在* は記録するが、
+その差異が **テスト観測点 (アサーション) まで伝播するか** を明示的に問わない。
+この 1 行を挿入することで、エージェントは差異発生地点からテスト観測境界までの
+因果連鎖を評価しない限りフィールドを埋められなくなり、伝播しない差異を
+正しく EQUIV と判定しやすくなる。
+
+**failed-approaches との照合:**
+全 27 原則と照合し、抵触なし (特に #1/#7/#8/#25 を重点確認)。
+proposal.md を `benchmark/swebench/runs/iter-116/proposal.md` に出力しました。
+
+---
+
+**提案の要旨:**
+
+フォーカスドメイン: **equiv** (同等と判定する精度向上)
+カテゴリ: **C — 差異の重要度を段階的に評価する**
+
+**変更内容 (1行追加):**
+
+compare モードの `EDGE CASES RELEVANT TO EXISTING TESTS` ブロックに、
+既存の `Test outcome same: YES / NO` の直前に次の 1 行を追加する。
+
+```
+- Difference propagates to test assertion: YES / NO — [how or why not]
+```
+
+**なぜこれが効くか:**
+
+equiv の誤判定の多くは「意味的差異を見つけた → そのまま NOT_EQ」という
+推論ショートカットによる。現在のテンプレートは差異の *存在* は記録するが、
+その差異が **テスト観測点 (アサーション) まで伝播するか** を明示的に問わない。
+この 1 行を挿入することで、エージェントは差異発生地点からテスト観測境界までの
+因果連鎖を評価しない限りフィールドを埋められなくなり、伝播しない差異を
+正しく EQUIV と判定しやすくなる。
+
+**failed-approaches との照合:**
+全 27 原則と照合し、抵触なし (特に #1/#7/#8/#25 を重点確認)。
+`file:line` の引用を義務化しないため #18/#26 にも非抵触。
+
+session_id: 20260409_142938_c2e10f

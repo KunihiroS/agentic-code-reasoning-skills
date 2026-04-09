@@ -169,16 +169,22 @@ ANALYSIS OF TEST BEHAVIOR:
 For each relevant test:
   Test: [name]
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace from changed code to test assertion outcome — cite file:line]
+                because [trace through code — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace from changed code to test assertion outcome — cite file:line]
+                because [trace through code — cite file:line]
   Comparison: SAME / DIFFERENT outcome
+  Trace check: [TRACED / INFERRED] — Did I trace a concrete test input
+               through the differing code path, or infer from code structure alone?
+               If INFERRED, trace before proceeding.
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
   Claim C[N].1: With Change A, behavior is [description]
   Claim C[N].2: With Change B, behavior is [description]
   Comparison: SAME / DIFFERENT outcome
+  Trace check: [TRACED / INFERRED] — Did I trace a concrete test input
+               through the differing code path, or infer from code structure alone?
+               If INFERRED, trace before proceeding.
 
 EDGE CASES RELEVANT TO EXISTING TESTS:
 (Only analyze edge cases that the ACTUAL tests exercise)
@@ -190,7 +196,6 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Test [name] will [PASS/FAIL] with Change A because [reason]
   Test [name] will [FAIL/PASS] with Change B because [reason]
-  Diverging assertion: [test_file:line — the specific assert/check that produces a different result]
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
