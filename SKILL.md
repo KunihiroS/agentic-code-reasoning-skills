@@ -13,7 +13,7 @@ This skill enforces a certificate-based reasoning process: you must state premis
 
 ## Modes
 - `compare` — determine if two changes produce the same behavior
-- `localize` — find the root cause of a bug
+- `diagnose` — find the root cause of a bug in a small number of files
 - `explain` — answer a code question with verified evidence
 - `audit-improve` — review code for security, API misuse, or maintainability
 
@@ -23,9 +23,28 @@ Choose a mode before exploring files. If unsure, prefer `explain`.
 | Trigger | Mode |
 |---------|------|
 | "Are these two patches/implementations equivalent?" | `compare` |
-| "Where is the bug?" / failing test / error report | `localize` |
+| "Where is the bug?" / failing test / single defect | `diagnose` |
 | "What does this code do?" / "Why does X happen?" | `explain` |
 | "Is this code secure?" / "Review for issues" | `audit-improve` |
+
+### Activation gates
+
+Before selecting a mode, check whether this skill is appropriate for the task. **Do not activate** this skill when:
+
+- The task requires **broad file enumeration** (e.g., "list all files that need to change for this refactor"). This skill is designed for deep analysis of a small number of files, not for wide-coverage listing.
+- The task is a **large-scale structural change** spanning many files (e.g., directory reorganization, rename propagation across a monorepo).
+- The expected output is a **flat list of files** rather than a reasoned diagnosis with evidence.
+
+For `diagnose` mode specifically:
+
+| Condition | Use `diagnose` | Do NOT use `diagnose` |
+|-----------|---------------|----------------------|
+| Root cause scope | Likely 1–5 files | Many files (10+) across the codebase |
+| Task nature | Single defect, specific test failure, error trace | Broad refactoring, feature addition, structural reorganization |
+| Expected output | Ranked root cause with file:line evidence | Exhaustive list of files to modify |
+| Evidence style | Deep code path tracing | Directory-level pattern matching |
+
+If the task does not fit `diagnose`, consider using the agent without this skill — unrestricted exploration may produce better results for broad enumeration tasks.
 
 ---
 
@@ -108,7 +127,7 @@ If my conclusion were false, what evidence should exist?
 - Result: REFUTED / NOT FOUND
 ```
 
-For `explain` and `localize`:
+For `explain` and `diagnose`:
 ```
 ALTERNATIVE HYPOTHESIS CHECK:
 If the opposite answer were true, what evidence would exist?
@@ -222,9 +241,11 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 
 ---
 
-## Localize
+## Diagnose
 
-Goal: identify the root cause of a bug, not just the crash site.
+Goal: identify the root cause of a single defect, not just the crash site.
+
+**Scope constraint:** This mode is designed for defects whose root cause resides in a small number of files (typically 1–5). For tasks requiring broad file enumeration across many files, do not use this mode — the structured analysis will over-constrain the output and reduce coverage.
 
 ### Certificate template
 
@@ -275,7 +296,7 @@ Based on divergence claims, produce ranked predictions:
 ### Exploration protocol
 Use the hypothesis-driven format from Step 3 during exploration. Number hypotheses H1, H2… and observations O1, O2… for traceability.
 
-### Localize checklist
+### Diagnose checklist
 - State what the failing behavior expects (Phase 1)
 - Trace from entry point toward production code with per-method records (Phase 2)
 - Every divergence claim must reference a specific premise (Phase 3)
@@ -433,7 +454,7 @@ Every response using this skill must include:
 | Selected mode | All |
 | Numbered premises | All |
 | Interprocedural trace table | All (when functions are on the code path) |
-| Per-item analysis (per-test, per-method, or per-function) | compare, localize, explain |
+| Per-item analysis (per-test, per-method, or per-function) | compare, diagnose, explain |
 | Refutation / alternative-hypothesis check | All |
 | Formal conclusion with premise/claim references | All |
 | Confidence level | All |
