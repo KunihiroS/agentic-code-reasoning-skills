@@ -998,10 +998,116 @@ pi -p --no-session --provider github-copilot --model claude-haiku-4.5 \
 
 ---
 
-## 10. 参考資料
+## 10. 再現性測定結果と収束判定 (2026-04-09)
+
+### 10.1 再現性測定 (§8.2 前提検証)
+
+同一 SKILL.md (iter-80 snapshot = 過去最高 90%) を 3 回繰り返し実行。
+
+| run | スコア |
+|---|---|
+| run 1 | 15/20 = 75.0% |
+| run 2 | 18/20 = 90.0% |
+| run 3 | 17/20 = 85.0% |
+
+- **平均: 83.33%、stdev: 7.64%、range: 15pp**
+- 不安定 (flipping) ケース 3/20: django-12663, django-14787, django-15368
+- 安定ケース: 17/20 = 85% (= main ブランチの原型スコアと完全一致)
+
+### 10.2 main ブランチとの差分
+
+main (85%) と iter-80 (90%) の差分は **2 箇所 4 行のみ** (compare checklist + Guardrail #4 の文言精緻化)。
+iter-80 の 90% はノイズ上限を叩いた lucky run であり、真の期待値 83.33% は main 以下。
+
+### 10.3 収束判定
+
+- **iter-1〜iter-118 の自己改善ループは統計的に進歩ゼロ。** 5〜10pp の揺らぎは 3 ケースの flip ノイズで完全に説明可能。
+- **failed-approaches.md に蓄積された原則 (#1〜#27+) の大半は、ノイズから学習された疑似パターン。** 本物の BL と noise-BL の区別が不可能。
+- **§8.2 ホールドアウト (15/5 split) は破綻。** 20 ケースで stdev 7.64% なら 5 ケースでは stdev > 15%。
+- **compare ベンチマーク駆動の SKILL.md 文言微調整は、この測定解像度では原理的に機能しない。**
+
+結果ファイル: `benchmark/swebench/runs/variance-summary.json`, `variance-{1,2,3}/`
+
+---
+
+## 11. 関連研究の比較分析 (2026-04-10)
+
+### 11.1 Meta-Harness (Stanford IRIS Lab, arXiv:2603.28052)
+
+**概要:** Yoonho Lee, Chelsea Finn ら (Stanford)。LLM で「model harness」(プロンプト + ツール定義 + retrieval ロジック + context 管理のコード全体) を自動最適化する。
+
+**核心アイデア:** 従来手法 (OPRO, AlphaEvolve, Self-Refine 等) は proposer にスコアか短いサマリーしか渡さない (1K〜26K tokens/iter)。Meta-Harness は **全候補の execution traces + ソースコード + スコアをファイルシステムとして** proposer (Claude Code) に提供し、`grep` / `cat` で必要な部分を選択的に読ませる (最大 10M tokens/iter)。
+
+**ループ構造:** propose → evaluate → store (全ログ + コード + スコアをファイルに保存) → repeat
+
+**ノイズ対策:**
+- TerminalBench-2: 89 タスク × **5 回試行** = 445 評価点で分散抑制
+- train/test 分離 (text classification, math reasoning)
+- **unseen model への transfer 検証** (math: search model と別の 5 モデルで評価)
+
+**主要成果:**
+- TerminalBench-2: Opus 4.6 で 76.4% (2 位)、Haiku 4.5 で 37.6% (全 agent 1 位)
+- Text classification: +7.7pp で SOTA
+- **既存手法の 1/10 の評価回数** で同等性能に到達
+
+**リポジトリ:** https://github.com/stanford-iris-lab/meta-harness-tbench2-artifact
+
+### 11.2 HyperAgents との比較
+
+| 観点 | HyperAgents (Meta/FAIR) | Meta-Harness (Stanford) | 我々 (auto-improve) |
+|---|---|---|---|
+| 最適化対象 | agent ソースコード全体 | harness コード全体 | SKILL.md 文言のみ (2〜5 行) |
+| proposer が見る情報 | eval report + コード。DGM baseline は失敗 chat log (250K chars) | 全候補の traces + code (10M tok) | SKILL.md + failed-approaches.md (数千 tok) |
+| ノイズ対策 | **なし** (single run、statistical test なし)。tree archive で暗黙ヘッジ | 5 回試行、train/test 分離、transfer 検証 | **なし** (single run、stdev 7.64%、118 回がノイズ) |
+| アーカイブ構造 | tree (任意ノード分岐) | 不明 (flat?) | archive.jsonl (linear + score_prop 親選択) |
+| domain 多様性 | 6〜8 ドメイン同時で汎化強制 | benchmark ごと (事後 transfer 検証) | compare 1 ドメインのみ |
+| 改変の幅 | コード改変 (ツール追加、制御フロー変更、パーサー書き換え) | harness コード改変 | **プロンプト文言のみ** |
+| statistical gate | なし | 暗黙 (5 回平均による安定化) | なし |
+
+### 11.3 我々への示唆の統合
+
+**HyperAgents と Meta-Harness は補完的:**
+- **HyperAgents** = 「何を」変えるかの幅を広げる (コードレベル改変、multi-domain)
+- **Meta-Harness** = 「なぜ」変えるかの診断精度を上げる (execution traces、情報密度)
+
+**我々に最も欠けているもの (優先順):**
+
+1. **ベンチマークの統計的信頼性** — 20 ケース × 1 回では改善検出不可能。
+   - 対策: ケース数拡大 (§8.3)、複数回試行、paired comparison
+
+2. **proposer への診断情報** — スコアと理論的原則のみでは targeted fix が不可能。
+   - 対策: execution traces (output.md) を proposer に渡す (Meta-Harness 方式)
+
+3. **改変の幅** — SKILL.md 2〜5 行の文言ではノイズを超える改善 delta が生まれない。
+   - 対策: harness 全体 (prompt_template, run_benchmark.sh, ツール構成) を最適化対象に (HyperAgents 方式)
+
+4. **statistical significance gate** — 両研究にも明示的には無いが必要。
+   - 対策: paired t-test (p < 0.05) を採用判定条件に追加
+
+5. **domain 多様性** — compare 1 ドメインでは過学習も検出不能。
+   - 対策: localize/explain モードのベンチマーク追加、または別リポからケース追加
+
+### 11.4 次のアクション: ベンチマーク増強が最優先
+
+上記 5 項目のうち、**(1) ベンチマークの統計的信頼性** が他全ての前提条件となる。
+信頼できる測定系がない限り、proposer の改善 (2)、改変幅の拡大 (3)、statistical gate (4)、domain 多様性 (5) のいずれも効果検証が不可能。
+
+**ベンチマーク増強の方向性 (§8.3 を具体化):**
+- pairs.json を 20 → 50〜100 ケースに拡大
+- django 以外のリポジトリ (scikit-learn, sympy, flask 等) から pairs を追加
+- ケース数 n が増えれば stdev は 1/√n で下がる (50 ケースで stdev ~3.4%、100 ケースで ~2.4%)
+- train/test 分離が統計的に成立する (50 ケースなら 35/15 split で holdout stdev ~5%)
+- paired comparison + 3 回平均を組み合わせれば、1〜2% の改善でも検出可能
+
+---
+
+## 12. 参考資料
 
 - **HyperAgents 論文:** https://arxiv.org/abs/2603.19461
 - **HyperAgents リポジトリ:** https://github.com/facebookresearch/Hyperagents
+- **Meta-Harness 論文:** https://arxiv.org/abs/2603.28052
+- **Meta-Harness プロジェクトページ:** https://yoonholee.com/meta-harness/
+- **Meta-Harness リポジトリ:** https://github.com/stanford-iris-lab/meta-harness-tbench2-artifact
 - **当該リポジトリ:** https://github.com/KunihiroS/agentic-code-reasoning-skills/tree/script/auto-improve
 - **関連スキル（ベース研究）:** Ugare & Chandra, "Agentic Code Reasoning" (arXiv:2603.01896)
 - **GitHub Copilot CLI Rubber Duck (Critic Agent) 発表記事:** https://github.blog/ai-and-ml/github-copilot/github-copilot-cli-combines-model-families-for-a-second-opinion/
