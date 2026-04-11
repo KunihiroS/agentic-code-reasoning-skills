@@ -1,155 +1,217 @@
-# Iteration 9 — Discussion（監査役レビュー）
+# Iteration 9 — Proposal Audit Discussion
 
-## 1. 学術的・実務的観点からの妥当性評価
+## 総評
 
-提案の核心である「コード乖離がテストアサーションまで伝播するか確認する」は、ソフトウェアテスト理論における **PIE フレームワーク（Execution, Infection, Propagation）** に直接対応する。
+提案は、SKILL.md の Step 5.5 に「推論チェーンの最も弱い環を特定し、その弱さが Step 6 の confidence と整合するか確認する」という 1 行を追加するもの。
 
-### 関連研究
+監査結論を先に述べると、これは
+- 研究コア（premises / hypothesis-driven exploration / interprocedural tracing / mandatory refutation）を壊さない
+- failed-approaches.md の禁止方向に直接は抵触しない
+- EQUIVALENT 側で出やすい「証拠はあるが weakest claim を見逃したまま過信する」失敗を抑える方向に働く
+- NOT_EQUIVALENT 側でも、差分のインパクト主張が weakest link になっていないかを点検させるため、片方向専用の誘導にはなっていない
 
-| 出典 | URL | 要点 |
-|------|-----|------|
-| Voas & Miller (1992), PIE framework | https://dl.acm.org/doi/abs/10.1109/32.153381 | 故障がテスト失敗として観測されるには3条件が必要: (1) 故障コードが実行される (Execution), (2) プログラム状態が汚染される (Infection), (3) 汚染が出力まで伝播する (Propagation)。提案の Propagation check は条件(3)に正確に対応する |
-| Just et al. (ISSTA 2014), Efficient Mutation Analysis | https://homes.cs.washington.edu/~rjust/publ/state_infection_issta_2014.pdf | Infection した状態が伝播せずに消滅するケースが mutation testing の精度を歪める主因であることを実証。これは EQUIV 偽陽性の構造と同型 |
-| Palikareva et al., Shadow Symbolic Execution | https://www.researchgate.net/publication/291354179_Shadow_of_a_Doubt_Testing_for_Divergences_Between_Software_Versions | ソフトウェアバージョン間の乖離を記号実行で追跡。乖離の「発見」と「観測可能な出力差異」を区別する手法 |
-| Ugare & Chandra (arXiv:2603.01896) | https://arxiv.org/abs/2603.01896 | 原論文の localize モード PHASE 3 は CLAIM が PREMISE と接続する形式を要求するが、compare モードには同等の明示的ステップがない。提案はこのギャップを埋める |
-| Assertion-Aware Test Summarization | https://arxiv.org/pdf/2511.06227 | LLM によるテスト推論ではアサーションレベルのコンテキストが精度に重要であることを示す |
+という点で、全体として妥当性は高い。
 
-**評価**: PIE フレームワークの Propagation 条件は、提案の理論的基盤として十分に確立されている。「コード差異の存在」と「テスト結果の差異」を区別する必要性は mutation testing 研究で広く認識されており、提案の方向性は学術的に妥当である。
+一方で、文言中の "lowest evidence density" はやや擬似定量的で、厳密な測定手続きがないため、実装時には「least-supported claim」程度の表現の方が解釈ぶれを減らせる懸念がある。とはいえ、この懸念は否決理由というより wording 改善のレベル。
 
----
+## 1. 既存研究との整合性
 
-## 2. Exploration Framework カテゴリ選択の適切性
+### 参照した外部情報
 
-**選択: カテゴリ F（原論文の未活用アイデアを導入する）**
+1) A Chain-of-Thought Is as Strong as Its Weakest Link: A Benchmark for Verifiers of Reasoning Chains
+URL: https://arxiv.org/abs/2402.00559
+URL: https://aclanthology.org/2024.acl-long.254/
+要点:
+- reasoning chain 全体の品質は局所ステップの弱さに制約される、という発想を前提にしている。
+- REVEAL は reasoning step ごとの relevance / evidence attribution / logical correctness を評価対象にしており、単に最終答えだけでなく「どのステップが弱いか」を検査する方向性を支持している。
+- 論文要約では、既存の verifier は logical correctness や contradiction 検出に苦戦するとされており、結論直前に weakest link を洗い出すチェック追加はこの問題意識と整合的。
 
-### 過去のカテゴリ使用履歴（iter-6 以降）
+2) Large Language Models lack essential metacognition for reliable medical reasoning
+URL: https://www.nature.com/articles/s41467-024-55628-6
+要点:
+- 高い正答率があっても、モデルの metacognitive ability は不十分で、knowledge limitation を認識できず confident に誤答する傾向があると要約されている。
+- そのため、信頼できる評価フレームワークには confidence と reasoning quality の対応づけが必要だという問題意識が示されている。
+- 本提案の「最も弱いクレームを特定し、その弱さが confidence level を支えられるか確認する」は、まさに confidence-calibration を軽量な self-check として導入するもので、研究的方向性と一致する。
 
-| Iter | カテゴリ | 結果 |
-|------|----------|------|
-| 6 | D（メタ認知・自己チェック）| 85%→75% |
-| 7 | A（推論の順序・構造を変える）| 75%→70% |
-| 8 | **F（原論文の未活用アイデア）** | 70%→70% |
-| 9 | **F（原論文の未活用アイデア）** | — |
+### 既存リポジトリ内資料との整合
 
-**懸念**: iter-8 と iter-9 が連続してカテゴリ F を選択している。ただし：
-- iter-8 は「localize の Divergence Analysis 構造を compare に移植」（構造レベルの変更）
-- iter-9 は「localize PHASE 3 の CLAIM-PREMISE 接続を compare の Divergence ブロックに補完」（iter-8 で導入した構造内のサブステップ追加）
+- README.md では、この skill の中核は「explicit premises, concrete code tracing, formal conclusion によって unsupported claims を防ぐこと」とされている。
+- docs/design.md では failure pattern として "Incomplete reasoning chains" と "Subtle difference dismissal" が明示されている。
+- 提案は新しい別系統の手法を足すのではなく、既に設計文書で問題視されている失敗パターンに対して Step 5.5 の self-check を 1 項目補うもの。
 
-iter-8 が導入した Divergence 構造の「未完成部分を補完する」という位置づけは論理的に一貫しており、同一カテゴリの連続使用にも合理性がある。ただし、iter-8 が横ばい（70%→70%）だった点を踏まえると、同じカテゴリ内での追加投資がどこまで有効かは不確実である。
+よって、既存研究・既存設計の両方と整合している。
 
-**判定: 許容範囲内**。ただし iter-9 でも改善が見られなければ、カテゴリ F からは離れるべき。
+## 2. Exploration Framework のカテゴリ選定は適切か
 
----
+提案者はカテゴリ D「メタ認知・自己チェックを強化する」を選んでいる。これは適切。
 
-## 3. EQUIV / NOT_EQ 両方向への影響分析
+理由:
+- 変更箇所が Step 3 の探索戦略ではなく Step 5.5 の pre-conclusion self-check である。
+- 何を検索するか、どのファイルから読むか、どのシグナルを優先するかを事前固定していない。
+- compare / diagnose / explain / audit-improve のいずれにも横断的に効く「結論前の自己監査」の追加であり、探索手順そのものの再設計ではない。
 
-### 既存テンプレートとの実効的差分
+カテゴリ C（比較の枠組み変更）ではない理由:
+- compare に効く側面はあるが、文言は compare 専用ではなく reasoning chain 一般に対する点検である。
 
-**重要な観察**: 現在の Claim 行は既に以下を要求している：
+カテゴリ F（原論文の未活用アイデア導入）でも一部説明可能ではあるが、今回の主作用は論文新規要素の導入よりも metacognitive checkpoint の強化であり、D が第一分類として自然。
 
-```
-Claim C[N]: ... because [trace from divergence point to test assertion — cite file:line]
-```
+## 3. EQUIVALENT / NOT_EQUIVALENT の両判定への作用
 
-つまり「乖離点からアサーションまでのトレース」は既に Claim の中で要求されている。では Propagation check の追加は何が違うのか？
+### 変更前との差分
 
-**差分の本質**: 現在のテンプレートでは、Divergence で乖離を発見した後、即座に Claim（結論的主張）に進む。Propagation check はその間に「乖離がアサーションに到達するか？」という **判断分岐点** を挿入する。これにより：
+変更前 Step 5.5 は以下を確認している:
+- file:line にトレースされているか
+- trace table の VERIFIED / UNVERIFIED が整理されているか
+- Step 5 の refutation が実際の search / inspection を伴うか
+- conclusion が evidence を超えていないか
 
-1. **SAME への明示的オフランプ**: 現在の SAME 条件は「values are identical at every traced point」（全点で値が同一）だが、EQUIV 偽陽性の実態は「ある点で値は異なるが、アサーション到達前に収束する」ケース。Propagation check は後者を明示的にカバーする。
-2. **Claim 前の強制的な中間確認**: 乖離発見 → Claim という直結を断ち切り、伝播確認という中間ステップを挟む。
+これらは「証拠の存在」「反証プロセスの実施」「主張の逸脱禁止」は見るが、推論チェーン内で相対的に最も脆い主張がどれか、という優先度付けは問わない。
 
-### EQUIV 方向（現状 80%）への影響
+提案後は、結論の weakest link を 1 つ明示させ、その弱さで HIGH / MEDIUM / LOW の confidence が正当化できるかを確認する。
 
-- **正の影響（高確度）**: 15368, 15382 はまさに「中間的な値の乖離がアサーション境界に到達しない」ケース。Propagation check の「If the assertion receives identical inputs despite the divergence: Comparison is SAME」が直接的に機能する。
-- **回帰リスク（低）**: 正答 8 件は乖離なし（SAME）または乖離がアサーションに到達しているケースであり、Propagation check は追加確認に過ぎない。
+つまり実効的差分は、
+- binary な checklist から一段進んで
+- reasoning chain 内の「最小支持点」を自己特定させる
+- confidence を strongest evidence ではなく weakest justified claim に合わせて下げる圧力をかける
 
-### NOT_EQ 方向（現状 60%）への影響
+という点にある。
 
-- **正の影響（中程度）**: ゴール明確化（「アサーションに到達するかを確認せよ」）により探索が収束しやすくなる可能性。
-- **負の影響（要警戒）**: **ここが最大のリスク**。UNKNOWN 4 件（14787, 11433, 14122, 12663）は既に 31 ターン枯渇。Propagation check は「Trace from divergence to assertion — cite file:line at each step」を要求し、複雑なコードパスでは数ターンの追加消費が発生する。ターン枯渇問題を悪化させる可能性がある。
-- **BL-2 類似性の検討**: Propagation check は NOT_EQ 結論に到達する前の追加検証ステップであり、実効的に NOT_EQ の立証負担を増やす。ただし BL-2（閾値の引き上げ）とは質的に異なる：BL-2 は「どれだけの証拠が必要か」を変えたが、Propagation check は「何を確認すべきか」を明確化する。失敗モードの弁別力がある変更（BL-10 の教訓に合致）ではある。
+### EQUIVALENT 判定への作用
 
-### 差分の方向性判定
+最も効くのは EQUIVALENT 側。
 
-Propagation check の実効差分は **両方向に作用するが、非対称** である：
-- EQUIV 方向: 新しいオフランプ（SAME 判定の構造的サポート）→ **強い正の効果**
-- NOT_EQ 方向: 追加検証ステップ → **弱い正の効果 + ターン消費の負の効果**
+EQUIVALENT 誤判定は、しばしば
+- 一通り追ったが pass-to-pass 影響範囲の確認が薄い
+- subtle difference を見つけたが「たぶん影響なし」と処理する
+- no counterexample exists の主張が weakest claim なのに HIGH confidence で締める
+という形で起きる。
 
-NOT_EQ 方向への負の効果（ターン消費増）は、EQUIV 方向への正の効果とトレードオフの関係にある。ただし、BL-6 のような「片方向にのみ作用する対称的文言」とは異なり、Propagation check は EQUIV 方向に新しいメカニズム（収束判定のオフランプ）を提供しており、単なる立証責任の移動ではない。
+この提案は、その weakest claim を結論前に露出させるため、
+- EQUIVALENT のままでも confidence を下げる
+- あるいは counterexample search を追加させる
+- 場合によっては NOT_EQUIVALENT に反転させる
+可能性がある。
 
----
+特に SKILL.md compare テンプレートの "NO COUNTEREXAMPLE EXISTS" 節との相性がよく、「反証不在」の根拠が薄いまま等価とする過信を抑えやすい。
 
-## 4. failed-approaches.md ブラックリストおよび共通原則との照合
+### NOT_EQUIVALENT 判定への作用
 
-### 個別ブラックリスト項目
+NOT_EQUIVALENT 側にも作用する。
 
-| BL | 照合 | 評価 |
-|----|------|------|
-| BL-2（NOT_EQ 証拠閾値強化）| **要注意**。Propagation check は NOT_EQ に至る前の追加ステップであり、形式的には証拠要求の追加に見える。ただし BL-2 の本質は「閾値のゼロサム移動」であり、Propagation check は閾値移動ではなく推論ギャップ（乖離→結論のジャンプ）の補填。**実質的効果は異なると判断** |
-| BL-6（対称化の実効差分）| 提案は「EQUIV・NOT_EQ 双方に同一要求」と主張。既存テンプレートとの差分で見ると、EQUIV 方向には新しい SAME オフランプ、NOT_EQ 方向には追加検証。差分は非対称だが、BL-6 のように「片方向のみに制約追加」ではなく、**両方向に異なる種類の効果を持つ変更**。BL-6 には非該当 |
-| BL-8（受動的記録）| 「cite file:line at each step」は能動的検証を要求。BL-8 非該当 |
-| BL-10（弁別力のないゲート）| Propagation の YES/NO は失敗モードを弁別する（到達する＝DIFFERENT、到達しない＝SAME）。Reachability（ほぼ常に YES）とは異なり判別力がある。BL-10 非該当 |
+よくある誤りは、差分を見つけた時点で
+- その差分が relevant tests に実際に波及するか
+- diverging assertion まで到達するか
+- structural gap があるとしても test outcome difference が確実か
+の詰めが甘いまま NOT_EQUIVALENT とするケース。
 
-### 共通原則との照合
+提案された weakest-link チェックにより、NOT_EQUIVALENT の場合も
+- 「この差異は test outcome を変える」が weakest claim ならそこを再点検する
+- 具体的に divergence claim の証拠密度が confidence と見合うか確認する
+必要が出る。
 
-| 原則 | 照合 | 評価 |
-|------|------|------|
-| #1 非対称操作 | EQUIV・NOT_EQ に同一ステップを適用。ただし実効的影響は非対称（上記参照）| **低リスク** — 構造的には対称、効果の非対称性は避けがたい |
-| #2 出力側制約 | 処理側（何を確認するか）の変更であり出力制約ではない | PASS |
-| #3 探索量削減 | 探索量を増やす方向 | PASS |
-| #4 同方向の再試 | iter-8 の Divergence-First とは異なるメカニズム（構造追加 vs サブステップ追加）| PASS |
-| #5 過剰規定 | 「cite file:line at each step」が過剰規定になる可能性あり（後述） | **要修正** |
-| #6 対称化の実効差分 | 差分は両方向に作用するが種類が異なる。片方向のみの制約追加ではない | PASS |
-| #8 受動的記録 | 能動的トレースを要求 | PASS |
-| #10 弁別力 | 乖離の伝播 YES/NO は EQUIV/NOT_EQ を弁別する | PASS |
+したがって、この変更は EQUIVALENT 側だけに働くものではない。主作用は EQUIVALENT の過信抑制に寄るが、NOT_EQUIVALENT に対しても「差分発見 = 判定確定」という短絡を抑える。
 
----
+### 片方向バイアスの有無
 
-## 5. 全体の推論品質への期待効果
+片方向専用の誘導には見えない。
 
-### 正の効果
-- **EQUIV 偽陽性の構造的防止**: 「乖離発見→即結論」というジャンプに対して、PIE フレームワークの Propagation 条件に基づく明示的チェックポイントを挿入する。これは推論のギャップを埋める質的改善であり、閾値操作とは本質的に異なる。
-- **推論の粒度向上**: 「コードが違う」と「テスト結果が違う」の間の推論を明示化することで、証拠に基づく判断の粒度が上がる。
+ただし、実務上は EQUIVALENT の HIGH confidence を削る方向により強く働くはず。理由は、NOT_EQUIVALENT は元々 counterexample / diverging assertion によって比較的局所的な証拠が立ちやすい一方、EQUIVALENT は「差が効かない」ことの立証負荷が高く、weakest link が出やすいから。
 
-### 負の効果・リスク
-- **NOT_EQ UNKNOWN の悪化リスク**: 最大の懸念。「cite file:line at each step」はターン消費を増やし、既にターン枯渇中の 4 件をさらに悪化させる可能性がある。
-- **全体スコアへの影響**: EQUIV が +1〜2 件改善しても、NOT_EQ の UNKNOWN が +1 件増えれば差し引きゼロ。
+この非対称性はあるが、それは判定バイアスというより、両ラベルの立証難易度の差に対応した自然な作用。
 
----
+## 4. failed-approaches.md の汎用原則との照合
 
-## 6. 承認判定
+failed-approaches.md の原則は大きく 2 つ:
+1. 探索で探すべき証拠の種類をテンプレートで事前固定しすぎない
+2. ドリフト抑制で探索の自由度を削りすぎない
 
-### 方向性は正しいが、NOT_EQ ターン消費への対策が不足
+本提案は原則 1 と本質的に異なる。
+- 追加されるのは探索前テンプレートではなく、結論直前の self-check。
+- 「何を探せ」と事前指定していない。
+- 特定シグナルの探索を強制せず、既に構築した reasoning chain を再評価させるだけ。
 
-提案の理論的基盤（PIE Propagation 条件）と、狙う失敗モード（乖離→結論ジャンプ）の弁別力は評価できる。BL-2, BL-6, BL-10 のいずれとも本質的に異なる。
+本提案は原則 2 にも直接は抵触しない。
+- 探索の入り口・経路・優先順位を狭めない。
+- 再探索を必須化しているわけでもない。
+- ただし、弱い環を見つけたときに追加探索へ向かう可能性はあるが、それは結論の適正化であり、探索の自由度を先に狭めるものではない。
 
-しかし、以下の修正なしでは NOT_EQ 方向のリスクが高い：
+よって、表現を変えただけの過去失敗の再演とは評価しない。
 
-### 要修正事項
+## 5. 汎化性チェック
 
-**「cite file:line at each step」を軽量化すること。**
+### 明示的なルール違反の有無
 
-現在の提案：
-```
-Trace from divergence to assertion — cite file:line at each step.
-```
+proposal.md を確認した限り、以下の禁止寄り要素は含まれていない。
+- ベンチマークケース ID: なし
+- 特定リポジトリ名: なし
+- 特定テスト名: なし
+- ベンチマーク対象コード断片の引用: なし
 
-修正案：
-```
-Trace from divergence point to the test assertion that would detect this difference.
-If no assertion receives a changed value: Comparison is SAME.
-```
+含まれている具体語は、SKILL.md 自身の構造参照（Step 5.5, Step 6, HIGH/MEDIUM/LOW, compare モード等）と docs/design.md 上の一般的失敗パターン名であり、Objective.md の R1 減点対象外に概ね当たる。
 
-理由：
-- 「at each step」は中間経路の全ステップの引用を要求し、複雑なコードパスで数ターンを消費する。
-- 重要なのは「アサーションに到達するか否か」の結論であり、全中間ステップの引用ではない。
-- 共通原則 #5（過剰規定）への抵触リスクを低減する。中間ステップの形式を規定すると、エージェントの注意が「形式を満たすこと」に向かい、本来の判断から離れる。
-- 軽量化により NOT_EQ ケースでのターンオーバーヘッドを最小化し、UNKNOWN 悪化リスクを抑える。
+### 暗黙のドメイン依存性
 
----
+強いドメイン依存は見えない。
+- weakest link の発想は任意の言語・フレームワーク・タスクモードに適用可能。
+- compare だけでなく explain / diagnose / audit-improve にも通る。
+- テスト駆動の差分判定で特に有効だが、それは SKILL 全体の主要ユースケースと整合している。
 
-## 承認: NO（条件付き）
+### 軽微な懸念
 
-**理由**: Propagation check の追加は理論的に妥当であり、EQUIV 偽陽性の防止に有効と期待できる。しかし「cite file:line at each step」の過剰規定が NOT_EQ ターン枯渇を悪化させるリスクがあり、EQUIV の改善分を相殺する可能性がある。上記の軽量化修正を反映した上で再提出を求める。
+"claim with the lowest evidence density" という表現は、汎用ではあるが定義が少し曖昧。
+- density をどう数えるのか不明
+- file:line 数なのか、独立根拠の数なのか、反証済み度合いなのかが未定義
 
-方向性自体は承認可能であり、修正は文言レベルの調整（1〜2行の変更）で足りる。
+このため、モデルによっては表面的に「一番弱そうな文」を選ぶだけで終わる可能性がある。ここは
+- "least-supported claim"
+- "the claim whose failure would most weaken the conclusion"
+のような表現の方が、言語・タスク横断で安定する可能性がある。
+
+ただし、これは汎化性違反ではなく、語の精度の問題。
+
+## 6. 全体の推論品質への期待効果
+
+期待できる改善は 3 つある。
+
+1. 過信の抑制
+- strongest evidence に引っ張られて結論を出すのではなく、chain 全体のボトルネックに attention を戻す。
+- とくに HIGH confidence の濫用を減らしやすい。
+
+2. 反証プロセスの実効性向上
+- Step 5 自体は既に mandatory だが、Step 5.5 で weakest link を再点検させることで、refutation が形式的に終わるのを防ぎやすい。
+- 「一応 search した」だけで終わるのではなく、どの claim の裏付けが最も薄いかを意識させる。
+
+3. incomplete reasoning chains の捕捉率向上
+- docs/design.md で言う downstream handling の見落としや subtle difference dismissal は、しばしば chain の一箇所だけ支持が薄いまま残る形で起きる。
+- その局所点検を最後に追加するのは、低コストで全体品質を上げる筋の良い変更。
+
+加えて、変更規模が 1 行で非常に小さいため、複雑性増加やテンプレート肥大の副作用は限定的。
+
+## 留保・改善提案
+
+承認寄りだが、実装文言には次の改善余地がある。
+
+現行提案文:
+- Identified the weakest link in the reasoning chain (the claim with the lowest evidence density) and verified it is sufficient to support the confidence level I will assign in Step 6.
+
+懸念:
+- "lowest evidence density" がやや曖昧で、擬似定量化された印象を与える。
+
+より安定しそうな代替案:
+- Identified the weakest link in the reasoning chain (the least-supported claim) and verified it is sufficient to support the confidence level I will assign in Step 6.
+
+または
+- Identified the claim whose failure would most weaken the conclusion, and verified the available evidence is sufficient for the confidence level I will assign in Step 6.
+
+ただし、監査対象は提案の方向性そのものなので、この wording 懸念だけで否決する必要はない。
+
+## 最終判定
+
+承認: YES
+
+理由:
+- 研究・設計文書と整合する
+- failed-approaches.md の禁止方向を再演していない
+- EQUIVALENT / NOT_EQUIVALENT の両方に作用し、片方向専用の誘導ではない
+- 汎化性違反となる具体的 ID / repo 名 / test 名 / 実コード断片を含まない
+- 1 行追加という小変更で、過信抑制と weakest-claim の自己監査を導入できるため、費用対効果が高い

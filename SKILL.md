@@ -144,6 +144,7 @@ Before writing the formal conclusion, check each item below. If any answer is **
 - [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
 - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
 - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+- [ ] Identified the weakest link in the reasoning chain (the claim with the lowest evidence density) and verified it is sufficient to support the confidence level I will assign in Step 6.
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
