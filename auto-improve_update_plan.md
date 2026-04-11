@@ -1307,3 +1307,87 @@ SWE-bench Verified の 20 件 pairs.json をそのまま使用。compare は SKI
 - **GitHub Copilot CLI `/review` ドキュメント:** https://docs.github.com/ja/copilot/how-tos/copilot-cli/use-copilot-cli-agents/agentic-code-review
 - **ACPX:** https://github.com/openclaw/acpx
 - **Pi Coding Agent:** https://github.com/badlogic/pi-mono
+
+---
+
+## 14. ベンチマーク再整備と SKILL.md 改訂 (2026-04-11)
+
+### 14.1 localize → diagnose 改名と Activation gates 追加
+
+- **経緯**: SWE-bench Pro の localize タスク（gt ファイル数 17〜106 の hard ケース 10件）で with_skill 80% vs without_skill 100% と、SKILL.md が逆効果になることを確認
+- **原因分析**: SKILL.md の構造化分析（Phase 4 Ranked Predictions、Step 5.5 の証拠なき主張の禁止）が出力ファイル数を過度に絞り込み、recall 寄りの採点基準とミスマッチ
+- **対策**:
+  - `localize` → `diagnose` に名称変更（モードの適用範囲を名前で明示）
+  - Activation gates を追加（広範囲列挙タスク、大規模構造変更、フラットなファイルリスト要求時は不発動）
+  - diagnose セクションに Scope constraint 追記（1〜5ファイルの単一バグ向け）
+- **README.md**: main から持ってきて feature ブランチに配置、"Changes from the Original Paper" セクションで変更経緯を記載
+- **commit**: `04d49bf`
+
+### 14.2 論文の再確認
+
+- 元論文 (Ugare & Chandra, arXiv:2603.01896) を再確認した結果、論文は SWE-bench と一体設計ではなく **汎用的な手法論**
+  - Patch Equivalence (compare) → SWE-bench Verified で評価
+  - Fault Localization (localize) → **Defects4J** (Java) で評価
+  - Code QA (explain) → **RubberDuckBench** (Python/Java/C++) で評価
+- 3つの異なるベンチマークで評価しており、SWE-bench は compare でしか使われていない
+- audit-improve は論文が将来方向として言及した security/API misuse を追加したも���
+
+### 14.3 audit-improve ベンチマーク新設
+
+- **データ**: SWE-bench Pro の `issue_specificity` = `security_bug` から 28件を抽出
+- **リポ**: ansible, flipt-io, gravitational/teleport, navidrome, NodeBB, protonmail, tutao, future-architect/vuls
+- **言語**: Go, Python, JS, TS
+- **実行ツール**: Pi (github-copilot/claude-haiku-4.5)、各インスタンスで git worktree checkout して実行
+- **採点**: grade_localize.py を流用（file_match + function_match）
+
+#### Run 1 結果
+
+| | without_skill | with_skill | Delta |
+|---|---|---|---|
+| File match (correct) | 23/28 (82.1%) | 24/28 (85.7%) | **+3.6pp** |
+| Function match | 19/28 (67.9%) | 21/28 (75.0%) | **+7.1pp** |
+| No prediction | 3 | 2 | -1 |
+| Avg duration | 245s | 221s | -24s |
+
+- with_skill が精度・速度の両方で優勢
+- Run 2 実行中（variance 確認用）
+
+### 14.4 compare ベンチマークの Pro 移行
+
+- **データ**: SWE-bench Pro のエージェントパッチ（S3 バケット `s3://scaleapi-results/swe-bench-pro/`）から取得
+  - 15エージェント分の `_patch.diff` が公開（Wave 1: 2025-10-13, Wave 2: 2025-10-22, Wave 3: 2025-11-17）
+  - GitHub リポ (`scaleapi/SWE-bench_Pro-os/traj/`) に pass/fail 結果あり
+- **ペア構成**: 20ペア (10 EQUIVALENT + 10 NOT_EQUIVALENT)
+  - EQUIVALENT: 9エージェント中1つだけが解けたインスタンス（最難関）
+  - NOT_EQUIVALENT: 全9エージェントが全員失敗したインスタンス
+- **言語**: Go 13, JS 4, TS 1, Python 1（旧 django 20件 = Python のみから大幅拡張）
+- **パッチサイズ**: gold 58〜1530行、agent 273〜9076行
+- **汚染リスク**: 2025年10-11月公開のため現行モデルの学習データに含まれる可能性あり。ただし with/without の相対比較なら汚染は両方に等しく影響するため、スキルの効果測定としては有効
+- Run 1 実行中
+
+### 14.5 diagnose の除外
+
+- 適切なベンチマークが用意できないため、自動改善の評価対象から除外
+- SKILL.md 上のモード定義と Activation gates は維持（実用時に利用可能）
+
+### 14.6 自動改善パイプライン再設計方針
+
+- **評価**: compare Pro と audit-improve を**独立に評価**（combined_score は不採用）
+- **採用判定**: 両ベンチでデグレしないことが条件
+- **ドメインローテーション廃止**: 提案者には「両ベンチでデグレしないこと」のみ伝え、フォーカス方向は提案者に委ねる
+- **archive.jsonl**: compare_score と audit_score を別カラムで記録
+- **改修対象箇所**:
+  1. ステップ 5a/5b のベンチ差し替え (django compare → compare Pro + audit)
+  2. ステップ 0 のドメインローテーション廃止
+  3. ステップ 6 の scores.json 構造変更
+  4. 採用判定ロジック変更
+  5. Staged Eval の再設計
+  6. archive.jsonl のスコア体系リセット
+
+### 14.7 次のステップ
+
+- [ ] Compare Pro Run 1 完了 → 結果確認
+- [ ] Audit Run 2 完了 → variance 確認
+- [ ] auto-improve.sh 改修（上記 14.6 の方針に従い）
+- [ ] archive.jsonl リセット、新ベースラインで iter-0 記録
+- [ ] パイプライン再開
