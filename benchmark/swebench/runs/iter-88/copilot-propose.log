@@ -1,0 +1,9 @@
+`benchmark/swebench/runs/iter-88/proposal.md` を作成しました。
+
+**要点:**
+
+- **カテゴリ C**（比較の枠組みを変える）: エッジケースの「関連性」判断基準を「テストが通過する（exercise）」から「テストのアサーションが差異を観測できる（observe through assertions）」に精緻化
+- **仮説**: コードレベル差異が存在してもアサーションに到達しなければテスト結果に影響しない。この観測可能性の区別が欠けていることが、false NOT_EQUIVALENT（equiv 誤判定）の原因
+- **変更**: `EDGE CASES RELEVANT TO EXISTING TESTS` の注記1行のみ変更（5行制限内）
+- **failed-approaches 照合**: 全27原則に抵触なし。非対称操作・出力制約・探索削減のいずれにも非該当
+

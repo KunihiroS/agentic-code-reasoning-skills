@@ -1,0 +1,23 @@
+Now let me read the remaining relevant files for context:
+
+必要な情報が揃いました。新しい提案を作成します。
+
+提案書を作成しました。新しい提案の要点：
+
+**方針転換**: カテゴリ C（比較枠組みの変更）の未試行サブメカニズム **CONTRACT DELTA** を採用。
+
+**変更内容**: PREMISES と ANALYSIS OF TEST BEHAVIOR の間に、各変更シンボルの Change A / Change B の外部可観測契約を**同一フォーマット・別行**で並列比較するセクションを追加：
+```
+CONTRACT DELTA:
+  Change A — observable: return [...]; raises [...]; mutates [...]; emits [...]
+  Change B — observable: return [...]; raises [...]; mutates [...]; emits [...]
+  Delta: SAME / [dimension(s) where A ≠ B]
+  Test focus: tests that assert the Delta dimension(s)
+```
+
+**iter-34 CONTRACT SURVEY との核心的差分**:
+- 旧: 共通の `Contract:` + 推測的 `Diff scope: could alter?`
+- 新: A/B 別行 + 決定論的 `Delta: SAME/[dimension]` → 「コード差異あり → DIFFERENT 即断」の短絡を防ぐ明示的なシグナルを生成
+
+**BL 照合**: 既存の checklist item 5（EQUIV 側ガード）を変更しないため、BL-2/BL-6/BL-14 には抵触しない。
+

@@ -1,0 +1,13 @@
+`benchmark/swebench/runs/iter-83/proposal.md` を作成しました。
+
+---
+
+**提案サマリー**:
+
+- **カテゴリ B**（情報の取得方法を改善する）を選択
+- **仮説**: 意味論的差異を検出した後のトレースを、テストのアサーション（観測可能な結果）まで到達させることを明示することで、EQUIV / NOT_EQ 両方向の「差異の観測可能性」判断精度が向上する
+- **変更箇所**: Guardrails #4 末尾に1文追加  
+  > *The trace must reach the test's observable outcome — verify whether the semantic difference is what the test assertion actually checks.*
+- **変更規模**: +1行、ハードリミット(5行)遵守
+- **failed-approaches 照合**: 非対称操作なし、探索量削減なし、物理的裏付け強制なし、全原則クリア
+

@@ -1,0 +1,10 @@
+`benchmark/swebench/runs/iter-70/proposal.md` を作成しました。
+
+**提案サマリー**:
+
+- **カテゴリ**: B（情報の取得方法を改善する）
+- **仮説**: `NEXT ACTION RATIONALE` フィールドが前サイクルの UNRESOLVED 項目を参照しないため、探索チェーンが早期打ち切りされる
+- **変更**: 1行のみ — `[why the next file or step is justified]` → `[why the next file or step is justified, and which UNRESOLVED item(s) from this cycle it targets]`
+- **期待効果**: 不完全な推論チェーン（§4.3）の抑制、UNRESOLVED ドリブンの探索継続
+- **failed-approaches 全23原則**: 抵触なし
+

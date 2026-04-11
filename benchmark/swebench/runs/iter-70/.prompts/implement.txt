@@ -1,0 +1,16 @@
+benchmark/swebench/runs/iter-70/proposal.md の改善案に従い、以下を実行してください:
+
+1. SKILL.md を編集する (proposal.md に記載した変更のみ)
+2. benchmark/swebench/runs/iter-70/rationale.md を Objective.md の rationale.md フォーマットに従い作成する
+
+【参照してよいファイルの完全なリスト】
+- benchmark/swebench/runs/iter-70/proposal.md
+- SKILL.md
+- Objective.md (rationale フォーマットのため)
+
+この 3 ファイル以外を read / search / list する必要はありません。
+
+【制約】
+- 変更規模は 5 行以内 (hard limit、escape モード時は解除)
+- proposal.md に記載のない変更は行わない
+- rationale.md にも具体的な数値 ID, リポジトリ名, テスト名は書かない

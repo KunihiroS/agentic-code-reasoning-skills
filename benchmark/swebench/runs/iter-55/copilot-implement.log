@@ -1,0 +1,9 @@
+完了しました。
+
+1. **SKILL.md**: Step 4 Rules の1行を変更
+   - `"For exception handling inside loops or multi-branch control flows:"` → `"For any multi-branch control flow (conditionals, exception handling, loops):"`
+
+2. **rationale.md**: Objective.md のフォーマット（前イテレーションの分析・改善仮説・変更内容・期待効果）に従い作成。
+
+変更規模: 1行変更（追加0・削除0）でハードリミット5行以内に適合。
+

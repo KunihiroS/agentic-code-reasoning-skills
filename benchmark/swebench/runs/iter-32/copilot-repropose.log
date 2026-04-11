@@ -1,0 +1,21 @@
+Now I have enough context. Let me write the new proposal based on the auditor's Category B suggestion about D2 test search expansion.
+
+Now I have all the information I need. Let me write the new proposal:
+
+`benchmark/swebench/runs/iter-32/proposal.md` を上書きしました。
+
+---
+
+新提案の要点:
+
+**カテゴリ B: 情報の取得方法を改善する**
+
+**変更箇所**: Compare テンプレートの `D2` 定義内 `To identify them:` の説明文
+
+**内容**: 変更シンボルの直接参照テストに加えて、`If direct test references are sparse, also search for callers, wrappers, or helpers` も検索対象に含めること、および「最近接の oracle-bearing caller」（アサーションを持つ最近接の呼び出し元）を優先することを明示する（2文追加、約35語）。
+
+**過去 BL との差別化**:
+- BL-8/13（受動的記録フィールド）でなく、**能動的 repo search の範囲指定**
+- BL-12（探索順序固定）でなく、**検索対象の拡張**（`also search`、順序は強制しない）
+- BL-6/14（NOT_EQ 側への非対称な追加負荷）でなく、**両方向に対称に作用する証拠拡充**
+

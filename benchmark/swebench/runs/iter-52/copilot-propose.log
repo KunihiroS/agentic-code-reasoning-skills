@@ -1,0 +1,25 @@
+`benchmark/swebench/runs/iter-52/proposal.md` に改善提案を作成しました。
+
+---
+
+## 改善提案サマリー
+
+**カテゴリ E（表現・フォーマット）**: Guardrail 5 への 1 文追記
+
+### 変更内容
+
+Guardrail 5 の末尾に以下 1 文を追加：
+
+> *In `compare` mode, a common form of incomplete chain: a semantic difference exists in the changed code but is neutralized by intermediate callers before reaching the test assertion.*
+
+### 仮説
+
+iter-35 で残存する EQUIV 偽陰性（15368, 13821）は「コード差異を発見 → 吸収されるのに NOT_EQUIV と即断」という不完全な推論チェーンが原因。Guardrail 5 はすでに「不完全チェーンを信頼するな」と警告しているが、`compare` モードの典型パターンが例示されていない。1 文追加で具体化することで、既存 checklist 項目 5 との相乗効果が生まれる。
+
+### なぜ安全か
+
+- 宣言的な事実記述（`verify` 等の義務語不使用）
+- BL-6 との差異：新しい trace 義務を両方向に課さない
+- BL-23/25/26 との差異：手続き的・強制的なエンドツーエンド証明義務でない
+- 追加行数 1 行（hard limit の 1/5）
+

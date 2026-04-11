@@ -1,0 +1,37 @@
+Now I have enough context to write the proposal. Let me create the directory and proposal document.
+
+改善提案を作成しました。以下がサマリーです。
+
+---
+
+## iter-26 改善提案サマリー
+
+### カテゴリ: C（比較の枠組みを変える）
+
+**根拠**: Compare checklist には SAME 方向の義務（「コード差異を見つけたとき、影響なしと結論する前にテストをトレースせよ」）はあるが、**DIFFERENT 方向の対称義務がない**。
+
+---
+
+### 改善仮説
+
+DIFFERENT を主張する前に「テストのアサーション値まで差異が到達しているか」を確認する checklist 項目を1行追加することで、中間値の差異だけを根拠に NOT_EQ と結論するショートカット（15368・15382 の失敗パターン）を削減できる。
+
+---
+
+### 変更内容（+1行）
+
+```markdown
+- When claiming different test outcomes, verify the behavioral divergence
+  reaches the test assertion condition — intermediate value differences that
+  cancel out before the assertion do not produce DIFFERENT outcomes
+```
+
+---
+
+### 共通原則との適合
+
+- BL-2/6 との違い: 出力制約でなく能動的調査義務
+- BL-8/11/12/13 との違い: テンプレートフィールドでなく checklist 指示（記録目的化しない）
+- BL-9 との違い: 自己評価でなく前向きな行動義務（原則 #9 回避）
+- BL-10 との違い: trivial ゲートでなく確認行動の指示
+

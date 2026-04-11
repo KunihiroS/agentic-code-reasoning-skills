@@ -1,0 +1,23 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..86483c3 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -173,12 +173,18 @@ For each relevant test:
+   Claim C[N].2: With Change B, this test will [PASS/FAIL]
+                 because [trace through code — cite file:line]
+   Comparison: SAME / DIFFERENT outcome
++  Trace check: [TRACED / INFERRED] — Did I trace a concrete test input
++               through the differing code path, or infer from code structure alone?
++               If INFERRED, trace before proceeding.
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+   Test: [name]
+   Claim C[N].1: With Change A, behavior is [description]
+   Claim C[N].2: With Change B, behavior is [description]
+   Comparison: SAME / DIFFERENT outcome
++  Trace check: [TRACED / INFERRED] — Did I trace a concrete test input
++               through the differing code path, or infer from code structure alone?
++               If INFERRED, trace before proceeding.
+ 
+ EDGE CASES RELEVANT TO EXISTING TESTS:
+ (Only analyze edge cases that the ACTUAL tests exercise)

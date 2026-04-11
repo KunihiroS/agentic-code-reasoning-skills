@@ -24,12 +24,12 @@ RUNS_DIR="$REPO_DIR/benchmark/swebench/runs"
 BENCH_DIR="$REPO_DIR/benchmark/swebench"
 ARCHIVE_FILE="$RUNS_DIR/archive.jsonl"
 
-INITIAL_SCORE=85
+INITIAL_SCORE=0
 MAX_ITER=20
 MAX_AUDIT_RETRY=1        # Phase 2 H2: 3 → 1 (再試行は 1 回のみ)
 GOAL_WINDOW=5
 GOAL_PERFECT_COUNT=2
-START_ITER=47
+START_ITER=1
 MAX_ADDED_LINES=5        # H1: 5行 hard limit (Phase 1)
 STAGED_GATE_THRESHOLD=3  # Phase 2: Staged Eval で 5ケース中 3 以上正答なら Full 実行
 ESCAPE_MODE=0            # Phase 2: 構造改革エスケープハッチ
@@ -107,13 +107,7 @@ select_parent_genid() {
 # EQUIV 側を相対的に多く回す (持続的失敗の傾向に対処するため)
 # overall:equiv:not_eq = 2:2:1 のローテーション
 get_focus_domain() {
-  local iter_n="$1"
-  local mod=$((iter_n % 5))
-  case $mod in
-    0|2) echo "overall" ;;
-    1|3) echo "equiv" ;;
-    4)   echo "not_eq" ;;
-  esac
+  echo "overall"
 }
 
 # Phase 2: Staged Eval のスコアを集計 (0-100)
@@ -229,11 +223,11 @@ check_goal() {
   python3 -c "
 import json
 entries = [json.loads(l) for l in open('$ARCHIVE_FILE')]
-recent = entries[-$GOAL_WINDOW:]
-if len(recent) < $GOAL_WINDOW:
+recent = [e for e in entries[-$GOAL_WINDOW:] if e.get('valid_parent')]
+if len(recent) < $GOAL_PERFECT_COUNT:
     exit(1)
-perfect = sum(1 for e in recent if e['scores']['overall'] == 100)
-exit(0 if perfect >= $GOAL_PERFECT_COUNT else 1)
+good = sum(1 for e in recent if e['scores'].get('compare', 0) >= 70 and e['scores'].get('audit', 0) >= 90)
+exit(0 if good >= $GOAL_PERFECT_COUNT else 1)
 " 2>/dev/null
 }
 
@@ -312,8 +306,8 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
     log "ERROR: 親選択に失敗"
     exit 1
   fi
-  prev_score=$(get_parent_score "$parent_genid")
-  log "親: iter-${parent_genid} (score: ${prev_score}%)"
+  prev_score=$(get_parent_score "$parent_genid" overall)
+  log "親: iter-${parent_genid}"
 
   # 親の SKILL.md.snapshot を復元
   restore_parent_skill "$parent_genid"
@@ -321,7 +315,7 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   git add SKILL.md 2>/dev/null || true
 
   # ANALYSIS_CONTEXT は変数として残すが、ケース情報を含む過去の rationale/scores 参照を促さない
-  ANALYSIS_CONTEXT="現在の SKILL.md は過去の高スコア時点 (集約スコア ${prev_score}%、フォーカスドメイン: ${focus_domain}) から復元されています。SKILL.md 自体を読み、汎用的な改良点を検討してください。"
+  ANALYSIS_CONTEXT="現在の SKILL.md は過去の高スコア時点から復元されています。SKILL.md 自体を読み、汎用的な改良点を検討してください。"
 
   # === 1. 改善案提案 ===
   # 強制カテゴリローテーション (iter-87〜106 の観察で B/E に極端偏り、D/F が 0 回だったため)
@@ -482,7 +476,7 @@ PROMPT
     log "ディスカッション: 改善案が却下されました。skip → 次のイテレーション (H2)"
     git checkout -- SKILL.md 2>/dev/null || true
     echo "ディスカッションで却下された提案のため skip" > "$ITER_DIR/rationale.md"
-    append_archive "$current_iter" "$parent_genid" "" "false"
+    append_archive "$current_iter" "$parent_genid" "" "" "false"
     git add "$ITER_DIR" || true
     git commit -m "iter-${current_iter}: discussion NO → skip (H2)" 2>/dev/null || true
     git push 2>/dev/null || true
@@ -524,7 +518,7 @@ PROMPT
     log "H1 制約違反: ${added_lines} 行 > ${MAX_ADDED_LINES} 行 — このイテレーションを破棄"
     git checkout -- SKILL.md
     echo "変更行数 ${added_lines} 行が制限 ${MAX_ADDED_LINES} 行を超過。破棄。" > "$ITER_DIR/rationale.md"
-    append_archive "$current_iter" "$parent_genid" "" "false"
+    append_archive "$current_iter" "$parent_genid" "" "" "false"
     git add "$ITER_DIR" || true
     git commit -m "iter-${current_iter}: H1 制約違反 (${added_lines} 行) — 破棄" || true
     git push || true
@@ -631,53 +625,45 @@ PROMPT
     log "監査 ${MAX_AUDIT_RETRY}回 FAIL — 破棄"
     git checkout -- SKILL.md
     echo "監査を ${MAX_AUDIT_RETRY} 回パスできず、改善を断念" > "$ITER_DIR/rationale.md"
-    append_archive "$current_iter" "$parent_genid" "" "false"
+    append_archive "$current_iter" "$parent_genid" "" "" "false"
     git add "$ITER_DIR" || true
     git commit -m "iter-${current_iter}: 監査 FAIL — 破棄" || true
     git push || true
     continue
   fi
 
-  # === 5a. Staged Evaluation (Phase 2): 5ケース先行評価 ===
-  log "Staged Eval (5 ケース先行)..."
+  # === 5. Benchmark 実行 (Compare Pro + Audit) ===
   cp SKILL.md "$ITER_DIR/SKILL.md.snapshot"
-
   cd "$REPO_DIR"
-  bash benchmark/swebench/run_benchmark.sh --variant with_skill --runs-dir "$ITER_DIR" --fast-subset 2>&1 | tee "$ITER_DIR/benchmark-staged.log" || true
 
-  staged_score=$(compute_staged_score "$ITER_DIR")
-  log "Staged Eval 結果: ${staged_score}/5 正答 (ゲート閾値: ${STAGED_GATE_THRESHOLD})"
+  # 5a. Compare Pro (20ペア)
+  log "Compare Pro ベンチ実行中..."
+  COMPARE_RUN_DIR="$ITER_DIR/compare"
+  bash benchmark/swebench/run_benchmark_compare_pro.sh --runs-dir "$COMPARE_RUN_DIR" 2>&1 | tee "$ITER_DIR/benchmark-compare.log" || true
+  python3 benchmark/swebench/grade_compare_pro.py "$COMPARE_RUN_DIR" benchmark/swebench/data/pro_compare/pairs_pro.json 2>&1 | tee "$ITER_DIR/grade-compare.log" || true
 
-  if [ "$staged_score" -lt "$STAGED_GATE_THRESHOLD" ]; then
-    log "Staged Gate 不通過 → Full Eval スキップ、イテレーション破棄"
-    git checkout -- SKILL.md 2>/dev/null || true
-    echo "Staged Eval で ${staged_score}/5 のみ正答 (閾値 ${STAGED_GATE_THRESHOLD})。Full Eval 実施せず破棄。" > "$ITER_DIR/rationale-staged.md"
-    append_archive "$current_iter" "$parent_genid" "" "false"
-    git add "$ITER_DIR" || true
-    git commit -m "iter-${current_iter}: Staged Gate 不通過 (${staged_score}/5)" 2>/dev/null || true
-    git push 2>/dev/null || true
-    continue
-  fi
+  # 5b. Audit (security_bug 28件)
+  log "Audit ベンチ実行中..."
+  AUDIT_RUN_DIR="$ITER_DIR/audit"
+  bash benchmark/swebench/run_benchmark_audit.sh --runs-dir "$AUDIT_RUN_DIR" 2>&1 | tee "$ITER_DIR/benchmark-audit.log" || true
+  python3 benchmark/swebench/grade_localize.py "$AUDIT_RUN_DIR" benchmark/swebench/data/audit_tasks_security.json 2>&1 | tee "$ITER_DIR/grade-audit.log" || true
 
-  # === 5b. Full Benchmark 実行 ===
-  log "Staged Gate 通過 → Full Eval 実行中..."
-  bash benchmark/swebench/run_benchmark.sh --variant with_skill --runs-dir "$ITER_DIR" 2>&1 | tee "$ITER_DIR/benchmark.log" || true
-  python3 benchmark/swebench/grade.py "$ITER_DIR" benchmark/swebench/data/pairs.json 2>&1 | tee "$ITER_DIR/grade.log" || true
-  cp "$ITER_DIR/grades.json" "$ITER_DIR/scores.json" 2>/dev/null || true
-
-  # === 6. 結果評価 ===
-  current_score=$(get_score_from_json "$ITER_DIR/scores.json")
-  log "今回スコア: ${current_score}% (親 iter-${parent_genid}: ${prev_score}%)"
+  # === 6. 結果評価 (独立スコア) ===
+  compare_score=$(get_score_from_json "$COMPARE_RUN_DIR/grades_compare.json")
+  audit_score=$(get_score_from_json "$AUDIT_RUN_DIR/grades_localize.json")
+  prev_compare=$(get_parent_score "$parent_genid" compare)
+  prev_audit=$(get_parent_score "$parent_genid" audit)
+  log "Compare: ${compare_score}% (親: ${prev_compare}%) / Audit: ${audit_score}% (親: ${prev_audit}%)"
 
   # archive に追加
-  append_archive "$current_iter" "$parent_genid" "$ITER_DIR/scores.json" "true"
+  append_archive "$current_iter" "$parent_genid" "$COMPARE_RUN_DIR/grades_compare.json" "$AUDIT_RUN_DIR/grades_localize.json" "true"
 
-  # スコア低下時は failed-approaches.md に汎用原則を追記
-  if [ "$current_score" -lt "$prev_score" ]; then
+  # いずれかのスコアが親より低下した場合は failed-approaches.md に追記
+  if [ "$compare_score" -lt "$prev_compare" ] || [ "$audit_score" -lt "$prev_audit" ]; then
     log "スコア低下 — failed-approaches.md 更新中..."
     DIFF_PATH="benchmark/swebench/runs/iter-${current_iter}/diff.patch"
     cat > "$PROMPT_DIR/update-bl.txt" << BLPROMPT
-今回試した SKILL.md の変更により、集約スコアが ${prev_score}% から ${current_score}% に低下しました。
+今回試した SKILL.md の変更により、スコアが低下しました (Compare: ${prev_compare}%→${compare_score}%, Audit: ${prev_audit}%→${audit_score}%)。
 
 failed-approaches.md は **汎用原則集** です。新しいエントリを追加する場合、以下のルールを必ず守ってください。
 
@@ -710,7 +696,7 @@ BLPROMPT
   # === 7. コミット・プッシュ ===
   log "コミット・プッシュ..."
   git add -A
-  git commit -m "iter-${current_iter}: score=${current_score}% (parent=iter-${parent_genid}@${prev_score}%)" || true
+  git commit -m "iter-${current_iter}: compare=${compare_score}% audit=${audit_score}% (parent=iter-${parent_genid})" || true
   git push || true
 
   # === 8. ゴール判定 ===

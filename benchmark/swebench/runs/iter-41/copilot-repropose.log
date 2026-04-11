@@ -1,0 +1,32 @@
+Now I have enough context to write a well-grounded proposal. Let me analyze the key points:
+
+1. **Category F is exhausted** (iter-38/39/40 all tried F)
+2. **Auditor suggests Category B** — exploration priority, specifically: when a diff is found in changed function, next read = nearest consumer on already-traced test path (not broad caller search)
+3. **Existing checklist line 219** is too vague: "trace at least one relevant test through the differing path" — agents stop AT the changed function, not continuing to its consumer
+4. **iter-37 (Cat B)** went backward (test→value→code); this goes forward (code diff→consumer on test path) — complementary, distinct
+5. Must avoid: BL-2/6/14 (asymmetric), BL-17 (scope expansion), BL-5/11/16 (observation frame), verdict-conditioned triggers
+
+Now I'll replace the entire body of the proposal with the new Category B approach:
+
+There's a duplicate `## 2.` header. Let me fix that:
+
+The proposal is clean. Here's a summary of the new proposal:
+
+---
+
+**新提案: カテゴリ B — Compare checklist 既存行の精緻化**
+
+**変更内容**: Compare checklist の既存行を1行置換。
+
+**変更前**: `When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact`
+
+**変更後**: `When a behavioral difference is found in a changed function (return value, exception, or side-effect), do not stop tracing at that function: read the function on the already-traced relevant test call path that consumes the changed output, and record whether it propagates or absorbs the difference before assigning the Claim outcome.`
+
+**核心的差分**:
+- 既存行は「differing path を通じて trace せよ」と曖昧で、エージェントが変更関数を読んだ時点で満たしたと解釈できた
+- 新行は「変更関数で止まるな、**already-traced relevant test call path 上の** nearest consumer まで読め」と明示
+- verdict-conditioned でない（BL-2/BL-14 非抵触）
+- test path への anchoring により BL-17 の scope 拡張リスクを回避
+- iter-37（backward: test→code）と方向が逆（forward: code→consumer）で補完的
+- iter-39（generic immediate caller）とは「test path への限定」で実効的に異なる
+

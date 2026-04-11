@@ -1,0 +1,17 @@
+Now I have enough context. The auditor rejected the iter-23 proposal and suggested a Category E approach focusing on "test outcome mechanism" language. Let me write the new proposal.
+
+Now I'll replace the entire body of the proposal (the hypothesis, change content, impact prediction, and BL checklist sections) with the new Category E approach:
+
+新しい改善案を `proposal.md` に書きました。概要：
+
+**カテゴリ E（表現・フォーマット改善）**
+
+**変更内容**: `ANALYSIS OF TEST BEHAVIOR:` の冒頭に1文の注釈を追加：
+> "For each test, trace the concrete mechanism that determines pass/fail — this may be an assertion, a raised exception, a setup/teardown failure, or a side effect checked later in the test. Do not reduce the trace to a single assert statement unless that is truly the only outcome determinant."
+
+**なぜ有効か**:
+- 前案（BL-5型）は assert への視野を**狭める**方向で失敗した → 本案はその**逆**にトレース視野を広げる
+- BL-1のような除外ルールなし、BL-2のような立証責任引き上げなし
+- 2行追加のみで構造変更なし（最小変更）
+- 監査役が明示的に提案した文言をベースにしている
+

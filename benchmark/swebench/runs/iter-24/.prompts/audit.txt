@@ -1,0 +1,71 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-24/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..d464064 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -166,12 +166,16 @@ P4: The pass-to-pass tests check [specific behavior, if relevant]
+ 
+ ANALYSIS OF TEST BEHAVIOR:
+ 
++For each relevant test, read the test source first to establish the
++entry point, arguments, and setup before tracing the changed code.
++
+ For each relevant test:
+   Test: [name]
+-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+-                because [trace through code — cite file:line]
+-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+-                because [trace through code — cite file:line]
++  Entry: [test entry point, arguments, and setup — cite file:line from test source]
++  Claim C[N].1: With Change A, starting from Entry, this test will [PASS/FAIL]
++                because [trace from Entry through changed code — cite file:line]
++  Claim C[N].2: With Change B, starting from Entry, this test will [PASS/FAIL]
++                because [trace from Entry through changed code — cite file:line]
+   Comparison: SAME / DIFFERENT outcome
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+
+rationale:
+# Iteration 24 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 70%（14/20）
+- 失敗ケース: django__django-15368, django__django-13821, django__django-15382, django__django-14787, django__django-14122, django__django-12663
+- 失敗原因の分析:
+  - EQUIV → NOT_EQUIVALENT 誤判定（15368・13821・15382）: エージェントが変更コードを先に読んで意味的差異を検出し、その印象を持ったまま各テストの分析に入ることで「コード差異 → テスト結果差異」という推論ジャンプが生じた。
+  - NOT_EQUIVALENT → EQUIVALENT 誤判定（14787）: テスト入力が変更の差異を踏む実行経路を追えず、差異なしと誤認した。
+  - NOT_EQUIVALENT → UNKNOWN（14122・12663）: ターン上限に達し判定不能になった。
+
+## 改善仮説
+
+EQUIV → NOT_EQUIVALENT の誤判定は、エージェントが変更コードを先に読んで意味的差異を検出し、その差異の印象を持ったまま各テストの分析に入ることで「コード差異 → テスト結果差異」という推論ジャンプが生じることが主因である。Compare テンプレートの `ANALYSIS OF TEST BEHAVIOR` において、各 relevant test の分析ブロック先頭に**「テストソースを先に読んで entrypoint・引数・セットアップを確定してから変更コードをトレースせよ」**という順序制約を追加することで、エージェントはテスト側の具体的な入力から出発して変更コードに入るようになり、その入力が変更後の動作を変えるかどうかをトレースする自然な流れが生まれる。真の EQUIV ケースでは、テスト入力が変更の意味的差異を踏まないことが実際のトレースで確認され、NOT_EQ への推論ジャンプが遮断される。
+
+## 変更内容
+
+Compare certificate template の `ANALYSIS OF TEST BEHAVIOR` セクション内、`For each relevant test:` ブロックを以下のように変更した（4行追加、2行変更、合計実効差分6行）。
+
+- `For each relevant test:` の前に「テストソースを先に読んで entrypoint・引数・セットアップを確定してから変更コードをトレースせよ」という順序制約の説明文を追加。
+- 各テスト分析ブロックに `Entry:` フィールドを追加し、テストの entrypoint・引数・セットアップを `file:line` 付きで記録させる。
+- `Claim C[N].1` / `Claim C[N].2` の文言を「starting from Entry」「trace from Entry through changed code」に変更し、Entry から出発するトレースであることを明示。
+
+他セクション（localize, explain, audit-improve）・ガードレール・Minimal Response Contract への変更なし。
+
+## 期待効果
+
+- **EQUIV 側（+1〜+3 改善期待）**: 失敗ケース 15368・13821・15382 のパターンは「コード差異を発見 → テスト結果差異を仮定」というジャンプ。今回の変更により、エージェントはまずテストソースを開いて `Entry:` を確定する。真の EQUIV ケースでは、確定した具体的な入力（引数・セットアップ）が変更コードの意味的差異を踏まないことを、コードパスのトレースで直接確認することになる。テスト入力から出発するため、差異が生じない実行経路が自然に選ばれやすくなる。
+- **NOT_EQ 側（ほぼ維持）**: 真の NOT_EQ ケースでは、テスト入力から出発してトレースしても差異は顕在化する。`Entry:` の記録は 1 行追加であり、探索量の増加は軽微。また `Entry:` は判定方向と無関係な事実記録（テストの entrypoint・引数・セットアップ）であり、NOT_EQ 側の証拠収集を阻害しない。

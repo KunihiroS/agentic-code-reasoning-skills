@@ -1,0 +1,50 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-55/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 520b7d3..9b2cea1 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -89,7 +89,7 @@ For every function or method encountered on a relevant code path, record:
+ - Mark the Behavior column VERIFIED only after reading the source.
+ - If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
+ - Trace through conditionals, mapping tables, and configuration — not just the happy path.
+-- For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
++- For any multi-branch control flow (conditionals, exception handling, loops): after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
+ 
+ ### Step 5: Refutation check (required)
+ This step is **mandatory**, not optional.
+
+rationale:
+# Iteration 55 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 85%（17/20）
+- 失敗ケース: 15368, 13821, 15382
+- 失敗原因の分析: 3件すべて EQUIV 偽陽性（NOT_EQ と誤判定）。コード差分が条件分岐に存在するが、テスト入力がその分岐を実行しないケースで、トレース段階での反証的確認が不十分だったため誤判定が発生した。
+
+## 改善仮説
+
+Step 4 トレーステーブルの反証的入力トレース要件の適用範囲を「例外処理またはループ内の多岐分岐」から「あらゆる多岐分岐制御フロー（条件分岐・例外処理・ループ）」に拡張することで、条件分岐を含む全関数のトレース行確定前に反証的入力の検討が促され、EQUIV 偽陽性が抑制される。
+
+## 変更内容
+
+`### Step 4: Interprocedural tracing` の Rules 最終箇条書き（1行）の文言を変更。
+`"For exception handling inside loops or multi-branch control flows:"` を `"For any multi-branch control flow (conditionals, exception handling, loops):"` に精緻化。追加行数 0・削除行数 0・変更行数 1。
+
+## 期待効果
+
+条件分岐を持つ全関数で反証的トレースが行われるようになり、EQUIV 偽陽性ケース（15368, 13821, 15382）の一部改善が見込まれる。EQUIV 正答率 7/10 → 8〜9/10、総合スコア 85% → 87〜90% を予測。NOT_EQ 正答率（10/10）への影響は中立。

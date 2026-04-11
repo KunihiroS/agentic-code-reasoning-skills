@@ -1,0 +1,22 @@
+Now let me check recent scores to understand current state:
+
+`proposal.md` を改訂しました。新しい提案の要点：
+
+## 改訂内容の核心
+
+**前回との違い（なぜ却下されたか）**: 前回は「DIFFERENT と主張するときだけ伝播経路を追記」→ NOT_EQ 側のみに立証責任を課す非対称変更（BL-2/BL-6 相当）。
+
+**今回の提案**: `explain` の DATA FLOW ANALYSIS を**真に対称移植**する。
+
+各 relevant test の `Claim` を書く前に、テストの assertion を決める key value（1〜2個）を **A・B 両方について同一形式**でトレースさせる：
+
+```
+Key value (1-2 variables or return values that determine this test's assertion):
+  With A: created [file:line] → last modified [file:line or NONE] → value at assertion [file:line]: [value/state]
+  With B: created [file:line] → last modified [file:line or NONE] → value at assertion [file:line]: [value/state]
+```
+
+- **SAME/DIFFERENT どちらにも同じ 3 行を追加** → 原則 #1/#6 に非抵触
+- iter-8/9（乖離点探索）と異なり、**A・B を独立に追跡する中立な枠組み** → 違いを探すアンカリングなし
+- key value を 1〜2個に限定 → BL-5/BL-8 のオーバーヘッドリスクを抑制
+

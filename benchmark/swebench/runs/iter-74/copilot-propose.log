@@ -1,0 +1,11 @@
+Now let me prepare the output directory and write the proposal.
+
+`benchmark/swebench/runs/iter-74/proposal.md` を作成しました。
+
+**要約**:
+
+- **カテゴリ**: E（表現・フォーマットの改善）
+- **仮説**: `NO COUNTEREXAMPLE EXISTS` セクションの `[what test, what input, what diverging behavior]` における "what input" が抽象的すぎるため、エージェントが意味論的差異を実際に発動させる**テスト内実行経路**をトレースせずに通過できてしまっている。`what input` → `which execution path within that test reaches the semantic difference` に精緻化することで、false EQUIV を減らす。
+- **変更規模**: 1行の文言置き換え（hard limit 5行以内）
+- **回帰リスク**: NOT_EQ 側の `COUNTEREXAMPLE` は既に file:line トレースを要求しており、本変更はその水準に EQUIV 側を揃える対称化であるため低い。
+

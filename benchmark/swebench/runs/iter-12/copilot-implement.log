@@ -1,0 +1,33 @@
+Now let me analyze the iter-11 results in detail and check the previous iterations' patterns.
+
+**Analysis:** 3 UNKNOWN failures (14787, 14122, 12663) all hit the **31-turn limit** — the agent exhausts its turn budget exploring before writing a conclusion. This is a distinct failure mode from the over-conservative NOT_EQUIVALENT cases (15368, 13821, 15382).
+
+**Hypothesis for iter-12**: Adding an explicit "early commit" instruction — once a counterexample is confirmed via traced code paths, stop exploring and write FORMAL CONCLUSION immediately — will prevent turn exhaustion for NOT_EQUIVALENT cases.
+
+Now create iter-12 rationale.md and save the snapshot:
+
+Clean 2-line diff. Let me verify the updated section looks correct:
+
+完了しました。以下が作業サマリーです。
+
+## 実施内容
+
+**失敗分析（iter-11: 70% = 14/20）:**
+- `15368, 13821, 15382`: EQUIVALENT → NOT_EQUIVALENT（過保守的誤判定、3件）
+- `14787, 14122, 12663`: NOT_EQUIVALENT → UNKNOWN（31ターン制限到達、3件）
+
+**失敗モードの特定:**  
+UNKNOWN 3件はすべて**ちょうど31ターン**でターン上限に到達。反例（COUNTEREXAMPLE）を見つけた後も探索を続けてターンを使い果たすパターン。
+
+**改善仮説（1仮説に絞り）:**  
+反例が確認された時点で即座に FORMAL CONCLUSION に進む指示を COUNTEREXAMPLE セクションに追加 → NOT_EQUIVALENT 判定時のターン枯渇を防ぐ。
+
+**SKILL.md の変更（+2行）:**
+```diff
+  Therefore changes produce DIFFERENT test outcomes.
++ STOP: Once this counterexample is confirmed via traced code paths, proceed
++ directly to FORMAL CONCLUSION. Do not continue exploring additional tests.
+```
+
+**期待効果:** UNKNOWN 3件が正答 → 14/20 → 17/20（85%）。EQUIVALENT 判定・反証プロセスへの影響なし。
+

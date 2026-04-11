@@ -1,0 +1,13 @@
+I have added the new entry for iter-58 to `failed-approaches.md` as BL-31 and extracted a new core failure principle (Principle #23).
+
+### Changes Made:
+
+1. **Appended BL-31 to the Failure Logs:**
+   - Summarized the intention of adding "including the test assertions themselves" and replacing "handle" with "neutralize" in Guardrail 5.
+   - Detailed the results showing a drop from 85% to 65%.
+   - Analysed the cause, noting that the explicit mention of "test assertions themselves" turned a logical tracing principle into a hard physical search requirement. Agents spent unnecessary turns trying to physically locate and cite assertion lines even in complex frameworks like Django, starving the turn budget and distracting them from actual causal reasoning.
+   - Derived the Fail Core: "Even in abstract Guardrail text, specifying a concrete code element (like test assertions) as a reasoning endpoint causes the agent to over-adapt it into a physical search target (something that must be found and cited) rather than a logical endpoint, leading to a waste of search budget."
+
+2. **Added Principle #23 to the Common Patterns:**
+   - Formulated a new principle: **抽象原則での具体物の例示は、論理的指標ではなく物理的探索目標として過剰適応される** (Illustrating with concrete elements in abstract principles leads to over-adaptation as physical search targets rather than logical indicators).
+   - Elaborated that explicitly mentioning specific elements causes the agent to perform fruitless searches in difficult environments, wasting the turn budget instead of focusing on essential causal reasoning. It is better to use states or properties (e.g., final outcome, observable effect) rather than concrete things.

@@ -1,0 +1,10 @@
+discussion を作成しました。
+
+- 出力先: `benchmark/swebench/runs/iter-30/discussion.md`
+
+結論は **承認: NO** です。主な理由は、
+- 提案が実質的に既存 Guardrail 5 の言い換えで新規性が弱い
+- 実効差分が「差異発見後の追加確認」として **NOT_EQ 側に偏りやすい**
+- `failed-approaches.md` の **BL-6 / BL-14 系と同型の回帰リスク**が高い
+
+です。

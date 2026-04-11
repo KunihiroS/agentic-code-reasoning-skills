@@ -1,0 +1,13 @@
+diff --git a/SKILL.md b/SKILL.md
+index 01886cd..9681cfc 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -215,7 +215,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+-- Trace each test through both changes separately before comparing
++- Trace fail-to-pass tests (D2a) through both changes first, then pass-to-pass tests (D2b); trace each through both changes separately before comparing
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference produces a different observable test outcome by tracing through at least one test
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)

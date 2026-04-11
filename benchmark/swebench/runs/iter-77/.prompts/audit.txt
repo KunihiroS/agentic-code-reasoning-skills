@@ -1,0 +1,74 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-77/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 7 項目 (R1〜R7) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【追加チェック (R1, R7 の補強)】
+diff や rationale に具体的な数値 ID, リポジトリ名, テスト名, コード断片が
+含まれていないか確認してください。含まれていれば R1 と R7 を 1 点 (FAIL) にしてください。
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index e1cdc80..099674c 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -70,7 +70,7 @@ HYPOTHESIS UPDATE:
+ UNRESOLVED:
+   - [remaining questions]
+ 
+-NEXT ACTION RATIONALE: [why the next file or step is justified]
++NEXT ACTION RATIONALE: [which unresolved question this step addresses, and what observation from it would be sufficient to close that question]
+ ```
+ 
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
+
+rationale:
+# Iteration 77 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 不明（proposal.md 参照）
+- 失敗ケース: 記載なし（具体的な ID は省略）
+- 失敗原因の分析: 探索ステップに終了条件が存在しないため、目的なく探索が広がるか、根拠が揃う前に早期打ち切りが発生する、という二種類の失敗が観察された。
+
+## 改善仮説
+
+探索の各ステップに明示的な充足条件（どの未解決問を対象とし、何が得られれば前進できるか）を付与することで、エージェントの探索が目的指向かつ境界付きになり、ターン予算の無駄消費と早期打ち切りの両方が減少する。
+
+## 変更内容
+
+Step 3（Hypothesis-driven exploration）の `NEXT ACTION RATIONALE` フィールドの説明文を精緻化した。
+
+- **変更前**: `[why the next file or step is justified]`
+- **変更後**: `[which unresolved question this step addresses, and what observation from it would be sufficient to close that question]`
+
+変更規模は1行（既存行の文言差し替えのみ）。新規フィールド・セクションの追加はなし。
+
+## 期待効果
+
+- **目的なき探索の抑制**: 各ステップが「閉じるべき未解決問」に紐づくため、充足条件を満たした時点で次へ進む判断が明確になる。
+- **早期打ち切りの抑制**: 充足条件が未達であることが記録に残るため、根拠不足のまま結論へ進むことが難しくなる。
+- **観察と前提の接続強化**: 観察が「どの未解決問を閉じるか」で評価されるため、前提との結びつきが強くなる。
+
+特定ケースへの狙い打ちではなく、探索プロセス全体の目的指向性を高める汎用的な変更である。

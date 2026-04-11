@@ -1,0 +1,28 @@
+# Iteration 29 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 75%（15/20）
+- 失敗ケース:
+  - django__django-15368, django__django-13821, django__django-15382（EQUIV 誤判定: AI が NOT_EQUIVALENT と誤答）
+  - django__django-14787, django__django-14122（NOT_EQ 判定不能: AI が UNKNOWN と回答）
+- 失敗原因の分析: iter-28 で COUNTEREXAMPLE ブロックに追加した `By P[N]` フィールドが NOT_EQ 結論時にのみ追加の立証を要求する非対称な制約となり、14787・14122 の UNKNOWN 回帰を引き起こした。EQUIV 方向には実効的変化がなく、共通原則 #1（非対称操作禁止）および #6（既存制約との差分で評価せよ）の違反パターンに該当する。
+
+## 改善仮説
+
+iter-28 で追加した `By P[N]` フィールドを削除することで、NOT_EQ の立証ハードルを iter-27 以前の水準に戻し、14787・14122 の UNKNOWN 回帰を解消できる。EQUIV 方向には変化がないため、EQUIV 正答率を損なわずに NOT_EQ 正答率を回復できる。
+
+## 変更内容
+
+`## Compare` セクション → Certificate template → `COUNTEREXAMPLE` ブロックから以下の3行を削除した（iter-28 の完全リバート）:
+
+```
+  By P[N]: this test checks [assertion/behavior stated in P3 or P4], and the
+           divergence above causes that assertion to produce a different result.
+```
+
+## 期待効果
+
+- **NOT_EQ 正答率**: iter-28 で生じた 14787・14122 の UNKNOWN 回帰が解消し、100% に復帰（iter-27 水準）
+- **EQUIV 正答率**: 変化なし（COUNTEREXAMPLE ブロックは NOT_EQ 結論時のみ使用されるため EQUIV 判定に影響しない）
+- **総合予測**: 75%（15/20）→ 85%（17/20）

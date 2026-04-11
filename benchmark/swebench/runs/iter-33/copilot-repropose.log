@@ -1,0 +1,22 @@
+Let me read the full failed-approaches.md blacklist and recent iterations for complete context:
+
+Now I have enough context. Let me write the new proposal:
+
+Now I have everything I need. Let me write the new proposal:
+
+新しい提案を `benchmark/swebench/runs/iter-33/proposal.md` に上書きしました。
+
+## 新提案の概要
+
+**カテゴリ B: 情報の取得方法を改善する**
+
+### 変更内容
+D2 の `To identify them:` に2文追加：「複数テストが見つかった場合、変更の主たる出力（return value / raised exception / modified attribute）を直接 assert するテストを優先して読む。caller/wrapper への検索拡張はしない（BL-17 の明示的排除）」
+
+### 却下案との違い
+| 観点 | 却下案（iter-33旧） | 新提案 |
+|------|-----------|--------|
+| 変更箇所 | COUNTEREXAMPLE（出力テンプレート） | D2（探索の優先基準） |
+| 作用方向 | NOT_EQ にのみ追加義務 | 対称（判定前の探索段階） |
+| BL 類似 | BL-2/5/15/16 | いずれとも異なる（スコープ非拡張 + 非記録フィールド + 非固定順序） |
+

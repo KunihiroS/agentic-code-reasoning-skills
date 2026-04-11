@@ -1,0 +1,12 @@
+`benchmark/swebench/runs/iter-78/proposal.md` を作成しました。
+
+**提案要旨:**
+
+- **カテゴリ**: C（比較の枠組みを変える）
+- **仮説**: `equiv` 誤判定の根本原因は「変更間の差異を生む *コード条件*」の到達性確認が行われていないこと
+- **変更**: `NO COUNTEREXAMPLE EXISTS` 内のプレースホルダー1行のみ精緻化
+  - 旧: `[describe concretely: what test, what input, what diverging behavior]`
+  - 新: `[describe concretely: what code condition enables divergence between the changes, what test reaches that condition, and what observable behavior differs]`
+
+これにより、エージェントは「差異が現れる条件」を明確にした上で「その条件に到達するテストが存在するか」を確認するよう誘導され、false NOT_EQUIVALENT 判定が減少します。変更規模は 1 行のみ。
+

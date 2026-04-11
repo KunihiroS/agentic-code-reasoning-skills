@@ -1,0 +1,32 @@
+Let me check the iter-7 snapshot to understand the current SKILL.md, and look at the docs.
+
+Now I have everything I need. Let me create the iter-8 proposal.
+
+提案を `benchmark/swebench/runs/iter-8/proposal.md` に作成しました。
+
+---
+
+## 改善提案の概要
+
+**カテゴリ F（原論文の未活用アイデア）**
+
+### 仮説
+`localize` モードの **Phase 3（DIVERGENCE ANALYSIS）** を `compare` モードに移植する。  
+現行の「Claim A / Claim B 2重独立トレース」形式を **「乖離点ファーストトレース（Divergence-First）」** に変更する。
+
+### 変更内容
+各テストの分析ブロックを以下に置き換え：
+- `Divergence:` — Change A と Change B が初めて異なる値・動作を示す箇所を `file:line` + 具体値で明示
+- 乖離点なし → Comparison は SAME（Claim 省略可）
+- 乖離点あり → 1本の Claim（乖離点から test assertion まで）
+
+### 予測効果
+| カテゴリ | 現在 | 予測 | 理由 |
+|---|---|---|---|
+| EQUIV 正答率 | 7/10 | 8〜9/10 | 「コード差異あり＝テスト失敗」ジャンプを値レベルの明示が防ぐ |
+| NOT_EQ 正答率 | 7/10 | 回帰なし〜微改善 | 2重トレースが1本化されターンオーバーヘッド増なし |
+
+### ブラックリスト非該当の根拠
+- BL-2（証拠閾値強化）非該当：COUNTEREXAMPLE 節は無変更、NOT_EQ 判定ハードル不変
+- BL-10（Reachability ゲート）非該当：条件が「常 YES の到達確認」ではなく「値差異の明示」で判別力が異なる
+

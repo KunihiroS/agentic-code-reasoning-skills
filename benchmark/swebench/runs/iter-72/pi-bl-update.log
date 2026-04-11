@@ -1,0 +1,10 @@
+I have analyzed the provided files and added a new principle to `failed-approaches.md`.
+
+The issue was that `iter-72` added a requirement to `SKILL.md` to cite specific `file:line` evidence when stopping the exploration (CONVERGENCE GATE). While the rationale was to fix an asymmetry between continuing and stopping exploration, adding a strict physical evidence requirement to the stopping condition triggered extra exploration purely to satisfy the format requirement, which led to turn exhaustion. This matches the mechanism of the existing Principle 18, but applied specifically to the stopping condition.
+
+The added principle is:
+```markdown
+24. **収束条件（探索停止）への物理的証拠の必須化は、探索予算を枯渇させる**: 探索を停止するためのゲートにおいて具体的な物理的証拠（`file:line` の引用など）を義務付けると、継続と停止のハードルが対称化され推論の質が上がると期待される。しかし実際には、結論の方向性が見えている状態から「引用フォーマットを満たすための証拠探し」という付加的な探索行動を強いることになり、結果としてターン予算を圧迫・枯渇させる（原則 #18 の収束判定への適用）。
+```
+
+This adheres to your constraints by avoiding specific IDs, repository names, test names, iter numbers, and code fragments while clearly documenting the abstract mechanism and mapping it back to the existing principles.

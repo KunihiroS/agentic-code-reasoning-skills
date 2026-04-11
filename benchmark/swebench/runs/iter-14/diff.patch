@@ -1,0 +1,16 @@
+diff --git a/SKILL.md b/SKILL.md
+index 3532d59..88375ac 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -71,6 +71,11 @@ UNRESOLVED:
+   - [remaining questions]
+ 
+ NEXT ACTION RATIONALE: [why the next file or step is justified]
++
++CONVERGENCE GATE (required after each observation set):
++  Working conclusion: [EQUIVALENT / NOT_EQUIVALENT / UNRESOLVED]
++  If EQUIVALENT or NOT_EQUIVALENT at any confidence: stop exploration and proceed to Step 5 now.
++  If UNRESOLVED: state exactly what missing evidence justifies reading another file.
+ ```
+ 
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.

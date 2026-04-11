@@ -1,0 +1,10 @@
+完了しました。
+
+**SKILL.md の変更（1行）:**
+- Compare チェックリストの伝播追跡ルールに、「変更された関数が未変更の下流関数へ異なる引数を渡す」ケースを OR 条件として追加。
+- `that function` → `that point`、`read the function` → `read the consuming function` に汎化・明確化。
+
+**rationale.md を作成:**
+- Objective.md のフォーマットに準拠。
+- 具体的なケース ID・リポジトリ名・テスト名は記載せず。
+

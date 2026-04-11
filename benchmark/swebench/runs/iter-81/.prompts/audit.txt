@@ -1,0 +1,69 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-81/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 7 項目 (R1〜R7) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【追加チェック (R1, R7 の補強)】
+diff や rationale に具体的な数値 ID, リポジトリ名, テスト名, コード断片が
+含まれていないか確認してください。含まれていれば R1 と R7 を 1 点 (FAIL) にしてください。
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 4c64722..3c525e8 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -414,7 +414,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ 1. **Do not assume behavior from names.** Read the actual function definition. The canonical failure: assuming Python's builtin `format()` when a module-level function with different semantics shadows it.
+ 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
+ 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
+-4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
++4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact. Conversely, when two changes diverge structurally, trace that divergence to its effect on the test assertion before treating it as evidence of a behavioral difference.
+ 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+ 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
+ 
+
+rationale:
+# Iteration 81 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 前イテレーション結果に基づく
+- 失敗ケース: 記載なし（具体的な数値 ID は省略）
+- 失敗原因の分析: `equiv` ドメインの失敗において、エージェントが Change A と Change B の間に観察された構造的差異を、テストアサーションへの影響をトレースすることなく、振る舞いの差異の十分な証拠として扱う傾向が見られた。これにより、真に等価なケースで誤って NOT_EQUIVALENT と判定する誤りが生じていた。
+
+## 改善仮説
+
+構造的に異なるが機能的に等価な 2 つの実装を比較するとき、「構造的差異は、テストアサーションへの効果としてトレースされるまで振る舞い上の差異の証拠にならない」という原則を明示することで、構造から振る舞いへの早計な推論飛躍を抑制できる。
+
+## 変更内容
+
+Guardrails セクションの項目 #4 末尾に 1 文を追加した。
+
+追加文: `Conversely, when two changes diverge structurally, trace that divergence to its effect on the test assertion before treating it as evidence of a behavioral difference.`
+
+既存の #4 は「差異を見つけたとき、EQUIVALENT と結論する前にトレースせよ」という片方向の要件を定めていた。追加文はその対称方向を明示し、「構造的差異を NOT_EQUIVALENT の証拠として使う前に、テストアサーションへの効果をトレースせよ」という要件を追加した。
+
+## 期待効果
+
+構造的差異を証拠の端緒ではなく結論の根拠と混同する推論パスが封じられ、真に等価なケースでの誤った NOT_EQUIVALENT 判定が減少することが期待される。既存の EQUIVALENT 方向のガードレールには変化がないため、NOT_EQUIVALENT 精度への悪影響は低い。変更規模は 1 行（追加文のみ）であり、回帰リスクは最小限である。

@@ -1,0 +1,12 @@
+Now I have everything I need. Let me make the SKILL.md changes and create the rationale.md.
+
+Let me verify the SKILL.md change looks correct:
+
+両方の変更が完了しました。
+
+**SKILL.md の変更（4行置換）:**
+- fail-to-pass の `because` 節：`cite file:line` → `for each function cited, read its definition and state its verified effect on this test's specific inputs at file:line, not merely a summary of the diff`（×2行）
+- pass-to-pass の `behavior is` 節：`[description]` → `[description — verified at file:line]`（×2行）
+
+**rationale.md の作成:** Objective.md のフォーマットに従い、前回スコア・失敗原因・改善仮説・変更内容・期待効果を記載しました。タイトルは proposal.md の表題（Iteration 43）に合わせています。
+

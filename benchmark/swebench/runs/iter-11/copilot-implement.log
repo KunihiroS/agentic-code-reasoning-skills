@@ -1,0 +1,28 @@
+Now I have enough context. Let me analyze and implement the change.
+
+**Analysis**: iter-10 has 4 failures:
+1. **15368, 11179, 15382** — EQUIVALENT predicted NOT_EQUIVALENT (over-conservative)
+2. **11433** — NOT_EQUIVALENT predicted **UNKNOWN** (31 turns, indecisive)
+
+The UNKNOWN result in 11433 is a unique failure mode: the agent explored extensively but couldn't commit to a binary answer. The skill has no explicit prohibition against UNKNOWN verdicts.
+
+**Hypothesis**: Adding an explicit note that UNKNOWN is not valid — and that unresolved uncertainty should be expressed via LOW confidence, not withheld judgment — will force commitment in ambiguous cases and resolve 11433.
+
+Now create the rationale.md for iter-11:
+
+変更完了です。
+
+**実施した変更 (1行)**：`Compare checklist` に以下を追加しました：
+> "UNKNOWN is not a valid answer — if evidence is genuinely ambiguous after full exploration, commit to the best-supported conclusion (YES or NO) and set CONFIDENCE to LOW"
+
+**分析サマリー（iter-10: 80%, 16/20）**：
+
+| ケース | 真値 | 予測 | ターン | 分類 |
+|--------|------|------|--------|------|
+| 15368 | EQ | NOT_EQ | 12 | 持続的失敗 |
+| 11179 | EQ | NOT_EQ | 10 | 新規失敗 |
+| 15382 | EQ | NOT_EQ | 29 | 持続的失敗 |
+| **11433** | **NOT_EQ** | **UNKNOWN** | **31** | **唯一の判断放棄** |
+
+**仮説**: 11433 は他の3件と異なり「判断放棄」パターン。31ターン探索後も UNKNOWN を返したのは、スキルに UNKNOWN 禁止の明示的指示がないため。今回の追加でコミット回避を防ぎ、17/20（85%）を期待。
+

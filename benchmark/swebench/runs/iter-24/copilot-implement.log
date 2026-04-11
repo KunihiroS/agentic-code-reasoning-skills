@@ -1,0 +1,18 @@
+Now I have everything I need. Let me make the SKILL.md edit and create rationale.md.
+
+Let me verify the SKILL.md change looks correct:
+
+完了しました。
+
+**SKILL.md の変更**（proposal.md セクション3の通り）:
+- `ANALYSIS OF TEST BEHAVIOR` の `For each relevant test:` 前に、テストソースを先読みする順序制約の説明文を追加
+- 各テスト分析ブロックに `Entry:` フィールドを追加（`file:line` 引用必須）
+- `Claim C[N].1/2` の文言を「starting from Entry」「trace from Entry through changed code」に変更
+- 合計実効差分：4行追加・2行変更（proposal の「≤ 20行」制約を満たす）
+
+**rationale.md を作成**（Objective.md のフォーマット準拠）:
+- 前イテレーション分析（スコア 70% 14/20、失敗ケース6件、原因分析）
+- 改善仮説（proposal.md の仮説を要約）
+- 変更内容（具体的な差分の説明）
+- 期待効果（EQUIV/NOT_EQ 両側への予測）
+

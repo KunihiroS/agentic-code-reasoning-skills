@@ -1,0 +1,18 @@
+benchmark/swebench/runs/iter-40/discussion.md に監査コメントを書きました。
+
+結論:
+- **承認: NO**
+- 主理由:
+  - `EDGE CASES RELEVANT TO EXISTING TESTS` の削除は、実効的に **探索・検証カバレッジの削減**
+  - `failed-approaches.md` の共通原則 **#3「探索量の削減は常に有害」** に実質抵触
+  - 原論文・README・design.md が重視する **certificate / anti-skip 機構** を弱める
+  - 改善メカニズムが「推論の質向上」ではなく「書く量を減らして間に合わせる」に寄っている
+
+加えて、MCP については:
+- `ddg_search_search` は bot detection 由来と思われる no-result だったため、
+- 同じ DuckDuckGo MCP サーバーの `fetch_content` で以下を確認して根拠化しています:
+  - https://arxiv.org/abs/2603.01896
+  - https://arxiv.org/abs/2307.03172
+  - https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/be-clear-and-direct
+
+必要なら、この監査コメントを短く要約した版も作れます。

@@ -1,0 +1,14 @@
+`benchmark/swebench/runs/iter-68/proposal.md` を作成しました。
+
+---
+
+**提案サマリー**
+
+| 項目 | 内容 |
+|---|---|
+| カテゴリ | C — 比較の枠組みを変える |
+| 仮説 | Guardrail #4 は「差異を無視するな」方向のトレース義務のみを課しており、「差異が影響すると結論する」方向にはアサーション到達レベルのトレースを要求していない。この非対称を解消することで false NOT_EQ を減らす |
+| 変更箇所 | Guardrail #4 の 1 行を精緻化（`to the assertion that determines PASS/FAIL` と `either…or` の対称構造を追加） |
+| 変更規模 | 1 行（hard limit 5 行以内 ✓） |
+| failed-approaches 抵触 | なし（#1/#6 の「対称化」要件も照合済み） |
+

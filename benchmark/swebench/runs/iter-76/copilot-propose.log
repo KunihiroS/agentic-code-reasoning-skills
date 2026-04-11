@@ -1,0 +1,10 @@
+`benchmark/swebench/runs/iter-76/proposal.md` を作成しました。
+
+**提案サマリー:**
+
+- **カテゴリ C**: 比較の枠組みを変える（差異の重要度を段階的に評価）
+- **仮説**: Guardrail #4 は現状「差異を見逃して EQUIV と結論するな」方向のみを明示。「差異を見つけて即 NOT_EQ と結論するな」方向が欠落している。これを対称化することで false NOT_EQ を抑制。
+- **変更**: Guardrail #4 末尾に `or that it changes a test's pass/fail result` を追加（1行, 10語）
+- **効果**: 関数レベル差異 → NOT_EQ への短絡を阻止しつつ、双方向対称のため not_eq 精度への損失を最小化
+- **変更規模**: 1行（hard limit 5行以内 ✓）
+

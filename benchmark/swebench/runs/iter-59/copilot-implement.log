@@ -1,0 +1,9 @@
+完了しました。
+
+**SKILL.md**: D1 定義末尾に 1 行追加（変更規模: +1 行）
+```
+Code-level differences, however semantic, bear on D1 only when they alter the PASS/FAIL result of at least one relevant test.
+```
+
+**rationale.md**: `Objective.md` のフォーマット（前イテレーションの分析 / 改善仮説 / 変更内容 / 期待効果）に従い作成。`proposal.md` の内容を元に記載しました。
+

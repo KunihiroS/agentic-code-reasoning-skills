@@ -1,0 +1,53 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-54/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index d6ab034..5681b2c 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -414,7 +414,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
+ 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
+ 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
+-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
++5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified — in `compare` mode, callers on the test call path are downstream, not just callees. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+ 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
+ 
+ ### General
+
+rationale:
+# Iteration 54 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 75% (15/20)
+- 失敗ケース: 13821, 15382, 14787, 11433, 12663
+- 失敗原因の分析: 13821 は EQUIV → NOT_EQ の誤判定（変更関数でコード差分を発見した後、caller が差分を吸収していることを確認しなかった）。15382, 14787, 12663 は 31 turns 到達による UNKNOWN。11433 は判定ミス。
+
+## 改善仮説
+
+Guardrail 5 の「downstream code」という用語が曖昧であるため、エージェントが「downstream = callee（呼び出し先）」と誤解し、「変更関数 → 呼び出し元 caller → テスト assertion」方向の確認を省略している可能性がある。`compare` モードにおける「downstream」の意味を caller 方向（テスト call path 上の caller）として明示することで、Guardrail 5 が意図した「不完全な推論チェーンを信用するな」という原則が正しく機能するようになる。
+
+## 変更内容
+
+Guardrail 5 の既存行に補足句を挿入した（新規行の追加なし）。
+
+変更箇所: `verify that downstream code does not already handle the edge case or condition you identified` の直後に `— in \`compare\` mode, callers on the test call path are downstream, not just callees.` を追加。
+
+## 期待効果
+
+- **13821（EQUIV 誤判定）**: caller が差分を吸収しているかを確認する動機が強化され、EQUIVALENT への正答改善が期待できる。
+- **15382, 14787, 12663（UNKNOWN）**: 直接的な作用は限定的だが、caller 方向の探索を促進することで間接的に改善の余地がある。
+- **NOT_EQ 正答率**: 真の NOT_EQ では caller が差分を伝播させるため、caller 確認により NOT_EQ の根拠が強化されるだけで判定は変わらない。悪化要因なし。

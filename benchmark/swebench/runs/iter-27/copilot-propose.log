@@ -1,0 +1,31 @@
+Now I have enough context. Let me create the proposal.
+
+改善案を `benchmark/swebench/runs/iter-27/proposal.md` に作成しました。
+
+---
+
+## 提案サマリー
+
+### カテゴリ: **A — 逆方向推論（結論から逆算して証拠を特定する）**
+
+### 仮説
+Compare モードの「DIFFERENT outcome」主張で、**アサーション条件から逆算してコード差分が因果連鎖に存在するかを確認する検証が欠如**している。これが EQUIV 偽陽性（15368, 15382, 13821）の共通根本原因。
+
+### 変更内容（+2行、チェックリストへの追加のみ）
+```
+- When claiming a test outcome DIFFERS: verify backward — from the test's
+  assertion condition through the causal chain to the code difference —
+  that the divergence between A and B reaches the assertion.
+  Do not conclude DIFFERENT solely because a difference exists somewhere
+  in the call path.
+```
+
+### 影響予測
+| | 現状 | 予測 |
+|--|--|--|
+| EQUIV | 70% (7/10) | **+10〜20pp** |
+| NOT_EQ | 100% (10/10) | **0〜-5pp**（チェックリストは advisory） |
+
+### ブラックリスト照合
+BL-2/BL-6/BL-9 と類似点があるが、**メカニズムが根本的に異なる**: 本提案は「自己評価や閾値引き上げ」ではなく「アサーションからの逆算トレース（能動的検証）」。原則 #1〜#11 の照合も proposal.md に詳述。
+

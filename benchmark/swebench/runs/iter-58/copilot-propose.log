@@ -1,0 +1,28 @@
+提案を `benchmark/swebench/runs/iter-58/proposal.md` に書きました。
+
+---
+
+## 改善案サマリー
+
+**カテゴリ E: 既存行の文言精緻化**（追加行数: 0）
+
+### 変更箇所
+
+**Guardrail 5**（1行修正のみ）：
+
+```diff
+- verify that downstream code does not already handle the edge case or condition you identified.
++ verify that downstream code — including the test assertions themselves — does not already neutralize the effect you identified.
+```
+
+### 仮説
+
+Guardrail 5 の「downstream code」が曖昧なため、エージェントがコード上の差異を見つけても **テストのアサーションまで伝播するか確認せず** 結論を出してしまう。終点を「test assertions themselves」と明示することで、差異の到達性検証を両方向（EQUIV/NOT_EQ）に対称に強化する。
+
+### ブラックリスト照合
+
+- 非対称操作なし（原則#1 クリア）
+- 出力制約ではなく処理側の改善（原則#2 クリア）
+- 探索量削減なし（原則#3 クリア）
+- BL-21/25/26 の「義務化・hop固定」とは異なる（終点の意味論的明示のみ）
+

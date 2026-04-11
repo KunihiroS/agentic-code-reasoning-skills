@@ -1,0 +1,12 @@
+Now I have all the context I need. Let me create the proposal.
+
+`benchmark/swebench/runs/iter-93/proposal.md` を作成しました。
+
+**提案サマリー**:
+
+- **カテゴリ**: E（表現改善） + C（比較枠組みの精緻化）
+- **仮説**: `compare` モードの Claim 分析で、エージェントが変更点付近の中間的な振る舞いの差異を見つけた時点でトレースを打ち切り、その差異がテストアサーションまで到達するか検証しないまま NOT_EQUIVALENT と誤結論する
+- **変更**: `trace through code` → `trace through code to the test assertion`（2箇所、2行）
+- **効果**: 意味論的差異がアサーションに届かないケースでの誤NOT_EQUIVALENT判断を削減し、`equiv`精度を向上
+- **failed-approaches.md との照合**: 対称変更・プロセス指示・探索量維持、全原則に抵触なし
+

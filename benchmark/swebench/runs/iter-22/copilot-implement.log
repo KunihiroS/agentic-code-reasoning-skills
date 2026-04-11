@@ -1,0 +1,25 @@
+Now I have a clear picture. Let me analyze the failures:
+- **iter-21 results**: 85% (17/20), with 3 failures:
+  - `15368`: EQUIVALENT → NOT_EQUIVALENT (false alarm)
+  - `15382`: EQUIVALENT → UNKNOWN  
+  - `14787`: NOT_EQUIVALENT → EQUIVALENT (missed difference)
+
+The current SKILL.md is missing guardrail #10 from iter-21 (it's in the snapshot but not the file). I need to restore it + add iter-22's improvement targeting the persistent `15368` "shallow counterexample" pattern.
+
+Good. Now create the rationale.md and diff.patch for iter-22:
+
+完了しました。以下が iter-22 の作業内容です：
+
+## 変更サマリー
+
+**失敗分析（iter-21: 85%, 3失敗）:**
+1. `15368` (EQUIVALENT → NOT_EQUIVALENT): 意味的差異を発見後、テストへの影響確認なしに結論 ← **主要仮説**
+2. `15382` (EQUIVALENT → UNKNOWN): iter-21 の Guardrail #10 が SKILL.md に未反映
+3. `14787` (NOT_EQUIVALENT → EQUIVALENT): 今回対象外
+
+**SKILL.md への変更（2行追加）:**
+- **Guardrail #10** (復元): iter-21 設計のコミット義務「UNKNOWN 禁止」を正式反映
+- **Guardrail #11** (新規): Guardrail #4 の対称版 — 「意味的差異だけで NOT_EQUIVALENT を宣言するな。必ず具体的テストをトレースしてテスト結果が変わることを確認せよ」
+
+これにより、`15368` の「浅い反例」パターン（semantic diff ≠ test-level diff の混同）と `15382` の UNKNOWN を同時に抑制します。
+

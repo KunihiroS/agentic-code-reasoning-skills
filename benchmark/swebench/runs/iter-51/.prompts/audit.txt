@@ -1,0 +1,51 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-51/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index d6ab034..c71332b 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -414,7 +414,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
+ 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
+ 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
+-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
++5. **Do not trust incomplete chains.** After building a reasoning chain, verify both that callers do not already normalize or absorb the identified difference before the test observes it, and that the chain connects the change to a test-observable outcome — not just to the changed function's boundary. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+ 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
+ 
+ ### General
+
+rationale:
+# Iteration 51 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 75% (15/20)（親: iter-39）
+- 失敗ケース: EQUIV 偽陽性 1件、NOT_EQ 偽陰性 1件、UNKNOWN 3件
+- 失敗原因の分析: Guardrail 5 が「不完全な推論チェーン」を一方向（caller が差分を吸収するか確認）にのみ実装しており、反対方向（チェーンが変更関数の境界で止まりテスト観測点に到達しているか）のチェックが欠如していた。これにより 13821 型（EQUIV→NOT_EQ 誤判定）と 11433 型（NOT_EQ→EQUIV 誤判定）の両タイプの誤判定が継続した。
+
+## 改善仮説
+
+Guardrail 5 を双方向化することで、「callers が差分を吸収するか」と「チェーンがテスト観測点まで到達しているか」の両方向チェックを対称的に義務付け、両タイプの誤判定を同時に改善できる。
+
+## 変更内容
+
+SKILL.md の Guardrail 5（`## Guardrails` → `### From the paper's error analysis`）の既存 1 行を文言精緻化した。旧表現の `downstream code does not already handle the edge case` を `callers do not already normalize or absorb the identified difference before the test observes it` に明確化し、さらに `and that the chain connects the change to a test-observable outcome — not just to the changed function's boundary` を同一文に追加することで双方向チェックを実装した。追加行数: 0（既存行の文言精緻化のみ）。
+
+## 期待効果
+
+- NOT_EQ 偽陰性（11433 型）: `chain connects the change to a test-observable outcome` チェックが、変更の差分を発見しながらテスト assertion への伝播確認を省いて EQUIV と誤判定するケースを防止する。
+- EQUIV 偽陰性（13821 型）: `callers do not already normalize or absorb` という具体的語彙が、iter-39 の Compare checklist 追加と相乗的に働き、caller が差分を吸収するにもかかわらず NOT_EQ と誤判定するケースを抑制する。
+- UNKNOWN 率: Guardrail の確認義務は per-Claim の citation 要求ではないため、BL-25 型のターン枯渇リスクを増大させない。

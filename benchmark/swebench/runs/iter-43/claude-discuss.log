@@ -1,0 +1,10 @@
+discussion.md を作成しました。
+
+- `benchmark/swebench/runs/iter-43/discussion.md`
+
+結論は **承認: NO** です。主因は、
+- Step 3 の再掲で実効差分が小さい
+- `which test outcomes will differ` が BL-7 系のアンカリングに近い
+- カテゴリ F / localize→compare 移植は既に複数回試されている
+
+です。

@@ -1,0 +1,25 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..d464064 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -166,12 +166,16 @@ P4: The pass-to-pass tests check [specific behavior, if relevant]
+ 
+ ANALYSIS OF TEST BEHAVIOR:
+ 
++For each relevant test, read the test source first to establish the
++entry point, arguments, and setup before tracing the changed code.
++
+ For each relevant test:
+   Test: [name]
+-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+-                because [trace through code — cite file:line]
+-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+-                because [trace through code — cite file:line]
++  Entry: [test entry point, arguments, and setup — cite file:line from test source]
++  Claim C[N].1: With Change A, starting from Entry, this test will [PASS/FAIL]
++                because [trace from Entry through changed code — cite file:line]
++  Claim C[N].2: With Change B, starting from Entry, this test will [PASS/FAIL]
++                because [trace from Entry through changed code — cite file:line]
+   Comparison: SAME / DIFFERENT outcome
+ 
+ For pass-to-pass tests (if changes could affect them differently):

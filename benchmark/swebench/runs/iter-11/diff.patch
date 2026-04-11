@@ -1,0 +1,12 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..e196197 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -218,6 +218,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Trace each test through both changes separately before comparing
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
++- UNKNOWN is not a valid answer — if evidence is genuinely ambiguous after full exploration, commit to the best-supported conclusion (YES or NO) and set CONFIDENCE to LOW
+ 
+ ---
+ 

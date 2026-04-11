@@ -1,0 +1,23 @@
+Now I have enough information to write a well-informed proposal. Let me create the proposal.
+
+改善案を `benchmark/swebench/runs/iter-64/proposal.md` に作成しました。
+
+---
+
+## 提案サマリー
+
+**カテゴリ B: 探索の優先順位付けを変える**
+
+**仮説**: Compare チェックリストの「テストをトレースせよ」行に、**D2(a)（fail-to-pass）→ D2(b)（pass-to-pass）の明示的な分析順序**を追加する。
+
+**変更内容（1行修正、追加0行）:**
+```
+- Trace fail-to-pass tests (D2a) through both changes first, then pass-to-pass tests (D2b); trace each through both changes separately before comparing
+```
+
+**根拠:**
+- D2 定義が fail-to-pass を "always relevant" と明示しているが、checklist は順序を未規定のまま
+- 11433（NOT_EQ UNKNOWN 31ターン）: 最も診断力の高いテストを先に分析すれば counterexample を早期発見できる可能性
+- EQUIV（15368/13821）: SAME 結果を先に確立することで NOT_EQ への早期誘導を抑制
+- BL-12/BL-17/BL-22 とは機構が異なり、共通原則の主要な違反なし
+

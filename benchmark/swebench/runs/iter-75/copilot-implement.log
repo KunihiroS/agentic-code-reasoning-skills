@@ -1,0 +1,8 @@
+完了しました。
+
+**SKILL.md の変更** (1行、D2「To identify them」):
+- 変更前: `or variable. If the test suite is not provided...`
+- 変更後: `or variable, then confirm each pass-to-pass candidate actually invokes the changed code through its call chain before including it. If the test suite is not provided...`
+
+**rationale.md** を `benchmark/swebench/runs/iter-75/` に作成しました。Objective.md のフォーマットに従い、具体的な数値ID・リポジトリ名・テスト名は含めていません。
+

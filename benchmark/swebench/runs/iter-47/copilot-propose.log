@@ -1,0 +1,29 @@
+Now I have enough information to write the proposal. Let me create it.
+
+改善案を作成しました。以下が提案の概要です。
+
+---
+
+## 改善案サマリー
+
+**カテゴリ: E（表現・フォーマット改善 — 既存指示の精緻化）**
+
+**改善仮説:**  
+D2(b)の「relevant only if the changed code lies in their call path」は正しい条件だが、検証方法が未指定のため、モデルがテスト削除等の観測事実から call path 関連性を **仮定** してしまう。2行の追記で検証要件（"Verify by tracing; do not assume from deletion"）を明示する。
+
+**変更箇所:**
+```diff
+-     (b) Pass-to-pass tests: ... — relevant
+-         only if the changed code lies in their call path.
++     (b) Pass-to-pass tests: ... — relevant
++         only if the changed code lies in their call path. Verify this by
++         tracing the test's execution; do not assume relevance from file
++         proximity, shared module, or test-level changes such as deletion.
+```
+
+**予測:** EQUIV 7/10 → 8/10（+1）、NOT_EQ 10/10 維持 → **総合 85% → 90%**
+
+**ブラックリスト照合:** BL-1（新規定義追加）とは異なる（既存条件を変えず検証方法を明示）。BL-2（NOT_EQ閾値引上げ）とも異なる（判定側ではなく relevance 確認プロセスの改善）。共通原則 1-15 に抵触なし。
+
+**変更規模:** 追加2行（hard limit 5行以内）、新規構造要素なし。
+

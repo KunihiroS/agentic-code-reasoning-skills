@@ -1,0 +1,10 @@
+監査結果を以下に記載しました。
+
+- `benchmark/swebench/runs/iter-23/discussion.md`
+
+結論は **承認: NO** です。主な理由は:
+- `If a test is removed ... produces no outcome` が **BL-1（比較対象からの除外）** に実質近い
+- `Core assertion` / `Assertion depends on` / `primary code path` が **BL-5（assert中心の過剰規定）** の再導入に近い
+- EQUIV 改善方向には働きうる一方、NOT_EQ では例外・副作用・setup/teardown 由来の差異を落とす回帰リスクがある
+
+必要なら、この監査内容をもとに **未試行カテゴリ C/E の代替案** まで具体化します。

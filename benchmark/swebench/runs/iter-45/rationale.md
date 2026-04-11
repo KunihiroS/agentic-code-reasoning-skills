@@ -1,0 +1,47 @@
+# Iteration 45 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 65%（13/20）
+- 失敗ケース: django__django-15368, django__django-11179, django__django-13821, django__django-15382, django__django-12276（EQUIV 偽陰性）、django__django-14787（NOT_EQ 偽陽性）、django__django-12663（UNKNOWN）
+- 失敗原因の分析: EQUIV 偽陰性（5件）に共通するパターン——変更関数にコードレベルの差異を発見した時点で Claim に FAIL と書き、その差異がテストの観測対象（返り値・例外・状態変化）まで伝播するかを確認しないまま `Comparison: DIFFERENT` → NOT_EQ と短絡する。現テンプレートは Claim（PASS/FAIL）を先に書かせるため、この短絡が構造的に起こりやすい。
+
+## 改善仮説
+
+`ANALYSIS OF TEST BEHAVIOR` の各テストブロックで、PASS/FAIL の Claim を書く前に Change A / Change B それぞれの観測結果（Observed）を先に書かせることで、エージェントがコードレベルの中間差異だけで PASS/FAIL を判断する短絡を構造的に防ぐ。
+
+エージェントは `Observed under Change A/B` を書く段階で、変更がテストに届ける値・例外・状態を確定しなければならない。コードレベルで差異があっても観測対象で収束するケースでは、両 Observed が同じになり `Comparison: SAME` → EQUIV に正しく判定できる。
+
+## 変更内容
+
+`## Compare` → `### Certificate template` → `ANALYSIS OF TEST BEHAVIOR` → `For each relevant test:` ブロックを以下のように変更した（5行 → 7行）。
+
+**変更前:**
+```
+For each relevant test:
+  Test: [name]
+  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                because [trace through code — cite file:line]
+  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+                because [trace through code — cite file:line]
+  Comparison: SAME / DIFFERENT outcome
+```
+
+**変更後:**
+```
+For each relevant test:
+  Test: [name]
+  Observed under Change A: [returned value / raised exception / visible state change — cite file:line]
+  Observed under Change B: [returned value / raised exception / visible state change — cite file:line]
+  Claim C[N].1: With Change A, this test will [PASS/FAIL] because [above observation meets or fails the test]
+  Claim C[N].2: With Change B, this test will [PASS/FAIL] because [above observation meets or fails the test]
+  Comparison: SAME / DIFFERENT outcome
+```
+
+変更規模: 2行追加 + 既存2行改変（合計4行以内の差分）。新セクション追加・削除なし。
+
+## 期待効果
+
+- **EQUIV（現在 5/10 = 50%）**: +2〜3ケース改善見込み。`Observed` を先に書かせることで、コードレベルの差異がテストの観測対象（返り値・例外・状態変化）にまで到達するかを Claim 前に確定させる。差異が観測対象で収束するケース（15368, 11179, 13821, 15382, 12276 など）で `Comparison: SAME` → EQUIV に正しく判定できる可能性が高まる。
+- **NOT_EQ（現在 8/10 = 80%）**: 回帰リスク低。真の NOT_EQ ケースでは Change A と Change B が異なる観測結果を届けるため、`Observed A ≠ Observed B` が明示的に記録され、`Comparison: DIFFERENT` はより確かな根拠に基づく判定になる。
+- **全体予測**: 13/20（65%）→ 15〜16/20（75〜80%）

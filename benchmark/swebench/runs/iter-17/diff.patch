@@ -1,0 +1,12 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..b20769d 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -168,6 +168,7 @@ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
+   Test: [name]
++  Changed code on this test's execution path: [YES — cite file:line / NO — mark and skip to next test]
+   Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                 because [trace through code — cite file:line]
+   Claim C[N].2: With Change B, this test will [PASS/FAIL]

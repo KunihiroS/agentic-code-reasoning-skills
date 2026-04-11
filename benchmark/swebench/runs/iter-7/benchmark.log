@@ -1,0 +1,42 @@
+--- [1] django__django-14089 (EQUIVALENT) ---
+[SKIP] django__django-14089 / with_skill
+--- [2] django__django-15368 (EQUIVALENT) ---
+[SKIP] django__django-15368 / with_skill
+--- [3] django__django-11179 (EQUIVALENT) ---
+[SKIP] django__django-11179 / with_skill
+--- [4] django__django-13821 (EQUIVALENT) ---
+[SKIP] django__django-13821 / with_skill
+--- [5] django__django-15315 (EQUIVALENT) ---
+[SKIP] django__django-15315 / with_skill
+--- [6] django__django-14373 (EQUIVALENT) ---
+[SKIP] django__django-14373 / with_skill
+--- [7] django__django-15382 (EQUIVALENT) ---
+[SKIP] django__django-15382 / with_skill
+--- [8] django__django-12276 (EQUIVALENT) ---
+[SKIP] django__django-12276 / with_skill
+--- [9] django__django-14765 (EQUIVALENT) ---
+[SKIP] django__django-14765 / with_skill
+--- [10] django__django-14672 (EQUIVALENT) ---
+[SKIP] django__django-14672 / with_skill
+--- [11] django__django-13417 (NOT_EQUIVALENT) ---
+[SKIP] django__django-13417 / with_skill
+--- [12] django__django-14787 (NOT_EQUIVALENT) ---
+[SKIP] django__django-14787 / with_skill
+--- [13] django__django-14311 (NOT_EQUIVALENT) ---
+[SKIP] django__django-14311 / with_skill
+--- [14] django__django-11433 (NOT_EQUIVALENT) ---
+[SKIP] django__django-11433 / with_skill
+--- [15] django__django-11999 (NOT_EQUIVALENT) ---
+[SKIP] django__django-11999 / with_skill
+--- [16] django__django-12262 (NOT_EQUIVALENT) ---
+[SKIP] django__django-12262 / with_skill
+--- [17] django__django-11603 (NOT_EQUIVALENT) ---
+[SKIP] django__django-11603 / with_skill
+--- [18] django__django-14122 (NOT_EQUIVALENT) ---
+[SKIP] django__django-14122 / with_skill
+--- [19] django__django-10999 (NOT_EQUIVALENT) ---
+[SKIP] django__django-10999 / with_skill
+--- [20] django__django-12663 (NOT_EQUIVALENT) ---
+[SKIP] django__django-12663 / with_skill
+
+=== Benchmark complete: 20 instances ===

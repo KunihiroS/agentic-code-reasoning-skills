@@ -1,0 +1,31 @@
+Now I have enough information to write the proposal. Let me also check what's already in iter-60's directory.
+
+Now I have all the information I need. Let me create the proposal.
+
+改善案を `benchmark/swebench/runs/iter-60/proposal.md` に作成しました。以下が概要です。
+
+---
+
+## 改善案サマリー
+
+### 問題の特定
+iter-56 は `D2(b)` に追加した2行が **BL-22（iter-47 で試行済み・ブラックリスト）と同一の変更**でした。この「トレース義務 + ネガティブプロンプト」が NOT_EQ ケースでターン枯渇（31ターン UNKNOWN）を4件引き起こし、85% → 70% の大幅後退を招いています。
+
+### 提案内容
+**カテゴリ B（情報の取得方法を改善する）**: D2(b) の BL-22 等価追加を削除（2行削除、追加0行）
+
+```diff
+- Verify this by tracing the test's execution; do not assume relevance
+- from file proximity, shared module, or test-level changes such as deletion.
+```
+
+- チェックリスト item 6 の変更（"not merely the internal execution path"）は 13821 を修正しているため**保持**
+- 共通原則 #16「ネガティブプロンプトは過剰適応を招く」の処方箋に当たる修正
+
+### 予測効果
+| カテゴリ | 現在 | 予測 |
+|---------|------|------|
+| EQUIV | 7/10 | 7〜9/10 |
+| NOT_EQ | 6/10 | 9/10 |
+| **総合** | **70%** | **80〜85%** |
+

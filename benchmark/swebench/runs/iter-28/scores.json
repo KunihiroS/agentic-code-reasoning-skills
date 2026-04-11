@@ -1,0 +1,202 @@
+[
+  {
+    "instance_id": "django__django-14089",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "raw_answer": "YES",
+    "correct": true,
+    "cost_usd": 0.09572430000000001,
+    "turns": 14
+  },
+  {
+    "instance_id": "django__django-15368",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": false,
+    "cost_usd": 0.18173815000000001,
+    "turns": 20
+  },
+  {
+    "instance_id": "django__django-11179",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "raw_answer": "YES",
+    "correct": true,
+    "cost_usd": 0.07793945000000001,
+    "turns": 8
+  },
+  {
+    "instance_id": "django__django-13821",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": false,
+    "cost_usd": 0.18213510000000002,
+    "turns": 12
+  },
+  {
+    "instance_id": "django__django-15315",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "raw_answer": "YES",
+    "correct": true,
+    "cost_usd": 0.14752465,
+    "turns": 18
+  },
+  {
+    "instance_id": "django__django-14373",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "raw_answer": "YES",
+    "correct": true,
+    "cost_usd": 0.07239455,
+    "turns": 7
+  },
+  {
+    "instance_id": "django__django-15382",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": false,
+    "cost_usd": 0.18288045,
+    "turns": 18
+  },
+  {
+    "instance_id": "django__django-12276",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "raw_answer": "YES",
+    "correct": true,
+    "cost_usd": 0.16219139999999999,
+    "turns": 18
+  },
+  {
+    "instance_id": "django__django-14765",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "raw_answer": "YES",
+    "correct": true,
+    "cost_usd": 0.1150299,
+    "turns": 18
+  },
+  {
+    "instance_id": "django__django-14672",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "raw_answer": "YES",
+    "correct": true,
+    "cost_usd": 0.11642865000000002,
+    "turns": 13
+  },
+  {
+    "instance_id": "django__django-13417",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": true,
+    "cost_usd": 0.15778845,
+    "turns": 18
+  },
+  {
+    "instance_id": "django__django-14787",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "UNKNOWN",
+    "raw_answer": "UNKNOWN",
+    "correct": false,
+    "cost_usd": 0.20909715,
+    "turns": 31
+  },
+  {
+    "instance_id": "django__django-14311",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": true,
+    "cost_usd": 0.12673784999999999,
+    "turns": 14
+  },
+  {
+    "instance_id": "django__django-11433",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": true,
+    "cost_usd": 0.21385105000000004,
+    "turns": 26
+  },
+  {
+    "instance_id": "django__django-11999",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": true,
+    "cost_usd": 0.13616704999999998,
+    "turns": 14
+  },
+  {
+    "instance_id": "django__django-12262",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": true,
+    "cost_usd": 0.09374874999999999,
+    "turns": 6
+  },
+  {
+    "instance_id": "django__django-11603",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": true,
+    "cost_usd": 0.14804390000000003,
+    "turns": 21
+  },
+  {
+    "instance_id": "django__django-14122",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "UNKNOWN",
+    "raw_answer": "UNKNOWN",
+    "correct": false,
+    "cost_usd": 0.20209990000000005,
+    "turns": 31
+  },
+  {
+    "instance_id": "django__django-10999",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": true,
+    "cost_usd": 0.14412575,
+    "turns": 13
+  },
+  {
+    "instance_id": "django__django-12663",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "raw_answer": "NO",
+    "correct": true,
+    "cost_usd": 0.16651345,
+    "turns": 26
+  }
+]

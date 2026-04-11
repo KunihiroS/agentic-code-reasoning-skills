@@ -1,0 +1,57 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-49/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 01886cd..a8ada38 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -416,6 +416,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
+ 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+ 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
++10. **Do not use unverified runtime-environment claims as evidence.** If a behavioral difference between changes is attributed to a specific database version, OS, interpreter version, or library version, that version constraint must be explicitly encoded in the test's skip decorators, setup fixtures, or CI configuration, cited at a specific file:line. A version range or environment assumption that cannot be grounded in the repository is UNVERIFIED and must not determine EQUIVALENT or NOT_EQUIVALENT conclusions.
+ 
+ ### General
+ 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
+
+rationale:
+# Iteration 49 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 85% (17/20)
+- 失敗ケース: 15368, 13821, 11433
+- 失敗原因の分析:
+  - **15368**: Patch B がテストを削除しており、削除されたテストをそのまま counterexample に採用したため誤判定（EQUIV → NOT_EQUIVALENT）
+  - **13821**: 「SQLite 3.9.0–3.25.x という特定バージョン範囲でのみ異なる挙動」を counterexample に使用したが、その環境前提はリポジトリのテストの skip 条件・fixtures・CI 設定に存在しない未検証前提であり、EQUIV → NOT_EQUIVALENT と誤判定
+  - **11433**: 31 ターン消費後に収束失敗（UNKNOWN）
+
+## 改善仮説
+
+13821 の誤判定は「SQLite 3.9.0–3.25.x」という特定バージョン範囲でのみ異なる挙動を counterexample として使ったことが原因である。この環境前提はリポジトリのテストに存在しないにもかかわらず VERIFIED 証拠として扱われた。現行 Guardrail 6 が「ソース非公開の関数挙動の推測を禁止」しているように、実行環境バージョン固有の挙動の仮定も「未検証前提」として禁止する Guardrail を追加することで、この種の誤判定を防げる。
+
+## 変更内容
+
+`## Guardrails` → `### From the paper's error analysis` セクションの末尾（項目 6 の直後）に項目 10 を追加した（3 行）。
+
+> 10. **Do not use unverified runtime-environment claims as evidence.** If a behavioral difference between changes is attributed to a specific database version, OS, interpreter version, or library version, that version constraint must be explicitly encoded in the test's skip decorators, setup fixtures, or CI configuration, cited at a specific file:line. A version range or environment assumption that cannot be grounded in the repository is UNVERIFIED and must not determine EQUIVALENT or NOT_EQUIVALENT conclusions.
+
+既存行の変更・削除なし。新規セクション追加なし。
+
+## 期待効果
+
+- **13821（改善見込み）**: 「SQLite 3.9.0–3.25.x」のバージョン前提が file:line で検証されなければ UNVERIFIED と判定され counterexample として使用不可となる。誤った NOT_EQUIVALENT 結論が防がれ、EQUIVALENT に正しく収束する可能性が高い。
+- **その他ケース（影響軽微）**: Django テストスイートでは環境依存テストは `@skipIf` や `@skipUnlessDBFeature` 等で明示されており、file:line 検証を自然に満たす。真の NOT_EQUIVALENT ケースへの影響はない。
+- **全体予測**: 85%（17/20）→ 90%（18/20）

@@ -1,0 +1,13 @@
+diff --git a/SKILL.md b/SKILL.md
+index 8e79782..e1cdc80 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -187,7 +187,7 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
+     - Change B behavior: [specific output/behavior]
+     - Test outcome same: YES / NO
+ 
+-COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
++COUNTEREXAMPLE (required if claiming NOT EQUIVALENT — identify the specific test where Comparison was DIFFERENT in ANALYSIS above, and build this trace from that claim):
+   Test [name] will [PASS/FAIL] with Change A because [trace from changed code to the assertion or exception — cite file:line]
+   Test [name] will [FAIL/PASS] with Change B because [trace from changed code to the assertion or exception — cite file:line]
+   Therefore changes produce DIFFERENT test outcomes.

@@ -1,0 +1,12 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..4d4cfe4 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -217,6 +217,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- When claiming a test outcome DIFFERS: verify backward — from the test's assertion condition through the causal chain to the code difference — that the divergence between A and B reaches the assertion. Do not conclude DIFFERENT solely because a difference exists somewhere in the call path.
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+ ---

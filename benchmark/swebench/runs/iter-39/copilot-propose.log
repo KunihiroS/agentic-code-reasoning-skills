@@ -1,0 +1,33 @@
+Now I have everything I need. Let me write the proposal.
+
+改善案を `benchmark/swebench/runs/iter-39/proposal.md` に書きました。以下が要点です。
+
+---
+
+## 改善案サマリー
+
+**カテゴリ C: 比較の枠組みを変える**
+
+### 改善仮説
+`DEFINITIONS` セクションに **D3「テスト関連コード差異」** を追加する。
+
+```
+D3: A code difference is TEST-RELEVANT for a given test iff
+    (a) the test's actual inputs cause the changed code path to execute, AND
+    (b) that execution produces a different return value, exception, or
+        externally-visible state that the test's assertions can detect.
+```
+
+`Comparison:` 行の直後に D3(a)(b) への対応根拠（file:line 付き）を SAME/DIFFERENT 両方向で義務化。
+
+### 変更規模
++9行（20行以内）
+
+### なぜ BL-10（Reachability ゲート）と異なるか
+BL-10 は「テストが変更コードに到達するか」（relevant test では常に YES） → 判別力なし  
+D3(a) は「テストの**実際の入力値**が変更コードパスを実行するか」→ **条件分岐内の変更がテスト入力では到達しない場合に NO になりうる**。EQUIV 偽陰性の構造的原因を弁別できる。
+
+### 予測
+- EQUIV: 7/10 → 8〜9/10（false negative 減少）  
+- NOT_EQ: 8/10 維持（D3 は両方向に対称）
+

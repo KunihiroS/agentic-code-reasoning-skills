@@ -1,0 +1,19 @@
+提案を書き直しました。変更内容の要点：
+
+## 新提案の骨子：**カテゴリ C（比較の枠組みを変える）**
+
+**SKILL.md への変更**: Compare checklist に 1 行追加：
+```
+- For each relevant test, trace both changes through to the outcome the test's assertion checks (the value compared, the exception caught, or the state verified); compare A and B at that observable — not at intermediate code differences.
+```
+
+### iter-41/43 との違い（B → C）
+- **iter-41/43（B方向）**: 「次にどこを読むか」（nearest consumer / chain の深度）
+- **今回（C方向）**: 「何を比較単位にするか」（テストのアサーションが検査する観測対象）
+
+### BL-16 との違い
+- **BL-16（失敗）**: `Comparison:` 直前のテンプレート注釈（出力側）
+- **今回**: checklist への探索指針追加（探索行動側、Claimsを書く前に作用）
+
+根本的な問題である「中間コード差異で止まり観測対象まで追わない」を、探索ゴールの明確化（C方向）によって解決します。EQUIV/NOT_EQ 双方に対称に作用します。
+

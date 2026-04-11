@@ -1,0 +1,15 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7cad2e2..fc60b6b 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -153,7 +153,9 @@ D2: The relevant tests are:
+     (a) Fail-to-pass tests: tests that fail on the unpatched code and are
+         expected to pass after the fix — always relevant.
+     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
+-        only if the changed code lies in their call path.
++        only if the changed code lies in their call path. Verify this by
++        tracing the test's execution; do not assume relevance from file
++        proximity, shared module, or test-level changes such as deletion.
+     To identify them: search for tests referencing the changed function, class,
+     or variable. If the test suite is not provided, state this as a constraint
+     in P[N] and restrict the scope of D1 accordingly.

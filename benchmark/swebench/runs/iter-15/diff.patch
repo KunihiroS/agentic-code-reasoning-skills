@@ -1,0 +1,15 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..c292b09 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -157,6 +157,10 @@ D2: The relevant tests are:
+     To identify them: search for tests referencing the changed function, class,
+     or variable. If the test suite is not provided, state this as a constraint
+     in P[N] and restrict the scope of D1 accordingly.
++D3: A test that is deleted or disabled by a patch has outcome ABSENT for that patch.
++    ABSENT == ABSENT counts as identical outcomes (not a difference).
++    ABSENT vs PASS or ABSENT vs FAIL is a difference only when one patch removes
++    the test while the other keeps it present and running.
+ 
+ PREMISES:
+ P1: Change A modifies [file(s)] by [specific description]

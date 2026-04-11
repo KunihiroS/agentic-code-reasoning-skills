@@ -1,0 +1,17 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7a8ed11..d37b212 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -99,9 +99,9 @@ Update this table **in real time during Step 3** — add each row the moment you
+ 
+ For every function or method encountered on a relevant code path, record:
+ 
+-| Function/Method | File:Line | Behavior (VERIFIED) |
+-|-----------------|-----------|---------------------|
+-| [name] | [file:N] | [actual behavior after reading the definition] |
++| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to test |
++|-----------------|-----------|---------------------|-------------------|
++| [name] | [file:N] | [actual behavior after reading the definition] | [which test(s) and why this function is on the relevant path] |
+ 
+ **Rules:**
+ - Read the actual definition. Do not infer behavior from the name.

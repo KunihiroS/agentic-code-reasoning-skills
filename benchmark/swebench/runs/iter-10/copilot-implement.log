@@ -1,0 +1,52 @@
+Now let me analyze the failure cases in detail:
+
+Let me check previous iteration rationales to understand the history:
+
+Now I have a complete picture. Let me analyze the 4 failures in iter-9:
+
+1. **15368** (7 turns): Agent treats deleted tests as "different outcomes" → NOT_EQUIVALENT
+2. **13821** (21 turns): Agent speculates about hypothetical SQLite versions → NOT_EQUIVALENT  
+3. **15382** (20 turns): Agent makes an incorrect code trace → NOT_EQUIVALENT
+4. **14787** (16 turns): Agent misses a real difference (`wraps()` attributes) → EQUIVALENT
+
+Now I have a clear picture. Let me analyze all 4 failures:
+
+- **15368**: Agent treats **deleted tests** as "different outcomes" (PASS vs not-run) → NOT_EQUIVALENT ❌
+- **13821**: Agent speculates about **hypothetical SQLite environments** → NOT_EQUIVALENT ❌  
+- **15382**: Agent makes an **incorrect code trace** on Patch B's loop control flow → NOT_EQUIVALENT ❌
+- **14787**: Agent misses assertions from `wraps()` attributes beyond `__name__` → EQUIVALENT ❌
+
+Pattern in 3/4 false negatives: agent finds a *theoretical* difference but doesn't verify it manifests in actual test assertions. Case 15368 is uniquely fixable: iter-6 attempted "test deletion = scope change" but was too broad. A more precise note — "absent tests have no outcome, not a different outcome" — can fix 15368 without the iter-6 regression risk for 14787.
+
+Good. Now let me create the iter-10 directory and files:
+
+Now create the rationale.md:
+
+完了しました。以下を実施しました：
+
+---
+
+## 変更サマリー
+
+### 失敗分析（iter-9: 80%, 16/20）
+| ケース | 真値 | 予測 | 根本原因 |
+|--------|------|------|---------|
+| 15368 | EQUIV | NOT_EQUIV | 削除されたテストを「結果が異なる」と誤判定 |
+| 13821 | EQUIV | NOT_EQUIV | 仮説的SQLiteバージョンで推論（投機的） |
+| 15382 | EQUIV | NOT_EQUIV | Patch Bのループ制御フローを誤トレース |
+| 14787 | NOT_EQUIV | EQUIV | wraps()が設定する属性の差分を見落とし |
+
+### 改善仮説（1仮説・最小diff）
+**D2定義に「削除されたテストは結果を持たない（PASS/FAILいずれでもない）」注記を4行追加**
+
+- iter-6の"scope change"文言より精密: 「共通テストのみ評価」ではなく「不在テストは結果なし」に限定
+- 14787（両パッチともテストを保持）への影響なし → iter-6の回帰リスクを回避
+
+### 成果物
+- `SKILL.md` — 4行追加（D2 Note）
+- `benchmark/swebench/runs/iter-10/rationale.md` — 変更理由
+- `benchmark/swebench/runs/iter-10/diff.patch` — 差分
+- `benchmark/swebench/runs/iter-10/SKILL.md.snapshot` — スナップショット
+
+**期待スコア**: 17/20 (85%)
+

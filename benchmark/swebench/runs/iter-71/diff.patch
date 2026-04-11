@@ -1,0 +1,20 @@
+diff --git a/SKILL.md b/SKILL.md
+index a8ada38..af96da1 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -172,13 +172,13 @@ For each relevant test:
+                 because [trace through changed code to the assertion or exception — cite file:line]
+   Claim C[N].2: With Change B, this test will [PASS/FAIL]
+                 because [trace through changed code to the assertion or exception — cite file:line]
+-  Comparison: SAME / DIFFERENT outcome
++  Comparison: SAME — [state how both changes converge to the same observable outcome] / DIFFERENT outcome
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+   Test: [name]
+   Claim C[N].1: With Change A, behavior is [description]
+   Claim C[N].2: With Change B, behavior is [description]
+-  Comparison: SAME / DIFFERENT outcome
++  Comparison: SAME — [state how both changes converge to the same observable outcome] / DIFFERENT outcome
+ 
+ EDGE CASES RELEVANT TO EXISTING TESTS:
+ (Only analyze edge cases that the ACTUAL tests exercise)

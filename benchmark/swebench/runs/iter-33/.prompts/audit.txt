@@ -1,0 +1,73 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-33/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 520b7d3..c79bd90 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -155,7 +155,12 @@ D2: The relevant tests are:
+     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
+         only if the changed code lies in their call path.
+     To identify them: search for tests referencing the changed function, class,
+-    or variable. If the test suite is not provided, state this as a constraint
++    or variable. When multiple tests are found, read first those whose
++    assertions directly observe the change's primary output — its return value,
++    raised exception, or directly modified attribute — before tests that only
++    transitively invoke the changed code through intermediate layers. Do not
++    expand the search to callers or wrappers not referenced by tests.
++    If the test suite is not provided, state this as a constraint
+     in P[N] and restrict the scope of D1 accordingly.
+ 
+ PREMISES:
+
+rationale:
+# Iteration 33 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 85%（17/20）
+- 失敗ケース: django__django-15368, django__django-13821, django__django-15382
+- 失敗原因の分析:
+  - 3件はすべて正解が EQUIVALENT であるにもかかわらず NOT_EQUIVALENT と誤判定した。
+  - 共通パターン: コード差分（意味的な変更）を発見した後、アサーションレベルまでの追跡を完了せずに NOT_EQUIVALENT と結論した。
+  - D2 で複数の relevant test が見つかった際、偶然に「変更コードを参照するが assertion まで遠いテスト」を先に読んだことで、コード差分発見→テスト失敗というショートカット推論が起きたと分析される。
+
+## 改善仮説
+
+D2 に「複数 relevant test が見つかった場合の読む順序の優先基準」を追加することで、エージェントが変更の primary output（return value、raised exception、直接変更される attribute）を最初に assert するテストを先に読むようになる。
+
+これにより：
+- **True EQUIV の場合**: primary output を assert するテストを最初に読むことで「assertion レベルでは両変更の出力が等しい」という根拠が最初から確立され、コード差分発見後のショートカット誤判定が防止される。
+- **True NOT_EQ の場合**: 最も決定的な証拠を持つテストが最初に読まれるため、NOT_EQ 判定の確信度が向上する。
+
+## 変更内容
+
+`## Compare` セクション内の Certificate template の DEFINITIONS D2 ブロックにおいて、`To identify them:` の文の後（`If the test suite is not provided` の前）に 4 行を追加した。
+
+**追加内容**:
+```
+When multiple tests are found, read first those whose
+assertions directly observe the change's primary output — its return value,
+raised exception, or directly modified attribute — before tests that only
+transitively invoke the changed code through intermediate layers. Do not
+expand the search to callers or wrappers not referenced by tests.
+```
+
+変更・削除: 0 行。追加: 4 行。
+
+## 期待効果
+
+- **EQUIV 正答率**: 7/10 → 8〜9/10 への改善を期待。失敗 3 件（15368, 13821, 15382）はいずれも「コード差分発見後にアサーション追跡前に NOT_EQ 結論」パターンであり、primary output を assert するテストを優先することで誤判定が修正される可能性が高い。
+- **NOT_EQ 正答率**: 現状維持を期待。Priority 指示はテストを読む順序の変更であり、到達自体を妨げない。むしろ最も決定的な証拠を持つテストが最初に読まれるため、判定の確信度が向上する可能性がある。

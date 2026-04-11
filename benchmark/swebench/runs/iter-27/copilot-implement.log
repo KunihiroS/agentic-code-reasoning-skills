@@ -1,0 +1,9 @@
+Now I have all the context. Let me make both changes:
+
+完了しました。
+
+**SKILL.md への変更**: `### Compare checklist` に1項目を追加しました（proposal.md 指定通り）:
+- 既存の「When a semantic difference is found...」と「Provide a counterexample...」の間に backward 検証の指示を挿入
+
+**rationale.md の作成**: `Objective.md` のフォーマット（前イテレーションの分析 / 改善仮説 / 変更内容 / 期待効果）に従い、proposal.md の内容を要約して作成しました。
+

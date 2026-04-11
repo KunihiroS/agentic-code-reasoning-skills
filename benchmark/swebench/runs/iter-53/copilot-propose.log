@@ -1,0 +1,29 @@
+Now I have enough information to write the proposal. Let me create it.
+
+改善案を `benchmark/swebench/runs/iter-53/proposal.md` に書きました。
+
+---
+
+## 提案サマリー
+
+**カテゴリ A（逆方向推論）** — Compare テンプレートの `because` 節の起点変更
+
+### 仮説
+EQUIV 偽陰性（15368, 13821）の根本原因は「変更コード起点・前向きトレース」。エージェントが diff でコード差分を発見した時点で assertion まで追わずに `DIFFERENT` と即断する。
+
+### 変更内容（追加 0 行）
+C[N].1 / C[N].2 の `because` 節のみ（2行テキスト置換）：
+
+| | 現在 | 変更後 |
+|---|---|---|
+| 起点 | `trace through changed code …` | `trace from the assertion or exception back …` |
+| 方向 | 変更コード → assertion（前向き） | assertion → 変更コード（逆向き） |
+
+### ブラックリスト照合
+- BL-14（逆方向推論）と異なる：BL-14 はチェックリスト（advisory）かつ非対称。本提案はテンプレート（必須）かつ C[N].1/C[N].2 両方に対称適用。
+- BL-6（Guardrail 4 対称化）と異なる：制約追加ではなく既存 `because` 節の意味論変更。
+
+### 予測
+- EQUIV: 80% → 85〜90%（偽陰性 1〜2 件改善）  
+- NOT_EQ: 90% 維持
+

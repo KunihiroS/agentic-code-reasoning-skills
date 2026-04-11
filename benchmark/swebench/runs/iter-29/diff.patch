@@ -1,0 +1,13 @@
+diff --git a/SKILL.md b/SKILL.md
+index bece161..ee8dd5c 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -190,8 +190,6 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
+ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+   Test [name] will [PASS/FAIL] with Change A because [trace — cite file:line]
+   Test [name] will [FAIL/PASS] with Change B because [trace — cite file:line]
+-  By P[N]: this test checks [assertion/behavior stated in P3 or P4], and the
+-           divergence above causes that assertion to produce a different result.
+   Therefore changes produce DIFFERENT test outcomes.
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):

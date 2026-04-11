@@ -1,0 +1,91 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-17/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..b20769d 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -168,6 +168,7 @@ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
+   Test: [name]
++  Changed code on this test's execution path: [YES — cite file:line / NO — mark and skip to next test]
+   Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                 because [trace through code — cite file:line]
+   Claim C[N].2: With Change B, this test will [PASS/FAIL]
+
+rationale:
+# Iteration 17 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 65% (13/20)
+- 失敗ケース: django__django-15368, django__django-13821, django__django-15382, django__django-13417, django__django-14787, django__django-11433, django__django-14122
+- 失敗原因の分析:
+
+  **失敗パターンの内訳:**
+  - EQUIVALENT → NOT_EQUIVALENT（3 件）: 15368, 13821, 15382
+  - NOT_EQUIVALENT → EQUIVALENT（1 件）: 13417
+  - NOT_EQUIVALENT → UNKNOWN（3 件）: 14787, 11433, 14122（いずれも 31 ターン枯渇）
+
+  **iter-16 の変更（COUNTEREXAMPLE への Call path 追加）の評価:**
+  - iter-16 は COUNTEREXAMPLE ブロックに `Call path from test to changed code: [test_file:line → ... → changed_file:line]` を追加した。
+  - この変更が 11433・14122 を新たに UNKNOWN（31 ターン）に転落させ、14787 も UNKNOWN に悪化させた。
+  - また 13821 が EQUIVALENT → NOT_EQUIVALENT に、13417 が NOT_EQUIVALENT → EQUIVALENT に回帰した。
+  - 一方で 12663 は UNKNOWN → 正解 NOT_EQUIVALENT に改善されたが、ネットでは +1 修正 -4 回帰。
+  - iter-16 の SKILL.md は 65% というスコア低下によりロールバックされ、現在の SKILL.md は iter-14 状態（80%）に戻っている。
+
+  **Call path 要件の失敗メカニズム（iter-16 の教訓）:**
+  - **ターン枯渇**: 複雑なコードベースで `test_file:line → ... → changed_file:line` という呼び出しチェーン全体を追跡させると、31 ターンに達しても結論が出ない。
+  - **誤った NOT_EQUIVALENT 判定の抑制に失敗**: 呼び出しチェーンを要求しても EQUIVALENT → NOT_EQUIVALENT の誤判定（15368, 13821, 15382）は解決しなかった。  
+  - **誤った EQUIVALENT 判定を誘発**: Call path が見つからない場合、エージェントが「テストが変更コードに到達しない → 差異なし → EQUIVALENT」という誤推論を行う可能性があり、13417 の回帰を招いた可能性がある。
+
+  **持続的失敗の根本原因（iter-14 以来）:**
+  - **15368・15382**: エージェントがコードの差異を発見した後、その差異を実際に通るテストがあるかを検証せずに NOT_EQUIVALENT と結論付ける「浅い反例」問題。PASS/FAIL トレースを開始する前の段階で、対象テストが変更コードパスに到達するかどうかの確認ステップが抜けている。
+  - **14787**: NOT_EQUIVALENT なのに誤判定。差異は発見するが「テスト結果への影響なし」と誤結論する別パターン。
+
+## 改善仮説
+
+**compare テンプレートの「ANALYSIS OF TEST BEHAVIOR」内の per-test 分析ブロックに、PASS/FAIL トレース開始前の 1 行の到達性確認フィールド `Changed code on this test's execution path: [YES — cite file:line / NO — mark and skip to next test]` を追加することで、変更コードパスに到達しないテストへの不要なトレースを省き、かつ到達しないテストを反例として使うことを構造的に防止できる。**
+
+根拠:
+- iter-16 の失敗は「COUNTEREXAMPLE ブロックで呼び出しチェーン全体を要求した」ことに起因する。チェーン全体の追跡はターンを大量消費する。これに対し、到達性確認フィールドは「テストファイルで変更された関数/メソッド名を検索し、呼び出しが存在するかを 1 回で確認する」という単一操作であり、ターン消費が最小限。
+- 到達性確認を PASS/FAIL トレース「前」に置くことで、NO の場合は次のテストへスキップできる。ターン枯渇の主因だった「到達しないテストへの詳細トレース」が構造的に回避される。
+- COUNTEREXAMPLE ブロックを変更しないため、iter-16 で観察された「Call path が見つからない → EQUIVALENT」という誤推論の誘発が起きない（COUNTEREXAMPLE は引き続き reason のみを要求）。
+- 到達性の一次確認（YES/NO + 1 cite）はチェーン全体の追跡より認知負荷が低く、「変更コードの呼び出しがテストファイルに存在するか」という単純な検索で完結する。
+- プログラミング言語・フレームワークに依存しない汎用的な手法であり、Django 固有ではない。
+
+## 変更内容
+
+compare テンプレートの `ANALYSIS OF TEST BEHAVIOR` → `For each relevant test:` ブロック内、`Test: [name]` の次行に 1 行追加:
+
+```diff
+ For each relevant test:
+   Test: [name]
++  Changed code on this test's execution path: [YES — cite file:line / NO — mark and skip to next test]
+   Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                 because [trace through code — cite file:line]
+```
+
+変更規模: 1 行追加（≤ 20 行の制約内）。
+
+## 期待効果
+
+- **15368・15382**: PASS/FAIL トレース前に到達性確認を行うことで、エージェントは変更コードパスに実際に到達するテストのみを分析対象とする。到達しないテストを基に NOT_EQUIVALENT と主張することが構造的に防止される。
+- **11433・14122**: 到達性確認が単一操作であるため、iter-16 のようなターン枯渇は生じない。これらは iter-14 状態では正解だった（NOT_EQUIVALENT 正解）ため、到達性確認フィールドが余計な負荷にならなければ再び正解となることを期待する。
+- **13821**: iter-16 で回帰したが根本原因は同じ「浅い反例」問題。到達性確認により改善を期待する。
+- **13417**: iter-16 の COUNTEREXAMPLE への介入が回帰を誘発したが、今回の変更は COUNTEREXAMPLE ブロックを触らないため、iter-14 状態へ回帰することを期待する。
+- **14787**: 本改善の主対象ではないが、到達性確認が差異の影響範囲をより正確に特定させる効果があるかもしれない。
+- **回帰リスク**: 変更は ANALYSIS セクションの per-test テンプレートに 1 フィールドを追加するのみ。EQUIVALENT 判断（NO COUNTEREXAMPLE EXISTS）・他モード・他ステップには一切影響しない。到達性の一次確認はすでに compare checklist の「Trace each test through both changes separately before comparing」と方向性が一致しており、新しい概念の導入ではなく既存要件の構造的前置きである。

@@ -1,0 +1,29 @@
+# Iteration 32 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 85% (17/20)
+- 失敗ケース: django__django-15368, django__django-13821, django__django-15382
+- 失敗原因の分析: 3件すべて EQUIV ケースで NOT_EQUIVALENT と誤判定（偽陽性）。各ケースでエージェントは変更コードのパスに意味的差異を発見したが、その差異が実際のテスト出力に伝播するかどうかの検証が不十分だった。特に、変更された関数が内部ヘルパーや adapter を経由してのみテストされているケースで、直接参照テストが少なく「差異が観測されるテストがない」と判断できずに NOT_EQ と結論づけた。
+
+## 改善仮説
+
+D2 のテスト検索範囲を、変更シンボルを直接参照するテストだけでなく、その oracle-bearing caller（テスト内でアサーションを持つ最近接の呼び出し元）まで拡張することで、relevant tests の取りこぼしを減らし、EQUIV / NOT_EQ 両方の正答率を改善できる。
+
+直接参照テストが sparse な場合に caller / wrapper / helper 経由のテストを追加で探索することで、変更の影響が observable outputs まで伝播するかどうかをより確実に検証できる。差異が伝播する場合は正しく NOT_EQ と判定でき、伝播しない場合は EQUIV を正しく確認できる。
+
+## 変更内容
+
+Compare モードの Certificate template 内 D2 の `To identify them:` 段落に 2 文を追加した。既存の文言は変更していない。
+
+追加箇所（SKILL.md の D2 定義内）:
+- 追加前: `search for tests referencing the changed function, class, or variable.` の後、`If the test suite is not provided` の前
+- 追加内容: `If direct test references are sparse, also search for callers, wrappers, or helpers of the changed symbol and find tests exercising those callers — prioritizing the nearest caller whose tests assert on observable outputs (return values, raised exceptions, or mutated state).`
+
+変更規模: 追加 2 文（約 35 語）、変更・削除 0
+
+## 期待効果
+
+- **EQUIV 正答率の改善（主効果）**: 直接参照テストが少ない場合に caller 経由のテストを発見することで、変更の影響が観測できるテストセットを補完できる。偽陽性（EQUIV を NOT_EQ と誤判定）が減少すると予測。85% → 90〜95%（+1〜2件）。
+- **NOT_EQ 正答率の維持（副効果）**: 発火条件が「直接参照が sparse なとき」であり、NOT_EQ では既に直接参照テストで差異が確認されているケースが多いため、影響は中立〜正の方向。10/10 維持を予測。
+- **対称性**: 追加テストが差異を示す → NOT_EQ の証拠強化。差異を示さない → EQUIV の証拠強化。どちらの結論にも等しく作用する。

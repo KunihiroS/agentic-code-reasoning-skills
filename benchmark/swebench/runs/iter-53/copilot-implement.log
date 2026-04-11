@@ -1,0 +1,17 @@
+Now let me check iter-35's scores to fill in the rationale properly.
+
+Now I'll make both changes in parallel:
+
+Let me verify the SKILL.md change looks correct:
+
+完了しました。
+
+**変更内容:**
+
+1. **SKILL.md**（2行テキスト置換）:
+   - C[N].1 / C[N].2 の `because` 節を「変更コード起点・前向き」→「assertion 起点・逆向き」に変更
+
+2. **benchmark/swebench/runs/iter-53/rationale.md** を新規作成（Objective.md のフォーマット準拠）
+
+変更規模: 2行置換のみ（hard limit 5行以内 ✓）、新規行・セクション追加なし。
+

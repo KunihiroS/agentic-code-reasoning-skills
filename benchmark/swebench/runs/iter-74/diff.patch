@@ -1,0 +1,13 @@
+diff --git a/SKILL.md b/SKILL.md
+index e1cdc80..5aa649e 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -194,7 +194,7 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT — identify the specific te
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+   If NOT EQUIVALENT were true, a counterexample would look like:
+-    [describe concretely: what test, what input, what diverging behavior]
++    [describe concretely: what test, which execution path within that test reaches the semantic difference, what diverging behavior at the assertion]
+   I searched for exactly that pattern:
+     Searched for: [whether the semantic differences between A and B propagate to a test assertion — which differences were checked and which assertion points they were traced against]
+     Found: [result — cite file:line, or NONE FOUND with search details]

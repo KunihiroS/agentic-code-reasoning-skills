@@ -1,0 +1,8 @@
+Now I'll make both changes in parallel:
+
+完了しました。
+
+1. **SKILL.md**: Guardrail 2 を修正 — `, reaching the assertion or condition that directly determines PASS or FAIL,` を挿入し、末尾の `PASS or FAIL` を `either outcome` に変更。
+
+2. **rationale.md**: `Objective.md` のフォーマット（前イテレーションの分析・改善仮説・変更内容・期待効果）に従い作成。
+

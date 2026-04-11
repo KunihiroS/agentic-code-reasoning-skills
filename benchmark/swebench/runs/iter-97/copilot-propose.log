@@ -1,0 +1,12 @@
+Now I have enough context. Let me create the proposal.
+
+提案を作成しました。
+
+**要約**:
+
+- **カテゴリ B**（情報の取得方法を改善する）を選択
+- **仮説**: Step 4 の反実仮想チェック（"if this trace were wrong..."）は現状、例外処理/分岐フローにしか適用されず、`compare` モードで最重要なトレース対象——直接変更された関数——に使われていない
+- **変更**: 既存の1行に `, and for any function directly modified between the compared changes (in \`compare\` mode)` を追加するのみ
+- **効果**: EQUIV・NOT_EQ 両方向で微妙な差異の発見精度が上がる（Guardrail #4 対応の失敗を低減）
+- **変更規模**: 1行（hard limit 5行に対し余裕4行）
+

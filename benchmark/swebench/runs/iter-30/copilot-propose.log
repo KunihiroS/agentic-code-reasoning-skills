@@ -1,0 +1,34 @@
+分析完了。提案を作成します。
+
+以下が改善提案の要約です：
+
+---
+
+## 提案概要 (iter-30)
+
+**カテゴリ: F — 原論文のエラー分析知見の反映**
+
+### 改善仮説
+
+EQUIV 偽陽性（15368, 13821, 15382）の根本原因は「コード差異発見 → 即 NOT_EQUIVALENT」という不完全な推論チェーン。Guardrail 5 の「incomplete chain」原則を compare モード特化で拡張し、**「関数レベルの差異が downstream で吸収されてテストアサーションに届かない」** ケースを明示的に確認させる。
+
+### 具体的な変更
+
+Guardrail 5 の末尾に 2 文追加（1〜2 行）:
+
+> For `compare` mode: when a semantic difference is found between Change A and Change B, verify the difference is not absorbed or normalized by downstream code before reaching the test assertion — a function-level difference does not guarantee a different test outcome.
+
+### なぜ安全か
+
+| 懸念 | 判定 | 理由 |
+|------|------|------|
+| BL-2 (NOT_EQ 立証責任引き上げ) | **PASS** | COUNTEREXAMPLE ブロック非変更。Guardrail は結論要件ではなく探索中の確認促進 |
+| BL-9 (メタ認知自己チェック) | **PASS** | 自己評価ではなくコードを読む具体的行動を促す |
+| 共通原則 #1 (非対称操作) | **PASS** | コード差異発見時に EQUIV・NOT_EQ 双方向に等しく適用 |
+
+### 予測スコア
+
+- EQUIV: 70% → 90%（2〜3 ケース改善）
+- NOT_EQ: 80% → 変化なし
+- **総合: 75% → 85%**
+

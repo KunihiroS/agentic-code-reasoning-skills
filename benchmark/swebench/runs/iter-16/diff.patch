@@ -1,0 +1,12 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..8545627 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -190,6 +190,7 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
+ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+   Test [name] will [PASS/FAIL] with Change A because [reason]
+   Test [name] will [FAIL/PASS] with Change B because [reason]
++  Call path from test to changed code: [test_file:line → ... → changed_file:line]
+   Therefore changes produce DIFFERENT test outcomes.
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):

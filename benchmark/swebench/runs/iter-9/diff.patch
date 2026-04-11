@@ -1,0 +1,24 @@
+diff --git a/SKILL.md b/SKILL.md
+index 01b0374..ae8211a 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -172,6 +172,9 @@ For each relevant test:
+               Change A and Change B produce different values or behavior.
+     A at [file:line]: [specific value or behavior — VERIFIED by reading source]
+     B at [file:line]: [specific value or behavior — VERIFIED by reading source]
++    Propagation: Does this divergence reach the test assertion?
++      Trace from divergence point to the test assertion that would detect this difference.
++      If no assertion receives a changed value: Comparison is SAME.
+     (If values are identical at every traced point through the test assertion:
+      Comparison is SAME — omit Claim below)
+   Claim C[N]: Test will [PASS with A / FAIL with B] or [FAIL with A / PASS with B]
+@@ -183,6 +186,9 @@ For pass-to-pass tests (if changes could affect them differently):
+   Divergence: Where in this test's code path do A and B produce different values?
+     A at [file:line]: [value or behavior — VERIFIED]
+     B at [file:line]: [value or behavior — VERIFIED]
++    Propagation: Does this divergence reach the test assertion?
++      Trace from divergence point to the test assertion that would detect this difference.
++      If no assertion receives a changed value: Comparison is SAME.
+     (If identical at every traced point: Comparison is SAME — omit Claim below)
+   Claim C[N]: behavior differs because [trace from divergence to assertion — cite file:line]
+   Comparison: SAME / DIFFERENT outcome

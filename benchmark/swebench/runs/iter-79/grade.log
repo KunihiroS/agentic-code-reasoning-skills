@@ -1,0 +1,7 @@
+Graded 20 results → /home/kunihiros/agentic-code-reasoning-skills/benchmark/swebench/runs/iter-79/grades.json
+
+with_skill:
+  Overall:  16/20 = 80.0%
+  EQUIV:    6/10 = 60.0%
+  NOT_EQ:   10/10 = 100.0%
+  Cost:     $0.00

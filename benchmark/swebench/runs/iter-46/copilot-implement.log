@@ -1,0 +1,14 @@
+Now I have all the context. Let me make both changes:
+
+Let me verify the SKILL.md change looks correct:
+
+両方の変更が完了しました。
+
+**実施内容:**
+
+1. **SKILL.md**: Guardrail 5 と 6 の間に Guardrail 5a を追加（3行追加のみ、既存部分に変更なし）
+   - `compare` モード限定で、`Observed` が中間値の場合に downstream consumer を 1 hop 読んでから `Comparison:` を書くよう指示
+
+2. **benchmark/swebench/runs/iter-46/rationale.md**: Objective.md のフォーマット（前イテレーション分析・改善仮説・変更内容・期待効果）に従い新規作成
+   - iter-45 の 70%（14/20）から、EQUIV 偽陰性3件（15368, 13821, 15382）の改善を見込む内容
+

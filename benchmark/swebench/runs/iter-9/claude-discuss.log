@@ -1,0 +1,17 @@
+`benchmark/swebench/runs/iter-9/discussion.md` を作成しました。
+
+### レビュー結果サマリー
+
+**承認: NO（条件付き）**
+
+主要な評価ポイント:
+
+1. **学術的妥当性**: PIE フレームワーク（Voas & Miller, 1992）の Propagation 条件に正確に対応しており、理論的基盤は堅固。mutation testing 研究でも「infection が propagation しない」ケースが精度を歪める主因として知られている。
+
+2. **カテゴリ選択**: iter-8 に続きカテゴリ F の連続使用だが、iter-8 で導入した Divergence 構造の未完成部分を補完する位置づけとして許容範囲内。
+
+3. **EQUIV/NOT_EQ 影響分析**: EQUIV 方向には「収束判定のオフランプ」という新メカニズムで強い正の効果。しかし NOT_EQ 方向では「cite file:line at each step」がターン消費を増やし、既にターン枯渇中の UNKNOWN 4 件を悪化させるリスクがある。
+
+4. **ブラックリスト照合**: BL-2, BL-6, BL-8, BL-10 のいずれとも本質的に異なる。ただし共通原則 #5（過剰規定）への軽微な抵触あり。
+
+5. **修正要求**: 「Trace from divergence to assertion — cite file:line at each step」を軽量化し、全中間ステップの引用ではなくアサーション到達の結論に焦点を当てる文言に変更すること。これにより NOT_EQ ターンオーバーヘッドを最小化できる。

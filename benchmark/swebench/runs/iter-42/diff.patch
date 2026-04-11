@@ -1,0 +1,28 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..8c46305 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -169,15 +169,19 @@ ANALYSIS OF TEST BEHAVIOR:
+ For each relevant test:
+   Test: [name]
+   Claim C[N].1: With Change A, this test will [PASS/FAIL]
+-                because [trace through code — cite file:line]
++                because [trace through code — for each function cited, read its definition
++                and state its verified effect on this test's specific inputs at file:line,
++                not merely a summary of the diff]
+   Claim C[N].2: With Change B, this test will [PASS/FAIL]
+-                because [trace through code — cite file:line]
++                because [trace through code — for each function cited, read its definition
++                and state its verified effect on this test's specific inputs at file:line,
++                not merely a summary of the diff]
+   Comparison: SAME / DIFFERENT outcome
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+   Test: [name]
+-  Claim C[N].1: With Change A, behavior is [description]
+-  Claim C[N].2: With Change B, behavior is [description]
++  Claim C[N].1: With Change A, behavior is [description — verified at file:line]
++  Claim C[N].2: With Change B, behavior is [description — verified at file:line]
+   Comparison: SAME / DIFFERENT outcome
+ 
+ EDGE CASES RELEVANT TO EXISTING TESTS:

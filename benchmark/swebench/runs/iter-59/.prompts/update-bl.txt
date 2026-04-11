@@ -1,0 +1,16 @@
+今回のイテレーション(iter-59)で親 iter-31 (85%) から SKILL.md を改善したが、スコアが 80% に低下した。
+
+以下のファイルを参照し、failed-approaches.md に新しいエントリを追記してください:
+- benchmark/swebench/runs/iter-59/proposal.md（改善案）
+- benchmark/swebench/runs/iter-59/rationale.md（変更理由）
+- benchmark/swebench/runs/iter-59/diff.patch（実際の変更差分）
+
+追記フォーマット（既存エントリに倣うこと）:
+### BL-{次の番号}: {変更の要約}
+- 試行: iter-59 (親: iter-31)
+- 内容: {何を変えたか}
+- 結果: スコア 85% → 80%
+- 原因: {なぜスコアが下がったか}
+- Fail Core: {この失敗の本質は何か}
+
+また、共通の失敗パターンに新たな原則を追加すべきか検討し、必要なら追記せよ。

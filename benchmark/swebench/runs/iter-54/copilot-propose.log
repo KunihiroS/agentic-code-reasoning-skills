@@ -1,0 +1,35 @@
+Let me now check docs/design.md and iter-41's rationale for additional context:
+
+Now I have enough context. Let me look at the iter-39 SKILL.md Guardrail section one more time, then write the proposal:
+
+Now I have a complete picture. Let me write the proposal:
+
+改善案を `benchmark/swebench/runs/iter-54/proposal.md` に作成しました。概要：
+
+---
+
+## 提案概要
+
+**カテゴリ E（表現・フォーマット改善）**: Guardrail 5 の「downstream code」という曖昧な用語を精緻化。
+
+### 変更内容（既存行への文言追加のみ、追加行数 0）
+
+**変更前:**
+> verify that downstream code does not already handle the edge case or condition you identified.
+
+**変更後:**
+> verify that downstream code does not already handle the edge case or condition you identified — in `compare` mode, callers on the test call path are downstream, not just callees.
+
+---
+
+### 仮説
+
+`downstream` が「callee（呼び出し先）」と誤解されているため、変更関数の **caller**（テスト call path 上の呼び出し元）が差分を吸収するかの確認が省略されている。用語を明確化することで、iter-39 の checklist 追加と Guardrail の両面から「caller 確認」が強化される。
+
+### 効果予測
+- **EQUIV**: `13821` (EQUIV→NOT_EQ) が改善見込み (+1)
+- **NOT_EQ**: 閾値操作なし、回帰リスク極小
+
+### ブラックリスト整合
+BL-23（checklist への義務追加）・BL-26（Guardrail 5 への双方向義務追加）と近接するが、いずれも**新規 verify 義務ではなく用語定義の明確化**として差別化。
+

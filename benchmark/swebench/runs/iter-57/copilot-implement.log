@@ -1,0 +1,6 @@
+完了しました。
+
+**SKILL.md**: D2 ブロックから iter-33 追加の 5 行（テスト読解優先順序 ＋ `Do not expand the search to callers or wrappers not referenced by tests.`）を削除。
+
+**rationale.md**: Objective.md のフォーマット（前回分析・改善仮説・変更内容・期待効果）に従い作成。
+

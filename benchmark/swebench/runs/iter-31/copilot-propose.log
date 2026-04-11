@@ -1,0 +1,36 @@
+Now I have enough to write the proposal. Let me create the iter-31 directory and proposal.
+
+Now I have all the information needed. Let me write the proposal.
+
+改善案を `benchmark/swebench/runs/iter-31/proposal.md` に作成しました。
+
+---
+
+## 提案サマリー
+
+**カテゴリ E**（表現・フォーマット改善） — Guardrail 2 の終着点明示
+
+### 改善仮説
+
+EQUIV 偽陽性（15368, 13821）の根本原因は、エージェントがコードパス上の差分を発見した時点でトレースを打ち切り「コード差分 → テスト結果相違」の推論ジャンプを行うこと。現行 Guardrail 2 は「コードパスをトレースせよ」と言うがトレースの**終着点**を明示していない。
+
+### 変更（1行、+8語）
+
+```diff
+- Trace each test through the relevant code path before asserting PASS or FAIL.
++ Trace each test through the relevant code path, reaching the assertion or
++ condition that directly determines PASS or FAIL, before asserting either outcome.
+```
+
+### ブラックリスト照合
+
+- Guardrail 2 を直接変更した BL 項目なし
+- BL-11（mechanism 列挙）とは異なり、種別リストを一切含まない
+- BL-9 のような自己評価フィールドでなく、プロセス要件の明確化
+
+### 予測効果
+
+- EQUIV 正答率: 70% → 80〜90%（+1〜2件）
+- NOT_EQ 正答率: 70% → 中立〜微改善（対称要件のため）
+- 総合: 70% → 75〜85%
+

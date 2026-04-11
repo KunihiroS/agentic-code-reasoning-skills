@@ -1,0 +1,439 @@
+[
+  {
+    "instance_id": "sympy__sympy-18763",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "sympy/printing/latex.py"
+    ],
+    "ground_truth_functions": [
+      "_print_Subs"
+    ],
+    "predicted_files": [
+      "sympy/printing/latex.py"
+    ],
+    "predicted_functions": [
+      "_print_Subs"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "sympy__sympy-18763",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "sympy/printing/latex.py"
+    ],
+    "ground_truth_functions": [
+      "_print_Subs"
+    ],
+    "predicted_files": [
+      "sympy/printing/latex.py",
+      "sympy/printing/latex.py"
+    ],
+    "predicted_functions": [
+      "_print_Subs`",
+      "_print_Subs"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "sympy__sympy-18189",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "sympy/solvers/diophantine.py"
+    ],
+    "ground_truth_functions": [
+      "diophantine"
+    ],
+    "predicted_files": [
+      "/tmp/bench_workspace/worktrees/sympy__sympy-18189/sympy/solvers/diophantine.py",
+      "sympy/solvers/diophantine.py"
+    ],
+    "predicted_functions": [
+      "diophantine",
+      "diophantine"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "sympy__sympy-18189",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "sympy/solvers/diophantine.py"
+    ],
+    "ground_truth_functions": [
+      "diophantine"
+    ],
+    "predicted_files": [
+      "sympy/solvers/diophantine.py"
+    ],
+    "predicted_functions": [
+      "diophantine"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "matplotlib__matplotlib-13989",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/matplotlib/axes/_axes.py"
+    ],
+    "ground_truth_functions": [
+      "hist"
+    ],
+    "predicted_files": [
+      "/home/kunihiros/bench_workspace/worktrees/matplotlib__matplotlib-13989/lib/matplotlib/axes/_axes.py",
+      "/home/kunihiros/bench_workspace/worktrees/matplotlib__matplotlib-13989/lib/matplotlib/axes/_axes.py"
+    ],
+    "predicted_functions": [
+      "Axes.hist",
+      "Axes.hist"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "matplotlib__matplotlib-13989",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/matplotlib/axes/_axes.py"
+    ],
+    "ground_truth_functions": [
+      "hist"
+    ],
+    "predicted_files": [
+      "lib/matplotlib/axes/_axes.py"
+    ],
+    "predicted_functions": [
+      "Axes.hist"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "matplotlib__matplotlib-25311",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/matplotlib/offsetbox.py"
+    ],
+    "ground_truth_functions": [
+      "__init__",
+      "on_motion"
+    ],
+    "predicted_files": [
+      "lib/matplotlib/offsetbox.py"
+    ],
+    "predicted_functions": [
+      "DraggableBase.__getstate__",
+      "DraggableBase.__setstate__"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "matplotlib__matplotlib-25311",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/matplotlib/offsetbox.py"
+    ],
+    "ground_truth_functions": [
+      "__init__",
+      "on_motion"
+    ],
+    "predicted_files": [
+      "lib/matplotlib/offsetbox.py"
+    ],
+    "predicted_functions": [
+      "DraggableBase.__init__"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "sphinx-doc__sphinx-8595",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "sphinx/ext/autodoc/__init__.py"
+    ],
+    "ground_truth_functions": [
+      "get_module_members"
+    ],
+    "predicted_files": [
+      "sphinx/ext/autodoc/__init__.py"
+    ],
+    "predicted_functions": [
+      "ModuleDocumenter.get_object_members"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "sphinx-doc__sphinx-8595",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "sphinx/ext/autodoc/__init__.py"
+    ],
+    "ground_truth_functions": [
+      "get_module_members"
+    ],
+    "predicted_files": [
+      "/home/kunihiros/bench_workspace/worktrees/sphinx-doc__sphinx-8595/sphinx/ext/autodoc/__init__.py"
+    ],
+    "predicted_functions": [
+      "ModuleDocumenter.get_object_members"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "sphinx-doc__sphinx-8551",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "sphinx/domains/python.py",
+      "sphinx/util/docfields.py"
+    ],
+    "ground_truth_functions": [
+      "make_xref",
+      "transform"
+    ],
+    "predicted_files": [
+      "sphinx/domains/python.py"
+    ],
+    "predicted_functions": [
+      "PythonDomain.process_field_xref"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "sphinx-doc__sphinx-8551",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "sphinx/domains/python.py",
+      "sphinx/util/docfields.py"
+    ],
+    "ground_truth_functions": [
+      "make_xref",
+      "transform"
+    ],
+    "predicted_files": [
+      "sphinx/domains/python.py"
+    ],
+    "predicted_functions": [
+      "PythonDomain"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "scikit-learn__scikit-learn-13779",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "sklearn/ensemble/voting.py"
+    ],
+    "ground_truth_functions": [
+      "fit"
+    ],
+    "predicted_files": [
+      "sklearn/ensemble/voting.py"
+    ],
+    "predicted_functions": [
+      "_BaseVoting.fit"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "scikit-learn__scikit-learn-13779",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "sklearn/ensemble/voting.py"
+    ],
+    "ground_truth_functions": [
+      "fit"
+    ],
+    "predicted_files": [
+      "sklearn/ensemble/voting.py"
+    ],
+    "predicted_functions": [
+      "_BaseVoting.fit"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "scikit-learn__scikit-learn-10844",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "sklearn/metrics/cluster/supervised.py"
+    ],
+    "ground_truth_functions": [
+      "fowlkes_mallows_score"
+    ],
+    "predicted_files": [
+      "sklearn/metrics/cluster/supervised.py"
+    ],
+    "predicted_functions": [
+      "fowlkes_mallows_score"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "scikit-learn__scikit-learn-10844",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "sklearn/metrics/cluster/supervised.py"
+    ],
+    "ground_truth_functions": [
+      "fowlkes_mallows_score"
+    ],
+    "predicted_files": [
+      "sklearn/metrics/cluster/supervised.py"
+    ],
+    "predicted_functions": [
+      "fowlkes_mallows_score"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "pydata__xarray-4094",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "xarray/core/dataarray.py"
+    ],
+    "ground_truth_functions": [
+      "to_unstacked_dataset"
+    ],
+    "predicted_files": [
+      "xarray/core/dataarray.py"
+    ],
+    "predicted_functions": [
+      "DataArray.to_unstacked_dataset"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "pydata__xarray-4094",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "xarray/core/dataarray.py"
+    ],
+    "ground_truth_functions": [
+      "to_unstacked_dataset"
+    ],
+    "predicted_files": [
+      "xarray/core/dataarray.py"
+    ],
+    "predicted_functions": [
+      "DataArray.to_unstacked_dataset"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "pydata__xarray-6721",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "xarray/core/common.py"
+    ],
+    "ground_truth_functions": [
+      "get_chunksizes"
+    ],
+    "predicted_files": [
+      "xarray/core/common.py",
+      "xarray/core/variable.py"
+    ],
+    "predicted_functions": [
+      "get_chunksizes",
+      "chunksizes"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "pydata__xarray-6721",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "xarray/core/common.py"
+    ],
+    "ground_truth_functions": [
+      "get_chunksizes"
+    ],
+    "predicted_files": [
+      "xarray/core/common.py",
+      "xarray/core/variable.py"
+    ],
+    "predicted_functions": [
+      "get_chunksizes",
+      "Variable.chunksizes"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  }
+]

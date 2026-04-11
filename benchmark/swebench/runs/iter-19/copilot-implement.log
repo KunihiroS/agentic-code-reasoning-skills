@@ -1,0 +1,33 @@
+Now I have a clear picture. Let me analyze the failures:
+- **iter-18**: 70% (14/20), 6 failures
+  - EQUIVALENT → NOT_EQUIVALENT (3 cases: 15368, 13821, 15382) — persistent pattern
+  - NOT_EQUIVALENT → UNKNOWN (3 cases: 14787, 14122, 12663) — exploration exhaustion
+
+The dominant pattern is the agent finding a code difference and concluding NOT_EQUIVALENT without tracing that difference to an actual test assertion failure. Let me implement a surgical fix:
+
+Now create the rationale.md for iter-19:
+
+変更を確認しました。以下の作業が完了しました：
+
+## 作業サマリー
+
+### 失敗分析
+- iter-18: 70% (14/20)、6件の失敗
+  - **EQUIVALENT → NOT_EQUIVALENT（3件）**: 15368, 13821, 15382 — 持続的パターン（iter-15から全回失敗あり）
+  - **NOT_EQUIVALENT → UNKNOWN（3件）**: 14787, 14122, 12663 — 31ターン枯渇
+
+### 根本原因（今回対象）
+COUNTEREXAMPLEテンプレートが「reason」のみ要求し、具体的なテストアサーションのfile:line特定を求めていない。エージェントが「コードが変わった → テストが失敗するはず」という浅い推論だけでNOT_EQUIVALENTを主張できてしまう。
+
+### 変更（SKILL.md）
+COUNTEREXAMPLEブロックに1行追加：
+```
+Diverging assertion: [test_file:line — the specific assert/check that produces a different result]
+```
+
+これにより、NOT_EQUIVALENTを主張するために具体的なアサーションのfile:lineを特定することが構造的に必須となる。
+
+### 成果物
+- `SKILL.md` — 1行追加（外科的変更）
+- `benchmark/swebench/runs/iter-19/rationale.md` — Objective.mdフォーマットに従い作成
+

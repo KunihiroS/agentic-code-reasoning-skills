@@ -1,0 +1,30 @@
+Now I have enough context. Let me check the directory structure before writing the proposal.
+
+Good. Now let me write the proposal:
+
+提案を `benchmark/swebench/runs/iter-25/proposal.md` に書きました。概要は以下の通りです。
+
+---
+
+## 改善提案サマリー
+
+**カテゴリ: F（原論文の未活用アイデア）**
+
+`explain` モードの論文 Appendix D にある **DATA FLOW ANALYSIS** の概念を `compare` モードに応用します。
+
+**仮説**: Compare テンプレートの `Comparison: DIFFERENT` 主張に対し、**divergence から test assertion までの値の伝播経路（file:line）を明示的にトレースする義務**を追加する。これにより誤ったトレース（15382 タイプ）や根拠の薄い DIFFERENT 主張を抑制し、EQUIV 正答率を向上させる。
+
+**具体的変更（+4行のみ）**:
+```
+Propagation trace (required if DIFFERENT):
+  Divergence point: [file:line]
+  Traced path: [divergence → ... → assertion — file:line at each step]
+  Assertion affected: [exact assertion at file:line]
+```
+
+**予測効果**:
+- EQUIV 正答率: 改善（70% → 80〜90%）— 誤トレースに基づく偽 DIFFERENT 主張を証拠要件で抑制
+- NOT_EQ 正答率: 維持（100%）— 真の差異は伝播経路が追跡可能なため回帰リスク低
+
+**ブラックリスト該当なし**（BL-2 との本質的差異: 最終判定閾値ではなく中間主張の証拠強化）
+

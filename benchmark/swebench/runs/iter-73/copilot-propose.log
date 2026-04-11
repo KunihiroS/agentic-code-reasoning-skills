@@ -1,0 +1,9 @@
+`benchmark/swebench/runs/iter-73/proposal.md` を作成しました。
+
+**提案の要旨**:
+
+- **カテゴリ**: E（表現の精緻化）
+- **仮説**: per-test Claim の追跡指示が終点不明確のため、意味論的差異発見時点で追跡を切り上げ誤 NOT_EQ を招く。追跡終点を「テストアサーション評価結果」に明示することで EQUIV 精度が向上する
+- **変更**: `[trace through code — cite file:line]` → `[trace from changed code to test assertion outcome — cite file:line]`（2行、対称的）
+- **failed-approaches 照合**: #1/#15/#19/#22 等の主要原則すべてに非抵触
+

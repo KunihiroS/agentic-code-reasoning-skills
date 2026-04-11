@@ -1,0 +1,216 @@
+監査役から改善案が却下されました。フィードバックを読み、新しい改善案を提案してください。
+
+監査役のフィードバック: # Iteration 44 — 監査コメント
+
+## 総評
+提案の問題意識自体は妥当です。iter-43 の `nearest downstream consumer` が「最初の消費者で止まる」挙動を誘発し、差異が最終的な観測境界まで伝播するか/吸収されるかを見落とした、という分析はかなり説得的です。
+
+ただし、**今回の提案はカテゴリ E（表現改善）と説明されているものの、実効差分は「downstream trace を 1 段から複数段へ伸ばす」という探索方針の変更であり、実質的には iter-41 / iter-43 と同系統のカテゴリ B 改変**です。したがって、failed-approaches.md の共通原則 #4（同じ方向の変更は表現を変えても同じ結果になりやすい）に照らすと、**「前回失敗した同じ trace 方向の再調整」に留まっている懸念が強い**です。
+
+加えて、変更前との差分を厳密に見ると、この提案は **EQUIV 改善のために downstream trace をより深く要求する**ものであり、実効的には **NOT_EQ 側に追加の確認コストを載せる方向**にも働きます。よって、そのままの承認は難しいです。
+
+---
+
+## 1. 既存研究・コード推論知見に基づく評価（Web 検索）
+
+DuckDuckGo MCP で確認した結果、提案の「差異を downstream に追って観測境界まで見る」という発想自体には学術的な裏付けがあります。一方で、**“nearest consumer を chain に変えるだけで十分か” は別問題**です。
+
+### (a) Client-specific equivalence checking / impact boundary search
+- URL: https://ieeexplore.ieee.org/document/9285657
+- URL: https://conf.researchr.org/details/ase-2020/ase-2020-papers/79/Scaling-Client-Specific-Equivalence-Checking-via-Impact-Boundary-Search
+- 要点:
+  - 変更の影響を「downstream component 側の impact boundary」まで追う、という発想は patch equivalence / impact analysis と整合的。
+  - つまり、**差異を見つけた関数そのものではなく、その差異がクライアントの観測境界でどう現れるかを見る**のは妥当。
+- 本提案への示唆:
+  - `nearest consumer` より `boundary` を意識する方が研究知見には近い。
+  - ただし論文側の主眼は「impact boundary を見つける」ことであり、**単に chain を長くすること**ではない。したがって、今回の wording 変更は方向としては良いが、**boundary の見つけ方が曖昧なまま**で、実装者の期待ほど強い改善を保証しない。
+
+### (b) Interprocedural analysis の一般知見
+- URL: https://www.cs.cornell.edu/courses/cs6120/2020fa/lesson/8/
+- 要点:
+  - 手続き間解析では call graph をまたいで影響を追う必要がある。
+  - ただし **context sensitivity と分析コストのトレードオフ**があり、深く追うほど精度は上がるが高コスト化しやすい。
+- 本提案への示唆:
+  - `nearest` で止まるのは浅すぎるが、`chain ... toward the assertion boundary` は逆に深くしすぎるリスクがある。
+  - 特に UNKNOWN/turn 枯渇が既に問題化しているベンチマークでは、**深掘りの一般化は NOT_EQ 側のターンコスト増**を招きうる。
+
+### (c) Program slicing / observation-based dependency の知見
+- URL: https://coinse.github.io/publications/pdfs/Lee2021ua.pdf
+- URL: http://www0.cs.ucl.ac.uk/staff/w.emmerich/lectures/3C05-04-05/ProgramSlicing-Essay.pdf
+- URL: https://repositorium.uminho.pt/bitstreams/ebd8b743-3925-4940-8c71-15d5ef4f893c/download
+- 要点:
+  - forward slice は「ある差異がどこへ伝播するか」を追うのに有効。
+  - backward / assertion-based slicing は「どの文・値が観測点に影響するか」を絞るのに有効。
+  - 実務的には **forward だけ/ backward だけでなく、観測点を基準に両者をつなぐ方が精度が高い**。
+- 本提案への示唆:
+  - `chain of downstream consumers` は forward slice 寄りで、発想は妥当。
+  - しかし、**観測境界（assertion/exception boundary）を固定する backward 側の anchor が弱い**ため、「どこまで追えば十分か」が曖昧なまま残る。
+  - したがって、研究的には「半分正しい」が、**改善案としてはまだ粗い**。
+
+### 学術的・実務的総合評価
+- **学術的には**: downstream 伝播と観測境界を結ぶ発想は妥当。
+- **実務的には**: `nearest` の回帰要因を除く方向は理解できるが、**単なる wording 修正ではなく探索深度の増加**なので、ターンコストと回帰リスクの検証なしに承認しづらい。
+
+---
+
+## 2. Exploration Framework のカテゴリ選択は適切か？同一カテゴリの既試行有無
+
+### 判定
+**カテゴリ選択は不適切です。名目上は E でも、実効的には B です。**
+
+### 理由
+提案者は「曖昧な指示の具体化」だから E と整理していますが、変更前後の実効差分は次です。
+
+- 変更前: `nearest downstream consumer` を次の read target にする
+- 変更後: `chain of downstream consumers ... toward the test's assertion or exception boundary` を追う
+
+これは単なる wording 微修正ではなく、**どこまで読むかという探索深度・取得情報の範囲の変更**です。従って、Exploration Framework 上は **カテゴリ B（情報の取得方法）** と見るのが自然です。
+
+### 既試行との重複
+同系統は既に複数回試されています。
+
+- **iter-41**: nearest consumer / relevant test call path への anchoring
+- **iter-43**: nearest downstream consumer を明示
+- **iter-44（今回）**: nearest を chain へ置換し、boundary を明記
+
+したがって、今回の提案は **未試行カテゴリ E の新機軸ではなく、iter-41/43 系の trace 方向の再調整**です。failed-approaches.md の共通原則 #4「同じ方向の変更は表現を変えても同じ結果になる」に対する警戒が必要です。
+
+また、カテゴリ E 自体も過去に
+- iter-23
+- iter-30
+- iter-31
+などで試行され、BL-11 / BL-16 系の「表現変更が新たなアンカーや局所フレームを作る」失敗が記録されています。今回はそれらと完全同一ではないにせよ、**“表現改善だから別物” とみなすには無理がある**というのが監査上の判断です。
+
+---
+
+## 3. EQUIV / NOT_EQ への影響と、変更前との差分分析
+
+## 実効差分
+変更前（iter-43）の本質:
+- 差異を見つけたら **最初の downstream consumer を読む**
+
+変更後（今回）の本質:
+- 差異を見つけたら **consumer chain を assertion/exception boundary に向けて追う**
+
+つまり実効差分は、**trace を 1 hop から multi-hop に伸ばすこと**です。
+
+### EQUIV への影響
+**改善可能性はある**。
+
+- iter-43 の regressions（13821, 11179）の原因分析は筋が通っている。
+- 最初の consumer 自体に A/B 差があっても、さらに downstream で吸収されるなら EQUIV になりうる。
+- よって、`nearest` を外して boundary 方向へ延ばすのは、**EQUIV 偽陰性の抑制には合理的**。
+
+### NOT_EQ への影響
+**中立とは言い切れず、悪化リスクがある**。
+
+理由は 2 つあります。
+
+1. **追加コスト**
+   - 真の NOT_EQ では最初の consumer で十分に差異が観測可能なことも多い。
+   - そこからさらに boundary まで追う指示は、ターンコストを増やす。
+   - 既に UNKNOWN が turn 枯渇で出ている環境では、これは無視できない。
+
+2. **実質的な立証責任の上昇**
+   - 提案者は「両方向に効く」と主張しているが、変更前との差分で見ると、**新たに課されるのは“そこで止まらずもっと追え” という義務**。
+   - EQUIV は途中で吸収点を見つければ恩恵を受けやすい。
+   - NOT_EQ は「差異が伝播する」と感じても、boundary までの追加トレースを心理的に要求されやすい。
+   - この点で、差分は完全に対称とは言えない。
+
+### 一方向にしか作用しないか？
+**完全な一方向ではないが、EQUIV 改善寄りで、NOT_EQ 側には主に追加負担として作用する可能性が高い**です。
+
+したがって、提案書の「中立〜改善」という見積もりは楽観的すぎます。監査上は、
+- EQUIV: 改善余地あり
+- NOT_EQ: 改善もありうるが、UNKNOWN 増加リスクあり
+という評価です。
+
+---
+
+## 4. failed-approaches.md ブラックリスト / 共通原則との照合
+
+### 4.1 実質的に同じ効果ではないか？
+**はい。iter-41 / iter-43 の downstream-trace 系の再調整であり、実質的に同系列です。**
+
+- iter-41: changed output を consume する関数を読む
+- iter-43: nearest downstream consumer を読む
+- iter-44: chain of downstream consumers を読む
+
+メカニズム名は違っても、本質は一貫して **「差異を downstream に追わせる」** です。これは failed-approaches.md の共通原則 #4 に抵触する懸念があります。
+
+### 4.2 共通原則との照合
+
+#### 共通原則 #1（判定の非対称操作）
+- 明示的な verdict-conditioned rule ではないため、形式上は抵触しません。
+- ただし、変更前との差分としては NOT_EQ 側の確認負担を増やすので、**実効的な非対称性の懸念**はあります。
+
+#### 共通原則 #2（出力側の制約）
+- 出力テンプレートは触っていないため直接抵触しません。
+
+#### 共通原則 #3（探索量の削減）
+- これは逆方向で、探索量を増やします。原則 #3 そのものには抵触しません。
+- ただし、**ターン予算の観点では増加コストが無視できない**です。
+
+#### 共通原則 #4（同方向の変形）
+- **最も強く抵触**します。
+- 今回は iter-43 の失敗原因を「nearest という一語」に帰着していますが、監査上は **同方向の trace policy を再調整しているだけ**に見えます。
+
+#### 共通原則 #5（入力テンプレートの過剰規定）
+- `toward the test's assertion or exception boundary` は新たな観測終点を導入しており、軽度の過剰規定リスクがあります。
+- BL-16 ほど強くはないが、**新しい trace 終端フレームのアンカー**にはなりえます。
+
+#### 共通原則 #6（対称化の実効差分）
+- 提案文面は対称的に見えても、変更前との差分は「もっと追え」の追加義務です。
+- そのため、**差分評価では中立と断定できません**。
+
+### 4.3 監査結論
+上記理由により、**ブラックリスト完全一致ではないが、共通原則 #4 と #6 に実質的に抵触**すると判断します。
+
+そのため、結論は **承認: NO** です。
+
+### 未試行カテゴリからの代替提案
+**カテゴリ C（比較の枠組みを変える）** から、次の方向を提案します。
+
+> 各 relevant test について、まず「このテストで A/B を比較する唯一の観測対象は何か（返り値・例外・永続状態・assert 入力）」を 1 つ定め、その観測対象に対してのみ A/B の因果連鎖を比較する。
+
+ポイント:
+- downstream chain を長くするのではなく、**比較枠組みを“観測対象の同一性”に固定**する。
+- 「nearest consumer を読むか / chain を読むか」という B 系の繰り返しから外れられる。
+- 既存の BL-16 のような `Comparison:` 直前注釈ではなく、**探索対象の比較単位そのものをそろえる**方向で設計すべき。
+- 実装するなら、新たな記録欄追加ではなく、既存 Claim 記述の前提として比較対象を 1 つに揃える程度の最小変更が望ましい。
+
+---
+
+## 5. 全体の推論品質への期待
+
+提案が狙っている「最初の差異で止まらず、観測境界まで伝播/吸収を確認する」は、推論品質の観点では正しい方向です。これがうまく働けば、
+
+- コード差分 ≠ テスト差分、をより一貫して扱える
+- downstream handling の見落としを減らせる
+- EQUIV の偽陰性を減らせる
+
+という改善は期待できます。
+
+ただし今回の形だと、
+- 前回の同系統変更の再調整に留まる
+- boundary までの trace がターンコストを押し上げる
+- NOT_EQ 側の追加確認負担が増える
+
+ため、**“全体の推論品質を上げる” より “特定回帰の修復に寄りすぎている”** というのが監査上の見立てです。
+
+---
+
+## 6. 結論
+
+**修正を求めます。**
+
+- 問題分析は妥当
+- 研究的な方向性も概ね妥当
+- しかし提案の実体はカテゴリ E ではなく、iter-41/43 系の B 方向の再調整
+- 変更前との差分は EQUIV 改善寄りだが、NOT_EQ 側には追加コストとして作用しうる
+- failed-approaches.md の共通原則 #4 / #6 に抵触する懸念がある
+
+**承認: NO（iter-41/43 と同系列の downstream-trace 再調整であり、カテゴリ E としては不適切。実効差分は NOT_EQ 側の確認負担を増やす可能性があり、共通原則 #4 / #6 に抵触する懸念が強いため）**
+failed-approaches.md も再度参照してください。
+
+benchmark/swebench/runs/iter-44/proposal.md を上書きしてください。

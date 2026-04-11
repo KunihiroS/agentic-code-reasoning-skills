@@ -1,0 +1,12 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..0da706a 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -165,6 +165,7 @@ P3: The fail-to-pass tests check [specific behavior]
+ P4: The pass-to-pass tests check [specific behavior, if relevant]
+ 
+ ANALYSIS OF TEST BEHAVIOR:
++For each test, trace the concrete mechanism that determines pass/fail — this may be an assertion, a raised exception, a setup/teardown failure, or a side effect checked later in the test. Do not reduce the trace to a single assert statement unless that is truly the only outcome determinant.
+ 
+ For each relevant test:
+   Test: [name]

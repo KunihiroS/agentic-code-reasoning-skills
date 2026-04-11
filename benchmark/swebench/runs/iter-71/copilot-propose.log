@@ -1,0 +1,8 @@
+`benchmark/swebench/runs/iter-71/proposal.md` を作成しました。
+
+**要約**:
+- **カテゴリ**: E（表現・フォーマットを改善する）
+- **仮説**: `Comparison: SAME` 行に収束理由の記述義務がないため、モデルがアサーション到達前にトレースを止めても SAME と書ける。最小限の説明義務を加えることで equiv の偽陰性を減らす。
+- **変更**: `Comparison: SAME / DIFFERENT outcome` → `Comparison: SAME — [state how both changes converge to the same observable outcome] / DIFFERENT outcome`（2 行、同一精緻化）
+- **変更規模**: 2 行以内、新規ステップ/セクションなし
+

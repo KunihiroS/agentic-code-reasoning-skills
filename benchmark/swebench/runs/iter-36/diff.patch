@@ -1,0 +1,12 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..fe33926 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -217,6 +217,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- If either patch removes or skips a test, search the repository to confirm that test called the changed code path before treating it as a counterexample; if unconfirmed, record it as a scope constraint in P[N] instead
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+ ---

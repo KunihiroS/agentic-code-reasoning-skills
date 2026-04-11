@@ -1,0 +1,10 @@
+完了しました。
+
+**SKILL.md の変更 (2行)**:
+- `because [trace through code — cite file:line]` → `because [trace from changed code to test assertion outcome — cite file:line]`
+- C[N].1・C[N].2 の両行に対称適用
+
+**rationale.md**:
+- `benchmark/swebench/runs/iter-73/rationale.md` を Objective.md のフォーマットに従い作成
+- 具体的なケースID・リポジトリ名・テスト名は記載せず
+

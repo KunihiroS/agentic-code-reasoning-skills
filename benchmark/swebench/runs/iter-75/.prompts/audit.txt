@@ -1,0 +1,65 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-75/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 7 項目 (R1〜R7) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【追加チェック (R1, R7 の補強)】
+diff や rationale に具体的な数値 ID, リポジトリ名, テスト名, コード断片が
+含まれていないか確認してください。含まれていれば R1 と R7 を 1 点 (FAIL) にしてください。
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index ae8211a..30c4a81 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -155,7 +155,7 @@ D2: The relevant tests are:
+     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
+         only if the changed code lies in their call path.
+     To identify them: search for tests referencing the changed function, class,
+-    or variable. If the test suite is not provided, state this as a constraint
++    or variable, then confirm each pass-to-pass candidate actually invokes the changed code through its call chain before including it. If the test suite is not provided, state this as a constraint
+     in P[N] and restrict the scope of D1 accordingly.
+ 
+ PREMISES:
+
+rationale:
+# Iteration 75 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: （前イテレーション実行結果を参照）
+- 失敗ケース: （具体的な ID は省略）
+- 失敗原因の分析: compare モードにおいて、pass-to-pass テスト候補の選定が名前ベースの検索のみに依存していたため、変更コードを実際には呼び出さないテストの偽陽性混入、および間接コールパスを経由するテストの偽陰性見落としが生じ、テスト集合の関連性精度が低下していた。
+
+## 改善仮説
+
+pass-to-pass テスト候補として名前検索で発見したテストについて、そのコールチェーンが実際に変更コードを呼び出すことを確認する手順を追加することで、テスト集合の関連性精度が高まり、EQUIV/NOT_EQUIV 判定の正確性が向上する。
+
+## 変更内容
+
+compare 証明書テンプレートの D2「To identify them」行に、pass-to-pass 候補ごとにコールチェーンを通じて変更コードを実際に呼び出すことを確認してから含めるよう求める一文を追加した。新規ステップ・新規フィールド・新規セクションは追加していない。
+
+## 期待効果
+
+変更コードを実際には呼び出さないテストを pass-to-pass 分析から除外できるため、誤った EQUIVALENT 判定（偽陽性起因）が減少する。また、ラッパーや抽象化を経由して変更コードに到達するテストを見落とすリスクも低減し、偽陰性に起因する分析漏れが改善される。どちらの方向にも偏らない精度向上であり、全体的な判定品質の底上げが期待される。

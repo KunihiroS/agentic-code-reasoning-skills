@@ -1,0 +1,17 @@
+--- [1] django__django-14089 (EQUIVALENT) ---
+[START] django__django-14089 / with_skill  05:54:31
+[DONE]  django__django-14089 / with_skill  109s
+--- [2] django__django-15368 (EQUIVALENT) ---
+[START] django__django-15368 / with_skill  05:56:21
+[DONE]  django__django-15368 / with_skill  131s
+--- [5] django__django-15315 (EQUIVALENT) ---
+[START] django__django-15315 / with_skill  05:58:33
+[DONE]  django__django-15315 / with_skill  76s
+--- [11] django__django-13417 (NOT_EQUIVALENT) ---
+[START] django__django-13417 / with_skill  05:59:50
+[DONE]  django__django-13417 / with_skill  121s
+--- [15] django__django-11999 (NOT_EQUIVALENT) ---
+[START] django__django-11999 / with_skill  06:01:51
+[DONE]  django__django-11999 / with_skill  117s
+
+=== Benchmark complete: 5 instances ===

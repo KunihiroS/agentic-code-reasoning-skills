@@ -1,0 +1,239 @@
+監査役から改善案が却下されました。フィードバックを読み、新しい改善案を提案してください。
+
+監査役のフィードバック: # Iteration 35 — 改善案レビュー
+
+## 総評
+**この提案は承認できません。**
+
+問題意識自体（コード差分を見つけた瞬間に NOT_EQ へ短絡し、中間コードで差異が吸収される可能性を見落とす）は妥当です。しかし、**提案された文言変更の実効差分は proposal の説明と逆**です。現行 checklist は
+
+> When a semantic difference is found, trace at least one relevant test through the differing path **before concluding it has no impact**
+
+であり、これは主に **EQUIV/SAME 側**の早すぎる「無影響」判断を抑える文言です。これを提案の
+
+> ... trace the behavioral effect ... to the test assertion point **before concluding it changes the test outcome** ...
+
+へ置き換えると、**EQUIV 側の既存ガードを外し、NOT_EQ 側に新しい立証負荷を載せる**形になります。これは BL-2 / BL-6 / BL-14 の失敗コアに実質的に近いです。
+
+---
+
+## 1. Web 検索に基づく妥当性評価（DuckDuckGo MCP）
+
+DuckDuckGo MCP で関連研究・実務知見を検索しました。結論として、**「下流の観測点まで追うべき」という問題意識は支持される**一方、**今回の具体変更はその知見の実装として不適切**です。
+
+### 検索結果と要点
+
+1. **Agentic Code Reasoning**  
+   URL: https://arxiv.org/abs/2603.01896  
+   要点:
+   - semi-formal reasoning は **explicit premises / execution-path tracing / formal conclusions** を要求する。
+   - 論文本文・要約は、structured reasoning が unsupported claim を防ぐ「certificate」として働くことを強調している。
+   - 検索結果要約には、**incomplete reasoning chains** と **downstream code already handled the edge case** を見落とす失敗が示されている。
+   評価:
+   - 提案者の問題設定は論文と整合する。
+   - ただし論文が支持しているのは **トレースの構造化** であって、**判定片側の wording 差し替え**ではない。
+
+2. **Code Prompting Elicits Conditional Reasoning Abilities in Text+Code LLMs**  
+   URL: https://aclanthology.org/2024.emnlp-main.629/  
+   要点:
+   - 検索結果では、code-form input が conditional reasoning を促し、**state tracking of variables / key entities** を改善するとされる。
+   - 重要なのは、追うべき状態や条件を**対称的な中間表現**で持たせること。
+   評価:
+   - 「behavioral effect を追う」発想自体は妥当。
+   - しかし今回案は state tracking を両方向で強化するのではなく、**NOT_EQ 主張時だけの自己証明負荷**として働く可能性が高い。
+
+3. **LLMDFA: Analyzing Dataflow in Code with Large Language Models**  
+   URL: https://openreview.net/forum?id=QZ2d8E8Whu  
+   参考URL（検索結果PDF）: https://chengpeng-wang.github.io/publications/LLMDFA_NeurIPS2024.pdf  
+   要点:
+   - データフロー解析では program values の依存関係・伝播経路を丁寧に追うことが重要。
+   - 一方で、信頼性には**問題分解・検証行動**が必要で、単なる注意書きでは足りない。
+   評価:
+   - 「差分が assertion に届くか」という観点は支持できる。
+   - しかし今回の変更は **解析手順の対称的分解**ではなく、既存 checklist 1 行の方向転換であり、LLMDFA 的な改善としては弱い。
+
+4. **Anchoring bias in large language models: an experimental study**  
+   URL: https://link.springer.com/article/10.1007/s42001-025-00435-2  
+   要点:
+   - LLM は initial framing / biased prompts に敏感。
+   - CoT や reflection だけでは anchoring bias は十分に減らず、**comprehensive angles** から情報を集める必要がある。
+   評価:
+   - 今回の提案文は `semantic difference` と `behavioral effect` を前景化したうえで、**changes the test outcome** を証明させる構造なので、差分の重要性に強くアンカーしうる。
+   - これは EQUIV の改善というより、NOT_EQ 側の慎重化・遅延・UNKNOWN 化を招きやすい。
+
+### 学術的・実務的総合評価
+- **学術的に支持されるのは「差分から観測点までの因果連鎖を追うべき」という一般原則**であり、そこは妥当です。
+- しかし、**今回の具体変更はその原則を両方向に制度化していません**。実効差分は既存 EQUIV 側ガードの削除 + NOT_EQ 側への追加義務です。
+- よって、**問題意識は YES、実装案は NO** です。
+
+---
+
+## 2. Exploration Framework のカテゴリ選択は適切か？同一カテゴリ既試行か？
+
+## 判定
+**適切ではありません。少なくとも「未試行カテゴリ」でも「未試行サブメカニズム」でもありません。**
+
+### 理由1: F も E も既に複数回試行済み
+- F 系:
+  - iter-8: divergence analysis 移植
+  - iter-9: propagation check
+  - iter-25: data-flow 風の key value 追跡
+  - iter-31 / 32: incomplete reasoning chains / downstream handling の compare-specific wording 議論
+- E 系:
+  - iter-23, iter-30, iter-31, iter-34 など
+
+したがって、proposal の **F + E を新規方向として扱う整理は不正確**です。
+
+### 理由2: 中身は iter-31 / iter-32 で既に議論された方向に近い
+今回の主張は、
+- downstream / intermediate callers / assertion point まで trace させる
+- intermediate code may absorb the difference を明示する
+
+というものですが、これは **iter-31 で一度承認寄り評価があり、iter-32 で「実効差分が NOT_EQ 側へ偏る」として却下された論点**と非常に近いです。しかも今回は Guardrail ではなく Compare checklist の既存文を置換するため、**差分の向きはさらに悪化**しています。
+
+### 理由3: 実効カテゴリは F/E というより「NOT_EQ 側の追加証明義務」
+カテゴリ名として F/E を名乗っていても、変更前との差分で見ると実質は
+- `it has no impact` を削除し
+- `it changes the test outcome` を追加
+するものです。
+
+つまり本質は **trace 対象の明確化**ではなく、**どちらの結論に追加義務を課すかの切り替え**です。これは Exploration Framework のカテゴリ論より、failed-approaches の共通原則 #6 で評価すべき案件です。
+
+---
+
+## 3. EQUIV / NOT_EQ への影響と、実効的差分の分析
+
+## 3.1 変更前との差分（ここが最重要）
+現行:
+- semantic difference を見つけたら、relevant test を differing path に通してから、**「no impact」と結論してよい**
+- つまり、**EQUIV/SAME 側の安易な無影響判断**を抑える文言
+
+提案後:
+- semantic difference を見つけたら、behavioral effect を intermediate callers 経由で assertion point まで追ってから、**「changes the test outcome」と結論してよい**
+- つまり、**NOT_EQ/DIFFERENT 側の立証責任**を引き上げる文言
+
+これは proposal が述べる「伝播を追う一般化」ではなく、実際には **既存の EQUIV 側チェックを NOT_EQ 側チェックへ置き換える**変更です。
+
+## 3.2 EQUIV への影響
+### マイナス寄り
+提案者は EQUIV 改善を期待していますが、現行文はすでに EQUIV 側に対して
+- 差分を見つけても
+- すぐに「無影響」と言わず
+- relevant test を trace せよ
+というガードを持っています。
+
+今回の置換では、その EQUIV 側ガード文言が消えます。新文は `before concluding it changes the test outcome` なので、**EQUIV を出すときの明示的制約はむしろ弱まる**可能性があります。
+
+## 3.3 NOT_EQ への影響
+### 明確に負荷増
+真の NOT_EQ ケースでも、
+- behavioral effect
+- all intermediate callers
+- test assertion point
+- absorb 可能性の検討
+を要求されます。
+
+これは複雑なケースほど、
+- ターン消費増
+- 証拠不足による UNKNOWN 化
+- 過剰慎重化による EQUIV への逃避
+を招きます。**BL-2 / BL-14 型の回帰リスクが高い**です。
+
+## 3.4 一方向にしか作用しないか？
+**はい。実効差分は一方向です。**
+
+proposal は「semantic difference が見つかった場合に適用されるので対称」と主張しますが、共通原則 #6 どおり、評価すべきは**変更前との差分**です。差分は
+- 旧: no impact を主張する前の要件
+- 新: changes outcome を主張する前の要件
+です。
+
+したがって今回の変更は、**EQUIV 側の既存ガードを外し、NOT_EQ 側へ新規ガードを移す一方向変更**です。
+
+---
+
+## 4. failed-approaches.md のブラックリスト・共通原則との照合
+
+## 結論
+**抵触します。承認不可です。**
+
+### BL-2: NOT_EQ 判定の証拠閾値・厳格化
+- 本案は「NOT_EQ と言う前に、assertion point まで causal propagation を追え」と要求している点で、**実質的に BL-2 と同方向**です。
+- 用語は `behavioral effect` や `intermediate callers` に変わっていますが、効果は **NOT_EQ の立証責任引き上げ**です。
+
+### BL-6: Guardrail の見かけ上の対称化だが、差分は片側だけ
+- BL-6 の fail core は「表面上対称でも、変更前との差分は片側だけ」でした。
+- 今回はまさにそれで、しかも proposal が見落としているのは **現行文の対象が no impact 側である**ことです。
+- よって **BL-6 の再発**と見るべきです。
+
+### BL-14: DIFFERENT 主張時の追加検証
+- backward verify ではないものの、
+  - semantic difference 発見
+  - assertion point まで effect を証明
+ という要求は、**DIFFERENT 主張時の追加検証**として同型です。
+- したがって BL-14 にも近いです。
+
+### 共通原則との照合
+- **#1 判定の非対称操作**: 抵触
+  - 実効差分は NOT_EQ 側のみ。
+- **#4 同じ方向の変更は表現を変えても同じ結果**: 抵触
+  - propagation / behavioral effect / intermediate callers という言い換えでも、結果は NOT_EQ 側閾値上げ。
+- **#5 入力テンプレートの過剰規定**: 軽度抵触
+  - `all intermediate callers` や `assertion point` は、探索を特定フレームに強く寄せる。
+- **#6 対称化の実効差分**: 強く抵触
+  - 変更後の文面ではなく、変更前との差分でみると片側変更。
+- **#12 アドバイザリな非対称指示も立証責任引き上げになる**: 抵触
+  - checklist であっても、モデルにとっては自己証明要件になる。
+
+### 代替案
+厳密な意味での「未試行カテゴリ」はほぼ残っていません。したがって、**未試行サブメカニズム**として次を提案します。
+
+- **方向**: カテゴリ C（比較の枠組みを変える）
+- **案**: relevant test に入る前に、各 patch の変更シンボルごとに **externally observable contract delta** を同一フォーマットで 1 行比較する。
+  - 例: `observable return / raised exception / persisted state / emitted call` のうち、どれが変わりうるかを A/B 対称に記述する
+  - その後で relevant test をその contract に接続する
+- **利点**:
+  - NOT_EQ 側だけの burden 増ではない
+  - EQUIV では「内部差分はあるが contract は同じ」を表しやすい
+  - NOT_EQ では「contract が異なる」を同じ粒度で示せる
+
+---
+
+## 5. 全体の推論品質がどう向上すると期待できるか？
+
+限定的には、モデルに
+- 中間コードで差異が吸収されうる
+- test assertion point まで追う必要がある
+
+ことを思い出させる効果はありえます。しかし今回の文言置換は、**推論品質を両方向で改善するのではなく、NOT_EQ の completion burden を上げる方向**に作用します。
+
+そのため期待される実際の挙動は、
+- 真の NOT_EQ で慎重化しすぎる
+- UNKNOWN が増える
+- 一部で EQUIV へ逃げる
+- 一方で EQUIV 側の既存 `no impact` ガードが弱まる
+
+となる可能性が高いです。したがって、**全体の推論品質向上より回帰リスクが大きい**と判断します。
+
+---
+
+## 6. 承認するか、修正を求めるか
+
+### 結論
+**修正ではなく差し戻しを推奨します。**
+
+### 主理由
+1. **提案の差分解釈が誤っている**  
+   現行文は EQUIV 側ガード、提案文は NOT_EQ 側ガードであり、対称化ではない。
+2. **カテゴリ整理が不正確**  
+   F/E はともに既試行で、しかも過去議論（iter-31/32）と近い。
+3. **ブラックリストに実質抵触**  
+   BL-2 / BL-6 / BL-14 の失敗コアを再発している。
+4. **EQUIV と NOT_EQ の両改善ではなく、一方向の閾値操作**  
+   Objective の趣旨に反する。
+
+---
+
+**承認: NO（理由: 現行の EQUIV 側 `no impact` ガードを外して NOT_EQ 側 `changes the test outcome` ガードへ置き換える実効差分であり、BL-2・BL-6・BL-14・共通原則 #1 #4 #6 #12 に実質的に抵触するため）**
+failed-approaches.md も再度参照してください。
+
+benchmark/swebench/runs/iter-35/proposal.md を上書きしてください。

@@ -1,0 +1,11 @@
+Let me verify the SKILL.md change looks correct:
+
+完了しました。
+
+**変更内容:**
+
+1. **SKILL.md** — D2(b) に 2 行追加（hard limit 5行以内）:
+   > `Verify this by tracing the test's execution; do not assume relevance from file proximity, shared module, or test-level changes such as deletion.`
+
+2. **benchmark/swebench/runs/iter-47/rationale.md** — Objective.md のフォーマット（前イテレーション分析・改善仮説・変更内容・期待効果）に従い新規作成。
+

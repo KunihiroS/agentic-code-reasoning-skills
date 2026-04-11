@@ -1,0 +1,18 @@
+`benchmark/swebench/runs/iter-79/proposal.md` を作成しました。
+
+---
+
+## 提案サマリー
+
+**カテゴリ C（比較の枠組みを変える）**
+
+**仮説**: EDGE CASES の `Test outcome same: YES / NO` 行にアサーション引用を対称的に義務付けることで、振る舞い差異→テスト結論の因果連鎖の断絶を修復し、`not_eq` の偽 EQUIV 判定を減少させる。
+
+**変更（1行）**:
+```diff
+- - Test outcome same: YES / NO
++ - Test outcome same: YES / NO — name the test assertion that determines PASS/FAIL under each change
+```
+
+**根拠**: `not_eq` 失敗の典型は「subtle difference dismissal」—— エージェントが振る舞いの差異を発見しながらアサーションレベルまで追跡せずに EQUIV 結論へスキップする。対称的な要件なので failed-approaches #1/#12 の非対称操作には抵触しない。
+

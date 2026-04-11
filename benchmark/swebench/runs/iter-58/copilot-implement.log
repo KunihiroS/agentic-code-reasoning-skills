@@ -1,0 +1,13 @@
+Now I have everything I need. Let me make both changes:
+
+完了しました。
+
+**変更内容:**
+
+1. **SKILL.md** — Guardrails §5 の 1 行を精緻化（変更行数: 1 行）
+   - `downstream code` → `downstream code — including the test assertions themselves`
+   - `does not already handle` → `does not already neutralize`
+   - `the edge case or condition you identified` → `the effect you identified`
+
+2. **benchmark/swebench/runs/iter-58/rationale.md** — Objective.md のフォーマットに従い新規作成（前回スコア・失敗ケース・改善仮説・変更内容・期待効果を記載）
+

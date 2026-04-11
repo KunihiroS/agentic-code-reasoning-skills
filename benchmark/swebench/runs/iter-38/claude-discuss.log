@@ -1,0 +1,12 @@
+benchmark/swebench/runs/iter-38/discussion.md に監査コメントを書きました。
+
+要点:
+- **学術的には妥当**：premise→claim 接続の強化は原論文の certificate-based reasoning と整合
+- **カテゴリ F は妥当だが完全新規ではない**：iter-9 / iter-28 と近く、今回の新規性は **COUNTEREXAMPLE ではなく ANALYSIS Claim に前倒し**した点
+- **EQUIV 改善が主期待**：コード差異→FAIL の短絡を減らせる
+- **NOT_EQ 回帰リスクはあるが限定的**：`assertion/exception` 固定ではなく既存 P3/P4 参照なので、BL-11/16/2 よりは安全
+- **ブラックリスト実質同型とは判断しない**
+- ただし proposal には **iter-28 / BL-15 との連続性を明記すべき**
+
+最終判断はファイル内の通りです。  
+**承認: YES**

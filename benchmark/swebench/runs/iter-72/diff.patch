@@ -1,0 +1,13 @@
+diff --git a/SKILL.md b/SKILL.md
+index 88375ac..c824fb6 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -74,7 +74,7 @@ NEXT ACTION RATIONALE: [why the next file or step is justified]
+ 
+ CONVERGENCE GATE (required after each observation set):
+   Working conclusion: [EQUIVALENT / NOT_EQUIVALENT / UNRESOLVED]
+-  If EQUIVALENT or NOT_EQUIVALENT at any confidence: stop exploration and proceed to Step 5 now.
++  If EQUIVALENT or NOT_EQUIVALENT: cite the specific file:line evidence supporting this conclusion, then proceed to Step 5.
+   If UNRESOLVED: state exactly what missing evidence justifies reading another file.
+ ```
+ 

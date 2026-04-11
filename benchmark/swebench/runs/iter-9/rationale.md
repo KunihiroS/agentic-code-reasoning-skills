@@ -1,0 +1,37 @@
+# Iteration 9 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 70% (14/20)
+- 失敗ケース: django__django-15368, django__django-15382, django__django-14787, django__django-11433, django__django-14122, django__django-12663
+- 失敗原因の分析:
+  - **15368, 15382（EQUIV 偽陽性）**: EQUIVALENT なのに NOT_EQUIVALENT と誤判定。それぞれ 19 ターン・12 ターンで意思決定を完了しており、ターン枯渇ではない。コードパス上の乖離点（divergence）を発見した時点でテスト結果に差異があると結論付けており、乖離がテストのアサーション境界まで到達するかどうかを確認していない。Change A と Change B の差異が中間的な値で分岐しているが、その分岐がアサーション到達前に収束しているケースで、エージェントが「乖離点の発見 → テスト結果の差異」と証拠なしにジャンプしている。
+  - **14787, 11433, 14122, 12663（NOT_EQ UNKNOWN）**: NOT_EQUIVALENT なのに UNKNOWN を返した。4 件ともすべて 31 ターン（上限）を使い切っている。iter-8 の Divergence-First により1テストあたりのターン削減を狙ったが、UNKNOWN は iter-7 の 3 件から 4 件に増加した。Divergence-First の「A/B 両方を VERIFIED で記述」要求が複雑なコードパスの深い読み込みを誘発し、ターン消費を増やした可能性がある。
+
+## 改善仮説
+
+**compare モードの Divergence ブロックに「乖離の伝播確認（Propagation check）」サブステップを追加することで、コードレベルの乖離がテストのアサーション境界まで到達するかどうかを VERIFIED 証拠として明示させ、伝播しない場合は Comparison を SAME と記録させる。これにより EQUIV 偽陽性（コード差異 → テスト結果差異 の証拠なしジャンプ）を防ぎ、NOT_EQ ケースではアサーション到達経路が明確化されることで「何を確認すれば結論できるか不明な状態」を解消する。**
+
+根拠:
+- localize モードの PHASE 3 は「CLAIM D[N]: At [file:line], [code] produces [behavior] which contradicts PREMISE T[N] because [reason]」という形式で、乖離がテストの前提（アサーション条件）に矛盾することを明示させる。compare モードの Divergence ブロックにはこの「前提への接続」がなく、乖離発見で分析が止まる構造的問題がある。Propagation check はこの未実装部分を埋める。
+- 追加の証拠収集ステップ（探索量を増やす方向）であり、原則 #3（探索量削減は常に有害）に抵触しない。
+- EQUIV・NOT_EQ どちらに対しても同一の Propagation チェックを要求する対称な変更であり、原則 #1（判定の非対称操作）に抵触しない。
+
+## 変更内容
+
+compare モードの Certificate template 内、fail-to-pass テストブロックおよび pass-to-pass テストブロックの Divergence サブ記述に Propagation チェック行を追加した（合計追加行数 8 行）。
+
+**fail-to-pass ブロック・pass-to-pass ブロック共通**: `B at [file:line]` 行の直後に以下を追加:
+```
+Propagation: Does this divergence reach the test assertion?
+  Trace from divergence point to the test assertion that would detect this difference.
+  If no assertion receives a changed value: Comparison is SAME.
+```
+
+変更しない部分: DEFINITIONS, PREMISES, Step 1–5.5, EDGE CASES, COUNTEREXAMPLE / NO COUNTEREXAMPLE, FORMAL CONCLUSION, Guardrails, 他モード（localize, explain, audit-improve）はすべて変更なし。
+
+## 期待効果
+
+- **15368, 15382**: Propagation check により「アサーションに到達するか」を VERIFIED 証拠で記述する義務が生じ、到達しない場合は Comparison を SAME とする構造的制約がかかる。乖離点の発見で即 NOT_EQUIVALENT と結論付けるジャンプが防止され、EQUIV 正答率 8/10 → 9〜10/10 の改善を期待する。
+- **14787, 11433, 14122, 12663**: Propagation check が「乖離 → アサーション到達確認」という具体的なゴールをエージェントに与え、探索の目的が明確化することで収束が早まる可能性がある。ただし複雑なコードパスで Propagation 経路が長い場合、ターン追加消費が起きるリスクもあり、改善幅は不確実。
+- **回帰リスク**: 乖離が存在しない（SAME）または既にアサーションまで正しく追跡されている正答ケースへの影響は軽微。Propagation trace が短く完結するため、回帰リスクは低い。

@@ -1,0 +1,32 @@
+Let me also check recent iterations' proposals and the README:
+
+Let me check iter-38's details:
+
+Now I have enough context. Let me analyze and draft the proposal:
+
+提案を作成しました。以下がサマリーです。
+
+---
+
+## iter-49 改善提案のサマリー
+
+**カテゴリ: F（論文のエラー分析 → Guardrails 未カバー領域）**
+
+**改善仮説（1つ）**: iter-35 失敗ケース `13821` は「SQLite 3.9.0–3.25.x という仮想環境」を未検証の counterexample として使ったことが根因。Guardrail 6（サードパーティ関数の UNVERIFIED 扱い）と同じ「未検証前提」パターンが**実行環境バージョン**にも発生しているが未カバー。これを Guardrail 10 として追加する。
+
+**変更箇所**: `## Guardrails → ### From the paper's error analysis` 末尾に以下 3 行を追加：
+
+```
+10. Do not use unverified runtime-environment claims as evidence. If a behavioral 
+difference is attributed to a specific database/OS/interpreter version, that 
+constraint must be cited at a specific file:line in test skip decorators or CI 
+config. An unverified version assumption must not determine EQUIVALENT or NOT_EQUIVALENT.
+```
+
+**注目ポイント**:
+- Guardrails セクションは BL-1〜23 の全失敗イテレーションで一度も変更されていない → 真に未試行
+- EQUIV/NOT_EQ 両方向に対称適用（原則 #1 非違反）
+- 追加行数 3 行（limit 5 行以内 ✓）
+
+**スコア予測**: 85%（17/20）→ 90%（18/20）— 13821 修正、15368・11433 は本変更の作用域外で残存
+

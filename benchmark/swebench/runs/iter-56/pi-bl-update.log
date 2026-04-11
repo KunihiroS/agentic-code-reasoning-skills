@@ -1,0 +1,7 @@
+I have added the new entry (BL-29) and a new principle (Rule 21) based on the iteration 56 failure.
+
+1. Added `BL-29: Compare checklist での証拠条件の言い換え（observable test outcome → PASS/FAIL result）` below BL-28.
+2. Under "共通の失敗パターン" (Common Failure Patterns), appended principle #21:
+`21. 目標証拠の厳密な言い換えや対比句の追加は、実質的な立証責任の引き上げとして作用する: ...`
+
+The changes reflect that making the evidence requirements sound more strict (e.g. "PASS/FAIL result", "not merely the internal execution path") acts as a de-facto tightening of the proof threshold, essentially creating an asymmetric barrier that leads to hesitation and false EQUIV/UNKNOWN predictions (similar to BL-2 and over-adaptation to negative prompts).

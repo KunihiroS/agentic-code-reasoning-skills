@@ -1,0 +1,80 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-14/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 3532d59..88375ac 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -71,6 +71,11 @@ UNRESOLVED:
+   - [remaining questions]
+ 
+ NEXT ACTION RATIONALE: [why the next file or step is justified]
++
++CONVERGENCE GATE (required after each observation set):
++  Working conclusion: [EQUIVALENT / NOT_EQUIVALENT / UNRESOLVED]
++  If EQUIVALENT or NOT_EQUIVALENT at any confidence: stop exploration and proceed to Step 5 now.
++  If UNRESOLVED: state exactly what missing evidence justifies reading another file.
+ ```
+ 
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
+
+rationale:
+# Iteration 14 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 75% (15/20)
+- 失敗ケース: django__django-15368, django__django-15382, django__django-14787, django__django-14122, django__django-12663
+- 失敗原因の分析:
+  - **15368（持続的失敗）**: EQUIVALENT なのに NOT_EQUIVALENT と誤判定（25 ターン）。Patch B がテストメソッドを削除するケース。エージェントが「削除されたテスト → 実行されない → テスト結果が変わる → NOT_EQUIVALENT」と推論し続ける。
+  - **15382（持続的失敗）**: EQUIVALENT なのに NOT_EQUIVALENT と誤判定（17 ターン）。エージェントが Patch B のコードを誤トレースし、誤った出力を HIGH 信頼度で断定する。
+  - **14787（新規失敗・Guardrail 10 の副作用）**: NOT_EQUIVALENT なのに UNKNOWN（31 ターン）。iter-13 の Guardrail 10（仮想テスト環境禁止）が真の環境差異についてもエージェントを迷わせ、判断放棄を招いたと推定。
+  - **14122（新規失敗・Guardrail 10 の副作用）**: NOT_EQUIVALENT なのに UNKNOWN（31 ターン）。同上。
+  - **12663（持続的失敗）**: NOT_EQUIVALENT なのに UNKNOWN（31 ターン）。iter-11 の「UNKNOWN 禁止」チェックリスト、iter-12 の「反例確認後 STOP」指示を経ても改善なし。
+
+  **重要な観察**: iter-13 では Guardrail 10 が 13821 を修正した（+1）一方で、14787 と 14122 を新たに壊した（-2）。スコアが iter-12 の 80% から 75% に低下したため、Guardrail 10 は Objective.md のロールバック条件を満たした。現在の SKILL.md は iter-12 状態（80% ベースライン）に戻っている。
+
+  **UNKNOWN 失敗の根本原因**: 12663 に対して iter-11（UNKNOWN 禁止チェックリスト）と iter-12（COUNTEREXAMPLE セクションへの STOP 指示）が試みられたがいずれも効果がなかった。これらの修正はどちらも**結論フェーズ（Step 5–6）**で機能するが、エージェントが 31 ターンを使い果たす原因は**探索フェーズ（Step 3）**でループを抜け出せないことにある。STOP は COUNTEREXAMPLE が書かれた後にしか機能せず、12663 のエージェントはそこに至る前にターンを使い果たす。UNKNOWN 禁止チェックリストは Step 5.5 にあるが、エージェントはそこにも到達できない。
+
+## 改善仮説
+
+**Step 3（仮説駆動探索）の観察サイクルの中に CONVERGENCE GATE を追加することで、探索フェーズ自体に明示的な停止条件を設け、12663 のような「Step 3 ループ枯渇による UNKNOWN」を汎用的に防止できる。**
+
+根拠:
+- 現在の Step 3 の HYPOTHESIS UPDATE ブロックは「NEXT ACTION RATIONALE」で終わり、**「次のファイルを読む理由」は記述するが「今すぐ止まる条件」を定義していない**。この非対称性がターン枯渇の温床になっている。
+- CONVERGENCE GATE はエージェントに「現在の働き仮説（EQUIVALENT / NOT_EQUIVALENT / UNRESOLVED）を明示すること」を義務付ける。UNRESOLVED でない限り探索を継続できないため、結論が得られた瞬間に Step 5 へ移行する。
+- UNRESOLVED の場合も「何が足りないか」を明示させることで、根拠のない継続探索（ターン浪費）を抑制する。
+- この変更は任意の言語・フレームワーク・プロジェクトにおける compare モードの探索に普遍的に適用可能であり、特定のベンチマークケースに依存しない。
+- iter-11 の「UNKNOWN 禁止チェックリスト（Step 5.5）」および iter-12 の「STOP（COUNTEREXAMPLE セクション）」とは独立した層（Step 3 探索ループ）での修正であり、同一アプローチの繰り返しではない。
+
+## 変更内容
+
+Step 3 の HYPOTHESIS UPDATE ブロック内、`NEXT ACTION RATIONALE` の直後に CONVERGENCE GATE を追加（5 行）:
+
+```
+CONVERGENCE GATE (required after each observation set):
+  Working conclusion: [EQUIVALENT / NOT_EQUIVALENT / UNRESOLVED]
+  If EQUIVALENT or NOT_EQUIVALENT at any confidence: stop exploration and proceed to Step 5 now.
+  If UNRESOLVED: state exactly what missing evidence justifies reading another file.
+```
+
+変更規模: 5 行追加（≤ 20 行の制約内）。
+
+## 期待効果
+
+- **12663**: CONVERGENCE GATE により、エージェントが各観察サイクルで「現在の結論」を明示する義務を負う。コード差分を発見した時点で NOT_EQUIVALENT（LOW 信頼度）が成立し、Step 5 への移行が可能になる。ターン枯渇前に結論を書けるようになることを期待する。
+- **14787, 14122**: これらは Guardrail 10 の副作用（iter-13）で新たに壊れたケースであり、Guardrail 10 のロールバックにより iter-12 状態に戻っている。CONVERGENCE GATE はこれらにも同様の停止効果をもたらす可能性がある。
+- **15368, 15382**: 本イテレーションの主仮説ではなく（これらは探索ループ枯渇ではなくコードトレース誤りが原因）、直接的な改善は期待しない。
+- **回帰リスク**: CONVERGENCE GATE は「EQUIVALENT または NOT_EQUIVALENT の結論が得られていない限り（UNRESOLVED）継続を許可する」という条件付きであり、深い探索が必要なケースでは UNRESOLVED が持続して探索が継続される。また、CONVERGENCE GATE は compare モードの Step 3 のみに影響し、localize・explain・audit-improve の各モードおよび反証プロセスには変更を加えない。回帰リスクは低い。

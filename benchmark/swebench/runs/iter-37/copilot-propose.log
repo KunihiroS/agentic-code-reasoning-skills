@@ -1,0 +1,35 @@
+Now I have enough context. Let me write the proposal.
+
+以下が改善案の概要です。
+
+---
+
+## Iter-37 改善案
+
+### 現状分析
+- Iter-36 score: **65% (13/20)**
+- EQUIV 偽陰性 4件（15368, 11179, 13821, 15382）：コード差異→即 NOT_EQ のショートカット
+- NOT_EQ UNKNOWN 3件（14787, 11433, 12663）：BL-18 由来、既に SKILL.md から削除済み
+
+### 選択カテゴリ
+**F: 原論文の未活用アイデアを導入する**
+
+localize モードの「PHASE 2/3 のトレースは観測点まで到達が必須」という設計原則を compare モードの ANALYSIS Claims に適用する。
+
+### 改善仮説（1つ）
+> ANALYSIS Claims の `because [trace through code]` を `because [trace through changed code to the assertion or exception]` に明示することで、コード差異を根拠に FAIL と書くショートカットを構造的に防げる。
+
+### 変更内容（2行のみ）
+```diff
+- Claim C[N].1: ... because [trace through code — cite file:line]
++ Claim C[N].1: ... because [trace through changed code to the assertion or exception — cite file:line]
+- Claim C[N].2: ... because [trace through code — cite file:line]
++ Claim C[N].2: ... because [trace through changed code to the assertion or exception — cite file:line]
+```
+
+### 予測効果
+- **EQUIV**: 向上（アサーション到達できない差異で FAIL できなくなる）
+- **NOT_EQ**: 回帰なし（真の NOT_EQ はアサーションへの到達証拠が存在）
+
+詳細は `benchmark/swebench/runs/iter-37/proposal.md` に記載しました。
+

@@ -1,0 +1,36 @@
+Wait, iter-9 already exists! Let me check it:
+
+Now I have all the information I need. Let me create the proposal.
+
+提案を `benchmark/swebench/runs/iter-9/proposal.md` に書きました。以下がサマリーです。
+
+---
+
+## 改善案サマリー
+
+### 選択カテゴリ: F（原論文の未活用アイデア）
+
+iter-8 で localize の DIVERGENCE ANALYSIS を compare に応用しましたが、localize の核心「`CLAIM D[N]: ... which contradicts PREMISE T[N]`」— つまり「乖離がテスト前提に到達することを明示」— は未実装でした。
+
+### 改善仮説
+
+Divergence ブロックに **Propagation check** サブステップを追加:
+
+```
+Propagation: Does this divergence reach the test assertion?
+  Trace from divergence to assertion — cite file:line at each step.
+  If the assertion receives identical inputs despite the divergence: Comparison is SAME.
+```
+
+これで「コード乖離を発見 → 即 NOT_EQUIVALENT」のジャンプを構造的に防ぐ。
+
+### 影響予測
+
+| カテゴリ | 現状 | 予測 | 理由 |
+|---|---|---|---|
+| EQUIV | 8/10 | 9〜10/10 | 15368, 15382 の偽陽性防止 |
+| NOT_EQ | 6/10 | 6〜8/10 | 探索ゴール明確化（UNKNOWN 改善に期待、ただし不確実） |
+
+### ブラックリスト適合性: PASS
+BL-1〜10 いずれにも該当せず。共通原則 1〜7 もすべて満たす。変更規模は 8 行追加のみ。
+

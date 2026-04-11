@@ -1,0 +1,9 @@
+discussion を作成しました。  
+ファイル: `benchmark/swebench/runs/iter-34/discussion.md`
+
+結論は **承認: NO** です。主な理由:
+- `COUNTEREXAMPLE` / `NO COUNTEREXAMPLE EXISTS` の修正が **出力側制約** に近い
+- Guardrail 2 の復元が **NOT_EQ 側の立証責任増** として作用しやすい
+- `failed-approaches.md` の **BL-2 / BL-15 / 共通原則 #2, #6** に実質的に近い
+
+必要なら次に、代替案として書いた **カテゴリ C の未試行メカニズム** を具体的な proposal 形式に落とし込むこともできます。

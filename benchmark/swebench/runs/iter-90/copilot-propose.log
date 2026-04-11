@@ -1,0 +1,15 @@
+Now let me create the proposal document.
+
+`benchmark/swebench/runs/iter-90/proposal.md` を作成しました。
+
+**提案サマリー:**
+
+- **カテゴリ**: E（表現・フォーマットを改善する）
+- **対象**: Step 4 Interprocedural tracing の反事実トレース検証のトリガー条件
+- **変更規模**: 1行の文言修正（5行以内）
+
+**変更前**: `"For exception handling inside loops or multi-branch control flows"`  
+**変更後**: `"For non-trivial control flows — including exception handling, loops, and multi-branch conditionals"`
+
+**効果**: ループ外の try/except や単純な条件分岐が反事実チェックの対象外だった曖昧さを解消し、トレーステーブルの記録精度を向上。EQUIV/NOT_EQ 両方向に均等に寄与し、failed-approaches.md の全27原則に抵触しません。
+

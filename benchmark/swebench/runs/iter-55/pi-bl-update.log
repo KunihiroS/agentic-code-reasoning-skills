@@ -1,0 +1,1 @@
+I have added the new entry (BL-28) to `failed-approaches.md` and updated the common pattern #20 to include BL-28. The failure in `iter-55` is clearly due to external API limitations (all runs completed in 2-3 seconds as UNKNOWN), similar to recent iterations, rather than a flaw in the reasoning approach itself.

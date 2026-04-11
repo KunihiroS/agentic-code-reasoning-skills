@@ -1,0 +1,36 @@
+# Iteration 27 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 75%（15/20）※ iter-25 時点（iter-26 はベンチマーク未実施）
+- 失敗ケース: 15368, 15382, 14787, 11433, 14122
+- 失敗原因の分析:
+  - **15368（EQUIV → NOT_EQ）**: テスト削除を「テスト結果が変わる」と解釈したが、削除されたテストのアサーション条件が生産コードの差分に因果連鎖しているかを確認しないまま NOT_EQ を結論した。
+  - **15382（EQUIV → NOT_EQ）**: ループ＋例外の forward trace が誤りだったが、アサーション条件から逆算して因果連鎖を検証する手段がなく、誤りが露見しなかった。
+  - **13821（iter-23/24 で持続的失敗、EQUIV → NOT_EQ）**: D2 の call path 判定を過剰適用し、テストのアサーションが実際に差分の影響を受けるかを確認していなかった。
+  - 上記 3 件に共通するパターン: 「コード差分またはテスト差分を発見 → アサーション因果連鎖の到達確認なしに NOT_EQ を結論」。
+
+## 改善仮説
+
+Compare モードの「DIFFERENT outcome」主張において、forward（コード差分 → テスト結果）のトレースのみが行われており、「テストのアサーション条件から逆算してコード差分が因果連鎖に存在するか」を確認する backward 検証が欠如している。この backward 検証をチェックリストに追加することで、EQUIV 偽陽性（コード差分を発見したが、そのアサーション因果連鎖への到達を確認しないまま NOT_EQ と結論するパターン）を削減できる。
+
+現行チェックリストには「差異があると結論する前にテストをトレースせよ（EQUIV 方向）」はあるが、「差異が存在すると判断した場合、アサーション連鎖への到達を逆算確認せよ（NOT_EQ 方向）」の対称的な指示が欠如している。
+
+## 変更内容
+
+`## Compare` セクションの `### Compare checklist` に1項目を追加した。
+
+追加箇所: 既存の「When a semantic difference is found...」の項目と「Provide a counterexample...」の項目の間。
+
+追加内容:
+> When claiming a test outcome DIFFERS: verify backward — from the test's assertion condition through the causal chain to the code difference — that the divergence between A and B reaches the assertion. Do not conclude DIFFERENT solely because a difference exists somewhere in the call path.
+
+変更規模: +1項目（1行）、削除 0行。
+
+## 期待効果
+
+- **15368**（テスト削除）: backward 検証により「削除されたテストにはアサーション条件が存在しない → 因果連鎖の起点がない → 生産コードの比較対象外」という推論経路が開き、NOT_EQ 主張の根拠崩壊が露見しやすくなる。
+- **15382**（ループ＋例外 forward trace 誤り）: アサーションから逆算することで、forward trace の誤りが逆方向から検出されやすくなる。
+- **13821**（pass-to-pass 過剰スコープ）: assertion 条件から逆算することで、call path の該当性ではなく「assertion が実際に差分の影響を受けるか」を問う推論が促される。
+
+EQUIV 正答率への予測改善: +10〜20pp。NOT_EQ 正答率への影響: チェックリスト（advisory）であるため、正しい NOT_EQ 判定には影響しない見込み（0〜-5pp のリスク）。

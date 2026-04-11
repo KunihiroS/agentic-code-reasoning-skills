@@ -1,0 +1,12 @@
+Graded 56 localize results → /home/kunihiros/agentic-code-reasoning-skills/benchmark/swebench/runs/iter-5/audit/grades_localize.json
+
+without_skill:
+  Overall (file+func): 22/28 = 78.6%
+  File match:          22/28 = 78.6%
+  Function match:      18/28 = 64.3%
+  No prediction:       2
+
+with_skill:
+  Overall (file+func): 26/28 = 92.9%
+  File match:          26/28 = 92.9%
+  Function match:      18/28 = 64.3%

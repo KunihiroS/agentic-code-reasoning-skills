@@ -1,0 +1,31 @@
+Now I have enough information to write a well-grounded proposal. Let me create the proposal directory and file.
+
+改善案を `benchmark/swebench/runs/iter-45/proposal.md` に書きました。概要は以下のとおりです。
+
+---
+
+## 提案概要
+
+**カテゴリ: F — localize モードの未活用パターンを compare に移植**
+
+### 仮説
+compare モードの `COUNTEREXAMPLE` セクションが `because [reason]`（自由記述）を許容しているため、エージェントがコードレベルの差異だけで NOT_EQ と結論できてしまう。localize モードの Phase 3「各クレームは具体的な前提 T[N] を参照すること」パターンを移植し、COUNTEREXAMPLE をアサーション条件参照型に再構造化する。
+
+### 具体的変更
+
+```diff
+ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+-  Test [name] will [PASS/FAIL] with Change A because [reason]
+-  Test [name] will [FAIL/PASS] with Change B because [reason]
+-  Therefore changes produce DIFFERENT test outcomes.
++  Test [name]: assertion checks [specific condition — cite file:line]
++  With Change A, this assertion [PASSES/FAILS] because [trace from change to the asserted condition — cite file:line]
++  With Change B, this assertion [FAILS/PASSES] because [trace from change to the asserted condition — cite file:line]
++  Therefore the assertion produces DIFFERENT outcomes under Change A vs Change B.
+```
+
+### 選択理由
+- iter-44 は同じ意図を checklist 追加（advisory）で試みたが効果なし → 今回はテンプレート構造そのものを変更（structural）
+- BL-20（Claims の because 節変更）とは異なる：COUNTEREXAMPLE（ANALYSIS ループ外）のみ変更でターン消費増加が最小
+- 全 14 の共通原則と照合し抵触なし
+

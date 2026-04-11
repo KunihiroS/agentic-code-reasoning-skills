@@ -1,0 +1,26 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..82d4762 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -168,6 +168,10 @@ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
+   Test: [name]
++  Reachability: Does this test's call path reach the changed code?
++    [YES — cite the function call at file:line that leads to the changed code]
++    [NO  — state what was searched and where the path ends]
++  (If NO: Comparison is SAME — skip to next test)
+   Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                 because [trace through code — cite file:line]
+   Claim C[N].2: With Change B, this test will [PASS/FAIL]
+@@ -176,6 +180,10 @@ For each relevant test:
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+   Test: [name]
++  Reachability: Does this test's call path reach the changed code?
++    [YES — cite the function call at file:line that leads to the changed code]
++    [NO  — state what was searched and where the path ends]
++  (If NO: Comparison is SAME — skip to next test)
+   Claim C[N].1: With Change A, behavior is [description]
+   Claim C[N].2: With Change B, behavior is [description]
+   Comparison: SAME / DIFFERENT outcome

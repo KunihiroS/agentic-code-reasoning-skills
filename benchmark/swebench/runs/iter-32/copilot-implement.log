@@ -1,0 +1,14 @@
+Now let me check iter-31 for previous scores and the iter-32 directory:
+
+Now I have all I need. Let me make both changes:
+
+Let me verify the SKILL.md change looks correct:
+
+両方完了しました。
+
+**変更内容:**
+
+1. **SKILL.md** — D2 の `To identify them:` に 2 文を挿入。直接参照テストが sparse な場合に callers/wrappers/helpers 経由のテストも探索するよう指示を追加。既存の文言は変更なし。
+
+2. **benchmark/swebench/runs/iter-32/rationale.md** — Objective.md のフォーマットに従い作成。iter-31 の失敗ケース（django__django-15368, 13821, 15382）の分析、改善仮説、変更内容、期待効果を記載。
+

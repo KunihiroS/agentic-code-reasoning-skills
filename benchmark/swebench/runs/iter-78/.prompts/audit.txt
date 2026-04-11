@@ -1,0 +1,72 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-78/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 7 項目 (R1〜R7) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【追加チェック (R1, R7 の補強)】
+diff や rationale に具体的な数値 ID, リポジトリ名, テスト名, コード断片が
+含まれていないか確認してください。含まれていれば R1 と R7 を 1 点 (FAIL) にしてください。
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 0a2b316..410ddcb 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -196,7 +196,7 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+   If NOT EQUIVALENT were true, a counterexample would look like:
+-    [describe concretely: what test, what input, what diverging behavior]
++    [describe concretely: what code condition enables divergence between the changes, what test reaches that condition, and what observable behavior differs]
+   I searched for exactly that pattern:
+     Searched for: [specific pattern — test name, code path, or input type]
+     Found: [result — cite file:line, or NONE FOUND with search details]
+
+rationale:
+# Iteration 78 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 前イテレーションの結果を参照
+- 失敗ケース: 等価判定（EQUIV）を誤って NOT_EQUIVALENT と判定したケース
+- 失敗原因の分析: 2つの変更間に意味論的な差異が存在する場合に、その差異が顕在化するための「コード条件」が実際のテストによって到達されているかを確認せずに NOT_EQUIVALENT と結論づけてしまっていた。`NO COUNTEREXAMPLE EXISTS` セクションのプレースホルダーが「入力レベル」の特定を促すにとどまり、「コード条件レベル（変更箇所の分岐が実行されるための条件）」の特定・到達性確認を明示的に促していなかった。
+
+## 改善仮説
+
+等価判定の誤りの主要因は、2つの変更間の差異を生む「コード条件」が特定されていないことにある。`NO COUNTEREXAMPLE EXISTS` セクションのプレースホルダーを「コード条件が到達されているかどうか」を明示的に確認させる記述に精緻化することで、エージェントは差異が顕在化する条件をコードレベルで特定し、その条件が既存テストによって到達されていないことを確認することで、正しく EQUIVALENT と判定できるようになる。
+
+## 変更内容
+
+`NO COUNTEREXAMPLE EXISTS` セクション内のプレースホルダー行（1行のみ）を変更した。
+
+- **変更前**: `[describe concretely: what test, what input, what diverging behavior]`
+- **変更後**: `[describe concretely: what code condition enables divergence between the changes, what test reaches that condition, and what observable behavior differs]`
+
+新規ステップ・新規フィールド・新規セクションの追加はなく、既存行の文言精緻化のみ。
+
+## 期待効果
+
+- **過剰 NOT_EQUIVALENT の抑制**: 「差異を見つけた後にその差異の発現条件がテストによって到達されているかを確認しない」という失敗パターンが減少する。プレースホルダーが「コード条件の特定 → 到達性の確認」という流れに誘導することで、このパターンを抑制できる。
+- **反証探索の質向上**: コード条件レベルで特定を要求することで、エージェントが「何らかの入力」と曖昧に記述して実際の探索を省略するケースが減り、反証探索の焦点が明確になる。
+- **EQUIV・NOT_EQUIV の両方向への中立性**: 到達性の確認は双方向に機能する（到達性があれば NOT_EQUIVALENT を強化し、なければ EQUIVALENT を強化する）ため、判定閾値を一方向にシフトしない。

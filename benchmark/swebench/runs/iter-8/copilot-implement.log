@@ -1,0 +1,14 @@
+Now let me check the iter-8 directory and previous scores for context:
+
+Now I'll implement both changes:
+
+Now overwrite the rationale.md with the correct content based on proposal.md:
+
+Let me verify both changes look correct:
+
+Both changes are applied correctly. Here's a summary:
+
+**SKILL.md**: Replaced the `ANALYSIS OF TEST BEHAVIOR` section in the `compare` mode certificate template. The `Claim C[N].1 / C[N].2` dual-trace format is replaced with a **Divergence-First** structure that requires explicitly identifying where Change A and Change B produce different values at a specific `file:line`, before making any outcome claim.
+
+**rationale.md**: Rewritten to reflect the iter-8 proposal (Divergence-First approach), following the Objective.md format — covering 前イテレーションの分析, 改善仮説, 変更内容, and 期待効果.
+

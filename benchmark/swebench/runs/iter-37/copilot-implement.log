@@ -1,0 +1,15 @@
+Let me check the iter-37 directory for more context before making changes.
+
+Now I have all the info needed. Let me make both changes:
+
+変更を確認します。
+
+完了しました。
+
+**実施内容:**
+
+1. **SKILL.md** — `Compare checklist` に 1 行追加（218行目）:
+   > "For each relevant test, read the test to identify the data value it reads or compares to determine pass/fail; trace back one step to where that value is produced and verify whether the change affects it before writing a Claim"
+
+2. **benchmark/swebench/runs/iter-37/rationale.md** — `Objective.md` のフォーマットに従い作成。前回スコア（65%、13/20）、失敗ケース（15368・11179・13821・15382 の EQUIV 偽陰性 + 14787・11433・12663 の UNKNOWN）、改善仮説、期待効果を記載。
+

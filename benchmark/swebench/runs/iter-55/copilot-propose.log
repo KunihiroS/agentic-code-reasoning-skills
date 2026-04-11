@@ -1,0 +1,21 @@
+Now I have all the context needed. Let me write the proposal.
+
+提案を `benchmark/swebench/runs/iter-55/proposal.md` に書きました。概要は以下の通りです。
+
+---
+
+## 改善提案サマリー
+
+**カテゴリ**: F（原論文の未活用アイデア）
+
+**仮説**: Step 4 トレーステーブルの反証的トレース要件（`"if this trace were wrong, what concrete input..."`）が現在「例外処理・多岐分岐」という曖昧な表現に限定されており、**一般的な条件分岐（if/elif/else）** への適用が明示されていない。これを `"any multi-branch control flow (conditionals, exception handling, loops)"` と明示することで、エージェントは条件分岐を含む全関数のトレース確定前に反証入力を検討するようになる。
+
+**変更内容（1行変更、追加0行）**:
+
+```diff
+- For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
++ For any multi-branch control flow (conditionals, exception handling, loops): after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
+```
+
+**予測効果**: EQUIV 7/10 → 8〜9/10 (+1〜2件)、NOT_EQ は 10/10 維持
+

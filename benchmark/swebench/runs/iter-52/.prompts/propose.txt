@@ -1,0 +1,29 @@
+あなたは SKILL.md の改善担当です。まだ SKILL.md を編集しないでください。まず改善案を提案してください。
+
+現在の SKILL.md は親イテレーション iter-35 (スコア 85%) から復元されています。
+
+1. Objective.md を読み、ゴール・制約・Exploration Framework を理解する
+2. failed-approaches.md を読み、過去に失敗した改善方向と共通原則を確認する
+3. 今回の親イテレーションは iter-35 (スコア 85%) です。benchmark/swebench/runs/iter-35/scores.json と benchmark/swebench/runs/iter-35/rationale.md (存在する場合) を分析し、この親からどう改善するかを検討してください。
+4. README.md と docs/design.md と docs/reference/agentic-code-reasoning.pdf を参照し、研究のコア構造と未活用のアイデアを確認する
+5. Exploration Framework の6カテゴリ（A〜F）から、この親イテレーションでは試されていないカテゴリのアプローチを選択する
+6. 改善案を benchmark/swebench/runs/iter-52/proposal.md に書く。以下を含むこと:
+   - 親イテレーション (iter-35) の選定理由への言及
+   - 選択した Exploration Framework のカテゴリ（A〜F）とその理由
+   - 改善仮説（1つだけ）
+   - SKILL.md のどこをどう変えるか（具体的な変更内容）
+   - EQUIV と NOT_EQ の両方の正答率にどう影響するかの予測
+   - failed-approaches.md のブラックリストおよび共通原則との照合結果
+   - 変更規模の宣言
+
+【変更規模の制約（重要）】
+- 追加行数は 5 行以内（hard limit、超過時は自動リジェクト）
+- 既存行への文言追加・精緻化のみ可
+- 新規ステップ・新規フィールド・新規セクション・新規テンプレート要素の追加は原則不可
+- 削除行はこの制限に含めない
+
+注意:
+- 特定のベンチマークケースを狙い撃ちする変更は禁止
+- 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持すること
+- 失敗ケースの修正に固執しない。SKILL.md の推論フレームワークとしての質の向上を目指すこと
+- failed-approaches.md の共通原則に抵触する変更は提案しないこと

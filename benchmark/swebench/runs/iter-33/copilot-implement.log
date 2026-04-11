@@ -1,0 +1,12 @@
+Now I have all the context. Let me make both changes simultaneously:
+
+変更内容を確認します：
+
+完了しました。
+
+**実施内容:**
+
+1. **SKILL.md 編集** — `## Compare` の Certificate template 内 DEFINITIONS D2 の `To identify them:` 後に 4 行を追加。複数 relevant test が見つかった場合に「変更の primary output（return value / raised exception / 直接変更される attribute）を直接 assert するテストを優先して読む」指示と「callers/wrappers へスコープ拡張しない」制約を明示。
+
+2. **rationale.md 作成** — Objective.md のフォーマット（前イテレーションの分析・改善仮説・変更内容・期待効果）に従い `benchmark/swebench/runs/iter-33/rationale.md` を作成。
+

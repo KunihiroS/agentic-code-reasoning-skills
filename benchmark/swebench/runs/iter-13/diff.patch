@@ -1,0 +1,12 @@
+diff --git a/SKILL.md b/SKILL.md
+index 3532d59..0a2b316 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -422,6 +422,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
+ 8. Do not hide uncertainty — state what is unverified.
+ 9. Do not skip the refutation check. It is mandatory in every mode.
++10. **Do not construct counterexamples using hypothetical test environments.** A counterexample asserting test outcome differences must be grounded in the repository's actual test environment — not in environments that *could* exist (e.g., a database version between an old minimum and a new minimum, or a runtime version not pinned by the project). If a behavioral difference only manifests on a version, platform, or configuration not established by the test setup (CI config, tox.ini, pinned requirements, version constraint files), do not treat it as a confirmed counterexample. Instead, determine the actual environment from available configuration files, or mark the claim UNVERIFIED and set CONFIDENCE to LOW.
+ 
+ ---
+ 

@@ -1,0 +1,64 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+以下のファイルを参照してください:
+- Objective.md の Audit Rubric セクション
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+
+以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
+Objective.md に定義された audit.md フォーマットに従って
+benchmark/swebench/runs/iter-53/audit.md を作成してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 01886cd..5c5367f 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -169,9 +169,9 @@ ANALYSIS OF TEST BEHAVIOR:
+ For each relevant test:
+   Test: [name]
+   Claim C[N].1: With Change A, this test will [PASS/FAIL]
+-                because [trace through changed code to the assertion or exception — cite file:line]
++                because [trace from the assertion or exception back through the call chain to show how Change A produces this outcome — cite file:line at each step]
+   Claim C[N].2: With Change B, this test will [PASS/FAIL]
+-                because [trace through changed code to the assertion or exception — cite file:line]
++                because [trace from the assertion or exception back through the call chain to show how Change B produces this outcome — cite file:line at each step]
+   Comparison: SAME / DIFFERENT outcome
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+@@ -188,8 +188,8 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
+     - Test outcome same: YES / NO
+ 
+ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+-  Test [name] will [PASS/FAIL] with Change A because [trace from changed code to the assertion or exception — cite file:line]
+-  Test [name] will [FAIL/PASS] with Change B because [trace from changed code to the assertion or exception — cite file:line]
++  Test [name] will [PASS/FAIL] with Change A because [trace from the assertion or exception back through the call chain to show how Change A produces this outcome — cite file:line at each step]
++  Test [name] will [FAIL/PASS] with Change B because [trace from the assertion or exception back through the call chain to show how Change B produces this outcome — cite file:line at each step]
+   Therefore changes produce DIFFERENT test outcomes.
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+
+rationale:
+# Iteration 53 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 85% (17/20)
+- 失敗ケース: django__django-15368, django__django-13821, django__django-11433
+- 失敗原因の分析: 15368 と 13821 は EQUIV の偽陰性。エージェントが変更コードを起点に前向きにトレースし、コード差分を発見した時点で assertion に到達せず「DIFFERENT」と即断した。11433 は NOT_EQ の UNKNOWN（収束失敗）。
+
+## 改善仮説
+
+ANALYSIS OF TEST BEHAVIOR の Claim C[N].1 / C[N].2 の `because` 節の推論起点を「変更コード → assertion」（前向き）から「assertion → 変更コード」（逆向き）に切り替えることで、エージェントは常に「このテストが最終的に観測する値」から推論を始めるようになり、コード差分が assertion の出力値に影響しない EQUIV ケースで正しく SAME を記録できるようになる。
+
+## 変更内容
+
+Compare 証明書テンプレートの Claim C[N].1 / C[N].2 および COUNTEREXAMPLE の `because` 節を計 4 行テキスト置換。逆向きトレース（assertion → コード）を Claim と COUNTEREXAMPLE の両セクションで統一。BL-14 との相違点: BL-14 は「DIFFERENT のみ」への非対称適用だったが、本変更は A/B 両クレームと COUNTEREXAMPLE の両方向に対称適用するため、立証責任の非対称な引き上げが生じない。
+
+## 期待効果
+
+- EQUIV（現状 80% = 8/10）: +1〜2。assertion 起点のトレースにより、変更コードが assertion 値に到達しない経路（wrapper による正規化等）を逆向きに確認し、SAME を正しく記録できる。
+- NOT_EQ（現状 90% = 9/10）: 維持〜微改善。真の NOT_EQ では逆向きトレースでも差異が assertion 値に直結することを確認でき、結論は変わらない。

@@ -1,0 +1,35 @@
+Now let me look at the README and design docs for additional context:
+
+Now I have all the information I need. Let me write the proposal:
+
+提案を作成しました。以下が要約です：
+
+---
+
+## 改善案サマリー
+
+**カテゴリ E（表現・フォーマット改善 — 有害な指示の削除）**
+
+### 仮説
+iter-33 が D2 に追加した 5 行を削除することで、NOT_EQ 側の 3 件 UNKNOWN が解消され、70% → 85% に回復する。
+
+### 変更内容（削除のみ、0 行追加）
+Compare テンプレートの D2 から以下を削除：
+```
+When multiple tests are found, read first those whose
+assertions directly observe the change's primary output — its return value,
+raised exception, or directly modified attribute — before tests that only
+transitively invoke the changed code through intermediate layers. Do not
+expand the search to callers or wrappers not referenced by tests.
+```
+
+### 根拠
+- **NOT_EQ 3件 UNKNOWN の原因**：`Do not expand to callers/wrappers` 制限が間接テスト経由の証拠発見を阻害し、ターン上限（31 turns）を消費した
+- **pre-iter-33 状態は 85%** を達成済み。差し戻しでその状態に戻る
+- **ブラックリスト抵触なし**：BL-17（積極的拡張）とは異なり、中立状態への復帰
+- **共通原則**：原則 #3「探索量削減は有害」・原則 #16「ネガティブプロンプトは過剰適応」の正方向への適用
+
+### 変更規模
+- 追加: 0 行 ✅（hard limit: 5 行以内）
+- 削除: 5 行（制限対象外）
+

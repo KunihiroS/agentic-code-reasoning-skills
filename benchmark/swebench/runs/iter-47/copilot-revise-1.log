@@ -1,0 +1,12 @@
+SKILL.md already has the iter-47 changes applied. Now I'll create the audit.md and update rationale.md.
+
+Now update the root `rationale.md`:
+
+完了しました。
+
+**実施内容:**
+1. **`benchmark/swebench/runs/iter-47/audit.md` を作成** — Audit Rubric (R1〜R7) に基づき評価: **PASS (19/21)**。全項目 ≥ 2、主な減点は R5(複雑性+2)とR7(ケース非依存性+2)の軽微な懸念のみ。
+2. **`rationale.md` を更新** — Iteration 36 → Iteration 47 の内容に更新。SKILL.md の D2(b) への 2 行追加（検証要件の明示化）を記録。
+
+SKILL.md はすでに iter-47 の diff.patch（2行追加、5行以内制限を遵守）が適用済みです。
+

@@ -1,0 +1,24 @@
+Now let me analyze the failure cases in detail:
+
+Now create iter-15/rationale.md:
+
+Let me verify the SKILL.md change looks correct:
+
+The change is clean. Here's a summary of what was done:
+
+---
+
+## iter-15 作業サマリー
+
+**失敗分析 (80%, 4失敗):**
+- `15368` (13ターン): EQUIVALENT → NOT_EQUIVALENT。Patch B がテストを削除するケース。エージェントが「削除 → 実行されない → 結果が異なる」と誤推論。**本イテレーションのターゲット。**
+- `15382`, `12663` (31ターン): UNKNOWN。探索枯渇。iter-14 の CONVERGENCE GATE でも未解決。
+- `14787` (28ターン): NOT_EQUIVALENT → EQUIVALENT。差異を見逃す。
+
+**改善仮説:**  
+compare テンプレートの D2 定義に、パッチによって削除されたテストの outcome を **ABSENT** と明示する **D3** を追加。ABSENT == ABSENT は同一結果（差異ではない）と定義することで、15368 の「テスト削除 → 自動的に NOT_EQUIVALENT」誤推論を汎用的に防止する。
+
+**変更内容:** SKILL.md の compare テンプレート DEFINITIONS ブロックに D3（4行）追加。
+
+**変更規模:** 4行（制約20行以内）。
+

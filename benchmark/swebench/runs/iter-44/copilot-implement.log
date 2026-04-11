@@ -1,0 +1,9 @@
+完了しました。
+
+**SKILL.md**: `### Compare checklist` の「Provide a counterexample...」の直前に 1 行追加:
+```
+- For each relevant test, trace both changes through to the outcome the test's assertion checks (the value compared, the exception caught, or the state verified); compare A and B at that observable — not at intermediate code differences.
+```
+
+**rationale.md**: `Objective.md` のフォーマット（前イテレーションの分析・改善仮説・変更内容・期待効果）に従い `benchmark/swebench/runs/iter-44/rationale.md` を作成しました。
+

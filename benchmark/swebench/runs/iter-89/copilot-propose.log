@@ -1,0 +1,16 @@
+`benchmark/swebench/runs/iter-89/proposal.md` を作成しました。
+
+---
+
+## 提案サマリー
+
+**フォーカス**: `not_eq`（異なる振る舞いの検出精度向上）
+
+**カテゴリ**: E（表現・フォーマットを改善する）
+
+**仮説**: `NO COUNTEREXAMPLE EXISTS` ブロックの `Conclusion: no counterexample exists because [brief reason]` というプレースホルダが曖昧なため、エージェントは探索で差異を発見しても「差異は影響しない」と一言で退けられてしまう。
+
+**変更内容**: `[brief reason]` → `[if a difference was found above, explain the mechanism that prevents it from reaching the test assertion; if nothing was found, state why the behavioral difference is structurally absent from the call path]`（1 行の精緻化）
+
+**期待効果**: 発見された差異をテストアサーションへの伝播なく退ける際に吸収メカニズムの説明を要求することで、説明できない場合（実際に差異が観測可能な `not_eq` ケース）にエージェントが反例と認識し直すよう誘導。
+

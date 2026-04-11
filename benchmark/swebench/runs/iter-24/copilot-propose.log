@@ -1,0 +1,27 @@
+Now I have enough context. Let me write the proposal.
+
+改善案を `benchmark/swebench/runs/iter-24/proposal.md` に作成しました。
+
+---
+
+## 提案サマリー
+
+**カテゴリ A — 逆方向推論（未試行）**
+
+### 仮説
+EQUIV→NOT_EQUIV 誤判定の根本原因は「コード差異 → テスト結果差異」という推論ジャンプ。Compare テンプレートの PREMISES と ANALYSIS OF TEST BEHAVIOR の間に **BEHAVIORAL SCOPE** セクション（5行）を挿入し、「Change A と Change B が異なる結果を生む具体的な入力条件を file:line 付きで列挙すること」を義務化する。
+
+### 変更内容（5行追加）
+```
+BEHAVIORAL SCOPE:
+Under what specific input conditions or code states do Change A and Change B produce different results?
+  Diverges when: [exact input class / state — cite file:line]
+  Identical for: [all other conditions]
+Complete this section from the changed code before analyzing any individual test.
+```
+
+### BL との非該当理由
+- BL-2（証拠閾値厳格化）ではなく推論**順序**の変更
+- BL-7（CHANGE CHARACTERIZATION）ではなく動的な divergence input 分析
+- BL-10（Reachability ゲート）と異なり、真に EQUIV/NOT_EQUIV を弁別する条件を問う
+

@@ -1,0 +1,14 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..5777fe9 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -168,6 +168,9 @@ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
+   Test: [name]
++  Key value (1-2 variables or return values that determine this test's assertion):
++    With A: created [file:line] → last modified [file:line or NONE] → value at assertion [file:line]: [value/state]
++    With B: created [file:line] → last modified [file:line or NONE] → value at assertion [file:line]: [value/state]
+   Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                 because [trace through code — cite file:line]
+   Claim C[N].2: With Change B, this test will [PASS/FAIL]

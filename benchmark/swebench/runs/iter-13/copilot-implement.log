@@ -1,0 +1,32 @@
+Let me look at the actual agent outputs for the persistent failures:
+
+Now I have a clear picture. Let me analyze and implement:
+
+**Failures in iter-12 (80%):**
+1. **15368** — EQUIVALENT→NOT_EQUIVALENT: agent invents "pytest collection error" for deleted test despite D2 note
+2. **13821** — EQUIVALENT→NOT_EQUIVALENT: agent constructs hypothetical SQLite 3.10.0 environment to claim SKIP vs FAIL difference
+3. **15382** — EQUIVALENT→NOT_EQUIVALENT: wrong code trace with HIGH confidence
+4. **12663** — NOT_EQUIVALENT→UNKNOWN: error at turn 31
+
+**Hypothesis for iter-13**: Add a guardrail prohibiting hypothetical environment reasoning as the basis for counterexamples (fixes 13821). This is a new, untried, broadly applicable principle.
+
+Now create the iter-13 directory and rationale:
+
+Let me verify the SKILL.md change looks correct:
+
+The diff is clean — exactly 1 line added. The change is complete.
+
+---
+
+**Summary of what was done:**
+
+**分析**: iter-12 の4失敗のうち、13821 は「SQLite 3.10.0 という存在を確認していない仮想環境を反例として使用した」という明確で独立した失敗モードであると特定。
+
+**仮説**: 仮想テスト環境を反例の根拠にすることを禁じるガードレール（Guardrail 10）を追加することで、13821 の誤判定を汎用的に防止できる。
+
+**変更**: `SKILL.md` の Guardrails > General セクションに 1 行（Guardrail 10）を追加。「反例は実際のリポジトリのテスト環境に根拠を持たなければならない。CI 設定等で確認できない仮想バージョンを使った反例は UNVERIFIED として扱うべき」という原則を明記。
+
+**成果物**: 
+- `SKILL.md` — Guardrail 10 追加
+- `benchmark/swebench/runs/iter-13/rationale.md` — 変更理由書を作成
+

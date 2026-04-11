@@ -1,0 +1,38 @@
+Now I have enough information to write the proposal. Let me create the iter-43 directory and proposal.md.
+
+---
+
+## 改善提案まとめ
+
+**選択カテゴリ: F — 論文の他のモード（localize）の手法を compare に応用する**
+
+### 改善仮説（1つ）
+
+> Compare モードに `### Exploration protocol` を明示することで、エージェントが仮説駆動サイクル（H[N]: CONFIRMED / REFUTED）を Certificate Template の Claim 充填と統合するようになり、「コード差分発見 → 即 NOT_EQ」の短絡を防ぐ。
+
+### 具体的変更（+4行）
+
+`### Compare checklist` の直前に以下を追加:
+
+```markdown
+### Exploration protocol
+
+Use the hypothesis-driven format from Step 3 during compare exploration. Form hypotheses H[N] specifically about which test outcomes will differ between Change A and Change B, and why. After tracing each relevant code path, explicitly mark each hypothesis CONFIRMED or REFUTED before filling in the corresponding Claim. Claim entries should reflect the result of confirmed hypotheses — not raw code-level observations alone.
+```
+
+### 根拠
+
+- Localize モードには既に同等の `### Exploration protocol` があるが、Compare モードには存在しない設計上の非対称性がある
+- エージェントが Certificate Template を「Step 1–6 の全体実装」として解釈すると Step 3 の仮説更新サイクルをスキップする可能性がある
+
+### 予測効果
+
+| ケース | 予測 |
+|--------|------|
+| EQUIV 正答率 | +1〜2 件改善（15368, 15382 が仮説 REFUTED → SAME） |
+| NOT_EQ 正答率 | 中立〜微改善（仮説追跡でターン効率向上の可能性） |
+
+### BL 照合結果
+
+主要なリスクは BL-7（中間ラベルのアンカリング）との類似性だが、**本提案の仮説は単一固定ラベルではなく CONFIRMED/REFUTED サイクルを経る更新可能な命題**であり、判定方向への一方的なヒントを含まないため機構が異なる。その他のブラックリスト項目との抵触なし。
+

@@ -1,0 +1,32 @@
+Now I have all the information I need. Let me write the proposal.
+
+proposal.md を作成しました。以下に要点をまとめます。
+
+---
+
+## 改善案の概要
+
+**カテゴリ F** — 論文の Fault Localization テンプレート（Appendix B）の Claim-Premise 接続形式を compare モードに移植
+
+### 改善仮説
+
+`COUNTEREXAMPLE` ブロックの `[reason]` が自由テキストのため、AI は「コード差異 → NOT_EQ」という論理ジャンプを、PREMISES（P3/P4：テストが何を検査するか）への参照なしに書ける。論文の CLAIM D1 形式（"which contradicts PREMISE T[N]"）を移植し、反例には `By P[N]: this test checks [assertion], and the divergence causes that assertion to produce a different result` フィールドを必須化する。
+
+### 具体的変更（2行追加 + 1行言い換え）
+
+1. **COUNTEREXAMPLE ブロック**に `By P[N]:` 参照フィールドを追加
+2. **NO COUNTEREXAMPLE ブロック**の仮想反例記述を `what assertion in P[N]` レベルに精緻化（対称修正）
+
+### BL-14 との根本的な違い
+
+| 観点 | BL-14（失敗） | 本提案 |
+|------|------|------|
+| 実装 | チェックリスト（非対称） | テンプレート構造（両ブロック対称） |
+| 要求 | backward chain 全体 | 既存 P[N] との1文の論理接続 |
+| 認知負荷 | 高 | 低 |
+
+### 期待効果
+
+- EQUIV 正答率: **+10〜20pp**（偽陽性削減）
+- NOT_EQ 正答率: **0〜-5pp**（軽微なリスクのみ）
+

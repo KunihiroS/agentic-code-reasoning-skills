@@ -1,0 +1,155 @@
+# Iteration 9 — Discussion（監査役レビュー）
+
+## 1. 学術的・実務的観点からの妥当性評価
+
+提案の核心である「コード乖離がテストアサーションまで伝播するか確認する」は、ソフトウェアテスト理論における **PIE フレームワーク（Execution, Infection, Propagation）** に直接対応する。
+
+### 関連研究
+
+| 出典 | URL | 要点 |
+|------|-----|------|
+| Voas & Miller (1992), PIE framework | https://dl.acm.org/doi/abs/10.1109/32.153381 | 故障がテスト失敗として観測されるには3条件が必要: (1) 故障コードが実行される (Execution), (2) プログラム状態が汚染される (Infection), (3) 汚染が出力まで伝播する (Propagation)。提案の Propagation check は条件(3)に正確に対応する |
+| Just et al. (ISSTA 2014), Efficient Mutation Analysis | https://homes.cs.washington.edu/~rjust/publ/state_infection_issta_2014.pdf | Infection した状態が伝播せずに消滅するケースが mutation testing の精度を歪める主因であることを実証。これは EQUIV 偽陽性の構造と同型 |
+| Palikareva et al., Shadow Symbolic Execution | https://www.researchgate.net/publication/291354179_Shadow_of_a_Doubt_Testing_for_Divergences_Between_Software_Versions | ソフトウェアバージョン間の乖離を記号実行で追跡。乖離の「発見」と「観測可能な出力差異」を区別する手法 |
+| Ugare & Chandra (arXiv:2603.01896) | https://arxiv.org/abs/2603.01896 | 原論文の localize モード PHASE 3 は CLAIM が PREMISE と接続する形式を要求するが、compare モードには同等の明示的ステップがない。提案はこのギャップを埋める |
+| Assertion-Aware Test Summarization | https://arxiv.org/pdf/2511.06227 | LLM によるテスト推論ではアサーションレベルのコンテキストが精度に重要であることを示す |
+
+**評価**: PIE フレームワークの Propagation 条件は、提案の理論的基盤として十分に確立されている。「コード差異の存在」と「テスト結果の差異」を区別する必要性は mutation testing 研究で広く認識されており、提案の方向性は学術的に妥当である。
+
+---
+
+## 2. Exploration Framework カテゴリ選択の適切性
+
+**選択: カテゴリ F（原論文の未活用アイデアを導入する）**
+
+### 過去のカテゴリ使用履歴（iter-6 以降）
+
+| Iter | カテゴリ | 結果 |
+|------|----------|------|
+| 6 | D（メタ認知・自己チェック）| 85%→75% |
+| 7 | A（推論の順序・構造を変える）| 75%→70% |
+| 8 | **F（原論文の未活用アイデア）** | 70%→70% |
+| 9 | **F（原論文の未活用アイデア）** | — |
+
+**懸念**: iter-8 と iter-9 が連続してカテゴリ F を選択している。ただし：
+- iter-8 は「localize の Divergence Analysis 構造を compare に移植」（構造レベルの変更）
+- iter-9 は「localize PHASE 3 の CLAIM-PREMISE 接続を compare の Divergence ブロックに補完」（iter-8 で導入した構造内のサブステップ追加）
+
+iter-8 が導入した Divergence 構造の「未完成部分を補完する」という位置づけは論理的に一貫しており、同一カテゴリの連続使用にも合理性がある。ただし、iter-8 が横ばい（70%→70%）だった点を踏まえると、同じカテゴリ内での追加投資がどこまで有効かは不確実である。
+
+**判定: 許容範囲内**。ただし iter-9 でも改善が見られなければ、カテゴリ F からは離れるべき。
+
+---
+
+## 3. EQUIV / NOT_EQ 両方向への影響分析
+
+### 既存テンプレートとの実効的差分
+
+**重要な観察**: 現在の Claim 行は既に以下を要求している：
+
+```
+Claim C[N]: ... because [trace from divergence point to test assertion — cite file:line]
+```
+
+つまり「乖離点からアサーションまでのトレース」は既に Claim の中で要求されている。では Propagation check の追加は何が違うのか？
+
+**差分の本質**: 現在のテンプレートでは、Divergence で乖離を発見した後、即座に Claim（結論的主張）に進む。Propagation check はその間に「乖離がアサーションに到達するか？」という **判断分岐点** を挿入する。これにより：
+
+1. **SAME への明示的オフランプ**: 現在の SAME 条件は「values are identical at every traced point」（全点で値が同一）だが、EQUIV 偽陽性の実態は「ある点で値は異なるが、アサーション到達前に収束する」ケース。Propagation check は後者を明示的にカバーする。
+2. **Claim 前の強制的な中間確認**: 乖離発見 → Claim という直結を断ち切り、伝播確認という中間ステップを挟む。
+
+### EQUIV 方向（現状 80%）への影響
+
+- **正の影響（高確度）**: 15368, 15382 はまさに「中間的な値の乖離がアサーション境界に到達しない」ケース。Propagation check の「If the assertion receives identical inputs despite the divergence: Comparison is SAME」が直接的に機能する。
+- **回帰リスク（低）**: 正答 8 件は乖離なし（SAME）または乖離がアサーションに到達しているケースであり、Propagation check は追加確認に過ぎない。
+
+### NOT_EQ 方向（現状 60%）への影響
+
+- **正の影響（中程度）**: ゴール明確化（「アサーションに到達するかを確認せよ」）により探索が収束しやすくなる可能性。
+- **負の影響（要警戒）**: **ここが最大のリスク**。UNKNOWN 4 件（14787, 11433, 14122, 12663）は既に 31 ターン枯渇。Propagation check は「Trace from divergence to assertion — cite file:line at each step」を要求し、複雑なコードパスでは数ターンの追加消費が発生する。ターン枯渇問題を悪化させる可能性がある。
+- **BL-2 類似性の検討**: Propagation check は NOT_EQ 結論に到達する前の追加検証ステップであり、実効的に NOT_EQ の立証負担を増やす。ただし BL-2（閾値の引き上げ）とは質的に異なる：BL-2 は「どれだけの証拠が必要か」を変えたが、Propagation check は「何を確認すべきか」を明確化する。失敗モードの弁別力がある変更（BL-10 の教訓に合致）ではある。
+
+### 差分の方向性判定
+
+Propagation check の実効差分は **両方向に作用するが、非対称** である：
+- EQUIV 方向: 新しいオフランプ（SAME 判定の構造的サポート）→ **強い正の効果**
+- NOT_EQ 方向: 追加検証ステップ → **弱い正の効果 + ターン消費の負の効果**
+
+NOT_EQ 方向への負の効果（ターン消費増）は、EQUIV 方向への正の効果とトレードオフの関係にある。ただし、BL-6 のような「片方向にのみ作用する対称的文言」とは異なり、Propagation check は EQUIV 方向に新しいメカニズム（収束判定のオフランプ）を提供しており、単なる立証責任の移動ではない。
+
+---
+
+## 4. failed-approaches.md ブラックリストおよび共通原則との照合
+
+### 個別ブラックリスト項目
+
+| BL | 照合 | 評価 |
+|----|------|------|
+| BL-2（NOT_EQ 証拠閾値強化）| **要注意**。Propagation check は NOT_EQ に至る前の追加ステップであり、形式的には証拠要求の追加に見える。ただし BL-2 の本質は「閾値のゼロサム移動」であり、Propagation check は閾値移動ではなく推論ギャップ（乖離→結論のジャンプ）の補填。**実質的効果は異なると判断** |
+| BL-6（対称化の実効差分）| 提案は「EQUIV・NOT_EQ 双方に同一要求」と主張。既存テンプレートとの差分で見ると、EQUIV 方向には新しい SAME オフランプ、NOT_EQ 方向には追加検証。差分は非対称だが、BL-6 のように「片方向のみに制約追加」ではなく、**両方向に異なる種類の効果を持つ変更**。BL-6 には非該当 |
+| BL-8（受動的記録）| 「cite file:line at each step」は能動的検証を要求。BL-8 非該当 |
+| BL-10（弁別力のないゲート）| Propagation の YES/NO は失敗モードを弁別する（到達する＝DIFFERENT、到達しない＝SAME）。Reachability（ほぼ常に YES）とは異なり判別力がある。BL-10 非該当 |
+
+### 共通原則との照合
+
+| 原則 | 照合 | 評価 |
+|------|------|------|
+| #1 非対称操作 | EQUIV・NOT_EQ に同一ステップを適用。ただし実効的影響は非対称（上記参照）| **低リスク** — 構造的には対称、効果の非対称性は避けがたい |
+| #2 出力側制約 | 処理側（何を確認するか）の変更であり出力制約ではない | PASS |
+| #3 探索量削減 | 探索量を増やす方向 | PASS |
+| #4 同方向の再試 | iter-8 の Divergence-First とは異なるメカニズム（構造追加 vs サブステップ追加）| PASS |
+| #5 過剰規定 | 「cite file:line at each step」が過剰規定になる可能性あり（後述） | **要修正** |
+| #6 対称化の実効差分 | 差分は両方向に作用するが種類が異なる。片方向のみの制約追加ではない | PASS |
+| #8 受動的記録 | 能動的トレースを要求 | PASS |
+| #10 弁別力 | 乖離の伝播 YES/NO は EQUIV/NOT_EQ を弁別する | PASS |
+
+---
+
+## 5. 全体の推論品質への期待効果
+
+### 正の効果
+- **EQUIV 偽陽性の構造的防止**: 「乖離発見→即結論」というジャンプに対して、PIE フレームワークの Propagation 条件に基づく明示的チェックポイントを挿入する。これは推論のギャップを埋める質的改善であり、閾値操作とは本質的に異なる。
+- **推論の粒度向上**: 「コードが違う」と「テスト結果が違う」の間の推論を明示化することで、証拠に基づく判断の粒度が上がる。
+
+### 負の効果・リスク
+- **NOT_EQ UNKNOWN の悪化リスク**: 最大の懸念。「cite file:line at each step」はターン消費を増やし、既にターン枯渇中の 4 件をさらに悪化させる可能性がある。
+- **全体スコアへの影響**: EQUIV が +1〜2 件改善しても、NOT_EQ の UNKNOWN が +1 件増えれば差し引きゼロ。
+
+---
+
+## 6. 承認判定
+
+### 方向性は正しいが、NOT_EQ ターン消費への対策が不足
+
+提案の理論的基盤（PIE Propagation 条件）と、狙う失敗モード（乖離→結論ジャンプ）の弁別力は評価できる。BL-2, BL-6, BL-10 のいずれとも本質的に異なる。
+
+しかし、以下の修正なしでは NOT_EQ 方向のリスクが高い：
+
+### 要修正事項
+
+**「cite file:line at each step」を軽量化すること。**
+
+現在の提案：
+```
+Trace from divergence to assertion — cite file:line at each step.
+```
+
+修正案：
+```
+Trace from divergence point to the test assertion that would detect this difference.
+If no assertion receives a changed value: Comparison is SAME.
+```
+
+理由：
+- 「at each step」は中間経路の全ステップの引用を要求し、複雑なコードパスで数ターンを消費する。
+- 重要なのは「アサーションに到達するか否か」の結論であり、全中間ステップの引用ではない。
+- 共通原則 #5（過剰規定）への抵触リスクを低減する。中間ステップの形式を規定すると、エージェントの注意が「形式を満たすこと」に向かい、本来の判断から離れる。
+- 軽量化により NOT_EQ ケースでのターンオーバーヘッドを最小化し、UNKNOWN 悪化リスクを抑える。
+
+---
+
+## 承認: NO（条件付き）
+
+**理由**: Propagation check の追加は理論的に妥当であり、EQUIV 偽陽性の防止に有効と期待できる。しかし「cite file:line at each step」の過剰規定が NOT_EQ ターン枯渇を悪化させるリスクがあり、EQUIV の改善分を相殺する可能性がある。上記の軽量化修正を反映した上で再提出を求める。
+
+方向性自体は承認可能であり、修正は文言レベルの調整（1〜2行の変更）で足りる。

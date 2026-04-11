@@ -1,0 +1,24 @@
+diff --git a/SKILL.md b/SKILL.md
+index 7f5f487..bece161 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -188,13 +188,16 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
+     - Test outcome same: YES / NO
+ 
+ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+-  Test [name] will [PASS/FAIL] with Change A because [reason]
+-  Test [name] will [FAIL/PASS] with Change B because [reason]
++  Test [name] will [PASS/FAIL] with Change A because [trace — cite file:line]
++  Test [name] will [FAIL/PASS] with Change B because [trace — cite file:line]
++  By P[N]: this test checks [assertion/behavior stated in P3 or P4], and the
++           divergence above causes that assertion to produce a different result.
+   Therefore changes produce DIFFERENT test outcomes.
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+   If NOT EQUIVALENT were true, a counterexample would look like:
+-    [describe concretely: what test, what input, what diverging behavior]
++    [describe concretely: what test, what assertion in P[N], what code difference
++     would cause that assertion to produce a different result]
+   I searched for exactly that pattern:
+     Searched for: [specific pattern — test name, code path, or input type]
+     Found: [result — cite file:line, or NONE FOUND with search details]

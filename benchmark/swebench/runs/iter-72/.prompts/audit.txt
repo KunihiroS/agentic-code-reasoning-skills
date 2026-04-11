@@ -1,0 +1,71 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-72/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 7 項目 (R1〜R7) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+
+合格基準: 全項目 2 以上、かつ合計 14/21 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【追加チェック (R1, R7 の補強)】
+diff や rationale に具体的な数値 ID, リポジトリ名, テスト名, コード断片が
+含まれていないか確認してください。含まれていれば R1 と R7 を 1 点 (FAIL) にしてください。
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 88375ac..c824fb6 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -74,7 +74,7 @@ NEXT ACTION RATIONALE: [why the next file or step is justified]
+ 
+ CONVERGENCE GATE (required after each observation set):
+   Working conclusion: [EQUIVALENT / NOT_EQUIVALENT / UNRESOLVED]
+-  If EQUIVALENT or NOT_EQUIVALENT at any confidence: stop exploration and proceed to Step 5 now.
++  If EQUIVALENT or NOT_EQUIVALENT: cite the specific file:line evidence supporting this conclusion, then proceed to Step 5.
+   If UNRESOLVED: state exactly what missing evidence justifies reading another file.
+ ```
+ 
+
+rationale:
+# Iteration 72 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 前イテレーション時点の値を引き継ぐ
+- 失敗ケース: 詳細は scores.json 参照
+- 失敗原因の分析: 探索中に収集した証拠が十分でないまま収束判断が行われ、EQUIVALENT または NOT_EQUIVALENT の誤判定につながっていた。収束時に証拠の明示が要求されていないため、根拠のない確信による早期収束が発生しやすい構造だった。
+
+## 改善仮説
+
+CONVERGENCE GATE において、探索継続には証拠明示が義務付けられているが、探索停止（収束判断）には証拠明示が不要という非対称性が存在する。この非対称性が「最小抵抗経路」として機能し、根拠不足での早期収束を誘発している。停止判断時にも具体的な file:line 証拠の引用を要求することで、この構造的非対称性を解消し、根拠のある収束判断のみが通過できるようにする。
+
+## 変更内容
+
+SKILL.md の Step 3: Hypothesis-driven exploration 内の CONVERGENCE GATE を 1 行変更した。
+
+- 変更前: 収束判断（EQUIVALENT / NOT_EQUIVALENT）に対して証拠引用の要件なし
+- 変更後: 収束判断時に「具体的な file:line 証拠の引用」を必須化し、その後 Step 5 に進むよう明示
+
+## 期待効果
+
+- 証拠不足での早期収束が構造的に阻止される
+- 「見た気がする」程度の確信ではなく、文書化された証拠に基づく収束判断のみが許可される
+- 探索継続コストと停止コストの非対称性が解消され、収束閾値が対称化される
+- compare / localize / explain / audit-improve の全モードに同等に作用する（CONVERGENCE GATE は Core Method の一部であるため）

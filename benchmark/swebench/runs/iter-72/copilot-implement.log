@@ -1,0 +1,8 @@
+完了しました。
+
+**SKILL.md の変更（1行）:**
+- `If EQUIVALENT or NOT_EQUIVALENT at any confidence: stop exploration and proceed to Step 5 now.`
+- → `If EQUIVALENT or NOT_EQUIVALENT: cite the specific file:line evidence supporting this conclusion, then proceed to Step 5.`
+
+**rationale.md:** Objective.md のフォーマットに従い作成。具体的な数値 ID・リポジトリ名・テスト名は含めず、失敗原因・改善仮説・変更内容・期待効果を記載しました。
+

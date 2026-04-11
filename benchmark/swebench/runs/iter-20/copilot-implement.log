@@ -1,0 +1,31 @@
+Now I have a clear picture. Let me analyze the failure patterns:
+
+Now I'll apply the two complementary changes forming one unified hypothesis about shallow counterexample prevention:
+
+Now verify the changes look correct:
+
+Good. Now create the iter-20 rationale:
+
+The changes are clean — exactly 2 lines added. Let me verify the rationale is complete:
+
+完了です。以下が実施した内容です：
+
+## 分析結果
+
+**iter-19 の失敗パターン（75%, 15/20）**:
+- EQUIVALENT → NOT_EQUIVALENT 誤判定 × 3（15368, 13821, 15382）：**「浅い反例」問題**
+- NOT_EQUIVALENT → EQUIVALENT 誤判定 × 1（14787）：反例探索の不徹底
+- NOT_EQUIVALENT → UNKNOWN × 1（12663）：ターン枯渇
+
+## SKILL.md の変更（2行追加）
+
+**仮説**: 浅い反例問題は2段階の構造的欠陥に起因。iter-17（到達性確認）と iter-19（アサーション特定）はそれぞれ別の段階に対処したが単独では不十分。両ゲートを同時に設けることで相互補完的に機能する。
+
+1. **段階1ゲート**（ANALYSIS OF TEST BEHAVIOR）: `Changed code on this test's execution path: [YES/NO]` — 変更コードに到達しないテストを早期スキップ
+2. **段階2ゲート**（COUNTEREXAMPLE）: `Diverging assertion: [test_file:line]` — 具体的なアサーション特定を要求
+
+## 成果物
+
+- `SKILL.md` — 2行追加（コア構造維持）
+- `benchmark/swebench/runs/iter-20/rationale.md` — Objective.md フォーマット準拠
+

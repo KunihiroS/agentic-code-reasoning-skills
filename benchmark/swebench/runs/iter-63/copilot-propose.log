@@ -1,0 +1,42 @@
+Now I have enough context. Let me check the exact Guardrail 10 in SKILL.md and look at relevant iter-35 data:
+
+Good. Now I have all the context I need. Key findings:
+- iter-35 had 85% (17/20), wrong: 15368, 13821, 11433
+- iter-49 added Guardrail 10, score dropped to 75%
+- iter-49 wrong: 15382 (EQUIV→NOT_EQ), 14787, 14122, 10999, 12663 (NOT_EQ→UNKNOWN)
+- **15382 was CORRECT in iter-35** — Guardrail 10 also broke 15382!
+
+Removing Guardrail 10 recovers all 5 wrong cases. Let me write the proposal.
+
+改善案を `benchmark/swebench/runs/iter-63/proposal.md` に作成しました。
+
+---
+
+## 提案サマリー
+
+**カテゴリ E**（冗長な部分を簡潔にして認知負荷を下げる）
+
+### 核心的発見
+
+iter-35（85%）の失敗ケースに **15382 は含まれていない**。15382 は iter-49 で Guardrail 10 を追加した時点で初めて誤判定になった「回帰」です。つまり Guardrail 10 は：
+- 4件の NOT_EQ → UNKNOWN（ターン枯渇）を引き起こし  
+- 1件の EQUIV（15382）→ NOT_EQUIVALENT も引き起こした
+
+### 提案変更
+
+**Guardrail 10（1行）を削除**するのみ。追加行ゼロ。
+
+```
+10. **Do not use unverified runtime-environment claims as evidence.**...
+```
+
+### 期待効果
+
+| | iter-49 | 予測 |
+|--|---------|------|
+| EQUIV | 9/10 | 10/10（15382 回復） |
+| NOT_EQ | 6/10 | 10/10（4 UNKNOWN 回復） |
+| **合計** | **15/20 (75%)** | **20/20 (100%)** |
+
+Guardrail 10 が追加する「skip条件/CI設定の file:line 検証義務」は各テスト分析のターンコストを増大させ、正当な差異への推論も阻害していました。削除後、探索方向は既存の Compare テンプレートが引き続き担保します。
+

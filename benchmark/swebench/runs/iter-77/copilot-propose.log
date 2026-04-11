@@ -1,0 +1,18 @@
+Now I have enough context to write the proposal. Let me create the output directory and write the file.
+
+提案を `benchmark/swebench/runs/iter-77/proposal.md` に作成しました。
+
+---
+
+**要約**
+
+| 項目 | 内容 |
+|---|---|
+| カテゴリ | **B — 情報の取得方法を改善する** |
+| 仮説 | 各探索ステップに「対象となる未解決問」と「充足条件」を明示させることで、目的なき探索の拡大と早期打ち切りを同時に抑制できる |
+| 変更箇所 | Step 3 の `NEXT ACTION RATIONALE` テンプレート行（1行の文言精緻化） |
+| 変更前 | `[why the next file or step is justified]` |
+| 変更後 | `[which unresolved question this step addresses, and what observation from it would be sufficient to close that question]` |
+| 変更規模 | **1行**（5行制限を遵守） |
+| failed-approaches との衝突 | なし（全25原則と照合済み） |
+

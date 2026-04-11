@@ -1,0 +1,28 @@
+Now let me read the README and design docs:
+
+Now I have enough information to write the proposal. Let me create it:
+
+Critical finding - BL-6 is specifically about symmetrizing Guardrail 4! Let me read it:
+
+Now I have enough analysis to write the proposal. Let me create it:
+
+改善提案を `benchmark/swebench/runs/iter-62/proposal.md` に作成しました。
+
+## 提案サマリー
+
+**カテゴリ F + E**（原論文の未活用アイデア + 表現改善）
+
+**変更内容（1 行追加）**:  
+`## Compare` → `### Certificate template` の "Complete every section…" 直後に追加:
+
+```
+Throughout the analysis, ask: does the changed behavior cause each relevant test to produce a different PASS/FAIL result?
+```
+
+**仮説**: compare モードのテンプレート実行前に「テスト PASS/FAIL への影響を問う」フレーミング指示を置くことで、コード差異発見後に「テスト結果への影響確認」が自然なプロセスになり、EQUIV 偽陰性（15368/15382 パターン）を抑制する。
+
+**主な差別化ポイント**:
+- BL-11（ANALYSIS セクション内への mechanism 注釈）と異なり、テンプレート**実行前**への 1 行フレーム
+- テンプレートフィールド・記録義務・探索義務を一切追加しない（回帰リスク極低）
+- EQUIV / NOT_EQ 両方向に中立な問いの形式（原則 #1 非違反）
+

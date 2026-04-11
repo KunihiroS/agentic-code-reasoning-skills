@@ -1,0 +1,20 @@
+監査役の指摘は明確です。`cite file:line at each step` を軽量化すればよいだけです。proposal.md を修正します。
+
+次に、BL-5 照合行と共通原則 #5 の説明も、この変更を反映するよう更新します。
+
+変更規模セクションも更新します：
+
+変更を確認します：
+
+proposal.md を更新しました。変更の要点：
+
+**修正箇所（1行）**:
+- 旧: `Trace from divergence to assertion — cite file:line at each step.`
+- 新: `Trace from divergence point to the test assertion that would detect this difference.`
+
+**合わせて更新した箇所**:
+- 共通原則 #5（過剰規定）の照合結果を「低リスク」→「PASS」に更新
+- 末尾に監査役フィードバック対応の記録を追加
+
+監査役の指摘通り、中間経路の全ステップ引用（= ターン消費の主因）を削除し、「アサーションに到達するか否か」の結論判断に集中させる文言に変更。Propagation check の本質（伝播しない → SAME のオフランプ）は維持しています。
+
