@@ -6,9 +6,20 @@ from pathlib import Path
 
 
 def extract_answer(text: str) -> str:
-    """Extract ANSWER: YES/NO from model output."""
-    # Look for ANSWER: YES or ANSWER: NO
-    match = re.search(r"ANSWER:\s*(YES|NO)", text, re.IGNORECASE)
+    """Extract ANSWER: YES/NO from model output.
+
+    Handles various formats:
+      ANSWER: YES equivalent
+      ANSWER: **NO, not equivalent**
+      ## ANSWER\n**NO not equivalent**
+      ANSWER: NO not equivalent
+    """
+    # Primary: ANSWER line with YES/NO (allow markdown bold, commas, etc.)
+    match = re.search(r"ANSWER[:\s]*\*{0,2}\s*(YES|NO)\b", text, re.IGNORECASE)
+    if match:
+        return "EQUIVALENT" if match.group(1).upper() == "YES" else "NOT_EQUIVALENT"
+    # Secondary: "## ANSWER" header followed by YES/NO on the next line
+    match = re.search(r"#+\s*ANSWER\s*\n+\s*\*{0,2}\s*(YES|NO)\b", text, re.IGNORECASE)
     if match:
         return "EQUIVALENT" if match.group(1).upper() == "YES" else "NOT_EQUIVALENT"
     # Fallback: look for "equivalent" or "not equivalent" near end

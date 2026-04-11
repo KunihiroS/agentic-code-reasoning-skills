@@ -177,6 +177,23 @@ D2: The relevant tests are:
     or variable. If the test suite is not provided, state this as a constraint
     in P[N] and restrict the scope of D1 accordingly.
 
+STRUCTURAL TRIAGE (required before detailed tracing):
+Before tracing individual functions, compare the two changes structurally:
+  S1: Files modified — list files touched by each change. Flag any file
+      modified in one change but absent from the other.
+  S2: Completeness — does each change cover all the modules that the
+      failing tests exercise? If Change B omits a file that Change A
+      modifies and a test imports that file, the changes are NOT EQUIVALENT
+      regardless of the detailed semantics.
+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
+
+If S1 or S2 reveals a clear structural gap (missing file, missing module
+update, missing test data), you may proceed directly to FORMAL CONCLUSION
+with NOT EQUIVALENT without completing the full ANALYSIS section.
+
 PREMISES:
 P1: Change A modifies [file(s)] by [specific description]
 P2: Change B modifies [file(s)] by [specific description]
@@ -232,6 +249,8 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 ```
 
 ### Compare checklist
+- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+- For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
 - Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)

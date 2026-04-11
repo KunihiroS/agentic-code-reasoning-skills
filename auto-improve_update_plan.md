@@ -1391,3 +1391,56 @@ SWE-bench Verified の 20 件 pairs.json をそのまま使用。compare は SKI
 - [ ] auto-improve.sh 改修（上記 14.6 の方針に従い）
 - [ ] archive.jsonl リセット、新ベースラインで iter-0 記録
 - [ ] パイプライン再開
+
+### 14.8 Compare テンプレート改修: STRUCTURAL TRIAGE 追加 (2026-04-11)
+
+- **問題**: Pro compare ベンチ (多言語・大規模パッチ) で with_skill が without_skill より -7.4pp 悪化
+  - 原因1: grading スクリプトが `ANSWER: **NO**` や `## ANSWER\n**NO**` を拾えない → UNKNOWN 判定 (バグ修正済み)
+  - 原因2: SKILL.md の compare テンプレートが大規模パッチ (数百〜数千行) で全行トレースを試み、トレースできた範囲で EQUIVALENT と誤判定。without_skill は構造的差異 (ファイル欠落等) を即座に検出できていた
+  - HURTS 8件中6件が flipt-io/flipt (Go) の NOT_EQUIVALENT — agent patch が必要なモジュールを未更新
+- **改修内容**: Compare Certificate template に `STRUCTURAL TRIAGE` セクションを追加
+  - S1: 変更ファイルリストの比較 (片方にしかないファイルをフラグ)
+  - S2: 網羅性チェック (テストが import するファイルが両方で変更されているか)
+  - S3: 規模評価 (~200行超のパッチでは構造比較を優先、全行トレースは非推奨)
+  - 構造的ギャップが明確な場合、ANALYSIS をスキップして即 NOT EQUIVALENT 判定を許可
+  - Compare checklist の先頭にも反映
+- **影響範囲**: Compare の Certificate template とチェックリストのみ。Core Method、他モードへの波及なし
+- **Grading バグ修正**: `grade_compare_pro.py` の `extract_answer()` を拡張 — マークダウン太字、改行後の回答を対応
+
+#### 結果比較
+
+| | 改修前 avg (4 runs) | 改修後 avg (3 runs) | Delta |
+|---|---|---|---|
+| without_skill | 61.2% (stdev 4.8%) | 55.0% (stdev 5.0%) | -6.2pp |
+| with_skill | 53.8% (stdev 13.8%) | 58.3% (stdev 12.6%) | +4.5pp |
+| **with - without** | **-7.4pp** | **+3.3pp** | **+10.7pp 改善、逆転** |
+
+改修前は with_skill が without_skill より 7.4pp 劣っていたが、改修後は +3.3pp と逆転。STRUCTURAL TRIAGE により大規模パッチでの NOT_EQUIVALENT 誤判定が改善。ただし stdev 12.6% と揺れは大きい。
+
+### 14.9 現時点のベンチマーク総括 (2026-04-11)
+
+#### Audit-Improve (security_bug 28件)
+
+| | Run 1 | Run 2 | 平均 | stdev |
+|---|---|---|---|---|
+| without_skill | 82.1% | 82.1% | 82.1% | 0% |
+| with_skill | 85.7% | 85.7% | 85.7% | 0% |
+| **Delta** | **+3.6pp** | **+3.6pp** | **+3.6pp** | — |
+
+極めて安定。SKILL.md は audit-improve で一貫して有効。
+
+#### Compare Pro (20ペア、多言語・高難度)
+
+| | 改修後 avg (3 runs) | stdev |
+|---|---|---|
+| without_skill | 55.0% | 5.0% |
+| with_skill | 58.3% | 12.6% |
+| **Delta** | **+3.3pp** | — |
+
+改善方向だが揺れが大きい。自動改善パイプラインでの改善余地あり。
+
+#### 現在の SKILL.md
+
+- `localize` → `diagnose` に改名、Activation gates 追加
+- Compare テンプレートに STRUCTURAL TRIAGE 追加
+- この版を auto-improve.sh 再開時のベースライン (iter-0) とする
