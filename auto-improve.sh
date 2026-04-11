@@ -179,44 +179,10 @@ count_added_lines() {
 append_archive() {
   local genid="$1"
   local parent_genid="$2"
-  local scores_json="$3"
-  local valid_parent="$4"
-  python3 -c "
-import json, datetime
-scores_data = json.load(open('$scores_json')) if '$scores_json' else []
-ws = [x for x in scores_data if x.get('variant') == 'with_skill']
-if ws:
-    correct = sum(1 for x in ws if x.get('correct'))
-    total = len(ws)
-    eq_total = sum(1 for x in ws if x.get('ground_truth') == 'EQUIVALENT')
-    neq_total = sum(1 for x in ws if x.get('ground_truth') == 'NOT_EQUIVALENT')
-    eq_ok = sum(1 for x in ws if x.get('ground_truth') == 'EQUIVALENT' and x.get('correct'))
-    neq_ok = sum(1 for x in ws if x.get('ground_truth') == 'NOT_EQUIVALENT' and x.get('correct'))
-    unk = sum(1 for x in ws if x.get('predicted') in (None, 'UNKNOWN'))
-    scores = {
-        'overall': int(100 * correct / total) if total else 0,
-        'equiv_ok': eq_ok, 'equiv_total': eq_total,
-        'not_eq_ok': neq_ok, 'not_eq_total': neq_total,
-        'unknown': unk, 'correct': correct, 'total': total,
-    }
-else:
-    scores = {'overall': 0, 'correct': 0, 'total': 0}
-
-import os.path
-snap_path = 'benchmark/swebench/runs/iter-$genid/SKILL.md.snapshot'
-snap_exists = os.path.isfile(snap_path)
-
-entry = {
-    'genid': int('$genid'),
-    'parent_genid': int('$parent_genid') if '$parent_genid' else None,
-    'skill_snapshot': snap_path if snap_exists else None,
-    'scores': scores,
-    'valid_parent': bool('$valid_parent' == 'true') and snap_exists,
-    'timestamp': datetime.datetime.now().isoformat(),
-}
-with open('$ARCHIVE_FILE', 'a') as f:
-    f.write(json.dumps(entry, ensure_ascii=False) + '\n')
-"
+  local compare_json="$3"
+  local audit_json="$4"
+  local valid_parent="$5"
+  python3 "$REPO_DIR/benchmark/swebench/append_archive_entry.py"     "$ARCHIVE_FILE" "$genid" "$parent_genid" "$compare_json" "$audit_json" "$valid_parent"
 }
 
 check_goal() {

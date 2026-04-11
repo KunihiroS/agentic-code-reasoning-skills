@@ -69,3 +69,17 @@ amc-activity.log
 *.bak
 *.orig
 failed-approaches-historical.md
+
+# Benchmark run data (large, generated)
+benchmark/swebench/runs/audit-security-*/
+benchmark/swebench/runs/compare-pro-*/
+benchmark/swebench/runs/compare-pro-triage-*/
+benchmark/swebench/runs/localize-*/
+benchmark/swebench/runs/variance-*/
+benchmark/swebench/runs/archive.jsonl.old
+
+# Old iterations (pre-benchmark-overhaul)
+benchmark/swebench/runs/iter-[1-9]/
+benchmark/swebench/runs/iter-[1-9][0-9]/
+benchmark/swebench/runs/iter-1[0-1][0-9]/
+!benchmark/swebench/runs/iter-0/

@@ -1,96 +1,106 @@
 あなたは SKILL.md の変更に対する監査役です。
 
-以下のファイルを参照してください:
-- Objective.md の Audit Rubric セクション
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
 - README.md
 - docs/design.md
 - docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
 
-以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
-Objective.md に定義された audit.md フォーマットに従って
-benchmark/swebench/runs/iter-7/audit.md を作成してください。
+この 6 ファイル以外を read / search / list してはいけません。
 
-合格基準: 全項目 2 以上、かつ合計 14/21 以上
+【出力先】
+benchmark/swebench/runs/iter-7/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
 
 diff:
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..82d4762 100644
+index d37b212..635a443 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -168,6 +168,10 @@ ANALYSIS OF TEST BEHAVIOR:
+@@ -89,7 +89,7 @@ HYPOTHESIS UPDATE:
+ UNRESOLVED:
+   - [remaining questions]
  
- For each relevant test:
-   Test: [name]
-+  Reachability: Does this test's call path reach the changed code?
-+    [YES — cite the function call at file:line that leads to the changed code]
-+    [NO  — state what was searched and where the path ends]
-+  (If NO: Comparison is SAME — skip to next test)
-   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                 because [trace through code — cite file:line]
-   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-@@ -176,6 +180,10 @@ For each relevant test:
+-NEXT ACTION RATIONALE: [why the next file or step is justified]
++NEXT ACTION RATIONALE: [why the next file or step is justified — and what specific signal (presence/absence of a call, a value, a branch) you are looking for to confirm or refute the active hypothesis]
+ ```
  
- For pass-to-pass tests (if changes could affect them differently):
-   Test: [name]
-+  Reachability: Does this test's call path reach the changed code?
-+    [YES — cite the function call at file:line that leads to the changed code]
-+    [NO  — state what was searched and where the path ends]
-+  (If NO: Comparison is SAME — skip to next test)
-   Claim C[N].1: With Change A, behavior is [description]
-   Claim C[N].2: With Change B, behavior is [description]
-   Comparison: SAME / DIFFERENT outcome
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
 
 rationale:
 # Iteration 7 — 変更理由
 
 ## 前イテレーションの分析
 
-- 前回スコア: 75% (15/20)
-- 失敗ケース: django__django-15368, django__django-13821, django__django-15382, django__django-14787, django__django-12663
-- 失敗原因の分析:
-  - **15368, 13821, 15382（EQUIV 偽陽性）**: 3 ケースとも EQUIVALENT なのに NOT_EQUIVALENT と誤判定。共通パターン: コード差異を発見した後、テストのコールパスがその差異に到達するかを確認せずに NOT_EQUIVALENT と結論する。現在の `ANALYSIS OF TEST BEHAVIOR` はコード差異を起点に分析が始まる構造のため、「コード構造上テストに影響するだろう」という推論でそのまま PASS/FAIL を結論できてしまう。
-  - **14787（NOT_EQUIV 偽陰性）**: EQUIVALENT と誤判定。Reachability チェックがコールパス確認を促すことで微改善が期待できる。
-  - **12663（NOT_EQUIV 偽陰性）**: 探索ターン過多（31 turns）による難ケース。今回の変更によるターン増加は最小限と見込む。
+- 前回スコア: 不明（iter-6 scores.json 未参照）
+- 失敗ケース: 詳細は scores.json 参照
+- 失敗原因の分析: 仮説が REFINED（未解決）のまま次ファイルへ移る際に、
+  何を探しに行くかの方針が曖昧なため探索がドリフトしやすい状態だった。
+  NEXT ACTION RATIONALE フィールドは「なぜ次のファイルを開くか」は問うが、
+  「どのシグナルを探しに行くか」を明示する指示を欠いていた。
 
 ## 改善仮説
 
-**Compare テンプレートの各テスト分析ブロックの先頭に、テストのコールパスが変更コードに到達するか確認する Reachability ステップを挿入することで、エージェントがコード構造から判定方向を推論する前に、テスト到達性を検証する機会を確保し、テスト到達性未確認の NOT_EQUIVALENT 結論を減らすことができる。**
-
-D2 の「pass-to-pass テストはコールパスにある場合のみ relevant」という設計意図を、分析フェーズの能動的な確認ステップとして明示化する。YES/NO ＋ file:line 引用という構造により、到達性の未確認なままのコード差異→NOT_EQUIVALENT ジャンプを防ぐ。「NO なら即 SAME」という条件分岐帰結を伴うため、受動的な記録列の追加（BL-8）とは異なる。
+NEXT ACTION RATIONALE に「探しに行く証拠の種類（仮説を確認/反証するための
+具体的なシグナル）」を明示させることで、ファイル探索がその仮説に対して
+必要な情報に絞り込まれ、見落としと冗長な探索の両方が減る。
 
 ## 変更内容
 
-Certificate template の `ANALYSIS OF TEST BEHAVIOR`、`For each relevant test` ブロック（fail-to-pass 用・pass-to-pass 用の両方）に Reachability ステップを挿入（4 行追加 × 2 箇所 = 計 8 行）:
+SKILL.md Step 3 の HYPOTHESIS UPDATE ブロック内にある
+NEXT ACTION RATIONALE の行（1行）を以下のように精緻化した。
 
-**変更前（fail-to-pass ブロック）**:
-```
-For each relevant test:
-  Test: [name]
-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
-  Comparison: SAME / DIFFERENT outcome
-```
+変更前:
+  NEXT ACTION RATIONALE: [why the next file or step is justified]
 
-**変更後（fail-to-pass ブロック）**:
-```
-For each relevant test:
-  Test: [name]
-  Reachability: Does this test's call path reach the changed code?
-    [YES — cite the function call at file:line that leads to the changed code]
-    [NO  — state what was searched and where the path ends]
-  (If NO: Comparison is SAME — skip to next test)
-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
-  Comparison: SAME / DIFFERENT outcome
-```
+変更後:
+  NEXT ACTION RATIONALE: [why the next file or step is justified — and what
+  specific signal (presence/absence of a call, a value, a branch) you are
+  looking for to confirm or refute the active hypothesis]
 
-pass-to-pass ブロックも同様に変更（同一の 4 行を挿入）。PREMISES、COUNTEREXAMPLE、FORMAL CONCLUSION、Guardrails、Step 3–5.5、localize/explain/audit-improve への変更なし。
+変更規模: 1行（既存行への文言追加）。新規ステップ・フィールド・セクションなし。
 
 ## 期待効果
 
-- **EQUIV 正答率（偽陽性 3 件の改善）**: Reachability ステップで「このテストはその関数を呼ぶか？」を問われると、file:line 引用なしに YES と書けない。到達しないと分かれば即 SAME となり、15368・13821・15382 の偽陽性パターンが減る。予測: 7/10 → 8〜9/10。
-- **NOT_EQUIV 正答率への影響**: 真の NOT_EQUIVALENT ケースではテストは変更コードに到達しているため、Reachability 欄に「YES — [file:line]」と自然に記述できる。実質的な追加コストは小さく、14787 は微改善が期待できる。予測: 8/10 → 回帰なし〜若干改善。
+1. 探索ドリフトの抑制
+   仮説が REFINED のまま次ファイルへ移る際、読むべきシグナルを事前に宣言
+   することで、関連性の低いコードへの迷い込みが減り文脈の膨張を防ぐ。
+
+2. 微妙な差異の見落とし低減（Guardrail #4 に相当する失敗パターン）
+   差異がありそうなコードパスへ遷移するとき、どのシグナル（呼び出し経路の
+   有無・分岐条件の値・戻り値の型）を確認すべきかを先に宣言させることで、
+   読んだ後に「確認した証拠」と「確認すべきだったが見なかった証拠」が
+   区別しやすくなり、見落としを抑える。
+
+3. 推論チェーンの網羅性向上
+   次の探索で何を確認するかを先に宣言することが、後続の OBSERVATIONS と
+   HYPOTHESIS UPDATE の網羅性に対する自己チェックとして機能する。
