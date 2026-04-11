@@ -1,199 +1,150 @@
-# Iteration 6（COMPARE HYPOTHESIS 案）— ディスカッション（監査役レビュー）
+# Iter-6 監査ディスカッション
 
-## 提案の要約
+## 総評
+提案の狙いは理解できる。STRUCTURAL TRIAGE と ANALYSIS の間に「何が一致していれば EQUIVALENT と言えるのか」という観点を先に置くことで、前向きトレースを漫然と行わず、差異に敏感な追跡へ寄せたいという発想である。
 
-Compare テンプレートの PREMISES と ANALYSIS OF TEST BEHAVIOR の間に「COMPARE HYPOTHESIS」ブロック（9行）を挿入。分析前に H1 の方向ラベル（EQUIVALENT / NOT_EQUIVALENT / UNCERTAIN）と、NOT_EQ 予測時のみ具体的な失敗テスト・divergence path を宣言させる。分析後に H1 UPDATE で CONFIRMED / REFUTED / REVISED を記入させる。
+ただし、現行案の文言のままでは「テスト等価性の判定」に必要な条件ではなく、「意味的に同じであるための一般条件」を先に書かせる方向へモデルを誘導しやすい。SKILL.md の compare モードは D1 で明示的に "EQUIVALENT MODULO TESTS" を定義しており、判定対象はあくまで既存テストに対する観測的等価性である。ここを外すと、等価だが実装上は少し異なる変更を NOT EQUIVALENT に倒す回帰リスクがある。
 
----
+結論として、発想自体は妥当だが、現提案の文言はまだ片方向で、しかも D1 の test-scoped な定義より強い条件を書かせる危険があるため、そのままの承認は見送りたい。
 
-## 1. 学術的・実務的根拠の調査（Web 検索結果）
+## 1. 既存研究との整合性
+DuckDuckGo MCP で確認できた範囲では、提案の方向性そのものには研究的な整合性がある。
 
-### 1a. 原論文の確認
+1) Agentic Code Reasoning
+- URL: https://arxiv.org/abs/2603.01896
+- 要点: 構造化テンプレートにより、明示的 premises、execution path tracing、formal conclusion を要求すると精度が改善するという主張。提案の S4 は「結論に必要な証拠を先に意識させる」という意味で、この semi-formal reasoning の補強としては自然。
+- 監査上の解釈: 既存研究のコアである「証拠先行・未根拠主張の抑制」とは整合する。
 
-[Ugare & Chandra, "Agentic Code Reasoning" (arXiv:2603.01896)](https://arxiv.org/abs/2603.01896) を確認した。仮説駆動探索（Hypothesis-driven Exploration）は **Fault Localization（Appendix B）** のために設計されたステップであり、**Patch Equivalence Verification（Appendix A）のテンプレートには含まれていない**。論文の Compare テンプレートは Premises → Execution Trace → Formal Conclusion の流れであり、仮説形成ステップを意図的に含んでいない。
+2) Hypothesizer: A Hypothesis-Based Debugger to Find and Test Debugging Hypotheses
+- URL: https://dl.acm.org/doi/fullHtml/10.1145/3586183.3606781
+- DuckDuckGo 要約: 開発者は仮説を立て、その仮説がどの証拠収集を導くかによって調査を進める、という仮説駆動デバッグを扱う。
+- 監査上の解釈: 提案の S4 は「EQUIVALENT 仮説が真なら必要な証拠は何か」を先に言語化させるので、証拠収集の方向付けという点ではこの系譜に乗っている。
 
-これは設計上の「実装漏れ」ではなく**意図的な非採用**である可能性が高い。Localize は原因候補が複数あるため仮説で探索を絞る必要があるが、Compare は二択判定（EQUIV / NOT_EQ）であり、仮説形成の認知的役割が異なる。
+3) Counterfactual Reasoning for Retrieval-Augmented Generation
+- URL: https://openreview.net/forum?id=9U51rOnGko
+- DuckDuckGo 要約: counterfactual query を生成・評価して、因果的に重要な差異を切り出す枠組み。
+- 監査上の解釈: 本提案の「成立条件を先に置き、そこから外れる差異を探す」という構図は、一般的な counterfactual / backward-style reasoning と整合する。
 
-### 1b. アンカリングバイアスに関する研究
+以上より、研究との整合性はある。ただし、研究が支持しているのは「証拠探索を構造化すること」であって、「EQUIVALENT 側に有利な前提を先に固定すること」までは直接支持していない。したがって、整合性はあるが、現在の文言には慎重さが必要である。
 
-- [Anchoring Bias in Large Language Models: An Experimental Study (arXiv:2412.06593)](https://arxiv.org/abs/2412.06593) — LLM のアンカリングバイアスを実験的に検証。**強力なモデル（GPT-4, GPT-4o）ほどアンカリングバイアスが強い**。CoT や Reflection などの単純な事後修正手法ではアンカリングの完全な緩和は不十分であることを示した。
-- [Anchoring Bias in LLMs — Springer (2025)](https://link.springer.com/article/10.1007/s42001-025-00435-2) — 上記のジャーナル版。LLM が自回帰的に生成する特性上、先に生成した内容に後続の推論が重み付けされる構造的問題を指摘。
-- [Cognitive Bias in Decision-Making with LLMs (EMNLP 2024 Findings)](https://aclanthology.org/2024.findings-emnlp.739.pdf) — LLM が構造化推論中に初期情報に過度に依存する傾向を確認。sequential prompting で部分的に緩和可能だが、方向性ラベルを事前生成する場合のリスクは残存。
+## 2. Exploration Framework のカテゴリ選定は適切か
+結論: 主カテゴリ A は概ね妥当。ただし D の要素も混ざっている。
 
-### 1c. 仮説駆動推論の有効性と条件
+理由:
+- 提案の本体は、ANALYSIS 前に「EQUIVALENT が成立するための必要条件」を書かせることで、探索順序を前向きトレース一辺倒から、結論先行の backward reasoning に少し寄せることにある。これは Objective.md の A「推論の順序・構造を変える」に合う。
+- 一方で、実際に追加される内容は「事前チェックポイント」の性格も強く、D「メタ認知・自己チェック」にも接している。
 
-- [Hypothesis-Driven Theory-of-Mind Reasoning for LLMs (arXiv:2502.11881)](https://arxiv.org/html/2502.11881v1) — 仮説駆動推論の有効性を示すが、重要な前提条件を指摘：
-  1. **複数の競合仮説を同時に維持**すること（単一仮説へのコミットは premature closure のリスク）
-  2. **重み更新・リサンプリング・rejuvenation メカニズム**が不可欠
-  3. 単一仮説のみでは確証バイアスが発生（反復的に遭遇した情報をターゲットと誤認するパターンを報告）
+したがって、カテゴリ A とすること自体は不自然ではない。ただし説明としては、
+- 主: A（結論から必要証拠を逆算する）
+- 副: D（事前に見るべき観点を固定して思い込みを減らす）
+という整理のほうが正確。
 
-### 1d. Verification-First アプローチ
+## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方への作用
+ここが最重要の懸念点である。
 
-- [Asking LLMs to Verify First is Almost Free Lunch (arXiv:2511.21734)](https://arxiv.org/html/2511.21734v1) — 候補回答を先に提示し検証させる戦略は逆方向推論を誘発し事後合理化を減少させる。ただしこれは**検証対象が外部から与えられる**場合の話であり、自己生成した仮説を自己検証する場合は anchoring が優勢になるリスクがある。
+### 3-1. 提案が直接狙っているのは EQUIVALENT 側
+proposal.md 自身が、"等価と誤判定する（EQUIV 方向の誤り）を減らす" と明言している。つまり一次効果は、証拠不足のまま EQUIVALENT と言ってしまう誤りの抑制である。
 
-### 学術的評価の総括
+この点は README.md にある現状分析とも整合している。現行 skill は NOT_EQUIVALENT 側はすでに強く、残課題は EQUIVALENT 側に寄っている。
 
-仮説駆動推論が有効な場面は存在するが、以下の条件が必要：
-1. 複数の競合仮説を同時維持すること（単一仮説へのコミットではない）
-2. 重み更新・リサンプリングメカニズムがあること
-3. 方向性のあるラベルを事前に生成しないこと
+### 3-2. ただし、実効的には NOT_EQUIVALENT 側へ倒れやすくなる
+S4 の文言は次のようになっている。
+- "state what behavioral properties both changes must share for EQUIVALENT to hold"
+- "focus tracing on the properties most likely to diverge"
 
-本提案の H1 は**単一仮説への事前コミット + 方向性ラベル（EQUIV / NOT_EQ / UNCERTAIN）**であり、条件 1 と 3 に抵触する。
+この書き方だと、モデルは ANALYSIS 前に「等価であるための必要条件」を自分で定義する。ここで条件を強く置きすぎると、実際には D1 の意味で等価なのに、途中の意味差・内部差・非観測差を見つけて NOT EQUIVALENT に倒す危険がある。
 
----
+言い換えると、変更は見かけ上 "EQUIVALENT を安易に出さないための安全策" だが、判定境界を test-observable equivalence から semantic sameness に広げるなら、false negative な NOT_EQUIVALENT を増やしうる。
 
-## 2. Exploration Framework カテゴリ選択の評価
+### 3-3. 片方向にしか作用しないか
+厳密には、片方向だけではない。
 
-提案は「カテゴリ F: 原論文の未活用アイデアを導入する」を選択。
+- 正方向の主作用: false EQUIVALENT を減らす
+- 副作用の方向: false NOT_EQUIVALENT を増やす可能性がある
 
-### 過去の同カテゴリ試行
+つまり、片方向改善ではなく、実質的には判定閾値を保守的側へ動かす変更になりうる。
 
-| イテレーション | BL番号 | カテゴリ F の内容 | 結果 |
-|---|---|---|---|
-| iter-7 | BL-8 | localize の `Relevant to` 列移植 | 75% → 70%（悪化） |
+### 3-4. なぜ現行文言が危険か
+compare モードの D1 は「関連テストの pass/fail outcome が identical なら EQUIVALENT」である。ところが S4 の "behavioral properties" は test-scoped であることが明示されていない。
 
-カテゴリ F の試行は BL-8 の1件のみであり、カテゴリとしては再挑戦可能。提案は「記録フィールドの追加」ではなく「仮説形成と更新サイクル」であり、BL-8 とは異なるメカニズムである。この点はカテゴリ選択として妥当。
+このズレにより、モデルが例えば以下のように過剰一般化する恐れがある。
+- 内部状態遷移が同じでなければならない
+- 補助関数レベルの挙動が同一でなければならない
+- 例外処理の局所的差異があるなら等価ではない
 
-**しかし、根拠に疑問がある。** 提案は「論文の Step 3 が Compare テンプレートに未実装である構造的ギャップを埋める」と主張するが、前述の通り論文は Compare に仮説ステップを含めない設計をしている。「未活用アイデアの実装」ではなく「意図的な非採用の覆し」に近い。
+しかし compare の定義では、これらは「既存テストの outcome が変わらないなら」直接の非等価根拠ではない。
 
----
+### 3-5. 監査上の結論
+提案は EQUIVALENT と NOT_EQUIVALENT の両方に作用する。しかも対称ではなく、主作用は EQUIVALENT 抑制、副作用は NOT_EQUIVALENT への過剰シフトである。よって「EQUIV 側だけの改善」と見なして安全視することはできない。
 
-## 3. EQUIV / NOT_EQ 両正答率への影響分析
+## 4. failed-approaches.md の汎用原則との照合
+failed-approaches.md には現時点で具体的ブラックリストはない。そのため、文書上は直接抵触なし。
 
-### 実効的差分の分析
+ただし、そこに書かれている唯一の強い原則は「具体 benchmark 依存の失敗談ではなく、汎用原則だけを書く」という編集方針である。Objective.md でも overfitting 禁止が明記されている。
 
-変更前の Compare テンプレートフロー：
-```
-PREMISES → ANALYSIS OF TEST BEHAVIOR → EDGE CASES → COUNTEREXAMPLE → CONCLUSION
-```
+この観点から見ると、本提案は以下の点でグレー寄りの注意が必要:
+- README.md の現状分析にある「残課題は EQUIVALENT 側」という実験結果に強く引っ張られている
+- 提案文も EQUIV 方向の誤り削減を主目的としている
 
-変更後：
-```
-PREMISES → [COMPARE HYPOTHESIS: H1方向ラベル + 条件付き予測] → ANALYSIS → [H1 UPDATE] → EDGE CASES → COUNTEREXAMPLE → CONCLUSION
-```
+ただし、提案文そのものは特定ケースの構文・特定テスト・特定リポジトリの癖には触れておらず、発想自体は benchmark 固有ではない。よって「過去失敗の再演」とまでは言えないが、「現在残っている失敗傾向に最適化された片寄り」はある。
 
-実効的差分を分解する：
-1. **分析前に方向ラベル（EQUIV / NOT_EQ / UNCERTAIN）を自己生成**
-2. **NOT_EQ の場合のみ、追加の具体化義務（Expected failing test, Expected divergence path）**
-3. **分析後にラベル更新（H1 UPDATE）**
+## 5. 汎化性チェック
+結論: 明白なルール違反は見当たらない。ただし軽微な注意点はある。
 
-### EQUIV 正答率への影響
+### 5-1. 禁止される具体性の有無
+proposal.md を確認した範囲では、以下は含まれていない。
+- ベンチマーク対象リポジトリ名
+- 特定テスト名
+- 特定関数名・クラス名
+- ベンチマークケース ID
+- 対象コードベースの実コード断片
 
-持続的失敗 3 件（15368, 13821, 15382）はすべて EQUIV なのに NOT_EQ と結論するケース。
+したがって、Objective.md / Audit Rubric の R1 で明確に禁止される種類の overfitting 表現には該当しない。
 
-提案の想定シナリオ：H1 で NOT_EQ を予測 → 具体的な failing test を宣言 → 分析で見つからない → H1 REFUTED → EQUIV に修正。
+### 5-2. 数値 ID について
+文中には iter-6, Step 1-6, S1-S4, ~200 lines, Guardrail #4 といった番号が出てくるが、これは SKILL.md や提案自体の内部構造の参照であり、ベンチマークケース ID やテスト ID ではない。よって直ちに違反とは言えない。
 
-**しかし実際に起こりうること：** これらのケースでは Premises にコード差異が記載される → H1 は premises に基づいて NOT_EQ と予測（コード差異が見える以上、自然な予測） → 具体的な failing test として「もっともらしいテスト名」を挙げる → **分析中にアンカリングにより当該テストの failure を「確認」する**（現状でもこれらのケースで AI はもっともらしい code path を挙げて NOT_EQ と結論している） → H1 UPDATE: CONFIRMED → 結局 NOT_EQ。
+### 5-3. 暗黙のドメイン依存性
+提案の言葉遣いは比較的一般的で、特定言語・特定フレームワーク前提は薄い。ただし "behavioral properties" が抽象的すぎるため、言語によりモデルが想起する典型がぶれやすい。
 
-研究（arXiv:2412.06593）は、LLM が自己生成した初期仮説に後続の推論をアンカリングさせ、事後修正（Reflection）では不十分であることを示している。
+例えば:
+- 動的言語では API レベル挙動
+- 静的言語では型・例外・内部契約
+- テスト駆動の強いプロジェクトでは observable behavior
 
-**予測: EQUIV 正答率 ±0〜+5pp。提案者の +5〜10pp は楽観的。**
+のように、モデルが何を「等価性前提」と読むかが揺れる。これは汎化性違反というより、汎化のための定義不足である。
 
-### NOT_EQ 正答率への影響
+## 6. 全体の推論品質がどう向上すると期待できるか
+良い効果は確かにある。
 
-**非対称構造の問題：** H1 = NOT_EQ の場合のみ「Expected failing test」「Expected divergence path」の記入が必要。H1 = EQUIV/UNCERTAIN の場合は追加義務なし。
+1. STRUCTURAL TRIAGE と per-test ANALYSIS の橋渡しになる
+- 現行 compare テンプレートは構造差の確認とテスト単位の精密トレースの間に、何を重点観察するかの中間層が薄い。
+- S4 により、観察すべき差異軸を先に言語化できれば、トレースの焦点が改善する。
 
-この非対称性は NOT_EQ の認知コストを選択的に引き上げる。具体的リスク：
-- 真の NOT_EQ ケースで予測の具体化に探索予算を消費（BL-8 で観測されたターン枯渇パターン）
-- EQUIV/UNCERTAIN 方向の H1 は追加コストがないため、微妙なケースで AI が UNCERTAIN を選択 → 探索中に NOT_EQ の証拠を能動的に探さない → EQUIV 方向に流れる
+2. Guardrail #4 を実務上守りやすくする
+- subtle difference を見たとき、"これは自分が先に置いた等価条件を破るか" と確認できるため、差異の見落としは減る可能性がある。
 
-**予測: NOT_EQ 正答率 ±0〜-5pp。提案者の予測と一致。**
+3. large patch での探索効率を上げうる
+- S3 の scale assessment の直後に置くため、大規模差分で全部を追えないときも、「少なくともどの性質が一致していればよいのか」を先に定めることで、探索の優先順位が立つ。
 
-### 差分の方向性まとめ
+ただし、これらの利点は S4 が D1 と整合している場合に限る。つまり、列挙すべきなのは一般的な behavioral properties ではなく、テスト等価性に直接関係する "test-relevant observational properties" であるべきである。
 
-実効的差分は**非対称的**である。NOT_EQ 方向にのみ追加の具体化義務が発生し、BL-2（NOT_EQ 証拠閾値引き上げ）や BL-6（NOT_EQ 方向への trace 義務追加）と**効果の方向が同一**。メカニズムは異なるが（事前予測 vs. 事後証拠要求）、原則 #4（同方向の変更は表現を変えても同じ結果）を考慮するとリスクは無視できない。
+## 追加コメント: 修正すれば有望な点
+監査としては、発想を否定するというより、文言のスコープを修正すべきだと考える。
 
----
+現案:
+- "state what behavioral properties both changes must share for EQUIVALENT to hold"
 
-## 4. failed-approaches.md ブラックリストおよび共通原則との照合
+このままだと広すぎる。少なくとも以下の方向に狭める必要がある。
+- 既存テストで観測される性質に限定する
+- EQUIVALENT だけでなく、NOT_EQUIVALENT の反証探索にもつながる形にする
+- 先に書いた preconditions が D1 を上書きしないことを明示する
 
-### BL-7 との実質的類似性（**重大な懸念**）
+例えば意図としては、
+- "before ANALYSIS, state which test-relevant observational properties must match for D1 equivalence to hold"
+のような限定が必要である。
 
-| 比較軸 | BL-7（CHANGE CHARACTERIZATION） | 本提案（COMPARE HYPOTHESIS） |
-|---|---|---|
-| 挿入位置 | PREMISES と ANALYSIS の間 | PREMISES と ANALYSIS の間（**同一位置**） |
-| 内容 | 変更の性質を記述（production / test / both） | 結論の方向を予測（EQUIV / NOT_EQ / UNCERTAIN） |
-| ラベル性 | 暗黙の三択カテゴリ | **明示的な三択方向ラベル** |
-| 更新義務 | なし | H1 UPDATE あり |
-| アンカリングリスク | 高（実測で悪化） | **高**（方向性ラベルはカテゴリラベルより直接的にアンカリングする） |
+これなら backward reasoning の利点を残しつつ、semantic sameness への逸脱を抑えられる。
 
-提案は「H1 UPDATE による更新義務がある」ことを BL-7 との差異として主張する。しかし：
-
-1. **学術的根拠が否定的**: arXiv:2412.06593 は CoT・Reflection による事後修正がアンカリングの完全緩和に不十分であることを実験的に示した。H1 UPDATE も事後修正の一形態であり、同じ限界が適用される。
-2. **H1 UPDATE はラベルの更新であり追加の証拠収集ではない**: 原則 #8 の観点から、ラベル更新は受動的操作であり能動的検証を誘発しない。
-3. **BL-7 より直接的なアンカリング**: BL-7 は「変更の性質」という間接的なラベル（production / test / both）であり、判定方向への距離が 1 ステップあった。本提案は判定方向そのもの（EQUIV / NOT_EQ）をラベルとして生成させるため、アンカリング効果はむしろ強い。
-
-### BL-2 との効果的類似性（**中程度の懸念**）
-
-H1 の非対称構造（NOT_EQ 予測時のみ追加の具体化義務）は、NOT_EQ の立証に追加の認知コストを課す。原則 #4（同方向の変更は表現を変えても同じ結果）の観点から、BL-2（NOT_EQ 証拠閾値引き上げ）と効果の方向が重なる。
-
-### 共通原則照合結果
-
-| 原則 | 判定 | 理由 |
-|---|---|---|
-| #1 判定の非対称操作 | **⚠️ 弱い抵触** | NOT_EQ 方向にのみ追加の具体化義務 |
-| #2 出力側の制約 | ✅ 非該当 | 探索プロセス側の変更 |
-| #3 探索量の削減 | ✅ 非該当 | ステップ追加方向 |
-| #4 同方向の変更 | **⚠️ 懸念** | NOT_EQ を慎重にさせる効果方向は BL-2/BL-6 と同一 |
-| #5 入力テンプレートの過剰規定 | ✅ 非該当 | 自由形式 |
-| #6 対称化の実効差分 | ✅ 非該当 | 対称化ではない |
-| **#7 中間ラベル生成のアンカリング** | **❌ 抵触** | **分析前に EQUIV / NOT_EQ の方向ラベルを自己生成させる。BL-7 の直接的変種であり、更にアンカリング効果が強い（方向ラベルは性質ラベルより直接的）** |
-| #8 受動的記録 ≠ 能動的検証 | **⚠️ 部分的懸念** | H1 UPDATE はラベル更新であり追加検証行動を誘発しない |
-
-**原則 #7 への明確な抵触が確認された。**
-
----
-
-## 5. 全体の推論品質への期待
-
-提案の着眼点 — 「事後的な合理化（code difference → NOT_EQ への推論ジャンプ）を防ぐ」— は**的確**であり、持続的失敗 3 件の根本原因を正しく特定している。
-
-しかし、**解決手段としての「分析前の方向予測」はアンカリングバイアスを導入するリスクが高い**。根本的な問題は「AI のトレースが不正確」であることであり、「予測を立てる → 確認する」サイクルを追加しても、トレースの質自体は向上しない。予測が正しければ何も変わらず、予測が間違っていれば（アンカリングにより）むしろ修正されにくくなる。
-
-提案の「falsifiable prediction」の着想は価値があるが、それを**分析前の方向ラベル**として実装するとアンカリングが支配的になる。
-
----
-
-## 6. 承認判定
-
-### 承認: NO
-
-### 理由
-
-1. **原則 #7 に抵触**: 分析前に EQUIV / NOT_EQ / UNCERTAIN の方向ラベルを生成させることは、BL-7（CHANGE CHARACTERIZATION）と同じアンカリングメカニズムの変種であり、方向ラベルであるぶんアンカリング効果は BL-7 より強い。H1 UPDATE はアンカリング緩和策として不十分（学術的根拠: arXiv:2412.06593, arXiv:2502.11881）。
-2. **非対称構造が BL-2/BL-6 と同方向**: NOT_EQ 予測時のみ追加の具体化義務が発生し、原則 #4 の観点から NOT_EQ 閾値引き上げと同方向の効果を持つリスク。
-3. **論文の設計意図との不整合**: 原論文は Compare テンプレートに仮説ステップを意図的に含めていない。
-
-### 代替提案
-
-**カテゴリ D（メタ認知・自己チェックの強化）** からの未試行アプローチを推奨する。
-
-持続的失敗 3 件の共通パターンは「コード差異を発見した後、テストを通じた具体的なトレースなしに NOT_EQ と結論する」ことである。これは**トレースの欠如**が問題であり、方向予測ではなく**トレースの有無の自己チェック**で対処すべきである。
-
-具体案：**ANALYSIS OF TEST BEHAVIOR の各テスト分析内の Comparison 行直後に、1行の自己チェックを追加**
-
-```
-  Comparison: SAME / DIFFERENT outcome
-  Trace check: Did I trace a concrete test input through the differing code path, or did I infer the outcome from the code structure alone? [TRACED / INFERRED]
-```
-
-この代替案の利点：
-- **方向ラベルを生成しない**（原則 #7 非該当）
-- **分析前ではなく分析中に作用**（アンカリングなし）
-- **推論の質を直接改善**（「実際にトレースしたか」のメタ認知チェック）
-- INFERRED と回答した場合、AI 自身がトレース不足に気づき追加探索を行う動機が生まれる（原則 #8 の「能動的検証の誘発」に合致）
-- EQUIV / NOT_EQ **両方向に完全に対称**（原則 #1, #6 非該当）
-- 追加は 1〜2 行で複雑性増加が最小
-- 既存の Guardrail 4（「差異がないと結論する前に trace せよ」）を分析ステップ内で実効化するものであり、新規ルールではなく既存原則の再強化
-
----
-
-Sources:
-- [Ugare & Chandra, "Agentic Code Reasoning" (arXiv:2603.01896)](https://arxiv.org/abs/2603.01896)
-- [Meta's Semi-Formal Reasoning analysis](https://www.shashi.co/2026/04/metas-semi-formal-reasoning-shows-how.html)
-- [Anchoring Bias in Large Language Models (arXiv:2412.06593)](https://arxiv.org/abs/2412.06593)
-- [Anchoring Bias in LLMs — Springer (2025)](https://link.springer.com/article/10.1007/s42001-025-00435-2)
-- [Cognitive Bias in Decision-Making with LLMs (EMNLP 2024)](https://aclanthology.org/2024.findings-emnlp.739.pdf)
-- [Hypothesis-Driven Theory-of-Mind Reasoning (arXiv:2502.11881)](https://arxiv.org/html/2502.11881v1)
-- [Asking LLMs to Verify First (arXiv:2511.21734)](https://arxiv.org/html/2511.21734v1)
-- [How Does LLM Reasoning Work for Code? (arXiv:2506.13932)](https://arxiv.org/html/2506.13932v1)
+## 最終判断
+承認: NO（理由: 現行文言の S4 は compare モードの D1 が定義する "EQUIVALENT MODULO TESTS" より強い条件をモデルに自作させやすく、false EQUIVALENT を減らす一方で false NOT_EQUIVALENT を増やす回帰リスクがあるため。発想自体は有望だが、"behavioral properties" を test-relevant observational properties に限定し、EQUIVALENT 側だけに偏らない表現へ修正してから再提案すべき。）
