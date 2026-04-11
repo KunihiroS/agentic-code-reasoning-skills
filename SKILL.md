@@ -89,7 +89,7 @@ HYPOTHESIS UPDATE:
 UNRESOLVED:
   - [remaining questions]
 
-NEXT ACTION RATIONALE: [why the next file or step is justified — and what specific signal (presence/absence of a call, a value, a branch) you are looking for to confirm or refute the active hypothesis]
+NEXT ACTION RATIONALE: [why the next file or step is justified]
 ```
 
 Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.

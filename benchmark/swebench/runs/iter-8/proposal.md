@@ -1,137 +1,116 @@
-# Iteration 8 — 改善提案
+# Iteration 8 — Proposal
 
-## 1. 選択した Exploration Framework カテゴリと理由
+## Exploration Framework カテゴリ: C（強制指定）
 
-**カテゴリ F: 原論文の未活用アイデアを導入する**
+### カテゴリ内のメカニズム選択理由
 
-理由: `localize` モードの **Phase 3（DIVERGENCE ANALYSIS）** に「実装がテストの期待からどこで逸脱するかを特定する」という手法が定義されているが、`compare` モードのテンプレートにはこの「乖離点の特定」視点が組み込まれていない。`compare` モードは現在、各テストを Change A と Change B の2つの独立トレースで分析する（"Claim C[N].1 / C[N].2" 形式）が、この設計では「コードが変わっている」という事実から「テスト結果が変わる」という結論へのジャンプを防げない。論文の `localize` テンプレートにある「乖離点の明示」を `compare` モードに応用することで、両者が実際にどこで異なる値を生じるかを証拠として要求できる。
+カテゴリ C には 3 つのメカニズムが定義されている:
 
-カテゴリ A（推論の順序・構造を変える）とも重複するが、本質は論文の他モードの手法移植であるため F を主カテゴリとする。
+1. テスト単位ではなく関数単位・モジュール単位での比較
+2. 差異の重要度を段階的に評価する
+3. 変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う
 
----
+今回は **メカニズム 2「差異の重要度を段階的に評価する」** を選択する。
 
-## 2. 改善仮説
+理由:
 
-**compare モードのテスト分析ブロックを「乖離点ファースト（Divergence-First）トレース」構造に変更することで、エージェントが Change A と Change B の実際の値レベルでの相違点を明示せずに NOT_EQUIVALENT 結論を出す誤判定（EQUIV 偽陽性）を防ぎ、かつ NOT_EQUIVALENT 判定に必要な証拠収集を現在の2重独立トレースより効率化できる。**
+現在の compare チェックリストには次の指示がある:
 
----
+  "When a semantic difference is found, trace at least one relevant test through
+   the differing code path before concluding it has no impact"
 
-## 3. SKILL.md のどこをどう変えるか
+この指示はトレースの義務付けとして有効だが、「見つけた差異がどの種類か」を
+問わずすべてに同等のコストを課す。結果として 2 つの失敗パターンが起きやすい:
+
+- 軽微な差異（構造的・順序的であり意味が等価なもの）を同等に深追いして、
+  より重大な差異のトレースに割く注意力が減る。
+- 逆に「この差異は自明に無影響」と早合点して、フルトレースを省略する
+  （Guardrail #4 の失敗パターン）。
+
+重要度分類を先に行う枠組みを追加すると、エージェントは差異を目にした瞬間に
+「これは制御フロー・値生成系か、構造的同一意味系か、装飾的変更か」を明示的に
+ラベリングしてから次の行動を決める。このラベルが「フルトレース必須 / 意味的
+中立性の明示的正当化が必要 / スキップ可」の判断をガイドする。
+
+メカニズム 1（比較粒度）はすでに STRUCTURAL TRIAGE で部分的にカバーされている。
+メカニズム 3（変更カテゴリ分類）は STRUCTURAL TRIAGE の S1–S3 で扱える範囲と
+重複が大きく、compare モードの判定精度向上への寄与が相対的に小さい。
+そのためメカニズム 2 を選択する。
+
+
+## 改善仮説
+
+「意味的差異を見つけた時点で重要度カテゴリを明示的に分類させることで、
+ エージェントが制御フロー・値生成系の差異を見落とすリスクと、
+ 意味的に中立な差異に対して不要なフルトレースを行うコストの両方を削減できる。」
+
+
+## SKILL.md のどこをどう変えるか
 
 ### 変更対象
 
-`compare` モード、Certificate template 内の `ANALYSIS OF TEST BEHAVIOR` セクション  
-— fail-to-pass テスト用ブロック（6 行）と pass-to-pass テスト用ブロック（5 行）の **Claim 形式を置き換える**。
+SKILL.md の Compare checklist 内の以下の 1 行:
 
-### 変更前（fail-to-pass ブロック）
+  変更前 (line 258):
+    - When a semantic difference is found, trace at least one relevant test
+      through the differing code path before concluding it has no impact
 
-```
-For each relevant test:
-  Test: [name]
-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
-  Comparison: SAME / DIFFERENT outcome
-```
+  変更後 (2 行に精緻化):
+    - When a semantic difference is found, first classify it as:
+      (a) control-flow or value-producing change, (b) structural/ordering change
+      with identical semantics, or (c) cosmetic change.
+      Category (a) requires tracing at least one relevant test through the
+      differing path. Categories (b)/(c) require explicit written justification
+      of semantic neutrality before skipping the trace.
 
-### 変更後（fail-to-pass ブロック）
+### 変更規模の宣言
 
-```
-For each relevant test:
-  Test: [name]
-  Divergence: Identify the first point in this test's code path where
-              Change A and Change B produce different values or behavior.
-    A at [file:line]: [specific value or behavior — VERIFIED by reading source]
-    B at [file:line]: [specific value or behavior — VERIFIED by reading source]
-    (If values are identical at every traced point through the test assertion:
-     Comparison is SAME — omit Claim below)
-  Claim C[N]: Test will [PASS with A / FAIL with B] or [FAIL with A / PASS with B]
-              because [trace from divergence point to test assertion — cite file:line]
-  Comparison: SAME / DIFFERENT outcome
-```
+- 削除行: 1 行
+- 追加・変更行: 4 行（hard limit 5 行以内、適合）
+- 新規ステップ・新規フィールド・新規セクション: なし
+- 既存行への精緻化のみ: yes
 
-### 変更前（pass-to-pass ブロック）
 
-```
-For pass-to-pass tests (if changes could affect them differently):
-  Test: [name]
-  Claim C[N].1: With Change A, behavior is [description]
-  Claim C[N].2: With Change B, behavior is [description]
-  Comparison: SAME / DIFFERENT outcome
-```
+## 一般的な推論品質への期待効果
 
-### 変更後（pass-to-pass ブロック）
+### 減少が期待される失敗パターン
 
-```
-For pass-to-pass tests (if changes could affect them differently):
-  Test: [name]
-  Divergence: Where in this test's code path do A and B produce different values?
-    A at [file:line]: [value or behavior — VERIFIED]
-    B at [file:line]: [value or behavior — VERIFIED]
-    (If identical at every traced point: Comparison is SAME — omit Claim below)
-  Claim C[N]: behavior differs because [trace from divergence to assertion — cite file:line]
-  Comparison: SAME / DIFFERENT outcome
-```
+1. **Guardrail #4 型: 微細差異の軽率な棄却**
+   差異を見つけた後「影響なし」と素早く判断してトレースを省略するケースに対し、
+   category (a) の差異には明示的トレースを義務化することで抑制できる。
 
-**変更規模**: 計 +10 行 / -11 行（ネット -1 行）。20 行以内。  
-**変更外**: DEFINITIONS、PREMISES、EDGE CASES、COUNTEREXAMPLE/NO COUNTEREXAMPLE、FORMAL CONCLUSION、Step 1–5.5、Guardrails、他モードすべて変更なし。
+2. **過剰トレースによる注意力散漫**
+   category (b)/(c) の差異を「意味的中立性の正当化」だけで処理できるようにすることで、
+   真に重要な差異へのトレースコストを節約し、全体的な推論精度が上がりやすくなる。
 
----
+3. **全体的な推論品質 (overall) の向上**
+   EQUIVALENT / NOT_EQUIVALENT 判定のどちらにも、差異の重要度評価精度が直接影響する。
+   分類ステップの追加は両方向の判定精度を底上げする汎用効果がある。
 
-## 4. EQUIV・NOT_EQ 正答率への影響予測
 
-### EQUIV 正答率（現在 7/10 → 予測 8〜9/10）
+## failed-approaches.md の汎用原則との照合
 
-現在の EQUIV 偽陽性（15368、13821、15382）の共通パターン（BL-10 Fail Core より）:  
-「テストのコールパスは変更コードに到達しているが、コード差異がテスト結果を変えない」。現行テンプレートでは Claim C[N].1/C[N].2 の "trace through code" がコード差異の発見で打ち切られ、「差異あり → FAIL」のジャンプが可能。
+### 原則 1: 「探索を特定シグナルの捜索へ寄せすぎる変更は避ける」
 
-変更後: `Divergence` 欄は `A at [file:line]: [specific value]` vs `B at [file:line]: [specific value]` という**値レベルの明示**を要求する。Change A と Change B が当該コードパスで**同じ値を返す**（EQUIV ケースの実態）ならば、エージェントは "values are identical at every traced point" と記録して Comparison を SAME にせざるを得ない。コード構造上の差異だけでは DIFFERENT と書けない。
+今回の変更は「差異が見つかった後の処理手順」を精緻化するものであり、
+探索フェーズ（何をどの順で読むか）を制約するものではない。
+分類ステップは差異という観測済みの事実に対する後処理であり、
+確認バイアスを強めたり代替経路の探索を妨げたりする性質を持たない。
+-> 抵触しない。
 
-### NOT_EQ 正答率（現在 7/10 → 予測 回帰なし〜微改善）
+### 原則 2: 「探索の自由度を削りすぎない」
 
-NOT_EQUIV UNKNOWN ケース（14787、11433、12663）: 31 ターン到達による UNKNOWN。  
-変更後: 1 テストあたりの分析が「Claim A + Claim B」の2重独立トレース（5 行）から「Divergence 確認 + 条件付き Claim」（5〜6 行）に変わる。差異を発見した時点で Claim は 1 本のみ書けばよく、不要なトレースを省ける。ターンオーバーヘッドの純増はなく、NOT_EQ 差異が存在するケースではむしろ集中的に差異を探すため、証拠発見が早期化する可能性がある。
+追加する分類は category (a)/(b)/(c) という 3 つの開いたラベルであり、
+特定のコードパターンや言語構造に縛られていない。
+category (b)/(c) の処理も「スキップ禁止」ではなく
+「意味的中立性の正当化を書く」という軽量な要件に留めている。
+探索の自由度は実質的に削られない。
+-> 抵触しない。
 
-**非対称効果の確認**: 変更は EQUIV 方向の「証拠閾値の引き上げ」ではなく、「実際の値差異の明示化」であり、NOT_EQ 判定のハードル変化はない。真の NOT_EQUIV ケースでは乖離点に実際の値差異が存在するため、Divergence 欄は自然に `A: returns X / B: returns Y` と埋まる。
 
----
+## 変更規模の宣言（再掲）
 
-## 5. failed-approaches.md ブラックリストおよび共通原則との照合
-
-| 項目 | 照合結果 | 根拠 |
-|------|---------|------|
-| BL-1（ABSENT 定義）| 非該当 | テストの比較対象を除外する変更ではない |
-| BL-2（NOT_EQ 証拠閾値厳格化）| 非該当 | NOT_EQ 側の立証責任を上げていない。COUNTEREXAMPLE 節は無変更。変更は ANALYSIS 内の記述形式のみ |
-| BL-3（UNKNOWN 禁止）| 非該当 | 出力制約ではなく分析プロセスの変更 |
-| BL-4（CONVERGENCE GATE）| 非該当 | 探索を打ち切るゲートではなく、乖離点の明示を要求する記述形式変更 |
-| BL-5（P3/P4 の過剰規定）| 非該当 | 前提収集テンプレートへの変更なし |
-| BL-6（Guardrail 4 の対称化）| 非該当 | Guardrail は無変更。既存制約との差分は「値レベルの差異明示」のみ。方向の非対称性なし |
-| BL-7（分析前ラベル生成）| 非該当 | 「Change の性質のラベル付け」ではなく「テスト実行パス上での値差異の証拠収集」。ラベルではなく証拠を要求している |
-| BL-8（Relevant-to 列追加）| 非該当 | テーブルへの受動的記録フィールド追加ではなく、Claim の記述構造そのものの変更 |
-| BL-9（Trace check 自己チェック）| 非該当 | 自己評価ではなく、外部検証可能な file:line 証拠（値の明示）を要求 |
-| BL-10（Reachability ゲート）| 非該当 | ゲート条件が異なる。Reachability は「到達するか（ほぼ常に YES）」。Divergence は「何の値が異なるか」。前者は必要条件の検査、後者は十分条件の構築 |
-
-### 共通原則との照合
-
-| 原則 | 照合結果 |
-|------|---------|
-| #1 判定の非対称操作 | EQUIV/NOT_EQUIV 双方向に対称適用。Claim が1本になることはいずれの方向にも有利に働かない |
-| #2 出力側の制約は効果なし | 出力制約ではなく分析プロセス（何を書くか）の変更 |
-| #3 探索量の削減は有害 | 乖離なしの場合に Claim 2 本を省略するが、これは情報ゼロの冗長な記述の省略であり、証拠収集そのもの（ファイルを読む行為）は減らない |
-| #4 同じ方向の変更は同じ結果 | 過去の失敗方向（NOT_EQ 閾値操作）と異なるメカニズム（記述形式の変更） |
-| #5 テンプレートの過剰規定は視野を狭める | 「何を記録するか」の規定追加ではなく、既存 Claim の記述形式を具体化するもの。ファイル探索の視野は制約しない |
-| #6 対称化は差分で評価 | 変更前後の差分は「Claim の shape 変更」のみ。EQUIV/NOT_EQ いずれの立証責任にも実効的な非対称差分なし |
-| #7 中間ラベル生成はアンカリング | Divergence 欄はラベルではなく、値の証拠（A: value-X / B: value-Y）を要求する |
-| #8 受動的記録フィールドは検証を誘発しない | Divergence 欄は "value or behavior — VERIFIED" という file:line + 値の明示を要求する。「コードを読まないと埋まらない」要求であり受動的記録とは異なる |
-| #9 メタ認知チェックは機能しない | 自己評価ではなく外部的証拠の記述 |
-| #10 判別力のないゲート | Divergence 欄の条件（"identical at every traced point"）は EQUIV 偽陽性の失敗モード（「コード差異はあるが値は同じ」）を直接弁別する。BL-10（「テストが到達するか」= 常に YES）とは判別力が異なる |
-
----
-
-## 6. 変更規模
-
-- 変更行数: fail-to-pass ブロック +10/-6、pass-to-pass ブロック +7/-5  
-- 合計: ~17 行の置き換え（追加 10 行、削除 11 行）
-- 変更外: Guardrails、Step 3–5.5、localize/explain/audit-improve、COUNTEREXAMPLE 節すべて無変更  
-- 研究コア構造（番号付き前提 / 仮説駆動探索 / 手続き間トレース / 必須反証）: 維持
+削除: 1 行
+追加: 4 行
+合計変更: 4 行 (hard limit 5 行以内)
+新規セクション・ステップ・フィールド: なし
