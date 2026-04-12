@@ -1,12 +1,13 @@
 diff --git a/SKILL.md b/SKILL.md
-index 3532d59..0a2b316 100644
+index d37b212..d8962e9 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -422,6 +422,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
- 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
- 8. Do not hide uncertainty — state what is unverified.
- 9. Do not skip the refutation check. It is mandatory in every mode.
-+10. **Do not construct counterexamples using hypothetical test environments.** A counterexample asserting test outcome differences must be grounded in the repository's actual test environment — not in environments that *could* exist (e.g., a database version between an old minimum and a new minimum, or a runtime version not pinned by the project). If a behavioral difference only manifests on a version, platform, or configuration not established by the test setup (CI config, tox.ini, pinned requirements, version constraint files), do not treat it as a confirmed counterexample. Instead, determine the actual environment from available configuration files, or mark the claim UNVERIFIED and set CONFIDENCE to LOW.
- 
- ---
+@@ -106,7 +106,7 @@ For every function or method encountered on a relevant code path, record:
+ **Rules:**
+ - Read the actual definition. Do not infer behavior from the name.
+ - Mark the Behavior column VERIFIED only after reading the source.
+-- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
++- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
+ - Trace through conditionals, mapping tables, and configuration — not just the happy path.
+ - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
  

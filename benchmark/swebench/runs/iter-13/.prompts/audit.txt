@@ -1,29 +1,59 @@
 あなたは SKILL.md の変更に対する監査役です。
 
-以下のファイルを参照してください:
-- Objective.md の Audit Rubric セクション
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
 - README.md
 - docs/design.md
 - docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
 
-以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
-Objective.md に定義された audit.md フォーマットに従って
-benchmark/swebench/runs/iter-13/audit.md を作成してください。
+この 6 ファイル以外を read / search / list してはいけません。
 
-合格基準: 全項目 2 以上、かつ合計 14/21 以上
+【出力先】
+benchmark/swebench/runs/iter-13/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
 
 diff:
 diff --git a/SKILL.md b/SKILL.md
-index 3532d59..0a2b316 100644
+index d37b212..d8962e9 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -422,6 +422,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
- 7. Do not treat style preferences as findings unless they affect maintainability or correctness.
- 8. Do not hide uncertainty — state what is unverified.
- 9. Do not skip the refutation check. It is mandatory in every mode.
-+10. **Do not construct counterexamples using hypothetical test environments.** A counterexample asserting test outcome differences must be grounded in the repository's actual test environment — not in environments that *could* exist (e.g., a database version between an old minimum and a new minimum, or a runtime version not pinned by the project). If a behavioral difference only manifests on a version, platform, or configuration not established by the test setup (CI config, tox.ini, pinned requirements, version constraint files), do not treat it as a confirmed counterexample. Instead, determine the actual environment from available configuration files, or mark the claim UNVERIFIED and set CONFIDENCE to LOW.
- 
- ---
+@@ -106,7 +106,7 @@ For every function or method encountered on a relevant code path, record:
+ **Rules:**
+ - Read the actual definition. Do not infer behavior from the name.
+ - Mark the Behavior column VERIFIED only after reading the source.
+-- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
++- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
+ - Trace through conditionals, mapping tables, and configuration — not just the happy path.
+ - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
  
 
 rationale:
@@ -31,48 +61,29 @@ rationale:
 
 ## 前イテレーションの分析
 
-- 前回スコア: 80% (16/20)
-- 失敗ケース: django__django-15368, django__django-13821, django__django-15382, django__django-12663
-- 失敗原因の分析:
-  - **15368（持続的失敗）**: EQUIVALENT なのに NOT_EQUIVALENT と誤判定（16 ターン）。Patch B がテストメソッドを削除するケース。iter-10 の D2 注記「削除されたテストには結果がない」を経ても改善されず。エージェントは「削除されたテスト → pytest が collection error を出す → FAIL」という独自のフレームワーク解釈を適用し、D2 注記を上書きしている。
-  - **13821（持続的失敗）**: EQUIVALENT なのに NOT_EQUIVALENT と誤判定（22 ターン）。Patch A は SQLite のバージョンチェックを更新し、Patch B は同チェック更新に加えて feature フラグを動的チェックからハードコード True に変更する。エージェントは「最小バージョン 3.9.0 の環境で SQLite 3.10.0 上で実行した場合、Patch B では feature フラグが True になり、3.10.0 では未対応の機能テストが SKIP ではなく FAIL になる」という仮想環境（SQLite 3.10.0）を構築して NOT_EQUIVALENT と結論づけた。しかし実際のテスト実行環境が 3.10.0 であることを示す証拠はどこにも存在しない。
-  - **15382（持続的失敗）**: EQUIVALENT なのに NOT_EQUIVALENT と誤判定（20 ターン）。エージェントが Patch B のコードを誤トレースし、`WHERE 1=0` を返すと誤結論（HIGH 信頼度）。ground truth は EQUIVALENT であり、実際には両パッチはテスト結果に差異をもたらさない。
-  - **12663（持続的失敗）**: NOT_EQUIVALENT なのに UNKNOWN（31 ターン、is_error: True）。iter-11 の「UNKNOWN 禁止」チェックリスト追加と iter-12 の「反例確認後 STOP」追加にもかかわらず、31 ターンで API エラーとなり有効な回答を返せなかった。ターン上限に到達している可能性が高い。
-
-  **重要な観察**: 4 件の失敗のうち 3 件（15368, 13821, 15382）は全て EQUIVALENT なのに NOT_EQUIVALENT と誤判定するパターンである。13821 の失敗原因は明確に「仮想テスト環境の構築による反例の捏造」であり、これは他の2件とは異なる独立した失敗モードである。今回はこの失敗モードを対象とする。
+- 前回スコア: 不明（iter-12 の scores.json 未参照）
+- 失敗ケース: 不明（参照制約により未確認）
+- 失敗原因の分析: ソースが取得できない（UNVERIFIED）関数について、二次証拠を探す順序が不定のまま運用されていた。名前や型シグネチャから先に確認してしまう場合、確認バイアスが生じやすい構造になっていた。
 
 ## 改善仮説
 
-**Guardrails セクションに「仮想テスト環境を反例の根拠にしてはならない」という汎用的なガードレール（Guardrail 10）を追加することで、13821 のような「実際には存在しない環境での動作差異に基づく誤った NOT_EQUIVALENT 判定」を汎用的に防止できる。**
-
-根拠:
-- 13821 において、エージェントは P3「最小 SQLite バージョン 3.9.0」という前提から「SQLite 3.10.0 環境」という仮想シナリオを構築した。この環境がリポジトリの実際のテスト環境であることを示す証拠（CI 設定、tox.ini、requirements ファイル等）は一切確認されていない。
-- D1 の定義「関連するテストスイートを実行した際に同一の PASS/FAIL 結果を生む」は、「実際のテスト環境での実行」を前提としており、「考えられるあらゆる環境での実行」ではない。しかし現在の SKILL.md には「仮想環境を反例として使ってはならない」という明示的な制約がない。
-- 「テスト結果の差異は実際のテスト環境で発生するものに限定する」という原則は、データベースバージョン、OS バージョン、Python バージョン、ライブラリバージョン等、あらゆる環境依存のコードに適用可能な汎用的な推論規律である。特定のベンチマークケースに依存しない。
-- この変更は NOT_EQUIVALENT 判定（COUNTEREXAMPLE セクションを使うケース）の一部にのみ影響し、EQUIVALENT 判定（NO COUNTEREXAMPLE EXISTS セクション）や他のモードには影響しない。
+ソースが入手できない関数について二次証拠を探す際、テストコードでの実際の使われ方（test usage）を最初に参照することで、関数の実際の振る舞いを最も直接的に示す証拠が先に得られる。これにより、名前や型宣言からの推測に依存する確認バイアスを軽減できる。
 
 ## 変更内容
 
-Guardrails セクションの General 部分に Guardrail 10 を追加:
+SKILL.md の Step 4（Interprocedural tracing）の Rules 内、UNVERIFIED 関数に対する二次証拠の探索方法を記述した 1 行を変更した。
 
-```
-10. **Do not construct counterexamples using hypothetical test environments.**
-    A counterexample asserting test outcome differences must be grounded in
-    the repository's actual test environment — not in environments that
-    *could* exist (e.g., a database version between an old minimum and a new
-    minimum, or a runtime version not pinned by the project). If a behavioral
-    difference only manifests on a version, platform, or configuration not
-    established by the test setup (CI config, tox.ini, pinned requirements,
-    version constraint files), do not treat it as a confirmed counterexample.
-    Instead, determine the actual environment from available configuration
-    files, or mark the claim UNVERIFIED and set CONFIDENCE to LOW.
-```
+変更前: 「Search for type signatures, documentation, or test usage as secondary evidence.」（順序不定の列挙）
 
-変更規模: 7 行追加（≤ 20 行の制約内）。
+変更後: 「Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation.」（優先順位を明示した探索順序）
+
+変更規模: 1 行（既存行の書き換えのみ、追加・削除なし）
 
 ## 期待効果
 
-- **13821**: Guardrail 10 により、エージェントが「SQLite 3.10.0 仮想環境」のような、リポジトリの設定ファイルに根拠のない仮想環境を反例として使用できなくなる。エージェントは実際の CI 設定（存在すれば）を確認するか、環境不明として LOW 信頼度で処理することを強制される。ground truth が EQUIVALENT であることから、実際の環境では両パッチの動作は同一であり、正しく EQUIVALENT と判定できることを期待する。
-- **15368, 15382**: 本イテレーションの主仮説ではなく（これらはフレームワーク解釈誤りとコードトレース誤りであり異なる失敗モード）、今回の変更では直接的な改善を期待しない。
-- **12663**: 本イテレーションの変更は 12663 の推論に無関係（ターン枯渇によるエラー）のため、影響なし。
-- **回帰リスク**: Guardrail 10 はガードレールセクションへの追記のみであり、compare モードの探索プロセス・証明書テンプレート・反証プロセスに変更を加えない。仮想環境を反例として使用していない 16 件の正解ケースには影響しないため、回帰リスクは極めて低い。
+UNVERIFIED 関数を含む推論タスクにおいて、二次証拠の探索順序が明確になることで以下の改善が期待できる。
+
+- 関数名・型シグネチャからの誤推測が減り、実際の使われ方に基づく帰納的な根拠付けが先に行われるようになる。
+- Guardrail #5 が指摘する「不完全な推論チェーン」に対して、UNVERIFIED 関数の仮定の信頼性が早期に評価されるようになる。
+- EQUIVALENT / NOT_EQUIVALENT の誤判定のうち、UNVERIFIED 関数の仮定ミスに起因するものが減少する。
+- 変更は探索の優先順位の精緻化のみであり、探索自由度は維持されるため、既存の正答ケースへの回帰リスクは極めて低い。

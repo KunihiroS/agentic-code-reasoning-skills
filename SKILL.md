@@ -106,7 +106,7 @@ For every function or method encountered on a relevant code path, record:
 **Rules:**
 - Read the actual definition. Do not infer behavior from the name.
 - Mark the Behavior column VERIFIED only after reading the source.
-- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
+- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
 - Trace through conditionals, mapping tables, and configuration — not just the happy path.
 - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
 
