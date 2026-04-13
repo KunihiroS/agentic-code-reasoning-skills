@@ -13,7 +13,7 @@ This skill enforces a certificate-based reasoning process: you must state premis
 
 ## Modes
 - `compare` — determine if two changes produce the same behavior
-- `localize` — find the root cause of a bug
+- `diagnose` — find the root cause of a bug in a small number of files
 - `explain` — answer a code question with verified evidence
 - `audit-improve` — review code for security, API misuse, or maintainability
 
@@ -23,9 +23,28 @@ Choose a mode before exploring files. If unsure, prefer `explain`.
 | Trigger | Mode |
 |---------|------|
 | "Are these two patches/implementations equivalent?" | `compare` |
-| "Where is the bug?" / failing test / error report | `localize` |
+| "Where is the bug?" / failing test / single defect | `diagnose` |
 | "What does this code do?" / "Why does X happen?" | `explain` |
 | "Is this code secure?" / "Review for issues" | `audit-improve` |
+
+### Activation gates
+
+Before selecting a mode, check whether this skill is appropriate for the task. **Do not activate** this skill when:
+
+- The task requires **broad file enumeration** (e.g., "list all files that need to change for this refactor"). This skill is designed for deep analysis of a small number of files, not for wide-coverage listing.
+- The task is a **large-scale structural change** spanning many files (e.g., directory reorganization, rename propagation across a monorepo).
+- The expected output is a **flat list of files** rather than a reasoned diagnosis with evidence.
+
+For `diagnose` mode specifically:
+
+| Condition | Use `diagnose` | Do NOT use `diagnose` |
+|-----------|---------------|----------------------|
+| Root cause scope | Likely 1–5 files | Many files (10+) across the codebase |
+| Task nature | Single defect, specific test failure, error trace | Broad refactoring, feature addition, structural reorganization |
+| Expected output | Ranked root cause with file:line evidence | Exhaustive list of files to modify |
+| Evidence style | Deep code path tracing | Directory-level pattern matching |
+
+If the task does not fit `diagnose`, consider using the agent without this skill — unrestricted exploration may produce better results for broad enumeration tasks.
 
 ---
 
@@ -80,14 +99,16 @@ Update this table **in real time during Step 3** — add each row the moment you
 
 For every function or method encountered on a relevant code path, record:
 
-| Function/Method | File:Line | Behavior (VERIFIED) |
-|-----------------|-----------|---------------------|
-| [name] | [file:N] | [actual behavior after reading the definition] |
+| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to test |
+|-----------------|-----------|---------------------|-------------------|
+| [name] | [file:N] | [actual behavior after reading the definition] | [which test(s) and why this function is on the relevant path] |
 
 **Rules:**
 - Read the actual definition. Do not infer behavior from the name.
+  When multiple definitions are candidates, read the one most directly
+  called by the test first — test proximity is the reading priority.
 - Mark the Behavior column VERIFIED only after reading the source.
-- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
+- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
 - Trace through conditionals, mapping tables, and configuration — not just the happy path.
 - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
 
@@ -108,7 +129,7 @@ If my conclusion were false, what evidence should exist?
 - Result: REFUTED / NOT FOUND
 ```
 
-For `explain` and `localize`:
+For `explain` and `diagnose`:
 ```
 ALTERNATIVE HYPOTHESIS CHECK:
 If the opposite answer were true, what evidence would exist?
@@ -158,6 +179,23 @@ D2: The relevant tests are:
     or variable. If the test suite is not provided, state this as a constraint
     in P[N] and restrict the scope of D1 accordingly.
 
+STRUCTURAL TRIAGE (required before detailed tracing):
+Before tracing individual functions, compare the two changes structurally:
+  S1: Files modified — list files touched by each change. Flag any file
+      modified in one change but absent from the other.
+  S2: Completeness — does each change cover all the modules that the
+      failing tests exercise? If Change B omits a file that Change A
+      modifies and a test imports that file, the changes are NOT EQUIVALENT
+      regardless of the detailed semantics.
+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
+
+If S1 or S2 reveals a clear structural gap (missing file, missing module
+update, missing test data), you may proceed directly to FORMAL CONCLUSION
+with NOT EQUIVALENT without completing the full ANALYSIS section.
+
 PREMISES:
 P1: Change A modifies [file(s)] by [specific description]
 P2: Change B modifies [file(s)] by [specific description]
@@ -169,9 +207,9 @@ ANALYSIS OF TEST BEHAVIOR:
 For each relevant test:
   Test: [name]
   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
+                because [trace from changed code to test assertion outcome — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace through code — cite file:line]
+                because [trace from changed code to test assertion outcome — cite file:line]
   Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
@@ -213,6 +251,8 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 ```
 
 ### Compare checklist
+- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+- For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
 - Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
@@ -222,9 +262,11 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 
 ---
 
-## Localize
+## Diagnose
 
-Goal: identify the root cause of a bug, not just the crash site.
+Goal: identify the root cause of a single defect, not just the crash site.
+
+**Scope constraint:** This mode is designed for defects whose root cause resides in a small number of files (typically 1–5). For tasks requiring broad file enumeration across many files, do not use this mode — the structured analysis will over-constrain the output and reduce coverage.
 
 ### Certificate template
 
@@ -275,7 +317,7 @@ Based on divergence claims, produce ranked predictions:
 ### Exploration protocol
 Use the hypothesis-driven format from Step 3 during exploration. Number hypotheses H1, H2… and observations O1, O2… for traceability.
 
-### Localize checklist
+### Diagnose checklist
 - State what the failing behavior expects (Phase 1)
 - Trace from entry point toward production code with per-method records (Phase 2)
 - Every divergence claim must reference a specific premise (Phase 3)
@@ -433,7 +475,7 @@ Every response using this skill must include:
 | Selected mode | All |
 | Numbered premises | All |
 | Interprocedural trace table | All (when functions are on the code path) |
-| Per-item analysis (per-test, per-method, or per-function) | compare, localize, explain |
+| Per-item analysis (per-test, per-method, or per-function) | compare, diagnose, explain |
 | Refutation / alternative-hypothesis check | All |
 | Formal conclusion with premise/claim references | All |
 | Confidence level | All |

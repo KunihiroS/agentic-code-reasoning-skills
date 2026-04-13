@@ -1,12 +1,13 @@
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..ecb8faa 100644
+index d8962e9..198c65a 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -190,6 +190,7 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
- COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-   Test [name] will [PASS/FAIL] with Change A because [reason]
-   Test [name] will [FAIL/PASS] with Change B because [reason]
-+  Diverging assertion: [test_file:line — the specific assert/check that produces a different result]
-   Therefore changes produce DIFFERENT test outcomes.
+@@ -105,6 +105,8 @@ For every function or method encountered on a relevant code path, record:
  
- NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+ **Rules:**
+ - Read the actual definition. Do not infer behavior from the name.
++  When multiple definitions are candidates, read the one most directly
++  called by the test first — test proximity is the reading priority.
+ - Mark the Behavior column VERIFIED only after reading the source.
+ - If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
+ - Trace through conditionals, mapping tables, and configuration — not just the happy path.
