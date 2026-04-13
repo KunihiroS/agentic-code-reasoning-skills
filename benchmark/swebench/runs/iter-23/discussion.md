@@ -1,234 +1,188 @@
-# Iteration 23 — discussion
+# Iteration 23 — 監査コメント
 
-## 1. Web 検索ベースの妥当性評価（DuckDuckGo MCP）
+## 総評
+提案の発想自体は理解できる。`explain` モードの `SEMANTIC PROPERTIES` 的視点を `compare` に輸入し、`subtle difference dismissal` を減らしたいという筋は、原論文の設計思想とは整合する。
 
-注: `ddg_search_search` は今回の環境では複数クエリで `No results were found...` となり安定しなかったため、MCP 上で `ddg_search_fetch_content` を用いて関連する既知 URL の本文を取得して評価した。
+ただし、今回の文言は `compare` の判定基準である「既存テストに対する観測可能な差分」よりも、「変更が触る意味的差分そのもの」に注意を寄せやすい。結果として、NOT_EQUIVALENT 側の差分検出には少し効く可能性がある一方、EQUIVALENT 側では「意味的には違うが既存テストでは同値」というケースを過剰に NOT_EQUIVALENT 寄りに読む回帰リスクがある。
 
-### 参照 1: Agentic Code Reasoning
-- URL: https://arxiv.org/abs/2603.01896
-- 要点:
-  - 半形式的推論の中核は、**explicit premises / execution-path tracing / formal conclusion** によって「飛躍」を防ぐこと。
-  - 本研究は「テストごとの具体的トレース」を重視しているが、**判定根拠を単一の assert 文に縮約せよ**とは言っていない。
-- 本提案への含意:
-  - 「アサーションを起点に後ろ向きに追う」こと自体は、研究の certificate 的発想と整合的。
-  - ただし proposal の `Core assertion` / `Assertion depends on` / `Use these anchors as the primary code path` は、研究コアの **interprocedural tracing 全体** を、単一 assertion 中心の細い観察窓に狭める危険がある。
-
-### 参照 2: Program slicing (Wikipedia)
-- URL: https://en.wikipedia.org/wiki/Program_slicing
-- 要点:
-  - プログラムスライシングは、ある観測点（criterion）の値に影響する文だけを後ろ向きに集める考え方。
-  - 典型的には debugging / maintenance / program analysis に有効。
-- 本提案への含意:
-  - proposal の「TEST ASSERTION ANCHORING」は、発想としては **assertion を slicing criterion にする backward slice** に近く、学術的には筋が通る。
-  - しかし slicing の criterion を誤ると、必要な依存を落とす。テスト失敗は assert 文だけでなく、**例外、setup/fixture、遅延評価、副作用、テストヘルパ、後続検査** でも生じうる。したがって「core assertion だけ」を anchor にすると criterion が狭すぎる。
-
-### 参照 3: An Improved Algorithm for Slicing Machine Code
-- URL: https://research.cs.wisc.edu/wpis/abstracts/oopsla16-slicing.abs.html
-- 要点:
-  - slicing は有用だが、粒度が粗い／基準設定が悪いと slice が不正確になり、ほぼ全体を含むか、逆に重要要素を外しうる。
-  - 精度改善の鍵は、**何を slicing criterion にするか** と **必要な依存をきちんと残すこと**。
-- 本提案への含意:
-  - assertion anchoring の価値は認められる一方、今回の proposal は criterion を `Core assertion` に固定しており、**依存の取りこぼしリスク** が高い。
-
-### 参照 4: Semgrep reachability analysis methods
-- URL: https://semgrep.dev/blog/2024/sca-reachability-analysis-methods/
-- 要点:
-  - 実務的な到達性分析でも、単なる「存在」「依存宣言」ではなく、**実際に使われる component / path** を特定することがノイズ削減に重要。
-  - 一方で reachability の定義が狭すぎると、真に重要な経路を落とす。
-- 本提案への含意:
-  - 「変更コードが assertion に実際につながるか」を見る方向は実務的にも妥当。
-  - ただし今回の文面は、**“If a test is removed ... produces no outcome”** として比較対象を実質的に外しており、reachability を精緻化するというより、判定上の除外規則に近づいている。
-
-### 小結
-- 学術的には「assertion を起点に backward に依存を辿る」着想自体は妥当。
-- しかし **今回の具体的文言** は、
-  1. criterion が狭い（`Core assertion` への過度な還元）
-  2. 削除テストを実質的に outcome から外す
-  3. `primary code path` 指定により探索視野を狭める
-  ため、研究知見の良い部分よりも、既知の失敗パターンを再導入する危険の方が大きい。
+結論として、現行案のままでは承認しない。
 
 ---
 
-## 2. Exploration Framework のカテゴリ選択は適切か？
+## 1. 既存研究との整合性
 
-### 表向きのカテゴリ
-- proposal は **カテゴリ A（推論の順序・構造を変える）— 逆方向推論** を名乗っている。
-- たしかに「コード差異起点」から「assertion 起点」へ順序を変えるという意味では A に見える。
+### 参照URLと要点
+1. https://arxiv.org/abs/2603.01896
+   - 要点: Agentic Code Reasoning 論文の中核は、明示的 premises、execution-path tracing、formal conclusion を要求する semi-formal reasoning にある。
+   - 監査コメント: 提案は「意味的性質を明文化する」方向なので、structured reasoning を強めるという意味では整合的。
 
-### 実効的なカテゴリ
-ただし、**実効的差分**で見ると本案は A というより、以下の既存試行に非常に近い。
+2. https://en.wikipedia.org/wiki/Loop_invariant
+   - 要点: 不変条件は、表面的な入力境界ではなく、ループやアルゴリズムのより深い正しさ・状態保証を捉えるための標準的な考え方である。
+   - 監査コメント: `semantic invariants` を考慮対象に入れること自体は、一般的なプログラム検証の発想として妥当。
 
-1. **BL-5**（P3/P4 をテストアサーション条件記録形式に強化）
-   - fail core: assert 行の記録を強めることで、例外・副作用・テストフロー全体を落とした。
-2. **iter-10 proposal**（各テストブロック冒頭に `Assertion:` アンカー行を追加）
-   - 実装には至っていないとしても、発想・メカニズムは今回とかなり近い。
-   - 今回はさらに `Assertion depends on` と `primary code path` を加えており、**iter-10 を強化した版** に近い。
+3. https://en.wikipedia.org/wiki/Hoare_logic
+   - 要点: 正しさ推論は precondition / postcondition / assertion で状態変化を捉える。入力だけでなく状態保証を追うのが本筋。
+   - 監査コメント: `state constraints` を見るという方向性は Hoare 的な正しさ推論と整合する。
 
-### 判定
-- **カテゴリ名として A を置くこと自体は形式上可能**。
-- しかし監査観点では、**実質は BL-5 系の「assertion 記録強化／入力テンプレートによる視野制約」** に寄っている。
-- よって「未試行カテゴリ A の新規アプローチ」とは評価しにくい。
+4. https://en.wikipedia.org/wiki/Equivalence_checking
+   - 要点: 等価性検証では、最終的には観測可能な出力列や振る舞いの一致が基準であり、内部差分そのものではない。
+   - 監査コメント: ここが今回案の弱点。`compare` は D1 上「テスト結果が同じか」が基準なので、意味的差分の列挙は必ず観測可能差分へ再接続される必要がある。
 
----
+5. https://en.wikipedia.org/wiki/Counterexample-guided_abstraction_refinement
+   - 要点: 重要なのは、見つけた差分候補が真の counterexample か、spurious かを切り分けること。
+   - 監査コメント: 今回案は差分候補の発見には寄与しうるが、「その差分が実テストで反例になるか」を強制する文言ではない。研究的にはここまで踏み込んで初めて compare 強化として安定する。
 
-## 3. EQUIV / NOT_EQ への影響と、変更前との差分分析
-
-### 変更前との差分
-追加される実効差分は次の 3 点。
-
-1. 各 relevant test について、先に `Core assertion` を特定する
-2. その assertion が依存する関数・変数を `Assertion depends on` として列挙する
-3. それを **ANALYSIS の primary code path** として使う
-4. さらに、**削除テストには anchor がなく outcome もない** と定義する
-
-### EQUIV への作用
-- 正方向の期待は理解できる。
-- すなわち「コード差異を見つけただけで NOT_EQ に飛ぶ」誤りを抑え、
-  **その差異が assertion に届くか** を見直させる点では、EQUIV 偽陰性の改善余地がある。
-- 特に 13821/15382 型の「差異はあるがテスト観測には効かない」には効く可能性がある。
-
-### NOT_EQ への作用
-proposal は「NOT_EQ は維持」と予測しているが、ここは楽観的すぎる。
-
-#### 懸念 1: `Core assertion` 固定は BL-5 と同型
-- 真の NOT_EQ は、assert 文そのものではなく、
-  - 途中で投げる例外
-  - setup/fixture の失敗
-  - helper の副作用
-  - 複数 assertion の組合せ
-  - assert 以前の control-flow divergence
-  で顕在化することがある。
-- ここで `Core assertion` を先に一つ選ばせると、モデルはその一つにアンカリングし、他の failure mechanism を見落としやすい。
-
-#### 懸念 2: `primary code path` 指定は探索を一方向に寄せる
-- これは単なる参照情報の追加ではなく、後続分析の主経路を指定している。
-- 実効差分としては、**assertion 依存経路以外の差異探索を弱める**。
-- そのため、作用は EQUIV 側の誤判定抑制に偏り、NOT_EQ 側では証拠取りこぼしが増えうる。
-
-#### 懸念 3: 削除テストを「outcome なし」と扱う文言
-- `If a test is removed by the patch itself, it has no assertion to anchor on and produces no outcome.`
-- これは表現を変えた **BL-1（ABSENT / 比較対象からの除外）** にかなり近い。
-- 削除テストを outcome 比較から外せば、NOT_EQ の証拠が減る方向にしか働かない。
-
-### 結論
-- 本変更の実効差分は **一方向にしか作用しない** 可能性が高い。
-- すなわち、EQUIV 側の誤判定抑制には寄与しうる一方、NOT_EQ 側では
-  - テスト失敗メカニズムの取りこぼし
-  - 削除テスト証拠の無効化
-  を通じて回帰リスクがある。
-- よって proposal の「NOT_EQ は 0 で維持」という見積もりには同意できない。
+### まとめ
+研究整合性は「部分的に YES」。
+- YES: 意味的性質・不変条件を追う発想自体は、プログラム検証・コード推論の主流原則と整合。
+- ただし: 等価性判定では、意味的差分そのものではなく「観測可能な反例」に結びつける必要がある。今回の文言はそこが弱い。
 
 ---
 
-## 4. failed-approaches.md のブラックリストおよび共通原則との照合
+## 2. Exploration Framework のカテゴリ選定は適切か
 
-### 4.1 BL-1（ABSENT 定義追加）との照合
-**抵触度: 高い**
-
-proposal は ABSENT という語を使っていないが、
-
-> If a test is removed by the patch itself, it has no assertion to anchor on and produces no outcome.
-
-は、実質的に
-- 削除テストを outcome 比較から外す
-- 削除テストを NOT_EQ の証拠として使いにくくする
-
-という効果を持つ。これは BL-1 の fail core
-> 「何を比較しないか」を定義する変更
-にかなり近い。
-
-### 4.2 BL-5（入力テンプレートの過剰規定）との照合
-**抵触度: 高い**
-
-BL-5 の失敗原因は、assertion 行の記録強化が
-- 副作用
-- 例外伝播
-- テストフロー全体
-を落としたことだった。
-
-今回も
-- `Core assertion`
-- `Assertion depends on`
-- `Use these anchors as the primary code path`
-
-と、むしろ BL-5 より強い形で視野を規定している。名称は違うが、**実質的効果は同じ**。
-
-### 4.3 共通原則 #1（判定の非対称操作）
-**実効的には抵触の懸念あり**
-
-文面上は両方向に同じステップを要求しているが、差分の効果は
-- EQUIV: NOT_EQ への飛躍を抑える
-- NOT_EQ: 証拠の取りこぼし・除外を増やす
-
-となりやすい。つまり、名目上対称でも **実効差分は非対称**。
-
-### 4.4 共通原則 #5（入力テンプレートの過剰規定）
-**抵触**
-
-`Core assertion` と `Assertion depends on` の指定は、まさに「何を記録するか」をかなり狭く指定している。特に `primary code path` という一言が強く、探索視野の狭窄を招く。
-
-### 4.5 共通原則 #6（対称化の実効差分）
-**関連あり**
-
-proposal は対称的な探索ステップだと主張するが、実効差分で見ると
-- EQUIV では「余計な NOT_EQ を抑える」
-- NOT_EQ では「assertion 以外の failure mode を見落としやすくする」
-ため、対称とは言い難い。
-
-### 4.6 共通原則 #8（受動的記録 ≠ 能動的検証）
-ここは proposal の主張に一理ある。`file:line` を埋めるためにテストを読む行動自体は増える。
-しかし今回はその前向き面よりも、**何を読んだ後どう狭く考えるか** の副作用が大きい。
-
-### 総合判定
-- **BL-1 に実質近似**
-- **BL-5 に実質近似**
-- **共通原則 #5 に抵触**
-
-したがって、監査基準では **承認不可**。
-
-### 代替提案（未試行カテゴリから）
-**カテゴリ E（表現・フォーマット改善）** から、以下のような未試行アプローチを提案する。
-
-> Compare テンプレートの ANALYSIS 文言を、`assertion` 中心ではなく
-> **"test outcome mechanism"** 中心に言い換える。
-> 例: "Trace the concrete mechanism that determines this test’s pass/fail outcome (assertion, raised exception, setup/teardown failure, or later checked side effect). Do not reduce the analysis to a single assert statement unless that is truly the only determinant."
-
-この案なら
-- BL-5 のような assert 行への過集中を避ける
-- BL-1 のような削除テスト除外ルールを導入しない
-- EQUIV/NOT_EQ の双方で「テスト結果を生む実メカニズム」を追わせられる
-
-という利点がある。
-
----
-
-## 5. 全体の推論品質がどう向上すると期待できるか？
-
-### proposal が狙っている改善点
-- コード差異の発見から即 NOT_EQ に飛ぶ誤りを減らす
-- テスト観測点を先に意識させる
-
-これは問題設定としては正しい。
-
-### ただし今回の文面では逆効果リスクが高い
-- assertion 一点集中により、テスト失敗の多様なメカニズムを落とす
-- `primary code path` により、探索を assertion 依存経路へ固定する
-- 削除テストを実質的に outcome から外す
-
-したがって、**全体の推論品質を安定して上げる変更** というより、
-**EQUIV 側の一部誤判定を狙う代わりに NOT_EQ 側を壊しうる変更** に見える。
-
----
-
-## 6. 承認するか、修正を求めるか
-
-**結論: 修正ではなく差し戻しが妥当**。
+カテゴリ F の選択は概ね妥当。
 
 理由:
-1. 学術的な着想（backward reasoning / slicing criterion）は妥当だが、実装文言が悪い
-2. 削除テストの扱いが BL-1 と実質重複
-3. `Core assertion` / `primary code path` が BL-5 の fail core を再導入
-4. 実効差分が EQUIV 側に偏り、NOT_EQ 回帰リスクを否定できない
-5. iter-10 proposal とも近く、新規性が弱い
+- `explain` モードの `SEMANTIC PROPERTIES` を `compare` に持ち込む、という主張は Objective の F「他モードの手法を compare に応用する」に一致する。
+- `subtle difference dismissal` という論文のエラー分析を根拠にしており、F「エラー分析セクションの知見を反映する」にも一致する。
 
-**承認: NO（BL-1 と BL-5 の実質的再試行に近く、NOT_EQ 回帰リスクが高いため）**
+ただし補足:
+- 実装としては新しい推論機構の導入というより、既存コメント行の精緻化であり、実質は F と E の中間に近い。
+- つまりカテゴリ誤りではないが、「F だから強い改善になる」とまでは言えない。変更の強さはかなり限定的。
+
+結論:
+- カテゴリ F 判定: 妥当
+- ただし改善の実効性はカテゴリ選定とは別問題で、そこには懸念が残る
+
+---
+
+## 3. EQUIVALENT 判定 / NOT_EQUIVALENT 判定の両方への作用
+
+### 提案が効く方向
+この変更が効くとすれば主に以下。
+- 変更間に微妙な意味的差分がある
+- その差分が既存テストの assertion や control-flow に実際につながっている
+- しかし従来の agent は「境界値ではないので無視してよい」と早合点していた
+
+この場合、`semantic invariants or state constraints` を見るよう促すことで、真の NOT_EQUIVALENT を拾いやすくなる可能性はある。
+
+### 提案が悪化させうる方向
+一方で `compare` の定義はあくまで「既存テストの pass/fail outcome が同じか」である。ここで意味的差分の列挙を前面に出すと、以下の回帰がありうる。
+- 実装の意味論的説明は違う
+- だが既存テストがその差分を観測していない
+- 本来は EQUIVALENT modulo tests
+- しかし agent が差分の存在自体を重く見て NOT_EQUIVALENT に寄る
+
+特に今回の文言には `that each change modifies` が入っており、test-centric というより change-centric に読める。これは compare モードの基準と少しズレる。
+
+### 実効的差分の評価
+変更前:
+- EDGE CASES は主に「実テストが踏む境界条件」を確認する欄として読める
+
+変更後:
+- 実テストが踏む境界条件に加え、「変更が影響する semantic invariants / state constraints」も列挙対象になる
+
+この差分は中立ではない。差分検出方向に圧をかける。
+
+### 片方向にしか作用しないか
+かなり片方向に近い。
+- 正方向: subtle difference の発見、すなわち NOT_EQUIVALENT の根拠補強
+- 逆方向: EQUIVALENT を積極的に守る仕組みは増えていない
+
+つまり、提案者が書いている「EQUIVALENT 誤判定の減少」は論理的に弱い。むしろ自然な一次効果は「誤って EQUIVALENT と言うケースを減らす」ことであり、これは benchmark 上は NOT_EQUIVALENT 側に効く方向である。EQUIVALENT 側には、下手をすると逆風になりうる。
+
+結論:
+- 両方向に均等には作用しない
+- 実質的には NOT_EQUIVALENT 側へ寄る変更
+- EQUIVALENT 側の改善主張は現状の文言だけでは弱い
+
+---
+
+## 4. failed-approaches.md の汎用原則との照合
+
+### 原則1: 探索で探す証拠の種類を事前固定しすぎない
+ここに軽い抵触懸念がある。
+
+今回案は「境界条件に加えて semantic invariants / state constraints を見よ」としており、証拠の種類を一段具体化している。提案者の言う通り特定の関数名やパターンを指定しているわけではないが、それでも compare の探索を特定の証拠型へ寄せる作用はある。
+
+完全に同じ失敗の再演ではないが、方向としては近い。
+
+### 原則2: 探索の自由度を削りすぎない
+ここも軽い懸念あり。
+
+文言は「広げている」ように見えるが、実際には compare の思考フレームを「意味的不変条件を見るべき」という方向へ誘導する。これにより、本来見るべき API contract、例外の有無、 import path、 data-shape 差分などを agent がすべて invariants 語彙に回収してしまうおそれがある。
+
+### 原則3: 局所的仮説更新を前提修正義務に直結させすぎない
+これは抵触しない。今回の変更は Step 3 の premise/hypothesis 更新規律には触れていない。
+
+### 原則4: 結論直前の自己監査に新しい必須判定ゲートを増やしすぎない
+これは抵触しない。Step 5.5 には手を入れていない。
+
+### まとめ
+- 原則3, 4: 問題なし
+- 原則1, 2: 弱いが無視できない緊張あり
+
+したがって「表現を変えただけの過去失敗の再演」とまでは言わないが、過去失敗原則から完全に安全とは言えない。
+
+---
+
+## 5. 汎化性チェック
+
+### 明示的ルール違反の有無
+提案文中を確認した限り、以下のような強い違反は見当たらない。
+- 特定のベンチマークケース ID
+- 特定リポジトリ名
+- 特定テスト名
+- 対象リポジトリ由来のコード断片
+
+含まれているのは主に以下。
+- SKILL.md 自身の文言引用
+- 論文の Appendix / section 参照
+- 一般概念名 (`semantic invariants`, `state constraints`, `control flow` など)
+
+この範囲なら、過剰適合の直接証拠とは言いにくい。
+
+### 暗黙のドメイン想定
+ただし、文言にはやや偏りがある。
+- `state constraints` は命令的・状態遷移的コードには自然だが、純関数型、宣言的変換、データクエリ、型レベル制約中心のコードにはやや不自然。
+- `that each change modifies` という表現は、変更差分が「何かの状態や不変条件を変える」と読めるケースに寄っており、リファクタ・名前変更・表現差し替え・ error-message 差分などには適用像が弱い。
+
+### 汎化性の結論
+- 露骨な overfitting 証拠: なし
+- ただし語彙選択はやや stateful / imperative 偏重
+- より汎化するなら `semantic obligations, observable guarantees, or state constraints` のように広げた方がよい
+
+---
+
+## 6. 全体の推論品質がどう向上すると期待できるか
+
+限定的な改善は期待できる。
+
+期待できる点:
+- agent が「境界値だけ見て終わる」ことを防ぎ、より深い意味差分を言語化しやすくなる
+- テストが暗黙に依存している順序保証、例外保証、状態保存則のような性質を見落としにくくなる
+
+期待しにくい点:
+- compare の最重要論点である「その差分が既存テストで観測されるか」を直接強化していない
+- したがって、真の反例探索よりも「差分候補の発見」に寄った改善になっている
+- その結果、EQUIVALENT 判定の安定化よりは、差分過検出の方へ振れやすい
+
+総合すると、推論品質の改善幅は小〜中程度で、しかも改善方向が偏っている。
+
+---
+
+## 最終判断
+不承認。
+
+理由の要約:
+1. 研究との整合性はあるが、equivalence checking の核心である「観測可能な反例」への接続が弱い。
+2. 実効的には NOT_EQUIVALENT 側へ片寄る変更で、EQUIVALENT 側の改善根拠が弱い。
+3. failed-approaches の「証拠型の事前固定」「探索自由度の狭窄」に軽く触れており、安全圏と言い切れない。
+4. 現状の benchmark 文脈では、EQUIVALENT 側の誤判定をむしろ悪化させる回帰リスクがある。
+
+もし修正版を出すなら、`semantic invariants` 自体を EDGE CASES に追加するより、
+「意味的差分を見つけたら、必ずその差分に依存する既存テスト assertion / call path を 1 本具体的に追跡せよ」
+のように、差分発見ではなく test-observable counterexample 接続を強化する方が安全。
+
+承認: NO（理由: 変更の一次効果が差分検出方向に片寄っており、EQUIVALENT と NOT_EQUIVALENT の両側をバランスよく改善する設計になっていないため）
