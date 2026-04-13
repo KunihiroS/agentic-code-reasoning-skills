@@ -39,7 +39,7 @@ PI_PROVIDER="github-copilot"
 PI_MODEL="gemini-3.1-pro-preview"
 
 # 8.8: 監査役を Hermes Agent に置換 (旧 Pi)
-HERMES_PROVIDER="openai-codex"
+HERMES_PROVIDER="copilot"
 HERMES_MODEL="gpt-5.4"
 
 # 8.8.2 (2026-04-09): 提案者/実装者も Hermes に統一。Copilot CLI の /critique が
@@ -157,15 +157,16 @@ restore_parent_skill() {
 # 親の overall スコアを archive.jsonl から取得
 get_parent_score() {
   local parent_genid="$1"
+  local score_key="${2:-overall}"
   python3 -c "
 import json
 for line in open('$ARCHIVE_FILE'):
     e = json.loads(line)
     if e['genid'] == $parent_genid:
-        print(e['scores']['overall'])
+        print(e['scores'].get('$score_key', 0))
         break
 else:
-    print($INITIAL_SCORE)
+    print(0)
 "
 }
 

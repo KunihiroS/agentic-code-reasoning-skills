@@ -1,15 +1,13 @@
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..c292b09 100644
+index d8962e9..cf289c7 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -157,6 +157,10 @@ D2: The relevant tests are:
-     To identify them: search for tests referencing the changed function, class,
-     or variable. If the test suite is not provided, state this as a constraint
-     in P[N] and restrict the scope of D1 accordingly.
-+D3: A test that is deleted or disabled by a patch has outcome ABSENT for that patch.
-+    ABSENT == ABSENT counts as identical outcomes (not a difference).
-+    ABSENT vs PASS or ABSENT vs FAIL is a difference only when one patch removes
-+    the test while the other keeps it present and running.
+@@ -144,6 +144,8 @@ Before writing the formal conclusion, check each item below. If any answer is **
+ - [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
+ - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+ - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
++      If a semantic difference was found, did I trace at least one relevant test through the differing
++      path before concluding it affects (or does not affect) the outcome? (cf. Guardrail #4)
  
- PREMISES:
- P1: Change A modifies [file(s)] by [specific description]
+ ### Step 6: Formal conclusion
+ Write a conclusion that:
