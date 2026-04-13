@@ -2,52 +2,55 @@
 
 ## 前イテレーションの分析
 
-- 前回スコア: 65% (13/20)
-- 失敗ケース: django__django-15368, django__django-13821, django__django-15382, django__django-14787, django__django-14311, django__django-14122, django__django-12663
-- 失敗原因の分析:
-
-  **失敗パターンの内訳:**
-  - EQUIVALENT → NOT_EQUIVALENT（3 件）: 15368, 13821, 15382
-  - NOT_EQUIVALENT → UNKNOWN（4 件）: 14787, 14311, 14122, 12663（全件 31 ターン枯渇）
-
-  **UNKNOWN の根本原因（4 件、最大失敗群）:**
-  - 4 件すべてが 31 ターンを消費して結論に至れず UNKNOWN を返している。これはターン上限内に探索を収束させる判断構造が欠如していることを示す。
-  - 現在の SKILL.md には「探索が不完全でも証拠が一方向を支持するならコミットせよ」という指針が存在しない。エージェントは完全な確証が得られるまで探索を続け、ターン上限で強制終了する。
-  - 結果として UNKNOWN（= 不正解）となり、証拠が不完全であっても最善の推測を出力すれば正解できたケースを取りこぼしている。
-
-  **過去イテレーションの教訓:**
-  - iter-9 はガードレール「コミットせよ、UNKNOWN は不可」を追加し、UNKNOWN 件数が 4 件以上から 0 件に減少、スコア 80% を達成した。現在の SKILL.md はその変更を含んでいない。
-  - iter-20 は「Changed code on this test's execution path」フィールドを追加した結果、探索オーバーヘッドが増大し UNKNOWN が 3 件（iter-19）から 4 件に増加してスコアが 75% → 65% に悪化した。イテレーション後のロールバックにより、現在の SKILL.md にこの変更は含まれていない。
-  - 結論: UNKNOWN 問題はコミット意志の問題ではなく（iter-18 の UNKNOWN 禁止注記は単独では効果不足だった）、「不完全な証拠の下でも最善結論にコミットすべき」という推論原則の欠如が本質。iter-9 のガードレール #10 はこの原則を明示的に述べており、0 UNKNOWN を達成した実績がある。
-
-  **EQUIVALENT → NOT_EQUIVALENT の持続的失敗（3 件）:**
-  - 15368, 13821, 15382 はほぼ全イテレーションで失敗する。これらはコードの意味的差異を発見した後、テストアサーションへの到達性を確認せずに NOT_EQUIVALENT と結論付ける「浅い反例」パターン。
-  - 今回はこのパターンを対象とせず、UNKNOWN 問題（より大きな失敗群）に集中する。
+- 前回スコア: 不明（iter-20 の scores.json 未参照）
+- 失敗ケース: 不明（参照制限により scores.json を参照せず）
+- 失敗原因の分析: 前提（P[N]）が仮説更新（REFUTED/REFINED）の後も
+  修正されず、後段の推論が誤前提を引き続き参照して誤判定に至るパターンが
+  推論品質低下の一因と分析された。
 
 ## 改善仮説
 
-**UNKNOWN 答案はターン枯渇によるものであり、「不完全な証拠の下でも最善結論にコミットせよ」という推論ガードレールを追加することで防止できる。証拠が一方向を指す段階でコミットを促すことで、不確実な状況での不作為（UNKNOWN）を排除し、低信頼度でも採点可能な YES/NO 答案を確保する。**
-
-根拠:
-- 現在の SKILL.md には "UNKNOWN は無効" や "最善結論にコミットせよ" という指針が一切存在しない。
-- iter-9 で同一のガードレール（"Commit to a conclusion. Do not answer UNKNOWN..."）を追加した際、UNKNOWN 件数が 0 に減少してスコアが 80% に達した実績がある。
-- 変更は 1 行追加（≤ 20 行の制約内）。Guardrails セクションの最後に追加するのみで、テンプレート・フロー・他のモードへの影響ゼロ。
-- この原則はプログラミング言語・フレームワーク非依存の汎用的な推論規律（「不完全証拠の下でも最善判断をせよ」）であり、overfitting ではない。
+仮説が REFUTED または REFINED になった時点で、その根拠となった前提
+（P[N]）自体を見直す自問を探索中に促せば、前提の誤りに由来する誤判定を
+後段に持ち越す前に検出できる。前提の誤りを後段まで持ち越すことが、
+全体推論品質の低下の一因となっている。
 
 ## 変更内容
 
-Guardrails セクションの「General」節にガードレール #10 を 1 行追加。
+SKILL.md の Step 3 テンプレート内 HYPOTHESIS UPDATE ブロックの既存1行を
+精緻化し、2行に拡張した。変更前後は以下の通り。
 
-```diff
- 9. Do not skip the refutation check. It is mandatory in every mode.
-+10. **Commit to a conclusion.** Do not answer UNKNOWN. When evidence is incomplete or exhausted before full tracing is possible, answer with the strongest conclusion the traced evidence supports and assign LOW confidence. An incomplete trace that strongly favors one answer is more useful than no answer.
+変更前:
+```
+HYPOTHESIS UPDATE:
+  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]
 ```
 
-変更規模: 1 行追加のみ（≤ 20 行の制約内）。  
-変更箇所: Guardrails の General 節のみ。テンプレート・ステップ・他モードへの影響なし。
+変更後:
+```
+HYPOTHESIS UPDATE:
+  H[M]: CONFIRMED / REFUTED / REFINED — [explanation];
+        if REFUTED or REFINED, revisit the premises P[N] that supported H[M]
+        and correct any that no longer hold before proceeding.
+```
+
+新規ステップ・新規フィールド・新規セクションの追加はなし。
+既存行への文言追加・精緻化のみ（変更規模: 2行、hard limit 5行以内）。
 
 ## 期待効果
 
-- **14787, 14311, 14122, 12663（UNKNOWN → 正解を期待）**: ガードレール #10 により、ターン上限前に「証拠が最も支持する結論に LOW 信頼度でコミットせよ」という指針が働く。NOT_EQUIVALENT ケース（正解は NO）で証拠が一定程度蓄積されていれば、UNKNOWN ではなく NO を出力し正解となる可能性が高い。iter-9 の実績では同一ガードレールで UNKNOWN=0 を達成。
-- **15368, 13821, 15382（EQUIVALENT → NOT_EQUIVALENT 誤判定）**: このパターンへの直接対処ではないが、ガードレール #10 は EQUIVALENT ケースにも適用される。十分な証拠がない段階で NOT_EQUIVALENT にコミットさせることは望ましくないが、これらのケースはすでに詳細トレース後に NOT_EQUIVALENT と結論付けている（ターン数 7–22 で余裕あり）ため、このガードレールの適用で悪化する可能性は低い。
-- **回帰リスク**: iter-9 での同一ガードレール適用時に現在正解の 13 件は影響を受けなかった実績がある。コミット要求は誤答を強制するものではなく、UNKNOWN → 採点可能な答案への変換を促すだけであり、すでに YES/NO にコミットできているケースへの影響は最小限。
+(a) 誤前提の持ち越しによる誤判定の減少:
+    探索序盤で設定した前提が途中の観測で覆されても、仮説更新のみで前提が
+    修正されず後段で再利用されるパターンを、REFUTED/REFINED のたびに前提
+    見直しを自問させることで中断できる。
+
+(b) 確認バイアスの蓄積の抑制:
+    仮説が REFINED のまま探索が続く際に古い前提が温存され新証拠の解釈が
+    歪まれるパターンを、前提見直しの習慣づけで軽減できる。
+
+(c) 全モード（compare/diagnose/explain/audit-improve）共通の Step 3 に
+    均等に適用されるため、特定モードへの過剰適合はない。
+
+Step 5.5 の自己監査チェックリスト、Step 6 の結論フォーマット、
+Guardrail 一覧への変更はないため、既存の反証プロセスや確信度付け方式は
+そのまま維持される。
