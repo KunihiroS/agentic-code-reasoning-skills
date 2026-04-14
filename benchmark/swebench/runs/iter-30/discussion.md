@@ -1,231 +1,213 @@
-# Iteration 30 — discussion
+# Iter-30 Discussion
 
 ## 総評
 
-今回の提案が狙っている失敗モード自体――**「コード差異を見つけただけで NOT_EQ に飛ぶ」「下流で差異が吸収される可能性を見落とす」**――は妥当です。これは原論文の error analysis とも整合します。
+提案の狙い自体は理解できる。Step 3 の探索開始前に、結論から逆算して必要証拠を意識させることで、探索の目的志向性を上げたいという発想は、一般的な推論原則としてはもっともである。
 
-しかし、**提案された変更の実効差分は小さく、しかも既存の失敗パターン（BL-6 / BL-14 系）にかなり近い**です。現在の Guardrail 5 はすでに downstream handling を確認するよう要求しており、今回の追記はその compare 向け言い換えに留まります。したがって、研究的な方向性は正しい一方で、**この具体的変更がベンチマーク実測で改善を生む確度は低く、NOT_EQ 側にだけ実質的な追加慎重さを注入する回帰リスクがある**と判断します。
+ただし、今回の文言は `SKILL.md` 全体の共通 Step 3 に入るため、`compare` 以外のモードにも波及する。その割に「each possible conclusion」がどのモードで何を指すかが曖昧で、しかも「minimum evidence」という語が早期打ち切り条件として働きうる。結果として、提案者が意図する「両方向の証拠収集の強化」よりも、「探索対象の早期固定」「証拠種類の事前固定」に近い挙動を誘発する懸念がある。
+
+私の結論は、現状の文言のままでは 承認 NO。
 
 ---
 
-## 1. Web 検索による妥当性評価（DuckDuckGo MCP）
+## 1. 既存研究との整合性
 
-### 検索結果 1
-- URL: https://arxiv.org/abs/2603.01896
-- 要点:
-  - 原論文 *Agentic Code Reasoning* は、semi-formal reasoning の核心を「explicit premises / execution-path tracing / formal conclusions」に置いている。
-  - また error analysis として、**incomplete reasoning chains** と **downstream code already handled the edge case** を明示的に挙げている。
-- 評価:
-  - 提案の問題意識そのものは原論文に一致する。
-  - ただし、**この知見は既に現行 SKILL.md の Guardrail 5 に反映済み**であり、今回の変更は「未活用アイデア導入」というより**既存ガードレールの局所的具体化**に近い。
+DuckDuckGo MCP の検索 API は今回複数回 no results となったため、同 MCP の fetch_content で直接 URL を取得して確認した。
 
-### 検索結果 2
-- URL: https://arxiv.org/abs/2402.10754
-- 要点:
-  - *LLMDFA: Analyzing Dataflow in Code with Large Language Models* は、コード理解で重要なのは単なる構文差分ではなく、**program values の依存関係と path feasibility** だと述べる。
-  - 幻覚抑制のために、subtask decomposition と dataflow facts の要約を使っている。
-- 評価:
-  - 「差異が下流の観測点まで伝播するかを見る」という発想は学術的に支持される。
-  - しかし LLMDFA が有効だったのは、**具体的な分析サブタスクへ分解したこと**であり、今回提案のような **Guardrail への 1 文追加だけで同等の効果が出るとは言いにくい**。
+### 参照 URL と要点
 
-### 検索結果 3
-- URL: https://arxiv.org/abs/2406.01006
-- 要点:
-  - *SemCoder* は、Code LLM が苦手なのは shallow pattern matching ではなく、**execution effects / dynamic states / overall input-output behavior** の統合だと指摘する。
-  - local execution effect と overall behavior を結ぶ monologue reasoning が有効とされる。
-- 評価:
-  - 提案の「関数レベル差異 ≠ テスト結果差異」という主張は実務的にも研究的にも妥当。
-  - ただし、SemCoder の示唆もまた **ローカル差異から最終観測結果までを統合的に追うことの重要性**であり、単なる警句の追加ではなく、実際の reasoning step に作用する設計が必要だと読める。
+1. https://arxiv.org/abs/2603.01896
+   - `Agentic Code Reasoning` 本論文。
+   - 要点: 明示的前提、実コードの経路追跡、形式的結論、反証を要求する semi-formal reasoning が精度改善に寄与する。
+   - 整合性評価: 今回提案は「探索前に必要証拠を意識させる」点では論文の certificate 的発想と整合する。ただし論文のコアは「証拠を明示して辿ること」であり、「最小証拠を事前に固定すること」を強く主張しているわけではない。
 
-### 検索結果 4
-- URL: https://arxiv.org/abs/2404.09241
-- 要点:
-  - *An Empirical Evaluation of Manually Created Equivalent Mutants* は、**見た目に異なる変更でも意味的には等価**なケースの識別が難しく、開発者も苦手だと示す。
-- 評価:
-  - 「コード差異があっても振る舞い差異とは限らない」という前提を支える実務的知見として有益。
-  - ただしこの文献は、**等価判定の難しさ**を示すものであって、今回のような compare-specific guardrail 文言追加の有効性を直接支持するものではない。
+2. https://en.wikipedia.org/wiki/Backward_chaining
+   - 要点: backward chaining / backward reasoning は、ゴールから出発してその結論成立に必要な前提・データへ逆算する goal-driven な推論法。
+   - 整合性評価: 提案者が A カテゴリの「逆方向推論」と呼ぶ根拠としては妥当。特に compare タスクで「EQUIVALENT / NOT_EQUIVALENT のどちらを示すには何が要るか」を先に考える発想とは合う。
+
+3. https://en.wikipedia.org/wiki/Hypothetico-deductive_model
+   - 要点: 仮説を立て、その仮説が真なら何が観測されるかを導き、反証的な観測を探す、という科学的方法の記述。
+   - 整合性評価: 「どの結論にどんな証拠が要るか」を先に意識するのは、仮説から可観測な区別条件を導くという意味で整合的。ただし重要なのは falsifiable な区別条件であり、「minimum evidence」という表現は falsification より sufficiency/打ち切りに寄りやすい。
+
+4. https://en.wikipedia.org/wiki/Confirmation_bias
+   - 要点: 人は仮説に都合のよい情報だけを探しやすく、反対証拠を無視しやすい。特に one-sided な仮説検証が起こりやすい。
+   - 整合性評価: 提案者の「EQUIV・NOT_EQ の両方向の証拠を均等に集めたい」という問題意識は妥当。
+   - ただし逆に、事前に「必要証拠」を固定しすぎると、その枠内でだけ証拠を集める confirmation bias を再強化する危険もある。
 
 ### 小結
-- **妥当な問題設定**: YES
-- **この具体的変更の有効性**: 弱い
-- 理由: 研究は一貫して「下流観測点までの追跡」の重要性を支持するが、今回の変更はその行動を新規に制度化するより、**すでにある Guardrail 5 を言い換えて salience を上げる程度**に留まる。
+
+研究との整合性は「部分的にはある」が、「minimum evidence」という wording は研究が重視する反証可能性よりも、探索の早期収束を促す方向に誤読されやすい。したがって、研究整合性は限定付きで肯定、全面的な裏付けまでは弱い。
 
 ---
 
-## 2. Exploration Framework のカテゴリ選択は適切か
+## 2. Exploration Framework のカテゴリ選定は適切か
 
 ### 判定
-**適切とは言い難い。主カテゴリ F より、実質的にはカテゴリ E（表現・フォーマット改善）寄り**です。
+概ね適切。ただし A に完全に閉じるというより、A と B の境界上にある。
 
 ### 理由
-- `docs/design.md` には、論文の error analysis を **既に guardrails に翻訳済み**とある。
-- 現行 SKILL.md の Guardrail 5 もすでに以下を含む:
-  - "verify that downstream code does not already handle the edge case or condition you identified"
-- したがって今回の追記は、原論文の**未活用アイデアの導入**ではなく、**既存 guardrail の compare 向け再表現**に近い。
 
-### 過去イテレーションとの関係
-同一カテゴリ F はすでに複数回試行済みです。
-- iter-8: localize の divergence analysis 移植
-- iter-9: propagation check
-- iter-25: explain の data-flow 的発想の移植
-- iter-28: localize の claim-premise 接続の移植
-- iter-30 提案: error analysis の compare-specific 補足
+- Objective.md の A には明示的に「結論から逆算して必要な証拠を特定する（逆方向推論）」が含まれている。
+- 今回の提案文はまさにそれを Step 3 に導入しようとしているため、A と分類すること自体は自然。
+- 一方で、実際に起こる作用は「どの情報を先に取りに行くか」「探索の優先順位をどう付けるか」にも及ぶため、運用上は B（情報の取得方法の改善）にもまたがる。
 
-特に今回の提案は、**iter-9 の propagation check や BL-6 / BL-14 系と問題設定・効果方向が非常に近い**です。カテゴリ F としての新規性は弱いです。
+### 監査上の見方
+
+カテゴリ選定を理由に即否定する必要はない。ただし「A だから failed-approaches の B 系失敗を回避できる」とは言えない。実際の作用は探索優先度と証拠取得の型に影響するため、失敗原則照合は厳しめに見るべき。
 
 ---
 
-## 3. EQUIV / NOT_EQ への影響と、変更前との差分分析
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方への作用
 
-## 3.1 変更前との差分
-現行 Guardrail 5:
-> After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified.
+## 変更前と変更後の実効差分
 
-提案後の実効差分:
-> compare では、A/B の semantic difference を見つけたら、その差異が test assertion まで届く前に absorbed / normalized されないか確認せよ。
+変更前:
+- Step 3 は「ファイルを開く前に仮説を書く」を要求する。
+- 何をもって仮説が支持/反証されるかは、Step 3 内の `EVIDENCE` や Step 5 の refutation check で後から埋める構造。
 
-この差分は表面上は compare 専用の具体化ですが、**発火条件が「semantic difference を見つけたとき」**である点が重要です。
+変更後:
+- 仮説を書く前に、「各 possible conclusion に必要な minimum evidence」を明示させる。
+- つまり探索開始前から、結論と証拠の対応を先に設計することになる。
 
-## 3.2 EQUIV への影響
-### プラス要因
-- EQUIV 偽陽性の典型である「差異発見 → 即 NOT_EQ」を抑制する可能性はある。
-- 特に 15368, 13821, 15382 型の失敗には理屈上フィットする。
+これは単なる wording 追加ではあるが、探索のスタート地点を「仮説生成」から「結論ごとの証拠要件の先行設計」に寄せるため、実効上はかなり違う。
 
-### 限界
-- その問題はすでに Guardrail 5 の射程にかなり入っている。
-- つまり今回の改善余地は、**新しい認知操作の導入ではなく、既存操作の salience 増加**に過ぎない。
-- よって EQUIV 改善があっても限定的と見るべき。
+### EQUIVALENT への作用
 
-## 3.3 NOT_EQ への影響
-### リスク要因
-- 真の NOT_EQ ケースでも、多くはまず「semantic difference を見つける」ことから始まる。
-- その直後に追加で「本当に assertion まで届くか」「absorb されないか」を再確認させるため、実効的には **NOT_EQ 側の慎重さ・立証負荷を増やす**。
-- これは wording 上は guardrail でも、挙動としては **BL-6（対称化と称した一方向追加）** や **BL-14（DIFFERENT 主張時の追加検証）** に近い。
+期待される正方向:
+- EQUIVALENT は本来、「差分が見当たらない」ではなく「 relevant tests 上で反例がない」と示す必要がある。
+- そのため、先に「EQUIVALENT を言うには何が必要か」を考えさせるのは、浅い一致判定を減らす可能性がある。
+- 特に compare テンプレートの `NO COUNTEREXAMPLE EXISTS` を、探索前から意識させる点は有益。
 
-### 期待できる改善幅
-- NOT_EQ で明確な改善要因は弱い。
-- せいぜい「証拠の質が少し上がる」程度で、UNKNOWN 増や EQUIV への揺り戻しを打ち消せるほどではない。
+懸念:
+- EQUIVALENT に必要な証拠は本質的に open-ended で、「minimum evidence」が定義しにくい。
+- そのためエージェントが安易に「主要な呼び出し経路が一致していれば十分」などと早期に閾値を置いてしまうと、微妙な差分を見落として premature EQUIVALENT に寄る危険がある。
 
-## 3.4 一方向にしか作用しないか？
-**はい、実効差分はかなり一方向です。**
+### NOT_EQUIVALENT への作用
 
-提案文は EQUIV / NOT_EQ の両結論に形式上使えるように見えますが、追加条件の発火点は
-- 「semantic difference を見つけたとき」
-であり、これは実際には **NOT_EQ 候補の局面**で主に現れます。
+期待される正方向:
+- NOT_EQUIVALENT は通常、少なくとも 1 つの具体的反例・発散テスト・分岐差分が必要になる。
+- 先に「何が見つかれば差異判定になるか」を明示すれば、反例探索が鋭くなる可能性はある。
 
-変更前との差分で見ると、既存 Guardrail 5 は全モード共通の一般論でした。今回追加される新規制約は、**compare で差異を見つけた後にのみ、より具体的な downstream / assertion 伝播確認を要求する**ものです。したがって、実効的には
-- EQUIV 側: 誤った NOT_EQ を少し抑えるかもしれない
-- NOT_EQ 側: 正当な DIFFERENT 主張にも追加ハードルを課す
+懸念:
+- NOT_EQUIVALENT はもともと「1 個の十分な反例」で成立しやすく、minimum evidence との相性が良すぎる。
+- そのため、探索が「反例らしきものを 1 個見つけること」に過剰最適化され、 downstream で test outcome まで効くかの追跡が甘くなるおそれがある。
+- しかし現行 SKILL はすでに Step 5 と compare テンプレートで counterexample obligation を持っており、そこに対する純増効果は限定的。
 
-という非対称な作用になります。
+### 片方向にしか効かないか
 
----
+「理論上は両方向に効く」が、「実務上の強い効き方は対称ではない」と見る。
 
-## 4. failed-approaches.md のブラックリスト・共通原則との照合
+- EQUIVALENT 側には、探索前から non-counterexample 条件を意識させる効果がありうる。
+- NOT_EQUIVALENT 側には、すでに counterexample 中心の既存構造があるため上乗せ幅が小さい。
+- さらに `minimum evidence` という語感上、NOT_EQ の方が定義しやすく、EQUIV は雑に定義されやすい。
 
-### 4.1 BL 類似性
-
-#### BL-6 との近さ
-- BL-6 は「差異があると結論する前にも trace せよ」という拡張だった。
-- 今回も本質的には「差異を見つけたら、その差異が assertion まで届くか確認せよ」であり、**差異発見後の追加検証**という点でかなり近い。
-- 文言は違うが、**実効差分は NOT_EQ 側の追加慎重化**で同型。
-
-#### BL-14 との近さ
-- BL-14 は DIFFERENT 主張時に backward verify を要求した。
-- 今回は backward という語を使っていないが、**function-level difference から test outcome まで因果をつなげ直せ**という要求であり、作用としては類似する。
-- 認知負荷は BL-14 より軽いが、方向性は同じ。
-
-#### BL-15 との関係
-- BL-15 は「出力側 wording の修正だけでは探索を改善しない」ことを示した。
-- 今回は output block ではなく guardrail 変更なので完全同一ではないが、**なお wording レベルの改善であり、探索手順そのものを変えていない**点で同じ懸念がある。
-
-### 4.2 共通原則との照合
-
-#### 原則 #1 判定の非対称操作
-- 抵触リスクあり。
-- 発火条件が「semantic difference を見つけたとき」なので、NOT_EQ 候補時にだけ追加慎重さが入る。
-
-#### 原則 #2 出力側の制約
-- 直接の出力制約ではないため、この原則には直撃しない。
-- ただしプロセス改善としても弱い。
-
-#### 原則 #3 探索量の削減
-- 探索削減ではないので抵触しない。
-- ただし追加探索のコストが NOT_EQ でだけ実質増える可能性がある。
-
-#### 原則 #4 同じ方向の変更
-- **抵触に近い**。
-- Propagation / downstream absorption / assertion 到達確認という表現違いだが、効果の方向は iter-9 や BL-14 と近い。
-
-#### 原則 #5 入力テンプレートの過剰規定
-- 文量は小さいので軽微。
-- ただし compare モードで「何を追加で確認するか」を固定化しており、局所的アンカーにはなる。
-
-#### 原則 #6 対称化の実効差分
-- **抵触リスク大**。
-- 文言上は compare 全体への補足でも、変更前との差分は「差異発見後の確認義務」だけであり、実効的には一方向。
-
-#### 原則 #12 アドバイザリな非対称指示
-- 強く該当。
-- ガードレールはチェックリストと同じく、モデルにとっては自己証明義務として働く。よって "advisory だから安全" とは言えない。
-
-### 結論
-**ブラックリストと共通原則の両方に照らして、今回案は危険寄りです。**
+よって、「両方向に均等に効く」という提案者の主張は強すぎる。実効的には EQUIV の不足を補いたい提案だが、文言次第では逆に premature EQUIV も premature NOT_EQ も起こしうる。
 
 ---
 
-## 5. 全体の推論品質はどう向上すると期待できるか
+## 4. failed-approaches.md の汎用原則との照合
 
-限定的には、以下の改善は期待できます。
-- コード差異とテスト差異を混同しにくくなる
-- downstream normalization / absorption を思い出しやすくなる
-- EQUIV 偽陽性の一部には効く可能性がある
+### 総合判定
+提案者の自己評価よりも、failed-approaches に近い。完全一致ではないが、本質的な再演リスクがある。
 
-ただし、改善の主因は **新しい分析能力の獲得**ではなく **既存ガードレールの salience 上昇**です。したがって、
-- 汎化的で大きな改善
-- 既存失敗パターンを越える構造的改善
+### 原則 1 との照合
 
-までは期待しにくいです。むしろ NOT_EQ 側で
-- 過剰な再確認
-- 結論遅延
-- UNKNOWN / EQUIV への揺り戻し
+failed-approaches:
+- 「次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」
 
-が出るリスクの方が無視できません。
+今回提案:
+- 「各 possible conclusion が要求する minimum evidence」を事前に書かせる。
 
----
+評価:
+- これは具体的シグナル名を固定してはいないが、「証拠の種類・十分性」を探索前に先取りしている。
+- 実質的には、探索を open-ended な正当化から「事前に想定した証拠型の捜索」へ寄せる。
+- したがって、failed-approaches の警告とかなり近い。
 
-## 6. 承認可否
+### 原則 2 との照合
 
-## 結論
-**修正を求めます。現案のままの承認は不可です。**
+failed-approaches:
+- 「探索ドリフト対策を追加する際は、探索の自由度を削りすぎない」
+- 「どこから読み始めるか」「どの境界を先に確定するか」の半固定は探索経路を細らせる
 
-### 主理由
-1. **カテゴリ F の新規性が弱い**
-   - error analysis は既に Guardrail 5 に取り込まれており、未活用アイデア導入ではない。
-2. **実効差分が小さい**
-   - 既存 guardrail の compare-specific rephrasing に留まり、改善幅が限定的。
-3. **BL-6 / BL-14 型の再発リスク**
-   - 「差異発見後の追加確認」という実効差分が NOT_EQ 側に偏って作用する。
-4. **研究は方向性を支持するが、この実装粒度を支持しない**
-   - 文献は downstream propagation の重要性を示すが、単文追加での効果を裏づけてはいない。
+今回提案:
+- 読む順序自体は固定していない。
+- しかし「minimum evidence」を先に確定させることで、どの境界を十分とみなすかを事前に固定しやすい。
 
-### 代替提案（未試行寄りカテゴリ E）
-**カテゴリ E: 表現・フォーマット改善のうち「追加制約」ではなく「冗長削減・焦点の明確化」方向**を提案します。
+評価:
+- 読解順序の固定ではないが、「探索をどこで止めるか」「何を relevant とみなすか」の早期固定に繋がる。
+- これは failed-approaches の趣旨から見ると非抵触とは言い切れない。
 
-具体例:
-- compare テンプレートの既存説明文のうち、**コード差異の発見を主目標に見せてしまう冗長表現を削り**、
-- `Comparison: SAME / DIFFERENT outcome` の直前に、**両結論に等しく適用される 1 行**として
-  - `Base the comparison on the first observation point that the test can detect (returned value, raised exception, mutated state, or assertion input), not merely on earlier internal code differences.`
-  を置く。
+### 原則 3・4 との照合
 
-この方向なら
-- NOT_EQ のみの追加ハードルになりにくい
-- 既存 Guardrail 5 の重複言い換えではなく、compare ブロックの焦点自体を明確化できる
-- 追加フィールドやゲートを導入しないため、BL-8/10/14 の再発も避けやすい
+- 原則 3（局所的な仮説更新を即座の前提修正義務に結びつけない）には直接は抵触しない。
+- 原則 4（結論直前のメタ判断追加）にも直接は抵触しない。追加位置は Step 3 だからである。
 
-これは「何を余計に証明させるか」ではなく、**比較の基準点を両方向対称に明確化する**提案です。
+### 小結
+
+最大の問題は、提案者が「これは特定シグナル固定ではないので非抵触」としている点。監査上はそこまで楽観できない。今回の変更は、具体的な信号名ではなくても「証拠要件の事前テンプレート化」に寄っており、失敗原則のコアと十分に近い。
 
 ---
 
-## 最終判定
-**承認: NO（理由: 既存 Guardrail 5 の言い換えに留まり新規性が弱く、変更前との差分が「差異発見後の追加確認」として実効的に NOT_EQ 側へ偏るため。BL-6 / BL-14 / 原則 #6・#12 の再発リスクが高い）**
+## 5. 汎化性チェック
+
+### 明示的なルール違反の有無
+
+提案文には以下が含まれる:
+- `Iter-30` というイテレーション番号
+- `SKILL.md` の変更前/変更後の一行引用
+- 変更行数などのメタ情報
+
+ただし、これらはベンチマーク対象リポジトリ名・テスト名・ケース ID・実装コード断片ではない。
+Objective.md の R1 でも、`SKILL.md` 自身の文言引用は減点対象外と明記されている。
+
+したがって、私の判定は次の通り。
+
+- ベンチマーク対象リポジトリ名: 含まれていない
+- テスト名 / テスト ID: 含まれていない
+- ベンチマーク対象実装コード断片: 含まれていない
+- 具体的数値 ID: `Iter-30` はあるが、監査上問題となる「ケース ID / ベンチマーク固有識別子」ではない
+- `SKILL.md` 自己引用: あり。ただしルール上許容範囲
+
+### 暗黙のドメイン依存性
+
+ここはむしろ懸念がある。
+
+提案の文言は compare の二値判定には比較的自然だが、他モードでは不自然になりやすい。
+
+- `compare`: possible conclusion = EQUIVALENT / NOT_EQUIVALENT と読みやすい
+- `diagnose`: possible conclusion は候補 root cause 群であり、二値ではない
+- `explain`: possible conclusion は質問依存で多様、固定集合ではない
+- `audit-improve`: finding は複数個・複数カテゴリであり、「各 possible conclusion」というより「各 finding 仮説」になる
+
+つまり、表面的には汎用語だが、実際には compare 的な二者択一構図を暗黙に想定している。ここは汎化性の減点要因。
+
+---
+
+## 6. 全体の推論品質がどう向上すると期待できるか
+
+### 期待できる改善
+
+- 探索開始時点で「何が分かれば十分か」を意識するため、漫然とした情報収集は減る可能性がある。
+- compare モードでは、EQUIV / NOT_EQ の双方に対する必要証拠を意識させることで、片側だけの証拠収集を抑えられる可能性がある。
+- Step 5 の refutation check を、探索末尾の儀式ではなく探索設計に近づける点は良い方向。
+
+### 想定される悪化リスク
+
+- 「minimum evidence」が早期打ち切り条件として作用し、 subtle difference の見落としを増やす。
+- 事前に思いついた証拠類型だけを集める confirmation bias を強化する。
+- compare 以外のモードでは possible conclusion の定義が曖昧で、探索開始時の認知負荷だけ増える。
+- 一行変更に見えて、共通 Step 3 の意味付け全体を変えるため、影響範囲は広い。
+
+### 期待値の結論
+
+局所的には改善の余地があるが、現文言のまま共通 Step 3 に入れると、推論品質の全体改善よりも、モード不整合と探索早期固定のリスクが上回るとみる。
+
+---
+
+## 最終判断
+
+承認: NO（理由: `minimum evidence each possible conclusion` という文言が、compare 以外のモードで曖昧であり、かつ failed-approaches.md が禁じる「証拠要件の事前固定」「探索経路の早期細化」に本質的に近い。EQUIVALENT / NOT_EQUIVALENT の両方向へ対称に効く保証も弱く、共通 Step 3 へのグローバル変更としては回帰リスクがある。）
+
+## 補足
+
+もし方向性自体を活かすなら、共通 Step 3 ではなく compare テンプレート内部に限定し、`minimum evidence` ではなく `what evidence would distinguish the competing conclusions or refute the current hypothesis` のように、停止条件ではなく識別条件・反証条件を問う wording に寄せた方が安全である。
