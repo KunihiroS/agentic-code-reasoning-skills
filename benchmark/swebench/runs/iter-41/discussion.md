@@ -1,238 +1,223 @@
-# Iteration 41 — 監査コメント
+# Iteration 41 — Discussion
 
-## 総評
-問題意識そのもの、すなわち **「コード差分を見つけただけで NOT_EQ に飛ばず、その差分が caller 側で吸収・正規化されていないかを見る」** という狙いは妥当です。学術的にも実務的にも、コード意味論の判断では **局所差分ではなく、呼び出し元まで含めた可観測挙動** を確認すべき、という方向は強く支持されます。
+## 1. 既存研究との整合性
 
-ただし、**今回の具体的な変更案は承認できません**。理由は次の3点です。
+### 調査結果
 
-1. **カテゴリ F 自体が未試行ではない**。iter-38, iter-39, iter-40 が既に F を使っており、特に iter-39 は **immediate caller を読む** 方向をかなり近い形で提案済みです。  
-2. 変更前との差分で見ると、今回の +2 行は表面上は両方向でも、**実効的には NOT_EQ 側への追加探索義務が主**です。既存の Step 5 はすでに「identical/different の両方に refutation をかける」一般義務を持っているため、今回本当に新しく入るのは主に **DIFFERENT を出す前に immediate caller を読む** という片側の具体化です。  
-3. EQUIV 側の追加 bullet も、「specific changed value or behavior を test が直接 assert していないことを確認せよ」という形で **観測点を狭く規定しすぎており**、BL-5 / BL-11 / BL-16 系の「入力テンプレートの過剰規定」「観測フレームの固定」に近い回帰リスクがあります。
+1. https://arxiv.org/abs/2603.01896
+   - 要点: Agentic Code Reasoning 論文は、semi-formal reasoning により「明示的前提」「実行経路トレース」「形式的結論」を強制すると、patch equivalence / fault localization / code QA の精度が改善すると述べている。
+   - 本提案との関係: compare モードへ追加の追跡粒度を入れる方向性自体は、論文の「structured certificate によって推論の飛躍を防ぐ」という思想と整合する。
 
-結論として、**基礎仮説はよいが、今回の Step 5 への verdict-conditioned な差し込み方は危険**です。
+2. https://arxiv.org/html/2603.01896v2
+   - 要点: 論文本文では、explain 系テンプレートに data flow analysis があり、key variable について「Created / Modified / Used」を追跡させている。これは code QA 側での未活用アイデアとして実在する。
+   - 本提案との関係: explain の data-flow 観点を compare に移植する、という提案の出典根拠はある。
 
----
+3. https://www.sciencedirect.com/topics/computer-science/data-flow-analysis
+   - 要点: Data-flow analysis は、プログラム中で値がどのように流れるか、どこで定義されどこで使われるかを静的に把握する古典的手法と説明されている。
+   - 本提案との関係: 「変更された値の伝播を追う」という発想そのものは一般的・妥当な静的解析観点であり、場当たり的ではない。
 
-## 1. Web 検索に基づく妥当性評価
+4. https://ui.adsabs.harvard.edu/abs/2026arXiv260301896U/abstract
+   - 要点: 論文要約の再掲。semi-formal reasoning は execution-free なコード意味解析を改善し、patch equivalence にも有効だとされる。
+   - 本提案との関係: compare の証拠収集をもう少し厳密化する、という方向の妥当性は補強される。
 
-以下、DuckDuckGo MCP サーバーで確認した関連知見です。
+### 評価
 
-### 検索結果 1: Agentic Code Reasoning
-- URL: https://arxiv.org/abs/2603.01896
-- 要点:
-  - semi-formal reasoning は、premises・execution trace・formal conclusion を要求することで **unsupported claim と case skip を防ぐ**。
-  - 論文本文・HTML 版では、失敗例として **incomplete reasoning chains**、すなわち複数関数を読んでも **downstream handling を見落とす** パターンが明示されている。
-- 本提案への示唆:
-  - 「caller / downstream handler を読むべき」という基礎仮説は論文と整合的。
-  - ただし論文が支持しているのは **探索の完全性** であって、**NOT_EQ 時だけ具体的 caller 探索を追加する Step 5 の局所ルール** まで直接支持しているわけではない。
+研究整合性は「方向としてはある」。特に、explain モードの data-flow 観点を compare に持ち込む、という F カテゴリの主張には根拠がある。
 
-### 検索結果 2: DevOps.com による Agentic Code Reasoning 解説
-- URL: https://devops.com/meta-researchers-show-ai-agents-can-verify-code-without-running-it-and-hit-93-accuracy/
-- 要点:
-  - structured template は **interprocedural reasoning** を自然に促し、ローカル文脈からの推測を防ぐ。
-  - 誤りは「似て見える」「局所的に差がある」から結論するショートカットで起こる。
-- 本提案への示唆:
-  - caller を読む方向自体は実務的にも筋が良い。
-  - しかし有効なのは **call chain を実際に追うこと** であり、結論直前の条件付き bullet でどこまで安定して発火するかは別問題。
+ただし、外部根拠が支持しているのは「data flow は有用な観点である」という一般論であり、「compare の Claim 行で variable / return の流れを必須化することが最適」というところまでは支持していない。つまり、研究整合性はあるが、提案文の具体的 wording まで強く正当化しているわけではない。
 
-### 検索結果 3: ScienceDirect Topics — Interprocedural Analysis
-- URL: https://www.sciencedirect.com/topics/computer-science/interprocedural-analysis
-- 要点:
-  - interprocedural analysis は **複数関数の相互作用と影響** を扱い、call graph を通じて caller/callee 間の effect を追跡する。
-  - 単一手続き内の局所解析では、call site を越える情報が落ちるため不十分。
-- 本提案への示唆:
-  - immediate caller を読むべき、という発想は静的解析の基本原理にかなう。
-  - ただし「caller を1段読む」だけでは十分でないケースも多く、**caller だけを特権化すると別の観測経路（例外・副作用・setup/teardown）を落とす** リスクもある。
+## 2. Exploration Framework のカテゴリ選定は適切か
 
-### 検索結果 4: CS 6120 — Interprocedural Analysis
-- URL: https://www.cs.cornell.edu/courses/cs6120/2020fa/lesson/8/
-- 要点:
-  - 関数の性質は **どの呼び出し文脈か** に依存しうる。
-  - context-sensitive analysis は精度を上げるがコストも上げるため、どこまで caller 文脈を見るかは設計上のトレードオフ。
-- 本提案への示唆:
-  - caller 文脈を見ること自体は精度向上の方向。
-  - しかし compare の Step 5 に毎回 caller 確認を足すと、**正しいがコスト高な context sensitivity** を局所的に要求する形になり、UNKNOWN やターン消費のリスクがある。
+結論: カテゴリ F の選定は概ね妥当。
 
-### 検索結果 5: RepoCoder
-- URL: https://arxiv.org/abs/2303.12570
-- 要点:
-  - repository-level code completion では、cross-file context を iterative retrieval で集めると in-file baseline を大きく上回る。
-  - 広い repo context を **段階的に回収する retrieval** が有効。
-- 本提案への示唆:
-  - 差分近傍だけでなく repo 内の関連文脈を追加で取る発想は支持される。
-  - ただし RepoCoder が強いのは **検索手順の改善** であり、結論段階の verdict-specific ルール追加ではない。
+理由:
+- Objective.md の F には「論文の他のタスクモード（localize, explain）の手法を compare に応用する」が明記されている。
+- 本提案はまさに explain の DATA FLOW ANALYSIS を compare の Claim 記述に移植しようとしている。
+- したがって、カテゴリ F の中でも mechanism 2 の選択は素直。
 
-### 検索結果 6: InlineCoder — upstream/downstream context
-- URL: https://arxiv.org/html/2601.00376v1
-- 要点:
-  - repository-level reasoning では、関数の役割は **upstream callers（どう使われるか）** と **downstream callees（何に依存するか）** の両方で決まる。
-  - upstream inlining と downstream retrieval を組み合わせると性能が向上する。
-- 本提案への示唆:
-  - 「caller usage を見よ」はかなり強い外部支持がある。
-  - ただしこの研究は **双方向コンテキスト統合** を勧めており、今回案のように **NOT_EQ refutation 用に immediate caller だけを明示する** のは、それよりかなり狭い・片寄った適用です。
+留保:
+- 実際の変更は「新規手法の導入」というより「既存 compare 文言の精緻化」なので、見かけ上は E（表現改善）にも近い。
+- ただし、発想の根拠が論文の別モード由来である以上、主カテゴリを F とする判断は許容範囲。
 
-### 学術的・実務的まとめ
-- **支持できる点**: caller usage / downstream handling を見て、局所差分と可観測差分を区別しようとする方向。  
-- **支持しにくい点**: それを **Step 5 の verdict-conditioned な 2 bullet** として差し込む具体メカニズム。研究的に有効なのは、より一般に **探索の優先順位や call-chain 追跡そのもの** を改善することです。
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方への作用
 
----
+### 実効的差分
 
-## 2. Exploration Framework のカテゴリ選択は適切か？ 同一カテゴリ既試行性
+提案の実効差分は compare テンプレートの Claim C[N].1 / C[N].2 の説明文に、
 
-### カテゴリ F の適切性
-形式上は F（原論文の未活用アイデア導入）に見えます。論文の incomplete reasoning chains を compare に反映する、という説明も理解できます。
+- changed code から assertion outcome まで trace せよ
 
-ただし、**「F が未試行」という主張は成り立ちません**。
+に加えて、
 
-- **iter-38**: F を選択し、localize/explain の anti-skip 機構を compare に移植しようとした
-- **iter-39**: F を選択し、**直接変更関数の immediate caller の use を読む** というかなり近い方向を提案した
-- **iter-40**: F を選択し、論文コアの anti-skip を compare の Claim 内に再配置しようとした
+- changed value が途中で流れ込む variable / return を追え
 
-特に **iter-39** の提案内容は本提案とかなり近いです。相違は
-- iter-39: Step 3/4 の checklist に caller 読みを追加
-- 今回: Step 5 Scope に caller 読みを追加
+を足す、というもの。
 
-という **配置の違い** が中心で、メカニズムの核はかなり重なっています。したがって、**カテゴリ F は既に複数回試されており、サブアプローチも半ば既視感がある** と評価します。
+つまり、変更対象は:
+- STRUCTURAL TRIAGE ではない
+- COUNTEREXAMPLE / NO COUNTEREXAMPLE セクションではない
+- pass-to-pass 用の behavior 記述行でもない
+- compare の主要 per-test trace 行だけ
 
----
+である。
 
-## 3. EQUIV / NOT_EQ への影響と、実効的差分の分析
+### EQUIVALENT 判定への作用
 
-### まず変更前の既存状態
-現行 Step 5 には既に次があります。
-- 「No test exercises this difference」への反証
-- 「This behavior is X」への反証
-- **「These test outcomes are identical/different」への反証**
+こちらには比較的効きやすい。
 
-つまり、**EQUIV / NOT_EQ の両結論に対して、すでに generic な counterfactual obligation は存在しています**。
+期待できる改善:
+- 変更箇所から assertion までを飛ばして「たぶん届かない」と雑に結論する誤りを減らせる。
+- README.md でも persistent failure は EQUIVALENT 側に寄っており、提案仮説の狙いは現状課題と整合する。
+- docs/design.md の「incomplete reasoning chains」対策としても筋が良い。
 
-### 今回案の実効的差分
-今回新たに足すのは:
-1. NOT_EQ を出すときは **immediate caller による差分吸収** を探せ
-2. EQUIV を出すときは **relevant test が changed value/behavior を直接 assert していないこと** を確認せよ
+### NOT_EQUIVALENT 判定への作用
 
-このうち、**本当に新しい探索行動として効くのは 1** です。2 はかなりの部分が既存の P3/P4 読みと relevant test 確認に近く、しかも「直接 assert」という観測フレームに狭めています。
+こちらへの寄与は限定的。
 
-### EQUIV への影響
-**プラス面**:
-- 15368, 13821 型の「コード差分発見 → caller 吸収未確認のまま NOT_EQ」は、改善余地がある。
-- immediate caller を読むことで、差分が normalize / ignore / wrap されているケースは確かに拾いやすくなる。
+理由:
+- compare にはもともと COUNTEREXAMPLE と diverging assertion の義務があるため、NOT_EQUIVALENT 側は既に比較的強い。
+- 差分が assertion に届くことを示すには value flow が有効な場合もあるが、既存テンプレートでも十分に示せるケースが多い。
 
-**マイナス面**:
-- EQUIV 側 bullet が「direct assert of specific changed value」に寄りすぎている。  
-  実際の NOT_EQ は、直接 assert だけでなく
-  - 例外の有無
-  - 副作用
-  - setup/teardown failure
-  - 間接的状態変化
-  でも現れる。したがって、EQUIV 側 bullet は **“観測可能性” を “直接 assert” に狭める** 危険がある。
+### 非対称性の懸念
 
-### NOT_EQ への影響
-**高リスク**です。
-- 真の NOT_EQ ケースでも、Step 5 で immediate caller 吸収確認が追加される。
-- 既存の generic refutation 義務に加えて、**NOT_EQ 側だけ具体的な探索先が1つ追加される** ため、実効差分としては **NOT_EQ の立証責任引き上げ** に近い。
-- しかも caller 1段で伝播が見えないケースでは、
-  - 余分な探索でターンを消費する
-  - 「caller では吸収されていないが assertion まで届く証明が薄い」となって UNKNOWN/EQUIV に揺れる
-  リスクがある。
+本提案は「両方向に同程度効く変更」ではなく、実質的には EQUIVALENT 側を主に狙った変更に見える。
 
-### 一方向にしか作用しないか？
-**はい、かなりその傾向があります。**
+さらに、差分が assertion に影響する経路は variable / return の流れだけではない。
+たとえば:
+- 例外の発生有無
+- control flow の分岐差
+- 共有状態やミュータブルオブジェクトの更新
+- alias を介した変更
+- call の有無や順序差
+- side effect
 
-表面上は2 bullet で両方向ですが、既存 Step 5 がすでに両方向の general refutation を要求している以上、今回の増分は主に **NOT_EQ 側の caller 確認具体化** として働きます。EQUIV 側 bullet は新規な強い探索行動ではなく、むしろ観測フレームを狭める副作用の方が目立ちます。
+のような差分は、value flow の phrasing だけでは捉えきれない。
 
-したがって、提案者の「差分は両側に作用する」という主張は、**変更前との差分評価としては弱い** です。
+そのため、この wording は
+- EQUIVALENT 側にはプラスになりうる一方、
+- NOT_EQUIVALENT 側や非 value-centric なケースでは、モデルを不必要に value-tracking へ寄せる
 
----
+可能性がある。
 
-## 4. failed-approaches.md ブラックリスト・共通原則との照合
+結論として、「片方向にしか作用しない」とまでは言わないが、実効的には EQUIVALENT 側に強く偏った変更であり、双方向の改善としては弱い。
 
-### 4.1 近い既失敗方向
+## 4. failed-approaches.md との照合
 
-#### iter-39 にかなり近い
-iter-39 は:
-- 「After reading a directly changed function, read how its immediate caller uses the changed return value or side-effect」
+提案文は「全原則と非抵触」としているが、そこは楽観的すぎる。
 
-今回案は:
-- 「before asserting this code difference changes test outcomes, read how the immediate caller uses the changed return value or side-effect」
+### 原則1: 探索シグナルを事前固定しすぎる変更は避ける
 
-差は **探索段階か refutation 段階か** ですが、核となる効能仮説はほぼ同じです。したがって **未試行の新機構とは言いにくい** です。
+軽度の抵触リスクあり。
 
-#### BL-2 / BL-6 / BL-12 に近い
-- **BL-2**: NOT_EQ の立証責任を上げる変更は回帰しやすい
-- **BL-6**: 表現上対称でも、既存制約との差分が片側にしか効かないなら実効非対称
-- **BL-12**: advisory な非対称指示でも実質的な立証責任引き上げになる
+今回の変更は読解順序を固定してはいないが、Claim 記述において「何を追うか」を value / variable / return にかなり寄せている。これはまさに evidence type の半固定であり、failed-approaches.md の
 
-今回の caller bullet は、まさに **NOT_EQ を出す前の具体探索義務** です。現行 Step 5 が generic refutation を既に持つことを考えると、増分は NOT_EQ 側に偏っています。
+- 特定シグナルの捜索へ寄せすぎるな
 
-#### BL-5 / BL-11 / BL-16 にも抵触懸念
-EQUIV 側 bullet:
-- 「verify no test directly asserts the specific changed value or behavior at a file:line」
+という警告と無関係ではない。
 
-これは
-- **BL-5**: アサーション条件記録形式の強化
-- **BL-11**: outcome mechanism の注釈追加
-- **BL-16**: 観測点フレーミング追加
+特に compare では、本来追うべきなのは「変更から test outcome までの concrete causal path」であって、その媒介は value flow に限られない。ここを variable / return に狭めると、確認バイアスの入口になりうる。
 
-と同型のリスクがあります。つまり、**“何を観測点とみなすか” を template が細かく固定しすぎる** と、モデルがその枠に合わせて説明を作ることが目的化し、例外・副作用・間接状態変化などの別経路を落とします。
+### 原則2: 探索の自由度を削りすぎない
 
-### 4.2 共通原則との照合
+軽度の抵触リスクあり。
 
-#### 原則 #1 判定の非対称操作
-表面上は対称でも、実効差分は **NOT_EQ 側の caller 探索義務追加** が中心。抵触懸念が強いです。
+変更は局所的だが、局所的な wording でもモデルの探索の見方を細らせることはある。差分影響が control-flow・exception・state mutation 由来のケースで、value-flow 探索を優先してしまう懸念がある。
 
-#### 原則 #2 出力側の制約
-今回の変更は Step 5 Scope なので完全な出力制約ではないものの、**結論直前の refutation 文脈で verdict-conditioned に何を探すかを固定する** 点で、かなり出力近傍の制約です。探索プロセス全体より、結論局面の自己証明義務として読まれやすい。
+### 原則3: 局所的仮説更新を前提修正義務に直結させない
 
-#### 原則 #5 入力テンプレートの過剰規定
-EQUIV 側 bullet の「directly asserts the specific changed value or behavior」は規定が強すぎます。可観測差分をこの枠に圧縮してしまう懸念があります。
+抵触なし。
 
-#### 原則 #6 既存制約との差分で評価
-ここが最重要です。現行 Step 5 は既に "identical/different を refute せよ" を含むため、今回の差分は **generic obligation の補足** ではなく、主に **NOT_EQ specific concretization** として作用します。
+この提案は仮説更新プロセスには触れていない。
 
-### 結論
-**ブラックリストと共通原則の両方に抵触懸念があるため、承認できません。**
+### 原則4: 結論直前の必須メタ判断を増やしすぎない
 
----
+抵触なし。
 
-## 5. 全体の推論品質がどう向上すると期待できるか
+Step 5.5 などの最終ゲート増設ではない。
 
-期待できる改善は限定的です。
+### 総評
+
+failed-approaches.md のブラックリストと完全同型ではないが、
+「探索すべき証拠の種類をテンプレートで少し固定する」方向に踏み込んでおり、無抵触とは言いにくい。
+
+## 5. 汎化性チェック
+
+### 明示的なルール違反の有無
+
+提案文中に以下は見当たらない:
+- ベンチマークケース ID
+- 特定のリポジトリ名
+- 特定のテスト名
+- 対象リポジトリのコード断片
+
+含まれているのは:
+- SKILL.md 自体の行引用
+- 一般的な説明文
+- 論文 Appendix / モード名
+
+なので、Objective.md の R1 観点では明示的な overfitting 記述違反はない。
+
+### 暗黙のドメイン仮定
+
+ただし wording には暗黙の偏りがある。
+
+「follow the changed value through each variable or return it flows into」は、
+- named variable が明示的に存在する
+- return value が主要な伝播媒体である
+
+という、比較的命令型・手続き型なコード像を前提にしている。
+
+この phrasing は次のようなケースで自然さが落ちる:
+- 例外主導の差分
+- 副作用主導の差分
+- callback / event / async 境界
+- 参照共有や aliasing が本質の差分
+- declarative / DSL / config-heavy なコード
+- pattern matching や data constructor を主とする言語
+
+したがって、汎化性は「高いが満点ではない」ではなく、「中程度の懸念あり」が妥当。
+
+## 6. 全体の推論品質がどう向上すると期待できるか
 
 ### 良い点
-- 「何を反証として探すか」がやや具体化される
-- EQUIV 偽陰性のうち、caller 吸収型のものには刺さる可能性がある
 
-### しかし全体改善としては弱い理由
-- 改善の中心が **verdict-conditioned** で、探索の主ループそのものを良くしていない
-- immediate caller は重要だが、**いつも最重要とは限らない**。実際の観測差分は caller 2段上・例外処理・shared helper・state mutation などに現れうる
-- EQUIV 側 bullet が direct assert へ寄りすぎており、比較推論を狭い観測フレームに押し込む
+- changed code から assertion までの因果鎖をより具体化させる効果は期待できる。
+- docs/design.md の incomplete reasoning chains 対策としては筋が良い。
+- 変更規模が非常に小さく、研究コアを壊さない。
 
-したがって、推論品質の向上があるとしても **「一部の EQUIV 偽陰性を拾う局所改善」** に留まり、全体の安定的な底上げにはつながりにくいと見ます。
+### 限界
 
----
+- value flow だけを明示すると、compare で重要な他の媒介経路を相対的に弱くする。
+- 既存 compare の弱点が「assertion までの concrete causal trace 不足」なのか、「value flow の不足」なのかは同一ではない。
+- したがって、この変更は問題の一部には効くが、一般原則としては少し狭い。
 
-## 6. 判定と修正要求
+### より良い方向性
 
-### 判定
-**修正を求めます。**
+もし同じ狙いを維持するなら、variable / return に限定せず、例えば
 
-### 代替提案（未試行カテゴリから）
-この案をそのまま通すより、**カテゴリ B: 情報の取得方法を改善する** 方向へ振る方がよいです。
+- value
+- control flow
+- exception behavior
+- state mutation
 
-#### 代替アプローチ案
-- Step 5 に verdict 別 bullet を足すのではなく、compare の探索段階で **検索優先順位** を1文だけ改善する。
-- 例:  
-  **「変更関数で return value / exception / side-effect の差分を見つけたら、次に読むファイルは広い caller/wrapper 探索ではなく、すでに relevant と判定した test path 上の nearest consumer とする」**
+を含む「concrete propagation path」を求める wording の方が、compare の一般原則としては適切だった可能性が高い。
 
-#### この方向がよい理由
-- **B（情報取得方法）** であり、F の再訪ではない
-- verdict-conditioned ではないので **BL-2 / BL-6 型の片側負荷** を避けやすい
-- 「caller を読め」という発想を残しつつ、**relevant path 上の nearest consumer** に限定することで BL-17 の over-expansion も避けやすい
-- 記録欄追加ではないので **BL-8** を踏みにくい
-- "direct assert" のような観測フレーム固定を避けられる
+## 総合判断
 
----
+本提案は
+- 研究との整合性はある
+- カテゴリ F の選定も妥当
+- 小さく安全な文言変更である
 
-## 最終結論
-**承認: NO（理由: カテゴリ F も immediate caller 方針も既試行に近く、変更前との差分で見ると主に NOT_EQ 側の追加探索義務として作用するため。加えて EQUIV 側 bullet は「direct assert」に観測点を狭め、BL-5 / BL-11 / BL-16 系の回帰リスクが高い。）**
+一方で、監査観点として重要なのは「汎用原則として本当に筋が良いか」であり、その点では現行 wording がやや狭い。
+
+特に問題なのは、
+- compare で追うべき因果経路を variable / return flow に寄せすぎていること
+- failed-approaches.md の「探索シグナルを事前固定しすぎるな」に部分的に触れていること
+- 実効的には EQUIVALENT 側への片寄った最適化に見えること
+
+である。
+
+小変更ではあるが、監査役としては「この wording のまま実装してよい」とまでは言いにくい。
+
+承認: NO（理由: 研究的な方向性は妥当だが、提案文の具体的 wording が compare の因果トレースを value / variable / return に狭めすぎており、failed-approaches.md の『探索シグナルの事前固定を避ける』原則に部分的に抵触する。EQUIVALENT 側には効きうる一方で、NOT_EQUIVALENT や非 value-centric な差分への一般性が弱いため、そのままの採用は推奨しない。）
