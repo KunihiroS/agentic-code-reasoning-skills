@@ -253,8 +253,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 ### Compare checklist
 - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
 - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
-- Identify changed files for both sides; for each changed file, locate the
-  enclosing function or method boundary before tracing callers or callees
+- Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing

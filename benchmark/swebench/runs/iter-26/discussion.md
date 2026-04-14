@@ -1,230 +1,216 @@
-# Iter-26 改善案レビュー
+# Iteration 26 — 監査ディスカッション
 
 ## 総評
-結論から言うと、この提案は**承認しません**。理由は、提案の狙い自体（「コード差異を見つけただけで NOT_EQ に飛ばず、最終的なテスト結果まで因果を追う」）は妥当ですが、**今回の変更の実効的差分が過去の失敗方向 BL-2 / BL-6 とほぼ同型**だからです。表現は checklist 追加ですが、作用としては **NOT_EQ を主張する側にだけ追加立証責任を載せる**変更であり、failed-approaches.md の共通原則 #1, #4, #6 に抵触します。
+
+提案の狙い自体は理解できる。現行の compare モードが STRUCTURAL TRIAGE を通じて NOT EQUIVALENT の早期検出に寄りやすく、EQUIVALENT 側の「同じ目的を別実装で達成している」ケースに弱い、という問題設定は README.md の評価傾向とも整合する。
+
+ただし、今回の文言追加は「変更カテゴリが同じ」「同じ defect / abstraction boundary を対象にしている」という粗いメタ情報を、詳細トレース前に EQUIVALENT の prior evidence として扱う点が問題である。これは比較の補助情報というより、結論方向に傾く事前バイアスを新たに入れる変更であり、EQUIVALENT の取りこぼしを減らす代わりに NOT_EQUIVALENT を誤って寄せる回帰リスクがある。
+
+結論として、研究的整合性は「部分的にはある」が、提案文のままでは片方向バイアスが強く、failed-approaches.md の原則にも一部抵触する懸念があるため、現状では承認しない。
 
 ---
 
-## 1. Web 検索に基づく妥当性評価（mcp / DuckDuckGo）
+## 1. 既存研究との整合性
 
-### 検索結果と要点
+### 1-1. Semi-formal reasoning / structured reasoning との整合
 
-| URL | 要点 | 本提案への含意 |
-|---|---|---|
-| https://arxiv.org/abs/2603.01896 | *Agentic Code Reasoning* は、explicit premises・execution path tracing・formal conclusion を要求する semi-formal reasoning が有効だと述べる。さらにエラー分析として **incomplete reasoning chains**（途中までは追うが downstream handling を見落とす）を失敗要因として挙げる。 | 「差異を見つけたら downstream まで追うべき」という問題設定は妥当。ただし論文が支持しているのは**推論鎖の完全化**であり、**NOT_EQ の主張閾値の片側引き上げ**ではない。 |
-| https://arxiv.org/html/2506.10322v1 | *LLM4PFA* は、false positive の主因を **source→sink の path feasibility を十分に検証できないこと**とし、interprocedural に execution path を追うことで誤警報を削減している。 | 「中間差異が最終 outcome/sink まで届くかを見る」という実務・研究上の発想は正しい。ただし本研究も有効化しているのは**探索手順の改善**であり、結論側の追加ハードルではない。 |
-| https://owasp.org/www-community/controls/Static_Code_Analysis | OWASP は static analysis の false positive が生じる理由として、**input から output までのデータフローを十分に保証できないこと**を挙げる。 | 「最終観測点まで届いたか」を見る発想は実務的に筋が良い。だが、OWASP 的にも必要なのは**フロー検証の質向上**であり、単純な判定制約の追加ではない。 |
-| https://qwiet.ai/appsec-resources/reachability-in-appsec/ | reachability analysis は、理論上の差異と実際に exploitable / reachable な差異を区別し、false positives を減らすと説明している。 | 提案の狙いと整合的。ただしこの知見も「本当に届くか調べる」方法論の支持であって、「different と言う前にもう一文要求する」ことの支持ではない。 |
-| https://arxiv.org/abs/2305.20050 | *Let’s Verify Step by Step* は、outcome supervision より **process supervision** が推論品質を上げると報告する。 | この観点でも有効なのは**途中工程の検証改善**であり、最終判定時の片側義務追加だけでは弱い。 |
+1) Agentic Code Reasoning
+- URL: https://arxiv.org/abs/2603.01896
+- 要点: 明示的な premises、execution path tracing、formal conclusion を要求する semi-formal reasoning は、patch equivalence verification を含む複数タスクで精度改善を示す。
+- 監査コメント: これは「詳細トレース前に、比較のための枠組みを少し整える」こと自体には整合的。ただし論文の中心は coarse category による prior ではなく、具体的証拠の積み上げである。したがって「カテゴリ一致を EQUIVALENT の強い事前証拠にする」点は、論文の中核メカニズムからは一段離れている。
 
-### 学術的・実務的評価
+2) VentureBeat summary of the paper
+- URL: https://venturebeat.com/orchestration/metas-new-structured-prompting-technique-makes-llms-significantly-better-at
+- 要点: structured certificate によって unsupported guesses を減らし、function calls と data flows を系統的に追わせることが有効だと説明している。
+- 監査コメント: ここでも有効性の源泉は「証拠追跡の強制」であり、「高レベルカテゴリの一致を prior にすること」ではない。したがって今回提案は、structured reasoning の精神には反しないが、効果の根拠は直接には支持されていない。
 
-- **学術的には部分的に妥当**です。研究・実務の両方で、「中間差異」と「最終観測結果」は区別すべきであり、downstream handling / sink / assertion まで追う重要性は支持されます。
-- ただし、**今回の具体的実装形式は弱い**です。研究が支持しているのは「途中の reasoning chain を完全にすること」であって、今回のような **DIFFERENT 主張時だけの checklist 義務**ではありません。
-- よって、**問題認識は正しいが、処方箋が過去失敗と同型**という評価です。
+3) InfoWorld summary of the paper
+- URL: https://www.infoworld.com/article/4153054/meta-shows-structured-prompts-can-make-llms-more-reliable-for-code-review.html
+- 要点: 事前に assumptions を明示し、関連 code paths を trace してから conclusion を出すことで reliability が上がる。
+- 監査コメント: これも同様に、改善の中核は trace-first である。カテゴリ分類は補助的ならまだしも、判定 prior として強く使うのは研究的には飛躍がある。
+
+### 1-2. Change intent / refactoring classification との整合
+
+4) Large-scale intent analysis for identifying large-review-effort code changes
+- URL: https://www.sciencedirect.com/science/article/pii/S0950584920300033
+- 要点: software changes には bug fix / feature addition / refactoring といった change intents があり、それを使うと review-effort prediction のような context-aware analysis が改善しうる。
+- 監査コメント: 「change intent が分析に有益な補助情報になりうる」ことは支持される。したがって、比較の文脈で変更カテゴリを見る発想そのものは不自然ではない。
+
+5) Microsoft Research page for the same study
+- URL: https://www.microsoft.com/en-us/research/publication/large-scale-intent-analysis-for-identifying-large-review-effort-code-changes/
+- 要点: Feature / Refactor などの intent を考慮すると、文脈依存の分析性能が上がる場合がある。
+- 監査コメント: ただしこの研究は review effort 予測の文脈であり、patch equivalence の semantic judgment を直接扱っていない。よって「intent を使うこと一般」は支持できても、「intent 一致が EQUIVALENT の強い prior」という飛躍までは支えない。
+
+6) Detecting refactoring type of software commit messages based on ensemble machine learning algorithms
+- URL: https://www.nature.com/articles/s41598-024-72307-0
+- 要点: refactoring は internal structure を改善し external behavior を変えないという定義を再確認しつつ、実際の refactoring 検出は難しく、しかも refactoring は他の変更と混在しやすいと述べている。
+- 監査コメント: この点は今回提案への重要な留保である。つまり「refactoring / bug-fix / feature-addition」の 3 分類は概念としては自然でも、実際のパッチは mixed-intent であることが多い。したがって triage 段階で単純分類を強く使うと、曖昧なケースで誤誘導を起こしやすい。
+
+### 1-3. 研究整合性の総合判断
+
+- 整合する点:
+  - 変更の意図や change intent を補助情報として見る発想自体は一般研究と矛盾しない。
+  - compare の前段で高レベルな framing を与えること自体は semi-formal reasoning と整合しうる。
+- 整合しない/弱い点:
+  - 既存研究が直接支持しているのは「intent は補助情報になりうる」までであり、「intent 一致 + 同一 defect/boundary → EQUIVALENT の stronger prior evidence」という強い使い方までは支持していない。
+  - refactoring/bug-fix/feature-addition の分類は現実には混在しやすく、ノイズが大きい。
+
+要するに、研究整合性は「部分的にあり、ただし提案の効かせ方が強すぎる」。
 
 ---
 
-## 2. Exploration Framework のカテゴリ選択は適切か？
+## 2. Exploration Framework のカテゴリ選定は適切か
 
 ### 判定
-**適切ではありません。**
+カテゴリ C「比較の枠組みを変える」を選んだこと自体は妥当。
 
 ### 理由
-提案はカテゴリ C（比較の枠組みを変える）とされていますが、実際にやっていることは
+この提案は、テスト単位の追跡そのものを削るのではなく、比較の出発点に置く観点を追加しているため、A/B/E というより C に最も近い。
 
-- Compare checklist に 1 行追加する
-- DIFFERENT を主張する前の検証義務を追加する
+ただし、カテゴリ選定が妥当であることと、メカニズムが汎用原則として良いことは別問題である。
 
-であり、実態としては
+### 汎用原則としての評価
+良い点:
+- 「同じ目的を別実装で達成している可能性」を早めに意識させる、という発想は EQUIVALENT の見逃し対策として理解できる。
+- 追加が S3 の精緻化に留まっており、テンプレート全体を大改造しない点は複雑性の面で良い。
 
-- **E: 表現・フォーマットの改善**
-- または **F: 原論文のエラー分析（incomplete reasoning chains）の再適用**
-- あるいは **D: 自己/検証チェック強化に近い操作**
+悪い点:
+- 3分類が粗すぎる。現実の change は bug-fix を伴う refactoring、feature-addition を伴う bug-fix など混合しやすい。
+- 「target the same defect or abstraction boundary」を triage 段階で判定させるのは、実質的に先に境界を固定することに近い。これは探索を導くというより、探索を狭める危険がある。
+- しかも文言が「stronger prior evidence for EQUIVALENT before detailed tracing begins」と明言しており、比較の枠組み変更というより、EQUIVALENT 側への方向づけになっている。
 
-です。少なくとも、**比較の枠組みそのもの（比較単位・比較粒度・比較対象の再編）を変えてはいません**。
-
-### 同一カテゴリ/同一メカニズムの既試行性
-過去にほぼ同型の方向が既に試されています。
-
-- **BL-2: NOT_EQ 判定の証拠閾値・厳格化**
-  - failed-approaches.md に明記されている通り、**「counterexample にアサーションまでのトレースを要求」**はすでに失敗済みです。
-  - 今回の文言「When claiming different test outcomes, verify the behavioral divergence reaches the test assertion condition」は、表現を変えただけで本質的に同じです。
-
-- **BL-6: Guardrail 4 の対称化（差異あり結論の前にも trace 義務）**
-  - 今回の提案は「対称化」と言っていますが、failed-approaches.md の原則 #6 が指摘するとおり、**既存状態との差分で見ると DIFFERENT 側にしか新しい義務が増えていません**。
-  - したがって、実効的には BL-6 の再発です。
-
-つまり、提案者の「未試行メカニズム」という主張には賛成できません。
+総じて、カテゴリ選定は適切だが、カテゴリ C の中でも今回の具体メカニズムは coarse で、強く効かせすぎている。
 
 ---
 
-## 3. EQUIV と NOT_EQ への影響分析（実効的差分ベース）
+## 3. EQUIVALENT 判定 / NOT_EQUIVALENT 判定の両方への作用
 
-### 変更前にすでにあるもの
-現行 SKILL.md の Compare checklist には、すでに以下があります。
+### 変更前の実効
+変更前の S3 は、あくまで large patch で line-by-line tracing を避けるためのスケール指針であり、結論方向への prior は入れていない。
 
-- `Trace each test through both changes separately before comparing`
-- `When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact`
-- `Provide a counterexample (if different) or justify no counterexample exists (if equivalent)`
+### 変更後の実効差分
+変更後は S3 が次の役割を持つことになる。
+- patch の大きさを見る
+- patch の change category を分類する
+- 同じ category かつ同じ defect / abstraction boundary を対象にしているなら、EQUIVALENT の prior evidence を強める
 
-つまり現状でも、
-- テストを両側 separately に trace すること
-- semantic difference を見つけたら relevant test を追うこと
-- different なら counterexample を出すこと
+つまり、実効的には「スケール判断」から「スケール判断 + 粗い意味論的ラベリング + EQUIVALENT 方向の先行バイアス」へ変わる。
 
-は既に要求されています。
+### EQUIVALENT 側への作用
+期待される正の作用:
+- 別実装の refactoring 的変更や、同じ不具合を異なる局所手段で直している変更について、早い段階で『同じ目的かもしれない』と見やすくなる。
+- その結果、構造差分だけで早々に NOT EQUIVALENT へ倒れる誤りは減る可能性がある。
 
-### 今回の実効的差分
-今回追加されるのは次の 1 行です。
+懸念:
+- coarse category の一致は非常にありふれており、同じ bug-fix 同士でも test outcomes は容易に異なりうる。
+- したがって、EQUIVALENT の recall は上がっても precision を落とす危険がある。
 
-- `When claiming different test outcomes, verify the behavioral divergence reaches the test assertion condition ...`
+### NOT_EQUIVALENT 側への作用
+期待される正の作用:
+- 限定的。もしカテゴリが明確に異なれば「同じ性質の変更ではない」と気づく助けにはなるが、提案文はそこを強く書いていない。
 
-したがって、**変更前との差分は DIFFERENT 主張時にだけ追加要件が乗ること**です。
+主な懸念:
+- 提案文は「same category and same target provide stronger prior evidence for EQUIVALENT」としか書いておらず、NOT_EQUIVALENT 側の対称的な使い方が定義されていない。
+- そのため、同じカテゴリの非等価パッチに対して false EQUIVALENT を増やす危険がある。
+- 特に compare モードは最終的に test outcomes の一致/不一致で判定すべきであり、カテゴリ一致は semantic equivalence の弱い proxy にすぎない。
 
-### EQUIV への影響
-- 理論上は、EQUIV の誤判定（EQUIV なのに NOT_EQ と言う）を少し減らす可能性があります。
-- しかし、そのメカニズムは「NOT_EQ を言いにくくする」ことであり、**EQUIV 側の推論そのものを改善しているわけではありません**。
-- しかも既存 prompt でも「trace」「counterexample」は既に求めており、それでも失敗している以上、**checklist 1 行の再表現で大きな改善が出る期待は低い**です。
+### 片方向性の判定
+この変更は実質的に片方向である。
 
-### NOT_EQ への影響
-- 真の NOT_EQ では、追加要件を満たせるはず、という提案者の見立ては理解できます。
-- しかし failed-approaches.md が示す通り、実際の運用ではこの種の追加義務は
-  - 余分なターン消費
-  - 証拠不十分扱いによる UNKNOWN/EQUIV への逃避
-  - NOT_EQ 主張への慎重化
+理由:
+- 文言上、EQUIVALENT 側の prior 強化だけが明示されている。
+- NOT_EQUIVALENT 側の検出力を同程度に高める対称な規則がない。
+- したがって「両方向の比較品質改善」ではなく、「EQUIVALENT の見逃し補正」という片肺運用に近い。
 
-  を引き起こしやすいです。
-- よって、**NOT_EQ recall を落とすリスクが高い**です。
-
-### 一方向にしか作用しないか？
-**はい。一方向にしか作用します。**
-
-- EQUIV 結論時には新規義務は増えない
-- NOT_EQ 結論時にだけ「assertion condition まで reach を確認せよ」が追加される
-
-これは failed-approaches.md の共通原則 #6 が警告する
-
-> 既存制約との差分が一方向にしか作用しない変更は、表現上「対称」であっても実効的には非対称
-
-にそのまま当てはまります。
+監査上、これは重要な減点点である。
 
 ---
 
-## 4. failed-approaches.md との照合
+## 4. failed-approaches.md の汎用原則との照合
 
-### ブラックリストとの実質同一性
+提案文は「全原則に抵触しない」としているが、その自己評価には同意しない。
 
-#### BL-2 との関係
-> NOT_EQ 判定の証拠閾値・厳格化
-> 内容: counterexample にアサーションまでのトレースを要求
+### 原則1: 探索で探すべき証拠の種類をテンプレートで事前固定しすぎない
+抵触懸念あり。
 
-今回の提案は、ほぼこれです。用語は
-- `counterexample にアサーションまでのトレースを要求`
-- `different test outcomes を主張する前に assertion condition まで reaches を verify`
+今回の変更は、詳細トレース前に「まず category を見よ」「same defect / abstraction boundary かを見よ」という新しい上位シグナルを導入している。これは証拠の種類を完全固定するほどではないが、比較の出発点として特定シグナルを優先させる変更である。
 
-と違いますが、**実質的効果は同じ**です。
+特に「abstraction boundary」を先に見ることは、構造境界に合う証拠を先に探させるバイアスを生みやすい。
 
-#### BL-6 との関係
-> Guardrail 4 の「対称化」
-> 既存方向には実効差分がなく、新規方向にのみ制約が作用した
+### 原則2: 探索の自由度を削りすぎない / 読解順序の半固定を避ける
+部分的に抵触。
 
-今回もまさに同じです。提案者は「SAME/DIFFERENT の対称性を補う」と説明していますが、**既存 prompt は already SAME 側の保護を持っている**ため、差分として追加されるのは DIFFERENT 側だけです。
+failed-approaches.md には「どこから読み始めるか」「どの境界を先に確定するか」の半固定を避けるべきとある。今回の提案はまさに triage 段階で「同じ defect / abstraction boundary か」を見よとしており、境界の先行確定を促している。
 
-### 共通原則への抵触
+これはファイル順の固定ではないが、探索の framing を早い段階で細らせる危険がある。
 
-- **原則 #1 判定の非対称操作**: 抵触
-  - DIFFERENT 側だけに追加義務を載せるため、NOT_EQ 側に不利。
+### 原則3: 局所的な仮説更新を前提修正義務に直結させすぎない
+ここは大きな抵触ではない。
 
-- **原則 #2 出力側の制約**: 部分的に抵触
-  - 提案者は「出力制約ではなく検証義務」と言うが、SKILL 上の具体化は **claiming different test outcomes の前提条件**の追加であり、結論側の制約として働く。
+提案は探索中の更新義務を増やしてはいないため、この点の懸念は比較的小さい。
 
-- **原則 #4 同じ方向の変更は表現が違っても同じ結果**: 抵触
-  - BL-2 / BL-6 と同方向。
+### 原則4: 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない
+ここも直接抵触ではない。
 
-- **原則 #5 入力テンプレートの過剰規定**: 直接ではないが注意
-  - 今回はフィールド追加ではないので BL-13 ほどではない。ただし「assertion condition まで reach」という新しい表現が、再び特定の観測点へのアンカーになる懸念はある。
+追加位置が Step 5.5 ではなく S3 なので、この原則への直接抵触は弱い。
 
-- **原則 #6 対称化の実効差分**: 強く抵触
-  - 表現上の対称性に対して、実効差分は NOT_EQ 側のみ。
+### failed-approaches 照合の総合判断
+- 完全抵触ではない
+- しかし「探索の自由度を削りすぎない」「境界を先に確定しすぎない」という原則には、実質的な再演リスクがある
 
-### 結論
-この照合結果から、**承認: NO** です。
+よって「全原則に抵触しない」という提案側の主張は強すぎる。
 
 ---
 
-## 5. 全体の推論品質がどう向上すると期待できるか？
+## 5. 汎化性チェック
 
-### 良い点
-- 「コード差異 ≠ テスト結果差異」を明示したい意図は正しいです。
-- downstream handling / assertion 到達まで追うべき、という認識は研究・実務の双方に整合します。
+### 5-1. 禁止された具体識別子の有無
+以下を確認した。
+- 特定のベンチマーク case ID: なし
+- 特定のリポジトリ名: なし
+- 特定のテスト名: なし
+- ベンチマーク対象コード断片の引用: なし
 
-### しかし期待改善は限定的
-今回の実装では、推論品質の向上よりも
+提案文にあるコードブロックは SKILL.md 自身の変更前/変更後の引用であり、Objective.md の R1 減点対象外ルールに照らして違反ではない。
 
-- NOT_EQ 結論時の追加確認
-- 追加説明負荷
-- 結論の慎重化
+数値についても、"~200 lines" や "5 行以内" は benchmark 固有 ID ではなく、一般的なテンプレート閾値/変更規模宣言であるため、この観点では違反としない。
 
-として作用する公算が高いです。
+### 5-2. 暗黙のドメイン仮定
+ただし、別の意味での汎化性懸念はある。
 
-つまり、
-- **EQUIV 偽陽性の削減**は少し期待できても、
-- **NOT_EQ の取りこぼし**や **UNKNOWN 増加**で相殺される可能性が高い
+- 提案は software changes が refactoring / bug-fix / feature-addition のいずれかに比較的きれいに分類できることを暗黙に仮定している。
+- 実際には mixed-intent change が多く、言語・フレームワーク・開発文化によって commit / patch の粒度も異なる。
+- compare タスクでは commit message や PR title のような補助メタデータが無い場合も多く、static diff だけで意図分類を安定に行うのは難しい。
 
-と見ます。
-
-研究に沿った形で本当に推論品質を上げるなら、必要なのは
-
-- 「DIFFERENT と言う前に assertion まで確認せよ」という**片側の閾値追加**ではなく、
-- 「差異を見つけた後、次に何を読むか」を改善する**探索手順そのものの改善**
-
-です。
+したがって、表面的な overfitting はないが、推論手法としての汎化性は「中程度」であり、「強い汎用性」とまでは言いにくい。
 
 ---
 
-## 6. 修正提案（未試行カテゴリからの代替案）
+## 6. 全体の推論品質がどう向上すると期待できるか
 
-### 推奨: カテゴリ B または F に振り直す
-今回の問題設定を活かすなら、次のような**探索手順の改善**として設計し直すべきです。
+### 期待できる改善
+- EQUIVALENT 側で、目的は同じだが構造が違うパッチを早々に切り捨てない効果は見込める。
+- 大規模変更で line-by-line tracing が破綻しやすい場面では、高レベル比較の観点を増やすこと自体は有益。
 
-### 代替案（カテゴリ B: 情報の取得方法を改善する）
-**差異を見つけた直後の読む先を指定する**。
+### 期待しにくい点 / 悪化リスク
+- 現行 compare の強みは D1/D2 と test-outcome tracing による concrete evidence であり、今回の追加はその前に coarse semantic prior を入れる。これにより、比較の焦点が「実テストでどう振る舞うか」から「同じ種類の変更に見えるか」へずれる恐れがある。
+- 特に NOT_EQUIVALENT 事例で、同じカテゴリ・同じ周辺境界を触っているが実際は結果が違うケースに弱くなる可能性がある。
+- つまり、改善があるとしても主に EQUIVALENT 側の recall に偏り、overall の安定改善につながるかは不透明。
 
-例:
-- semantic difference を見つけたら、まず「その差異を**消費する直後の caller / consumer / handler**」を 1 段以上読む
-- 結論を出す前に、差異が
-  1. downstream で吸収・正規化されるのか
-  2. 例外・返り値・副作用として外に出るのか
-  を確認する
-
-これは
-- NOT_EQ の閾値を上げる変更ではなく、
-- **差異発見後の探索先を改善する変更**
-
-なので、BL-2 / BL-6 より安全です。
-
-### 代替案（カテゴリ F: 論文の未活用アイデア）
-論文の error analysis にある **incomplete reasoning chains** をそのまま Compare の探索規則に落とし込む。
-
-例:
-- 「差異を生む地点を見つけたら、そこで止まらず、**その値や分岐を受け取る downstream handling まで追う**」
-
-この形なら、assertion という特定観測点へのアンカーより広く、
-- return value
-- raised exception
-- side effect
-- normalized / swallowed behavior
-
-も含めて扱えるため、BL-5 / BL-11 的な視野狭窄も起こしにくいです。
+### 監査者としての要約
+提案の方向性は理解できるが、現状の文言では「比較フレームの改善」より「EQUIVALENT への心理的アンカー追加」に近い。推論品質向上の可能性はあるものの、同程度以上に confirmation bias と false EQUIVALENT の回帰リスクがある。
 
 ---
 
 ## 最終判断
 
-- 提案の問題意識: **妥当**
-- 提案の具体的変更: **過去失敗と実質同型**
-- 期待効果: **EQUIV にわずかな改善余地はあるが、NOT_EQ 回帰リスクが高い**
-- 結論: **修正を求める**
+承認: NO（理由: 変更カテゴリ一致を EQUIVALENT の stronger prior evidence として扱う設計が片方向であり、NOT_EQUIVALENT 側への対称性を欠く。さらに「same defect / abstraction boundary」を triage 段階で先に見せることは、failed-approaches.md が警戒する早期の境界固定・探索狭窄に部分的に重なるため。）
 
-**承認: NO（理由: BL-2 / BL-6 と実効的に同型であり、変更前との差分が NOT_EQ 側にしか作用しないため）**
+## 補足
+
+もし再提案するなら、より安全なのは次の方向である。
+- category は prior evidence ではなく non-binding hypothesis として扱う
+- 「category match alone is never evidence of equivalence」と明示する
+- EQUIVALENT だけでなく NOT_EQUIVALENT にも対称に効く形、例えば「カテゴリ差は exploration scope を広げる」「カテゴリ一致でも必ず test-outcome trace を優先する」といったガードを先に入れる
+
+この修正があれば、同じカテゴリ C の範囲でより承認しやすくなる。

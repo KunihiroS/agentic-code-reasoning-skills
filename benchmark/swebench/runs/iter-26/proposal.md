@@ -1,104 +1,115 @@
-# Iter-26 改善提案
+# Iteration 26 — Proposal
 
-## 1. 選択した Exploration Framework カテゴリとその理由
+## Exploration Framework Category: C (強制指定)
 
-**カテゴリ C: 比較の枠組みを変える（差異の重要度を段階的に評価する）**
+カテゴリ C「比較の枠組みを変える」の 3 つのメカニズムのうち、
+今回は「変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う」を選択する。
 
-### 選択理由
+### メカニズム選択理由
 
-- **未試行のメカニズム**: これまでの BL エントリが対象としてきたのは「ANALYSIS OF TEST BEHAVIOR テンプレートへのフィールド追加（BL-8, 11, 12, 13）」「出力制約（BL-2, 3）」「自己チェック（BL-9）」「探索ゲート（BL-10）」「探索順序の固定（BL-12）」「変更性質の自由記述（BL-7）」である。一方、**Compare checklist の項目に対称的な検証義務を追加するアプローチは一度も試みられていない**。
-- **対称性の欠如が問題の根本**: 現在の Compare checklist には、SAME 方向（コード差異を見つけたときに「影響なし」と結論する前にトレースせよ）の義務があるが、DIFFERENT 方向（異なるテスト結果を主張する前にアサーション到達まで確認せよ）の義務がない。この非対称性が、エージェントがコード差異を発見した時点で DIFFERENT と主張するショートカットを許容している。
-- **カテゴリ F との接点**: 論文のエラー分析「incomplete reasoning chains（推論チェーンが不完全）」の知見——関数を複数トレースしても下流コードの処理を見落とす——の逆方向適用。エージェントはコード差異を発見しても、その差異がテストのアサーション条件まで到達するかを確認しないまま DIFFERENT と結論している。これは完全な因果チェーンを要求する原則と一致するカテゴリ F の知見でもある。
+SKILL.md の compare モードはすでに STRUCTURAL TRIAGE (S1, S2, S3) という
+「詳細トレース前の先行評価」構造を持つ。この構造は NOT EQUIVALENT の早期検出に
+最適化されており、EQUIVALENT 方向の判断を支援するメカニズムが手薄である。
+
+変更のカテゴリ（リファクタリング的か、バグ修正的か、機能追加的か）を
+STRUCTURAL TRIAGE 段階で識別することで、2 つの変更が「同じ目的を別実装で達成して
+いるかどうか」という観点を比較の出発点に据えられる。これは EQUIVALENT 判定を
+強化する方向に直接作用し、かつ既存の構造（STRUCTURAL TRIAGE の S3 行）への
+文言精緻化として実現できるため、新規ステップ追加なしで達成できる。
+
+他の 2 メカニズム（テスト単位→関数単位への粒度変更、差異重要度の段階的評価）は
+いずれも既存のテンプレート構造を大きく変形するか、新規フィールドの追加を要するため
+今回の変更規模制約に適合しない。
 
 ---
 
-## 2. 改善仮説（1つ）
+## 改善仮説
 
-**仮説**: Compare checklist の既存項目「コード差異を見つけたとき、その影響を見落とさないようにテストをトレースせよ」は SAME 方向の保護のみを与えているが、DIFFERENT 方向の保護がない。DIFFERENT を主張する前に「テストのアサーション値（コールパスではなく最終的な assert 条件）まで差異が到達しているかを確認せよ」という対称的な義務を checklist に 1 項目追加することで、コードレベルの差異を発見した段階でアサーション到達を確認せずに NOT_EQUIVALENT と結論するショートカット（EQUIV 偽陽性の主因）を削減できる。
+STRUCTURAL TRIAGE の S3（スケール評価）に変更の意図カテゴリの識別を加えることで、
+モデルが詳細トレース前に「この 2 変更はリファクタリング的に等価な別実装か、
+それとも異なる機能的意図を持つか」という軸を先に定めるようになる。
+これにより、EQUIVALENT 判定において過小評価されていた意図的同一性の証拠が
+早期に考慮され、全体的な比較品質が向上すると予想する。
 
 ---
 
-## 3. SKILL.md のどこをどう変えるか
+## SKILL.md への具体的な変更
 
-### 変更箇所: `## Compare` セクションの `Compare checklist`
+### 変更箇所
 
-#### 変更前（末尾 2 項目）
+compare モード、STRUCTURAL TRIAGE の S3 の文言を精緻化する。
+
+### 変更前
 
 ```
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
 ```
 
-#### 変更後（末尾 3 項目）
+### 変更後
 
 ```
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- When claiming different test outcomes, verify the behavioral divergence reaches the test assertion condition — intermediate value differences that cancel out before the assertion do not produce DIFFERENT outcomes
-- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+  S3: Scale and intent assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
+      Also identify the change category for each patch (refactoring /
+      bug-fix / feature-addition): two patches that share the same category
+      and target the same defect or abstraction boundary provide stronger
+      prior evidence for EQUIVALENT before detailed tracing begins.
 ```
 
-### 変更規模
+### 変更規模の宣言
 
-- **追加: 1 行**（新規 checklist 項目）
-- **変更・削除: 0 行**
-- 合計差分: +1 行（20 行以内の目安を大幅に下回る）
-- 変更対象セクション: Compare checklist のみ（Core Method・テンプレート本体・他モード・Guardrails・Minimal Response Contract への変更なし）
+- 削除行: 0
+- 追加・変更行: 3（タイトル行の語追加 1 行 + 新文 2 行）
+- 合計変更行数: 3 行（hard limit 5 行以内）
 
 ---
 
-## 4. EQUIV と NOT_EQ の両方の正答率にどう影響するかの予測
+## 一般的な推論品質への期待効果
 
-### EQUIV 側（改善期待）
+### 減少が期待されるカテゴリ的失敗パターン
 
-現在の失敗パターン（15368, 15382: EQUIV なのに NOT_EQUIVALENT と誤判定, 各 17・29 turns）では、エージェントがコードレベルの差異を発見し、アサーション到達を確認しないまま COUNTEREXAMPLE を書いている。新 checklist 項目は「アサーション条件まで差異が到達しているかを確認せよ」という能動的義務を与えるため、アサーション到達の確認が行われれば「中間値は違うが assertion は同じ」ことを発見でき、EQUIV の誤判定を防げる可能性がある。
+1. **EQUIVALENT の見逃し（過剰な NOT EQUIVALENT 判定）**
+   現状の STRUCTURAL TRIAGE は構造的ギャップ（ファイル不一致・完全性欠如）を
+   優先的に検出するため、「別アプローチで同じ結果を達成するリファクタリング的変更」
+   に対して NOT EQUIVALENT 方向のバイアスが生じやすい。
+   変更カテゴリを先に識別することで、このバイアスを補正する先行仮説を提供できる。
 
-期待: EQUIV 偽陽性の削減（+1〜+2 ケース改善）
+2. **詳細トレース段階での見当違いの比較単位選択**
+   変更カテゴリが不明なまま詳細トレースに入ると、比較すべき粒度（関数シグネチャか
+   アルゴリズム出力か副作用か）を誤りやすい。カテゴリの先行識別はこの粒度選択を
+   適切に誘導する。
 
-### NOT_EQ 側（維持見込み）
-
-真に NOT_EQUIVALENT なケースでは、コード差異がアサーション条件まで伝播している。新項目の義務（アサーション到達の確認）を満たすことは真の NOT_EQ では本質的に難しくない——差異がアサーション値に現れているため、確認すると主張を強化する証拠が得られる。一方、新項目が追加記述を 1〜2 ターン増やす可能性があり、すでに 29〜33 ターンを要している NOT_EQ ケース（14311: 33 turns, 12663: 29 turns）にとってはわずかなリスクがある。ただし、この新項目は checklist 指示であり、テンプレートフィールドへの必須記録（BL-13）や自己チェック欄（BL-9）ではないため、オーバーヘッドは限定的と見込む。
-
-期待: NOT_EQ 正答率の維持（既存 8 件の NOT_EQ 正答ケースが回帰しない）
-
-### UNKNOWN 側（中立見込み）
-
-UNKNOWN ケース（11433, 14122: 各 31 turns）は、証拠の不足・複雑性から結論に至れないケース。新項目はアサーション到達確認の義務であり、これらのケースの探索量を増減させる設計ではない。直接的な改善効果はないが悪化もしないと予測する。
-
----
-
-## 5. failed-approaches.md のブラックリストおよび共通原則との照合結果
-
-### ブラックリスト照合
-
-| BL | 内容 | 本提案との違い |
-|---|---|---|
-| BL-2 | NOT_EQ 証拠閾値・厳格化 | **出力制約ではなく検証プロセスの義務**。「こう答えるな」ではなく「アサーション到達を確認せよ」という能動的調査指示 |
-| BL-6 | Guardrail 4 の対称化 | **新規追加であり既存制約の拡張でない**。既存 checklist 項目は SAME 方向のみ対象。今回は DIFFERENT 方向への新規項目追加 |
-| BL-7 | CHANGE CHARACTERIZATION 自由記述ステップ | **フォーマット指定のない義務**。記述形式を規定せず「アサーション到達を確認する」という行動のみを要求するため、記述アンカリングが発生しない |
-| BL-8/11/12/13 | トレーステーブル列・注釈・順序固定・Key value フィールド | **テンプレートフィールドの追加ではなくチェックリスト項目の追加**。記録欄を設けないため「記録目的化」が発生しない |
-| BL-9 | Trace check 自己チェック | **自己評価ではなく事前義務**。「自分はトレースしたか？」という内省ではなく「アサーション到達まで確認せよ」という探索義務。AI の自己評価精度問題（原則 #9）に依存しない |
-| BL-10 | Reachability ゲート | **ゲート構造ではなく義務**。YES/NO 判定ゲートではなく、確認行動の指示。通過率の高い trivial ゲート問題（原則 #10）に該当しない |
-
-### 共通原則照合
-
-| 原則 | 内容 | 本提案の適合性 |
-|---|---|---|
-| #1 判定の非対称操作 | EQUIV/NOT_EQ 一方に有利な変更は他方を犠牲にする | checklist に SAME/DIFFERENT 両方向の義務が揃う形への補完であり、真の NOT_EQ ケースはアサーション到達の証拠が実際に存在するため NOT_EQ 正答率を犠牲にしない |
-| #2 出力側の制約は効果がない | 推論の質ではなく出力を制約しても無効 | ✅ 出力を制約せず、調査プロセスへの義務を追加 |
-| #3 探索量の削減は常に有害 | 探索を減らす変更は悪化する | ✅ 探索を増減させるものではなく、確認の方向性を明示するだけ |
-| #4 同方向の変更は表現が違っても同結果 | BL-1/2 は本質が同一 | ✅ 既存のいずれの BL とも本質的メカニズムが異なる（チェックリスト・能動義務） |
-| #5 入力テンプレートの過剰規定は視野を狭める | 「何を記録するか」の規定が信号を脱落させる | ✅ テンプレートフィールドでなく checklist 指示。記録形式を指定しない |
-| #8 受動的記録フィールドは能動的検証を誘発しない | 記録欄追加は埋めることが目的化する | ✅ 記録欄を追加しない。確認すべき行動（assert 到達確認）を指示 |
-| #9 メタ認知的自己チェックは機能しない | AI の自己評価精度に依存する変更は無効 | ✅ 自己評価ではなく調査行動の義務付け |
-| #10 必要条件ゲートは失敗モードを弁別しない | trivial に通過されるゲートはオーバーヘッドのみ | ✅ ゲートではない。「確認する」という行動指示 |
-| #11 探索順序の固定は偏りを生む | 片側起点の強制が反対側の信号を後景化 | ✅ 探索順序を固定しない |
+3. **全体方向: overall（比較品質の向上）**
+   EQUIVALENT と NOT EQUIVALENT の両ケースで、比較の「目的意識」が明確になるため、
+   証拠収集の方向性が定まりやすくなる。とくに overall スコアを下げている
+   「EQUIVALENT の取りこぼし」に対して直接的な改善効果を期待できる。
 
 ---
 
-## 6. 変更規模
+## failed-approaches.md の汎用原則との照合
 
-- 追加行数: **1 行**
-- 変更行数: 0 行
-- 削除行数: 0 行
-- 影響範囲: Compare checklist のみ（他セクション変更なし）
-- 20 行以内の目安: **十分余裕あり**
+| 原則 | 本提案との関係 | 判定 |
+|------|----------------|------|
+| 探索で探すべき証拠の種類をテンプレートで事前固定しすぎない | 変更カテゴリの識別は「先行仮説の強さ」を調整するものであり、読むべき証拠の種類を固定しない。詳細探索は引き続き自由 | 抵触なし |
+| 探索の自由度を削りすぎない・読解順序の半固定を避ける | S3 は「詳細トレース前」の任意スケール評価ステップの精緻化であり、どのファイルをどの順で読むかを規定しない | 抵触なし |
+| 局所的な仮説更新を前提修正義務に直結させすぎない | 変更カテゴリは探索開始前の一度だけの識別であり、探索中の仮説更新ループとは切り離されている | 抵触なし |
+| 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない | Step 5.5（Pre-conclusion self-check）への追加ではなく、STRUCTURAL TRIAGE（Step 2 相当の早期段階）への追加 | 抵触なし |
+
+全原則に抵触しないことを確認した。
+
+---
+
+## 研究コアの踏襲確認
+
+- 番号付き前提: 変更なし（PREMISES セクションは維持）
+- 仮説駆動探索: 変更なし（Step 3 の HYPOTHESIS 構造は維持）
+- 手続き間トレース: 変更なし（Step 4 の interprocedural trace table は維持）
+- 必須反証: 変更なし（Step 5 の COUNTEREXAMPLE CHECK は維持）
+
+S3 は STRUCTURAL TRIAGE 内の一ステップであり、コア構造の外側に位置する。
+変更はコアを強化する方向であり、逸脱はない。
