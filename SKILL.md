@@ -144,8 +144,6 @@ Before writing the formal conclusion, check each item below. If any answer is **
 - [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
 - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
 - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
-      If a semantic difference was found, did I trace at least one relevant test through the differing
-      path before concluding it affects (or does not affect) the outcome? (cf. Guardrail #4)
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
