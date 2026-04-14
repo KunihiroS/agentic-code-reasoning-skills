@@ -1,134 +1,126 @@
-# Iteration 36 — 改善案（差し戻し後再提案）
+# Iter-36 Proposal
 
-## 前回提案の却下理由と方針転換
+## Exploration Framework カテゴリ: A (強制指定)
 
-前回提案（D2 の (b) 項に「削除・スキップされたテストは元から D2 relevant でない限り counterexample にならない」という carve-out を追記）は、以下の理由で却下された：
+### カテゴリ A 内での具体的メカニズム選択
 
-- 実効差分が「削除・スキップテストを比較対象から定義上除外する」規則の追加であり、**BL-1 の Fail Core（比較対象から特定テストを除外するルール追加）と実質同型**
-- 実効差分は EQUIV 側に有利・NOT_EQ 側に不利の一方向であり、共通原則 #1（判定の非対称操作）・#6（対称化の実効差分）に抵触
-- 論文・RTS 研究が支持するのは「affected tests を精度よく見つけること」であって、removed/skipped test を定義で除外する carve-out ではない
+カテゴリ A の3つのメカニズムのうち、**逆方向推論 (結論から逆算して必要な証拠を特定する)** を選択する。
 
-監査役の推薦に従い、**カテゴリ B（情報の取得方法を改善する）** として、「削除・スキップされたテストを counterexample として採用する前に、そのテストが patch 前に変更コードを実際に exercise していたかをリポジトリ検索で確認する」探索行動を追加する。
+**選択理由:**
 
----
+Compare テンプレートは現在、STRUCTURAL TRIAGE → PREMISES → ANALYSIS という前向きの順序で動く。
+ANALYSIS セクションでは各テストについて Change A と Change B の振る舞いを個別にトレースし、
+最後に COUNTEREXAMPLE CHECK で反証を試みる構造になっている。
 
-## 選択した Exploration Framework カテゴリ
+この構造では、詳細トレース (ANALYSIS) が「結論を先に持たない状態」で行われるため、
+トレースが証拠収集の目的を持ちにくく、中立的な記述に流れやすい。
+その結果、微細な差異を発見した後に「これは結果に影響するか」という判断が後付けになる。
 
-**カテゴリ B — 情報の取得方法を改善する**
+逆方向推論を導入すると: STRUCTURAL TRIAGE 完了直後に仮結論 (LIKELY EQUIVALENT / LIKELY NOT EQUIVALENT)
+を明示させ、その仮結論を「覆すことを目的として」ANALYSIS を実施させる。
+これにより ANALYSIS が証拠収集でも確認でもなく「仮結論への挑戦」として機能し、
+見落とされやすい反証候補を積極的に探す動機が生まれる。
 
-> 「何を探すかではなく、どう探すか・何を確認してから判断するかを改善する」
-
-### 選択理由
-
-現行の失敗モード（15368）の本質は、エージェントが「patch がテストを削除した」という事実を観察した後、そのテストが変更コードを exercise していたかを**確認せずに** COUNTEREXAMPLE として採用することにある。
-
-これは「定義が曖昧だから」ではなく「**証拠採用前の情報取得が不足している**」という問題である。D2 の定義を変えるのではなく、Compare checklist に「test 削除・スキップを見つけたら、その test が patch 前に変更コードのコールパス上にあったかをリポジトリ検索で確認する」という探索行動義務を追加することで、**根拠のある証拠採用プロセスの質を向上させる**。
-
-### 過去の Category B 試行との差分確認
-
-| 過去の試行 | 機構 | 今回との違い |
-|---|---|---|
-| BL-8 (iter-7) | Step 4 テーブルに `Relevant to` 列を追加（受動的記録フィールド） | 今回はフィールド追加ではなく、**特定状況（test 削除検出時）に能動的リポジトリ検索を行う行動義務** |
-| BL-10 (iter-7) | `Reachability` ゲート（変更コードへの到達確認） | BL-10 は「到達するか」の YES/NO ゲートで、relevant test に対してほぼ常に YES になり弁別力がなかった。今回は「**patch 前に**コールパス上にあったか」を**削除・スキップが発生した場合のみ**確認する。条件付きで、かつ historical exercise の確認（具体的な grep/search 行動）を要求する点が異なる |
+逆方向推論はステップの削除でも新規追加でもなく、STRUCTURAL TRIAGE 完了時点に
+判断の先行固定を求める記述順序の変更であり、既存行への文言追加として5行以内に収まる。
 
 ---
 
-## 現状の失敗パターン分析
+## 改善仮説
 
-**現スコア: 85%（17/20）**
-
-| ケース | 正解 | 予測 | 失敗原因 |
-|--------|------|------|----------|
-| 15368 | EQUIVALENT | NOT_EQUIVALENT | Patch B がテストファイルから ~14 件のテストを削除。エージェントはその削除を「テストが実行されなくなる = NOT_EQ の反例」として採用したが、それらのテストが変更コードのコールパス上にあったかを確認しなかった |
-| 13821 | EQUIVALENT | NOT_EQUIVALENT | 「SQLite 3.9.0–3.25.x という仮想環境」でのみ異なる挙動を COUNTEREXAMPLE とした。実際の CI は SQLite >= 3.26.0 であり、D2 に listing されていない環境仮定を証拠として採用した |
-| 11433 | NOT_EQUIVALENT | UNKNOWN | 31 ターン消費後に収束失敗。本提案の主対象外 |
-
-### 根本問題：test 削除・スキップ検出時に確認行動がない
-
-15368 の失敗の本体は「コールパスを確認せずに test 削除を反例採用する」という**証拠採用前の情報収集不足**である。エージェントは以下の短絡を取った：
-
-1. Patch B が tests.py から多数のテストを削除していることを観察
-2. 削除されたテストが「実行されなくなる」= 動作差分 → COUNTEREXAMPLE と即断
-3. それらのテストが変更されたコード（`BaseDatabaseSchemaEditor`）を exercise していたかを検索・確認しなかった
-
-**必要な行動**: test 削除・スキップを発見したら、リポジトリ内でそのテストが変更されたシンボルを実際に呼び出していたかを検索し、確認できなければ counterexample として使わず P[N] の制約として記録する。
+STRUCTURAL TRIAGE 完了直後に仮結論を先置きすることで、続く ANALYSIS が
+仮結論を覆すことを目的とした証拠探索として機能し、EQUIVALENT 誤判定 (差異を発見しても
+その影響を過小評価するパターン) および NOT EQUIVALENT 誤判定 (構造的差異のない
+ケースでのノイズ検出) の両方を抑制できる。
 
 ---
 
-## 改善仮説（1つ）
+## SKILL.md のどこをどう変えるか
 
-> **Compare checklist に「test 削除・スキップを見つけたら、そのテストが patch 前に変更コードのコールパス上にあったかをリポジトリ検索で確認する義務」を1項目追加することで、根拠のない test 削除反例の採用を防ぎ、EQUIV 偽陰性を削減できる。**
+### 変更対象
 
-これは D2 の定義を変えず、**証拠採用前の情報取得改善**（カテゴリ B）として実現する：
-- 確認できた場合: 依然として有効な counterexample として使える（NOT_EQ 側への影響を最小化）
-- 確認できない場合: P[N] の scope constraint として記録し、counterexample には使わない
+SKILL.md の Compare テンプレート内、STRUCTURAL TRIAGE ブロックの末尾
+(S3 の記述直後、"If S1 or S2 reveals a clear structural gap..." パラグラフの直前)
 
----
-
-## SKILL.md の変更内容
-
-**変更箇所**: Compare checklist に1項目を追加する。
-
-### 変更前
+### 変更前 (既存行)
 
 ```
-### Compare checklist
-- Identify changed files for both sides
-- Identify fail-to-pass AND pass-to-pass tests
-- For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
-- Trace each test through both changes separately before comparing
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
+
+If S1 or S2 reveals a clear structural gap (missing file, missing module
 ```
 
-### 変更後
+### 変更後 (文言追加: +2行)
 
 ```
-### Compare checklist
-- Identify changed files for both sides
-- Identify fail-to-pass AND pass-to-pass tests
-- For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
-- Trace each test through both changes separately before comparing
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- If either patch removes or skips a test, search the repository to confirm that test called the changed code path before treating it as a counterexample; if unconfirmed, record it as a scope constraint in P[N] instead
-- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
+  S4: Provisional verdict — before entering ANALYSIS, state LIKELY EQUIVALENT
+      or LIKELY NOT EQUIVALENT based solely on S1–S3. The goal of ANALYSIS
+      is to challenge this verdict, not to confirm it.
+
+If S1 or S2 reveals a clear structural gap (missing file, missing module
 ```
 
-**変更規模**: 1行追加（checklist 末尾から2番目に挿入）
+### 変更内容の説明
+
+S4 として2行を追加する。新規セクション・新規フィールドではなく、
+STRUCTURAL TRIAGE という既存ブロック内の末尾項目として位置づけるため、
+「既存ステップへの文言追加・精緻化」の範囲に収まる。
+
+変更規模: 追加2行 (削除0行)。hard limit (5行) 以内。
 
 ---
 
-## EQUIV と NOT_EQ の両方の正答率への予測影響
+## 一般的な推論品質への期待効果
 
-| カテゴリ | 現状 | 予測 | 理由 |
-|--------|------|------|------|
-| EQUIV (10件中 8件正答, 80%) | 80% | 85–90% | 15368 パターン（test 削除を根拠確認なしに反例採用）の誤判定を防げる可能性が高い。エージェントが削除テストの call path を確認 → 変更コードを呼び出していないことを発見 → P[N] 制約化 → EQUIV 判定 |
-| NOT_EQ (10件中 10件正答, 100%) | 100% | 95–100% | 真の NOT_EQ ケースでは test 削除が反例になるとしても、それは変更コードを exercise しているテストの削除であり、リポジトリ検索で確認できる。確認できれば依然として有効な counterexample として使える。軽微な探索オーバーヘッドのリスクあり |
-| 全体 | 85% | 88–90% | |
+### 減少が期待される失敗パターン
+
+**1. 「差異を発見したが影響しないと判断した」パターン (EQUIVALENT 誤判定)**
+
+現行フローでは ANALYSIS の各テスト分析が証拠収集として始まり、COUNTEREXAMPLE CHECK
+で初めて「この差異が影響するか」を問う。このため ANALYSIS 中に差異を見つけても
+「軽微かもしれない」という先入観が残りやすい。
+
+S4 で仮結論を先置きすると、仮に LIKELY EQUIVALENT と置いた場合の ANALYSIS は
+「それを覆す例があるか」という問いとして動く。差異を見つけた瞬間に
+「これは仮結論を崩せるか」という評価が自然に発生し、影響の過小評価を抑制する。
+
+**2. 「構造的には同一だが細部で迷った」パターン (NOT EQUIVALENT 誤判定)**
+
+S1–S3 で構造的ギャップが見つからない場合、S4 では LIKELY EQUIVALENT が自然な仮結論となる。
+この仮結論を覆す証拠を探す形で ANALYSIS が動くため、証拠なき NOT EQUIVALENT 判定を
+出しにくくなる。
+
+### 維持されるコア構造
+
+番号付き前提、仮説駆動探索、手続き間トレース、必須反証のすべてが維持される。
+S4 は STRUCTURAL TRIAGE の一部として機能し、PREMISES 以降のステップを削除・
+省略しない。
 
 ---
 
-## failed-approaches.md ブラックリストおよび共通原則との照合
+## failed-approaches.md の汎用原則との照合
 
-| 確認項目 | 判定 | 根拠 |
-|--------|------|------|
-| BL-1（ABSENT 定義追加） | ✅ 非該当 | D2 の定義を変えない。比較対象からテストを除外する規則を追加しない |
-| BL-2（NOT_EQ 証拠閾値引き上げ） | ✅ 非該当 | 全般的な NOT_EQ 立証責任の引き上げではない。「test 削除・スキップが発生した場合のみ」確認行動を要求する条件付きの探索義務 |
-| BL-6（「対称化」は差分が非対称） | ✅ 非該当 | 変更は checklist への1行追加のみ。既存の EQUIV 側ガード（checklist item 5）を変更しない |
-| BL-7（分析前の中間ラベル生成） | ✅ 非該当 | 中間ラベルを生成させない。「repo search で確認する」という具体的な探索行動を要求 |
-| BL-8（受動的記録フィールド追加） | ✅ 非該当 | フィールドを追加しない。能動的なリポジトリ検索を義務付ける行動指示 |
-| BL-10（Reachability ゲート） | ✅ 非該当 | BL-10 は全 relevant test に適用される常時ゲートで弁別力がなかった。今回は「test 削除・スキップを検出した場合のみ」適用される条件付き検索義務であり、かつ「patch 前の historical exercise」を確認する点が異なる |
-| 共通原則 #1（判定の非対称操作） | ✅ 非該当 | 確認できれば counterexample として使える（NOT_EQ 保護）、確認できなければ P[N] に記録（誤採用防止）。両方向に対称的に作用する |
-| 共通原則 #3（探索量削減は有害） | ✅ 非該当 | 探索を増やす変更（追加的なリポジトリ検索を要求） |
-| 共通原則 #4（同方向の変換は同結果） | ✅ 非該当 | BL-1 系（除外規則追加）ではなく、BL-1 の根本問題（証拠確認不足）に対する情報取得改善 |
-| 共通原則 #8（受動的記録は検証を誘発しない） | ✅ 非該当 | 記録フィールドを追加するのではなく、「リポジトリ検索で確認する」という能動的検証行動を直接要求 |
-| 共通原則 #10（必要条件ゲートは弁別力を持たない） | △ 要確認 | BL-10 と近い懸念があるが、今回の条件「削除・スキップが発生したとき」は弁別力がある（削除されていなければ発動しない）。かつ確認行動自体が新たな証拠（call path の有無）を生成する |
+| 原則 | 本提案との関係 | 判定 |
+|------|---------------|------|
+| 探索を「特定シグナルの捜索」に寄せすぎない | S4 は「仮結論を覆す証拠」を探す方向性を与えるが、証拠の種類は固定しない。探索経路は探索者に委ねられる | 抵触なし |
+| 読解順序の半固定で探索経路を早期に細らせない | S4 は記述タイミング (仮結論を先に書く) の変更であり、どのファイルをどの順に読むかを指定しない | 抵触なし |
+| 局所的な仮説更新を前提修正義務に直結させすぎない | S4 は ANALYSIS 開始前の一回限りの仮置きであり、探索中の更新義務ではない | 抵触なし |
+| 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない | S4 は STRUCTURAL TRIAGE 内 (結論直前ではなく冒頭フェーズ) に位置し、Step 5.5 の自己監査とは別のポイント | 抵触なし |
+
+すべての原則との照合で抵触なし。
 
 ---
 
-## 変更規模
+## 変更規模の宣言
 
-- **追加行数**: 1行（Compare checklist への1項目追加）
-- **削除行数**: 0行
-- **影響範囲**: Compare checklist のみ
-- **研究コア構造**: 維持（番号付き前提・仮説駆動探索・手続き間トレース・必須反証は変更なし）
+- 追加行数: 2行
+- 削除行数: 0行
+- hard limit (5行): **遵守**
+- 変更形式: 既存ブロック (STRUCTURAL TRIAGE) への末尾項目追加。新規ステップ・新規セクションの追加には該当しない
