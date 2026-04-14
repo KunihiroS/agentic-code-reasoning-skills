@@ -144,8 +144,6 @@ Before writing the formal conclusion, check each item below. If any answer is **
 - [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
 - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
 - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
-      If a semantic difference was found, did I trace at least one relevant test through the differing
-      path before concluding it affects (or does not affect) the outcome? (cf. Guardrail #4)
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
@@ -253,8 +251,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 ### Compare checklist
 - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
 - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
-- Identify changed files for both sides; for each changed file, locate the
-  enclosing function or method boundary before tracing callers or callees
+- Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing

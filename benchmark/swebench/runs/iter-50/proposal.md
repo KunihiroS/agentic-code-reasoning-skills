@@ -1,183 +1,108 @@
-# iter-50 改善案
+# Iter-50 — Proposal
 
-## 親イテレーションの選定理由
+## Exploration Framework カテゴリ: C（強制指定）
 
-親イテレーション **iter-14（80%、16/20）** を選択した理由:
+### カテゴリ内でのメカニズム選択理由
 
-- iter-14 は CONVERGENCE GATE（BL-4）を追加した結果、13821 が修正されたが 14787 が新たに壊れ、スコアは 80% のまま維持された。
-- iter-14 の失敗ケース: 15368（EQUIV→NOT_EQ）、15382（EQUIV→UNK）、14787（NOT_EQ→EQU）、12663（NOT_EQ→UNK）
-- iter-14 は BL-4（CONVERGENCE GATE）を含んでいるため、そのデメリット（14787 の早期打ち切りによる誤判定）を除去しつつ別のアプローチを加えることで改善の余地がある。
-- 直近の 85% 達成イテレーション（iter-21、iter-35、iter-41）の共通パターンを参照し、iter-14 状態からの最小差分でその効果を再現する戦略とした。
+カテゴリ C は「比較の枠組みを変える」であり、次の 3 つのメカニズムを含む。
 
----
+1. テスト単位ではなく関数単位・モジュール単位で比較する
+2. 差異の重要度を段階的に評価する
+3. 変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う
 
-## 選択した Exploration Framework のカテゴリ
+今回はメカニズム 3「変更のカテゴリ分類を先に行う」を選択する。
 
-**カテゴリ F: 原論文の未活用アイデアを導入する**
+理由:
+compare モードの STRUCTURAL TRIAGE は「どのファイルが変わっているか」という
+構造的な存在チェックを先に行うよう規定している（S1, S2, S3）。しかし 2 つの変更が
+同じファイルを変えている場合でも、一方がロジックを書き換えるバグ修正であり、
+他方が振る舞いを保存するリファクタリングである場合、変更の性質が根本的に異なるため
+等価性の評価観点も変わる。現状の STRUCTURAL TRIAGE はこの「変更の意図的カテゴリ」を
+明示的に問わないため、詳細トレースに入る前に観点が揃いにくい。
 
-具体的には「論文の他のタスクモード（localize）の手法を compare に応用する」に該当する。
+メカニズム 2（差異の重要度の段階評価）は失敗アプローチにある「探索中の証拠の
+優先順位付け半固定」と近接し、特定シグナルの捜索に寄りやすいリスクがある。
+メカニズム 1（関数単位比較）は既存の STRUCTURAL TRIAGE の S1/S2 が実質的に
+カバーしており、重複になりやすい。
 
-### 選択理由
-
-- localize モードの `PHASE 2: CODE PATH TRACING` では「Build the call sequence: test → method1 → method2 → ...」と明示し、実行経路をテストの発散点（assertionまたは例外）まで追跡することを要求している。
-- compare モードの `ANALYSIS OF TEST BEHAVIOR` では現在 `because [trace through code — cite file:line]` という記述があり、「どこまでトレースするか」のエンドポイントが明示されていない。エージェントは変更された関数の定義を読んだ段階で「コードをトレースした」とみなし、テストの assertion や例外発生地点まで到達しないまま Claim を確定することができる。
-- これは localize モードが持つ「発散点（assertion/exception）まで因果連鎖を追う」という構造を compare モードに適用することで汎用的に改善できる問題である。
+メカニズム 3 は failed-approaches.md のどの原則とも抵触しない。探索経路を固定するの
+ではなく、「比較を始める前に何を見ようとしているか」という観点の整合を促すのみで、
+探索の自由度は保たれる。
 
 ---
 
 ## 改善仮説
 
-**仮説（1つ）**: compare モードの Claim 内 `because` 節に明示的なトレースエンドポイント「テストの assertion または exception site まで」を追加し、現在の早期停止を促す CONVERGENCE GATE（BL-4）を除去することで、エージェントが変更関数のコードを読んだ時点で Claim を確定する「浅いトレース」を防ぎ、正確なテスト結果の導出が可能になる。
-
-根拠:
-- iter-14 の 14787 失敗の根本原因は「CONVERGENCE GATE が LOW confidence EQUIVALENT で探索を強制停止させた」こと（BL-4 の確認済みデメリット）。
-- iter-14 の 12663 失敗は「エージェントが changed function までは読んでいるが assertion site までのパスが不明確」なことによるターン枯渇。
-- localize モードは発散点まで追跡することで症状と根本原因を区別する。同じ「assertion まで追う」概念を compare の `because` 節に適用することで、コード差分→NOT_EQ の短絡、および assertion に到達せずに UNKNOWN になる問題を汎用的に抑制できる。
-- iter-35（85%、17/20）がほぼ同一の変更（`because` 節へのエンドポイント明記）で成功した実績がある。iter-35 の親は異なるベースライン（75%、CONVERGENCE GATE なし）だったが、変更の核心は `because` 節のエンドポイント明記であり、iter-14 からも同様の効果が期待できる。
+compare モードで STRUCTURAL TRIAGE を完了した直後に 2 つの変更それぞれの「変更の
+意図的カテゴリ（バグ修正 / リファクタリング / 機能追加）」を一言で明示させると、
+以降のトレースで「どの差異が等価性に影響しうるか」の判断軸が統一され、
+観察的等価性の見落としと過剰な NOT EQUIVALENT 判定の両方が減る。
 
 ---
 
-## SKILL.md のどこをどう変えるか（具体的な変更内容）
+## SKILL.md への具体的な変更内容
 
-### 変更 1: CONVERGENCE GATE を削除（5行削除、制限内カウントなし）
+対象箇所: Compare セクション STRUCTURAL TRIAGE の S3 の末尾（SKILL.md 行 191–192）
 
-**対象**: Step 3 の HYPOTHESIS UPDATE ブロック末尾（現行 line 75–78）
-
-```diff
--CONVERGENCE GATE (required after each observation set):
--  Working conclusion: [EQUIVALENT / NOT_EQUIVALENT / UNRESOLVED]
--  If EQUIVALENT or NOT_EQUIVALENT at any confidence: stop exploration and proceed to Step 5 now.
--  If UNRESOLVED: state exactly what missing evidence justifies reading another file.
+変更前:
+```
+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
 ```
 
-**理由**: CONVERGENCE GATE（BL-4）は iter-14 で 14787 を誤判定させた原因であり、失敗アプローチとして記録済み。除去により過剰な早期打ち切りを防ぐ。
+変更後:
+```
+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
+  S4: Change category — for each change, state its intent in one word:
+      bug-fix / refactor / feature-add. Mismatched categories (e.g., one
+      is a refactor, the other a bug-fix) indicate a higher prior that
+      behavioral differences exist and raise the bar for EQUIVALENT.
+```
+
+追加行数: 4 行（変更規模 = 4 行 ≦ 5 行の hard limit を満たす）
 
 ---
 
-### 変更 2: Claim の `because` 節にトレースエンドポイントを明記（既存行の精緻化、追加行 0）
+## 期待効果: どのカテゴリ的失敗パターンが減るか
 
-**対象**: Compare テンプレートの `ANALYSIS OF TEST BEHAVIOR` 内 Claim 行（現行 line 177, 179）
+### EQUIV 方向の誤判定（NOT EQUIVALENT が正解なのに EQUIVALENT と判定）
+変更カテゴリが不一致（バグ修正 vs リファクタリング）なのに同一視してしまう
+パターンが減る。S4 で意図的カテゴリを先に確定させることで、詳細トレースに入る
+前から「この差異は振る舞いに影響しうる」という意識が生まれる。
 
-```diff
--                because [trace through code — cite file:line]
-+                because [trace through changed code to the assertion or exception — cite file:line]
-```
+### NOT_EQ 方向の誤判定（EQUIVALENT が正解なのに NOT EQUIVALENT と判定）
+両変更が「リファクタリング」と明示された場合、細部の文体的差異を根拠に
+NOT EQUIVALENT と早まる判断を抑制する効果がある。カテゴリが一致していれば
+等価性の証明バーを高める必要はなく、既存の COUNTEREXAMPLE CHECK に注力できる。
 
-（同じ変更を Claim C[N].1 と C[N].2 の両行に適用）
-
-**理由**: 「trace through code」はエージェントが changed function を読んだ時点でトレース完了とみなすことを許容する。「to the assertion or exception」を加えることで、テストが実際に結果を観測する地点まで因果連鎖を追う義務を明示する。localize モードの `CODE PATH TRACING` が assert まで追跡させる構造を compare に移植する。
-
----
-
-### 変更 3: COUNTEREXAMPLE の `because` 節も同様に精緻化（既存行の精緻化、追加行 0）
-
-**対象**: Compare テンプレートの `COUNTEREXAMPLE` ブロック（現行 line 196, 197）
-
-```diff
--  Test [name] will [PASS/FAIL] with Change A because [reason]
--  Test [name] will [FAIL/PASS] with Change B because [reason]
-+  Test [name] will [PASS/FAIL] with Change A because [trace from changed code to the assertion or exception — cite file:line]
-+  Test [name] will [FAIL/PASS] with Change B because [trace from changed code to the assertion or exception — cite file:line]
-```
-
-**理由**: COUNTEREXAMPLE を記述する際も「コード差分があるから DIFFERENT」ではなく「assertion または exception で観測される結果が異なるから DIFFERENT」であることを証拠付きで示す義務を課す。
+### overall への効果
+変更の意図的カテゴリは「何を比較するか」の前提そのものに関わる。これを
+STRUCTURAL TRIAGE 内に 1 ステップとして明示することで、全体的な比較の出発点が
+揃い、仮説駆動探索（Step 3）の精度も間接的に向上する。
 
 ---
 
-### 変更 4: Compare checklist に 1 行追加（追加行 +1）
+## failed-approaches.md との照合
 
-**対象**: `### Compare checklist` の既存 bullet の後
+| 原則 | 今回の変更との関係 |
+|------|-------------------|
+| 探索証拠の種類をテンプレートで事前固定しすぎない | S4 は「どの証拠を探すか」を指定しない。何を読むかではなく、読む前に意図カテゴリを宣言させるのみ。抵触しない。 |
+| 探索の自由度を削りすぎない | S4 はトレース順序や読み始め箇所を指定しない。抵触しない。 |
+| 局所的仮説更新を前提修正義務に直結させすぎない | S4 は仮説更新とは無関係。抵触しない。 |
+| 既存ガードレールを特定の追跡方向で具体化しすぎない | S4 はガードレールの変更ではなくトリアージの拡張。抵触しない。 |
+| 結論直前の自己監査に新しい必須メタ判断を増やしすぎない | S4 は STRUCTURAL TRIAGE 内（探索開始前）であり、結論直前ではない。抵触しない。 |
 
-```diff
- - Trace each test through both changes separately before comparing
-+- Do not conclude NOT EQUIVALENT from a code difference alone — verify the difference reaches the test's assertion or exception by tracing the full call path
-```
-
-**理由**: 変更 2・3 の `because` 節への明記を補強するチェックリスト項目。エージェントが「コード差分 → NOT_EQUIVALENT」という短絡をとることを防ぎ、テストの観測地点までの完全なトレースを義務付ける。アドバイザリな禁止ではなく「差分を assertion まで追え」という正方向の指示として機能させる。
+全原則との抵触なし。
 
 ---
 
 ## 変更規模の宣言
 
-| 種別 | 行数 |
-|------|------|
-| 追加行数 | **1行**（checklist bullet 1行） |
-| 削除行数 | 5行（CONVERGENCE GATE ブロック） |
-| 既存行精緻化 | 4行（`because` 節 4カ所の wording 変更） |
-
-追加行数 1 は hard limit（5行）の範囲内。
-
----
-
-## EQUIV と NOT_EQ の両方の正答率への影響予測
-
-### EQUIV（現状 8/10 = 80%）
-
-| ケース | 現状 | 予測 | 理由 |
-|--------|------|------|------|
-| 15368 | NOT_EQ（誤） | NOT_EQ（誤）継続の可能性 | 削除テスト誤判定パターンは assertion エンドポイント変更だけでは解消が難しい。ただし checklist「コード差分のみで NOT_EQ にするな」が抑制に作用する可能性あり。 |
-| 15382 | UNKNOWN（誤） | EQUIV（正）を期待 | CONVERGENCE GATE 除去により探索継続が可能。`because` 節のエンドポイント明記で assertion まで追跡し、両変更で同一結果を確認できる。 |
-| 他 6件 | 正解 | 正解維持 | 既に assertion まで追跡して正解しているケースには実効的な変化なし。 |
-
-予測 EQUIV 正答率: **80〜90%（8〜9/10）**
-
-### NOT_EQ（現状 8/10 = 80%）
-
-| ケース | 現状 | 予測 | 理由 |
-|--------|------|------|------|
-| 14787 | EQUIV（誤） | NOT_EQ（正）を期待 | CONVERGENCE GATE 除去により LOW confidence EQUIVALENT での早期停止が解消。`because` 節で assertion まで追跡すれば真の差分が観測される。 |
-| 12663 | UNKNOWN（誤） | NOT_EQ（正）を期待 | `because` 節のエンドポイント明記により「何を確認すれば結論できるか」が明確になり、ターン枯渇前に assertion での差分を発見できる。 |
-| 他 8件 | 正解 | 正解維持 | 既に差分発見から NOT_EQ を正しく判定しているケース。assertion エンドポイント明記は判定を強化しても反転させない。 |
-
-予測 NOT_EQ 正答率: **80〜100%（8〜10/10）**
-
-### 13821 の回帰リスク（EQUIV）
-
-iter-12 では CONVERGENCE GATE なしで 13821 が EQUIV→NOT_EQ に失敗していた。CONVERGENCE GATE を除去すると 13821 が再び失敗するリスクがある。ただし:
-- iter-35（CONVERGENCE GATE なし、85%）では 13821 が **失敗**（EQUIV→NOT_EQ）
-- iter-41（CONVERGENCE GATE なし、85%）では 13821 が **失敗**（EQUIV→NOT_EQ）
-- つまり 85% 達成は「13821 失敗、他を修正」というトレードオフで成立している
-
-**全体予測**: 16/20（80%）→ **17/20（85%）**（13821 が回帰 -1、14787 修正 +1、12663 修正 +1 の場合）
-
----
-
-## failed-approaches.md のブラックリストおよび共通原則との照合
-
-### ブラックリスト照合
-
-| BL番号 | 内容 | 本提案との関係 |
-|--------|------|---------------|
-| BL-1 | テスト削除を ABSENT 定義 | 無関係。定義追加なし。 |
-| BL-2 | NOT_EQ 証拠閾値強化 | 無関係。閾値設定なし。 |
-| BL-3 | UNKNOWN 禁止 | 無関係。UNKNOWN を禁止する文言を追加しない。 |
-| BL-4 | CONVERGENCE GATE | **本提案は BL-4 を除去する方向**。BL-4 は「探索量を削減する」ことが問題。本提案はその削減を除去し、探索量を回復させる。 |
-| BL-5〜24 | 各種 | 本提案の変更（`because` 節エンドポイント明記）は BL-5〜24 のいずれにも記載されていない。 |
-
-### 共通原則照合
-
-| 原則 | 内容 | 照合結果 |
-|------|------|----------|
-| #1 判定の非対称操作 | EQUIV/NOT_EQ いずれかに有利な変更は失敗 | `because` 節の変更は EQUIV・NOT_EQ 両方の Claim に同様に適用。チェックリスト項目は NOT_EQ 方向に追加制約を課すが、本質は「assertion まで追えという品質要求」であり、判定閾値の変更ではない。 |
-| #2 出力側の制約は効果なし | 「こう答えろ」は無効 | `because` 節はテンプレートの入力側（トレース方法の指示）を改善するもの。出力を直接指定しない。 |
-| #3 探索量の削減は有害 | 探索を減らす変更は悪化 | CONVERGENCE GATE の削除により探索量が**増加**する。本提案は探索削減に逆行しない。 |
-| #4 同じ方向の変更は同じ結果 | 表現を変えても効果は同じ | `because` 節エンドポイント明記は既存のどの BL エントリとも異なるメカニズム（assertion site まで追跡する義務）。BL-20（関数ごとの verified effect 義務）とは対象が異なる。 |
-| #5 入力テンプレート過剰規定 | 見るべき情報の限定は視野を狭める | エンドポイント明記は「何を記録するか」を限定しない。「どこまで追うか」の終端を明示するだけで、途中で見るものを制限しない。 |
-| #14 条件付き特例探索は主ループ強化にならない | サイドクエストの追加は無効 | 本変更は主比較ループ（ANALYSIS OF TEST BEHAVIOR の Claim）そのものに適用される。特例条件ではない。 |
-| #15 固定長局所追跡ルールによる近似 | hop 数指定は無効 | 「assertion or exception site」はセマンティックな終端点（テストの観測境界）であり、固定hop数ではない。 |
-| #16 ネガティブプロンプト | 禁止指示は過剰適応 | チェックリスト項目は「コード差分のみで NOT_EQ にするな」という禁止を含むが、その目的は「assertion site まで追え」という正方向の要求。iter-35 で同一の表現（「Do not conclude NOT EQUIVALENT from a code difference alone」）が 85% を達成した実績あり。 |
-| #17 中間ノード局所分析義務化 | nearest consumer へのフォーカスはエンドツーエンド追跡を阻害 | 本提案は「assertion または exception site」（最終観測点）まで追跡する義務であり、中間ノード（nearest consumer）への局所フォーカスではない。 |
-
----
-
-## まとめ
-
-| 項目 | 内容 |
-|------|------|
-| 親イテレーション | iter-14（80%） |
-| カテゴリ | F（localize モードの assertion-site 追跡を compare に適用）+ E（既存 wording の精緻化） |
-| 仮説 | `because` 節に assertion/exception エンドポイントを明記し、BL-4（CONVERGENCE GATE）を除去することでトレースが浅いまま結論を出す問題を汎用的に防止できる |
-| 追加行数 | 1行（hard limit 5行以内） |
-| 削除行数 | 5行（CONVERGENCE GATE） |
-| 修正行数 | 4行（既存 `because` 節の wording） |
-| 期待スコア | 85%（17/20） |
+- 追加行: 4 行
+- 削除行: 0 行
+- hard limit（5 行）以内: YES
