@@ -1,14 +1,14 @@
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..5777fe9 100644
+index cf289c7..9d306e3 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -168,6 +168,9 @@ ANALYSIS OF TEST BEHAVIOR:
- 
- For each relevant test:
-   Test: [name]
-+  Key value (1-2 variables or return values that determine this test's assertion):
-+    With A: created [file:line] → last modified [file:line or NONE] → value at assertion [file:line]: [value/state]
-+    With B: created [file:line] → last modified [file:line or NONE] → value at assertion [file:line]: [value/state]
-   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                 because [trace through code — cite file:line]
-   Claim C[N].2: With Change B, this test will [PASS/FAIL]
+@@ -253,7 +253,8 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ ### Compare checklist
+ - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+ - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+-- Identify changed files for both sides
++- Identify changed files for both sides; for each changed file, locate the
++  enclosing function or method boundary before tracing callers or callees
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing

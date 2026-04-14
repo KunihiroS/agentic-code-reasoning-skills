@@ -19,3 +19,7 @@
 {"genid": 19, "parent_genid": 15, "skill_snapshot": "benchmark/swebench/runs/iter-19/SKILL.md.snapshot", "scores": {"compare": 0, "audit": 0, "overall": 0}, "valid_parent": false, "timestamp": "2026-04-14T00:10:50.769854"}
 {"genid": 20, "parent_genid": 15, "skill_snapshot": "benchmark/swebench/runs/iter-20/SKILL.md.snapshot", "scores": {"compare": 0, "audit": 0, "overall": 0}, "valid_parent": false, "timestamp": "2026-04-14T00:19:11.120252"}
 {"genid": 21, "parent_genid": 16, "skill_snapshot": "benchmark/swebench/runs/iter-21/SKILL.md.snapshot", "scores": {"compare": 65, "audit": 85, "overall": 65}, "valid_parent": true, "timestamp": "2026-04-14T05:44:32.230947"}
+{"genid": 22, "parent_genid": 13, "skill_snapshot": "benchmark/swebench/runs/iter-22/SKILL.md.snapshot", "scores": {"compare": 0, "audit": 0, "overall": 0}, "valid_parent": false, "timestamp": "2026-04-14T05:49:50.510349"}
+{"genid": 23, "parent_genid": 21, "skill_snapshot": "benchmark/swebench/runs/iter-23/SKILL.md.snapshot", "scores": {"compare": 0, "audit": 0, "overall": 0}, "valid_parent": false, "timestamp": "2026-04-14T05:55:22.667226"}
+{"genid": 24, "parent_genid": 13, "skill_snapshot": "benchmark/swebench/runs/iter-24/SKILL.md.snapshot", "scores": {"compare": 0, "audit": 0, "overall": 0}, "valid_parent": false, "timestamp": "2026-04-14T06:00:03.649459"}
+{"genid": 25, "parent_genid": 15, "skill_snapshot": "benchmark/swebench/runs/iter-25/SKILL.md.snapshot", "scores": {"compare": 60, "audit": 85, "overall": 60}, "valid_parent": true, "timestamp": "2026-04-14T10:22:08.688818"}

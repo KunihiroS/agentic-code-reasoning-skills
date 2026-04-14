@@ -1,62 +1,109 @@
 あなたは SKILL.md の変更に対する監査役です。
 
-以下のファイルを参照してください:
-- Objective.md の Audit Rubric セクション
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
 - README.md
 - docs/design.md
 - docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
 
-以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
-Objective.md に定義された audit.md フォーマットに従って
-benchmark/swebench/runs/iter-25/audit.md を作成してください。
+この 6 ファイル以外を read / search / list してはいけません。
 
-合格基準: 全項目 2 以上、かつ合計 14/21 以上
+【出力先】
+benchmark/swebench/runs/iter-25/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
 
 diff:
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..5777fe9 100644
+index cf289c7..9d306e3 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -168,6 +168,9 @@ ANALYSIS OF TEST BEHAVIOR:
- 
- For each relevant test:
-   Test: [name]
-+  Key value (1-2 variables or return values that determine this test's assertion):
-+    With A: created [file:line] → last modified [file:line or NONE] → value at assertion [file:line]: [value/state]
-+    With B: created [file:line] → last modified [file:line or NONE] → value at assertion [file:line]: [value/state]
-   Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                 because [trace through code — cite file:line]
-   Claim C[N].2: With Change B, this test will [PASS/FAIL]
+@@ -253,7 +253,8 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ ### Compare checklist
+ - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+ - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+-- Identify changed files for both sides
++- Identify changed files for both sides; for each changed file, locate the
++  enclosing function or method boundary before tracing callers or callees
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
 
 rationale:
 # Iteration 25 — 変更理由
 
 ## 前イテレーションの分析
 
-- 前回スコア: 65%（13/20）
-- 失敗ケース: django__django-15368, django__django-13821, django__django-15382, django__django-14787, django__django-11433, django__django-14122, django__django-12663
-- 失敗原因の分析:
-  - EQUIV → NOT_EQUIVALENT 誤判定（15368・13821）: エージェントがコードレベルの差異を発見した時点で、assertion に到達する値が A・B で同一かどうかを確認しないまま DIFFERENT と結論した。
-  - EQUIV → UNKNOWN（15382）: ターン上限に達したが、その根本には assertion 到達値の確認なしに広い探索を行った傾向がある。
-  - NOT_EQUIVALENT → UNKNOWN（14787・11433・14122・12663）: テスト対象の assertion を決定する具体的な値の追跡が不十分なまま探索が広がり、判定不能に陥った。
+- 前回スコア: 不明（iter-24 scores.json 未参照）
+- 失敗ケース: 詳細は省略（本イテレーションでは proposal.md の仮説に基づいて改善を行う）
+- 失敗原因の分析: compare モードにおいて、変更が加えられたファイルを特定した後、
+  変更行が属する関数・メソッドの境界を意識せずに呼び出し元・呼び出し先をトレースする
+  ことで、ファイル内の無関係な制御フローへ誤侵入したり、関数スコープをまたいだ
+  動作の混同が生じやすい構造になっていた。
 
 ## 改善仮説
 
-Compare モードの `ANALYSIS OF TEST BEHAVIOR` において、各 relevant test の `Claim C[N].1 / C[N].2` を書く前に、テストの assertion を決定する key value（1〜2個）について Change A・Change B 両方で「生成 → 変更 → assertion での値」を対称的にトレースさせる。これにより、エージェントは「コードレベルの差異の発見」ではなく「assertion 到達時点での具体的な値の一致/不一致」を根拠として Claim を書くようになり、EQUIV 偽陽性（コード差異があっても assertion 値は同じ → SAME を見落とす）と NOT_EQ の両方に対して推論の正確度が上がる。
-
-`explain` モードの DATA FLOW ANALYSIS テンプレートが「Created at / Modified at / Used at」という3点で変数の意味論的状態を追跡する手法を、compare の A・B 両変更に等しく適用することで、SAME/DIFFERENT どちらの結論にも同じ粒度で作用する共通の中間表現を生成させる。これは LLM のコード解析精度を上げる確立された手法（LLMDFA, arXiv:2402.10754）に基づく。
+変更が加えられたコードを読む際に、まず変更行が属する関数・メソッドの境界を特定して
+から呼び出し元・呼び出し先のトレースに進む、という読み方の優先順位を compare checklist
+に明示することで、関係のない制御フローへの言及や、関数スコープをまたぐ誤った動作推定
+が減少し、compare モードの等価性判定の精度が向上する。
 
 ## 変更内容
 
-Compare certificate template の `ANALYSIS OF TEST BEHAVIOR` セクション内、`For each relevant test:` ブロックに `Key value` フィールドを3行追加した。
+SKILL.md の compare checklist（「Identify changed files for both sides」の行）に
+文言を追加した。変更前後は以下の通り:
 
-- `Test: [name]` の直後に、assertion を決定する key value（1〜2個の変数または返り値）について、A・B それぞれで「created [file:line] → last modified [file:line or NONE] → value at assertion [file:line]: [value/state]」という形式でトレースするフィールドを追加。
-- 追加: 3行（Key value ヘッダー + With A + With B）
-- 削除: 0行
-- 変更: 0行
-- 他セクション（localize, explain, audit-improve）・ガードレール・Minimal Response Contract への変更なし。
+変更前:
+```
+- Identify changed files for both sides
+```
+
+変更後:
+```
+- Identify changed files for both sides; for each changed file, locate the
+  enclosing function or method boundary before tracing callers or callees
+```
+
+新規ステップ・新規フィールド・新規セクションの追加はなし。変更規模は 1 行（既存行への
+文言追加）であり、5 行以内の hard limit に適合する。
 
 ## 期待効果
 
-- **EQUIV 側（改善期待）**: Key value のトレースにより、コードレベルの差異があっても assertion に到達する値が A・B で同一であることを確認する機会が生まれる。「A では [file:line] で X が返る、B では Y が返る」という中間的差異の発見だけで DIFFERENT と結論することへの自然な抑制になる（assertion での値が同じなら SAME）。
-- **NOT_EQ 側（維持）**: 真の NOT_EQ では、key value の assertion 到達時の値が A と B で異なるため、トレースが DIFFERENT 主張を自然に支持する。追加的な立証責任を課すわけではなく（SAME 主張にも同じ形式が適用されるため非対称な制約にならない）、key value 1〜2個の追加記述のみでターンコスト増加は限定的。
+- **ファイル内の無関係なコードパスへの誤侵入の抑制**: 変更行の関数境界を先に確定する
+  ことで、同ファイル内の別関数の制御フローに余分な時間を投資する機会が減り、
+  誤前提の生成が抑制される。
+- **関数スコープをまたぐ変数の混同防止**: 大きなファイルで同名変数が複数の関数に
+  存在する場合、境界を先に特定することでスコープの取り違えが起きにくくなる。
+- **EQUIVALENT 誤判定の減少**: 2 つの変更が同じファイルの異なる関数に触れている
+  場合でも、境界を起点にすることで正確な対応関係を把握してから等価性判定に進める。
+- 変更は探索の「順序のヒント」にとどまり、探索の自由度や証拠の種類を固定しないため、
+  failed-approaches.md に記載の「テンプレートで証拠種類を事前固定しすぎる」原則と
+  抵触しない。
