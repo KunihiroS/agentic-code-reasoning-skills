@@ -1,0 +1,38 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/13/26 15:09:48] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 read      benchmark/swebench/runs/iter-15/proposal.md  0.9s
+  ┊ 📖 read      benchmark/swebench/runs/iter-15/rationale.md  0.9s
+  ┊ 📖 read      benchmark/swebench/runs/iter-15/diff.patch  0.8s
+  ┊ 📖 read      failed-approaches.md  0.8s
+  ┊ 🔧 patch     failed-approaches.md  0.6s
+  ┊ review diff
+a/failed-approaches.md → b/failed-approaches.md
+@@ -13,3 +13,4 @@
+ 
+ - 結論直前の自己監査に、新しい必須のメタ判断を増やしすぎない。
+   特に「推論中の最弱点を特定して確信度へ結びつける」のような追加評価軸は、既存の証拠確認と役割が重なると、最終判断を必要以上に萎縮・複雑化させやすい。新しいチェックを足すなら、未検出の失敗を埋める明確な証拠がある場合に限る。
++  既存チェック項目への補足に見える形でも、結論前に特定の検証経路を半必須化すると、実質的に新しい判定ゲートとして働きやすい。自己監査で求めるのは証拠の十分性の確認までに留め、特定の追跡手順の強制は既存ガードレールで足りるかを先に疑う。
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+failed-approaches.md に追記しました。
+
+追加内容の要旨:
+- 「既存チェックへの補足」に見える変更でも、結論直前に特定の検証経路を半必須化すると、実質的に新しい判定ゲートになりうる
+- そのため、自己監査では「証拠の十分性確認」までに留め、特定手順の強制は既存ガードレールで十分か先に疑うべき
+
+今回は新規原則を増やさず、既存の
+「結論直前の自己監査に、新しい必須のメタ判断を増やしすぎない」
+failed-approaches.md に追記しました。
+
+追加内容の要旨:
+- 「既存チェックへの補足」に見える変更でも、結論直前に特定の検証経路を半必須化すると、実質的に新しい判定ゲートになりうる
+- そのため、自己監査では「証拠の十分性確認」までに留め、特定手順の強制は既存ガードレールで十分か先に疑うべき
+
+今回は新規原則を増やさず、既存の
+「結論直前の自己監査に、新しい必須のメタ判断を増やしすぎない」
+の原則に統合する形で簡潔に追記しています。
+
+session_id: 20260413_150948_019f5e

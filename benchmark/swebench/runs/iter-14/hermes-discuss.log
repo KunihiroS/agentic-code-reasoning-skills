@@ -1,0 +1,6 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/12/26 20:09:59] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+Codex token refresh failed with status 401.

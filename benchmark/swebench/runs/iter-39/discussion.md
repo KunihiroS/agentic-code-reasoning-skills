@@ -1,194 +1,183 @@
-# Iteration 39 — 監査コメント
+# Iter-39 Discussion
 
 ## 総評
-提案の問題意識自体、すなわち **「コード差異」と「テストで観測される差異」を区別したい** という狙いは妥当です。既存研究・実務知見も、等価性判断は内部実装差分ではなく **実行されたパス上の外部可観測振る舞い** に基づくべきだと示しています。
 
-ただし、**今回の具体的メカニズム（D3 定義追加 + `Comparison` 直下の `D3 check` 記入義務）は承認できません**。理由は、実効差分で見るとこれは過去に失敗した方向の再包装であり、特に **BL-6 / BL-8 / BL-10 / BL-16** に実質的に近いからです。加えて、変更前との差分は見かけほど対称ではなく、**実際には `DIFFERENT` 主張側への追加立証要求** として強く作用する可能性が高いです。
+提案は、SKILL.md の Step 3 にある CONFIDENCE 行を
 
----
+- 変更前: `CONFIDENCE: high / medium / low`
+- 変更後: `CONFIDENCE: high (grounded in P[N]) / medium / low`
 
-## 1. Web 検索に基づく妥当性評価
+へ精緻化し、high を宣言する場合だけ「どの前提に立脚しているか」を明示させるものです。
 
-### 検索結果 1: SeHBPL: Behavioral Semantics-Based Patch Presence Test for Binaries
-- URL: https://link.springer.com/chapter/10.1007/978-981-99-8664-4_6
+結論から言うと、この変更は
+- 研究コアと整合的
+- failed-approaches.md の禁止方向をほぼ踏まない
+- 汎化性も高い
+- 回帰リスクも小さい
+
+一方で、改善幅は大きくなく、効き方は「新しい探索能力を足す」というより「根拠のない過剰確信を弱める」タイプです。したがって、効果は plausibly positive だが限定的、という評価です。
+
+## 1. 既存研究との整合性
+
+### 1-1. Agentic Code Reasoning 論文との整合
+- URL: https://arxiv.org/abs/2603.01896
 - 要点:
-  - パッチ有無の判定を、表層的なコード差分ではなく **behavioral semantics** と **path constraints** で表現する。
-  - 「その振る舞いがどの条件で発火するか」を含めて意味論的に比較する。
-- 本提案への示唆:
-  - **D3(a) の「実際の入力が changed path を通るか」** という発想自体は研究的に筋が良い。
-  - ただし SeHBPL が強いのは、**行動表現そのものを比較対象にしている点**であり、テンプレートに追記欄を増やすことではない。したがって、研究は「観点」を支持しているが、「`D3 check` 欄の追加」という実装方法までは支持していない。
+  - semi-formal reasoning は、明示的な premises、execution path tracing、formal conclusion を要求することで「certificate」として働き、unsupported claim を減らす。
+  - patch equivalence / fault localization / code QA の各タスクで精度改善が報告されている。
+- 本提案との関係:
+  - 「high confidence は premise 参照付きでのみ許す」という変更は、論文の certificate 的発想と整合する。
+  - ただし論文が直接「confidence は premise 番号付きで書け」と主張しているわけではない。したがって、これは論文のコアを拡張する軽微な運用補強であり、論文の未活用アイデア導入というより既存コアの補強に近い。
 
-### 検索結果 2: Behavior-Preserving Code Changes
-- URL: https://www.emergentmind.com/topics/behavior-preserving-code-changes
+### 1-2. Confidence calibration 一般研究との整合
+- URL: https://aclanthology.org/2024.findings-acl.515/
 - 要点:
-  - 振る舞い保存は **outputs / side-effects / observable runtime states** の一致として定義される。
-  - 実務・研究とも、等価性確認では内部差分より **外部可観測な差分** を重視する。
-  - 一部の手法は trace equivalence を **selected program locations / points of interest** で比較する。
-- 本提案への示唆:
-  - D3(b) の「テストの assertion が検出可能な差分か」という観点は妥当。
-  - しかし同時に、どの観測点を template で固定するかは強い設計判断であり、**観測フレームの埋め込みが新たなアンカーになる** 危険もある。これは本リポジトリの BL-16 の失敗と整合的。
+  - Fact-and-Reflection (FaR) は、まず relevant facts を出させ、その後に reflection させることで calibration を改善し、Expected Calibration Error を 23.5% 下げたと報告している。
+  - 「答え」より前に「根拠となる fact」を表に出させることが calibration 改善に効く、という方向性を示している。
+- 本提案との関係:
+  - 本提案も「高い確信」を出す前に、その拠り所となる前提を外在化させるため、発想としてはかなり近い。
+  - ただし FaR は QA 全般の calibration 研究であり、コード推論における compare タスクへ直接の外挿ではない点は留保が必要。
 
-### 検索結果 3: Observability-Driven Testing: Using Logs, Traces, and Metrics for Better QA
-- URL: https://qaskills.sh/blog/observability-driven-testing-guide
+### 1-3. Overconfidence 低減研究との整合
+- URL: https://arxiv.org/html/2502.11028
 - 要点:
-  - 実務では、テストは単なる pass/fail だけでなく **what the system actually does** を logs / traces / metrics で検証する方向に進んでいる。
-  - 内部コード差分それ自体ではなく、**観測可能な結果** をテスト可能出力として扱う。
-- 本提案への示唆:
-  - 実務的にも「内部差分ではなく観測差分を見るべき」という方向は正しい。
-  - ただし observability-driven testing は **新しい観測データを取る** ことで強くなるのであって、既存テンプレートに記述欄を増やすだけでは同等の効果は出ない。
+  - LLM の overconfidence は実用上のリスクであり、structured prompting や alternative consideration が miscalibration を減らしうる。
+  - 特に「考慮すべき別の可能性を明示する」ことが過剰確信の抑制に寄与しうると整理されている。
+- 本提案との関係:
+  - 本変更は alternative path を直接増やすものではないが、「high confidence を無根拠に言い切れなくする」ので、少なくとも overconfidence 対策としての方向性は妥当。
 
-### 学術的・実務的まとめ
-- **支持される点**: 「差異の重要度を、実行条件と assertion 到達可能性で見る」という問題設定。
-- **支持されない点**: その問題を **`Comparison` 直下の追記欄** で解決できる、という実装仮説。
-- 結論: **狙いは妥当、メカニズムは弱い**。
+### 研究整合性の総括
+研究上の裏付けは十分にある。ただし直接的に支持されているのは「confidence を evidence/facts と結びつけると calibration が良くなりうる」という一般原理であり、本提案の 1 行変更がどれほど大きな改善を生むかまでは既存研究から強くは言えない。
 
----
+## 2. Exploration Framework のカテゴリ選定は適切か
 
-## 2. Exploration Framework のカテゴリ選択は適切か？ 既試行カテゴリとの照合
+実装者はカテゴリ D（メタ認知・自己チェックを強化する）を選んでいる。これは概ね適切です。
 
-### カテゴリ判定
-提案は形式上は **カテゴリ C: 比較の枠組みを変える** と言えるものの、実際の変更内容はかなりの部分で
-- `Comparison` 直下の記述義務追加
-- `D3 check` という追加フィールド
-- `DIFFERENT` / `SAME` ごとの説明テンプレート化
+理由:
+- 変更対象は探索順序ではなく、探索中の「自分の確信をどう表明するか」というメタ認知レイヤー。
+- 新しい比較軸や test-level 手順は追加していないため、A/C ではない。
+- 文面の変更ではあるが、単なる wording polish ではなく「high を名乗る条件」を変えるので、E より D と見る方が本質に近い。
 
-であり、**カテゴリ E（表現・フォーマット）** や **BL-8 型の記録欄追加** にも強くまたがっています。純粋に「比較の枠組みを変える」変更とは言いにくいです。
+補足すると、この提案は D と E の境界上にはあります。表面的には 1 行の wording change ですが、作用点はフォーマットの見た目ではなく「根拠なき high confidence を抑える」という自己監査的メカニズムです。そのため、主カテゴリ D という整理は妥当です。
 
-### 同一カテゴリ・同一メカニズムの既試行性
-特に重要なのは、**iter-26 がほぼ同じサブメカニズムを既に試している**ことです。
+## 3. EQUIVALENT 判定 / NOT_EQUIVALENT 判定への作用
 
-- `benchmark/swebench/runs/iter-26/proposal.md`
-  - カテゴリ C
-  - 内容: **「DIFFERENT を主張する前に、差異が test assertion condition に到達することを確認せよ」**
-  - これは今回の D3(b) と本質的に同じです。
+## 3-1. 作用メカニズム
+この変更が直接変えるのは「探索中の hypothesis に対して、high confidence をどれだけ気軽に宣言できるか」です。つまり、結論を直接変えるルールではなく、探索中の確信の出し方を抑制する soft control です。
 
-さらに近縁の失敗として:
-- **BL-10**: Reachability ゲート
-  - 今回の D3(a) は「actual inputs が changed path を通るか」で、BL-10 よりは少し強いが、根本発想は同じく **到達条件の明示化**。
-- **BL-16**: `Comparison` 直前に観測点注釈を追加
-  - 今回の `D3 check` は、より構造化されただけで、やはり **Comparison 周辺に観測基準を埋め込む** 変更。
-- **BL-8**: 受動的記録フィールド追加
-  - 今回の `D3 check` は file:line を求めるが、なお **「書く欄を増やす」** 変更であり、記録 ≠ 検証の問題を免れていない。
-- **iter-38**
-  - Claim に P[N] 満足/違反を接続させる提案で、やはり「コード差異 → テスト期待動作」を明示的に接続しようとした。
-  - 今回はそれを D3(a)(b) へ言い換えただけで、問題の核は近い。
+期待される効果は次の通りです。
+- unsupported な high confidence を medium/low に下げやすくなる
+- その結果、仮説への早すぎるコミットを弱める
+- 代替仮説や追加確認へ戻る心理的余地を残す
 
-**結論**: カテゴリ C の選択自体は表面的には成立するが、**未試行のサブメカニズムとは言えない**。少なくとも iter-26 と BL-16 の再訪であり、新規性は弱い。
+## 3-2. EQUIVALENT への作用
+EQUIVALENT 誤判定は、典型的には「差分はあるがテスト結果に効かない」と早く確信しすぎるケース、あるいは「反例がなさそう」と premature closure するケースで起きやすいです。
 
----
+この変更は、そうした premature closure を少し抑える方向に働きます。特に、high confidence の根拠が premise に接続できない場合、探索継続や premise 再点検に戻りやすくなるため、EQUIVALENT 側の誤答抑制には比較的効きやすいです。
 
-## 3. EQUIV / NOT_EQ への影響と、実効的差分の分析
+## 3-3. NOT_EQUIVALENT への作用
+NOT_EQUIVALENT 誤判定にも理屈上は効きます。たとえば、局所的な semantic difference を見つけた瞬間に「これはテスト outcome も違うはずだ」と過剰確信してしまう場合、high confidence に premise linkage を要求することで、test-path まで追えているかを自省しやすくなります。
 
-### 提案者の主張
-提案者は「D3 は SAME と DIFFERENT の両方に義務化されるので対称」と述べています。
+ただし NOT_EQUIVALENT 側は、もともと SKILL.md に
+- per-test tracing
+- counterexample obligation
+- diverging assertion の特定
 
-### しかし、変更前との差分で見ると対称ではない
-現行 SKILL.md には既に以下があります。
-- `Trace each test through both changes separately before comparing`
-- `When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact`
+がすでに入っており、証拠要求が強いです。そのため今回の 1 行変更の追加効果は、EQUIVALENT 側より小さい可能性が高いです。
 
-つまり現状でも、
-- 各 test を両変更で追う
-- semantic difference を見つけたときに **「無影響（SAME）」と結論する前の確認**
+## 3-4. 片方向にしか作用しないか
+「完全に片方向」ではありません。仕組み自体は、unsupported な high confidence 全般を抑えるため、理論上は両方向に作用します。
 
-は既に要求されています。
+ただし実効的には非対称です。
+- EQUIVALENT 側: 「反例なし」を早く信じすぎる誤りを抑えるので効きやすい
+- NOT_EQUIVALENT 側: 既存の counterexample 要件が強いため、追加効果は相対的に小さい
 
-この状態に対して今回新たに追加される実効差分は何かというと、主に:
-- **`DIFFERENT` と書くときは D3(a)(b) を具体的に cite せよ**
+したがって、「両方向に作用するが、強さは対称ではない」というのが妥当な評価です。
 
-です。`SAME` 側にも文言は足されていますが、既存チェックがすでに SAME 側の慎重さを要求しているため、**増分として強く効くのは DIFFERENT 側**です。これは failed-approaches.md の共通原則 #6 が警告している「対称化の実効差分」をそのまま踏んでいます。
+## 4. failed-approaches.md の汎用原則との照合
 
-### EQUIV への影響
-- 期待できる効果:
-  - EQUIV 偽陰性の一部では、changed path はあるが assertion に現れないことを説明させるので、改善余地はある。
-- ただし懸念:
-  - これは既に iter-26 系統で狙って失敗している。
-  - `D3 check` は検証の代わりに **もっともらしい説明生成** になりやすい。
+### 4-1. 「特定シグナルの捜索」への寄りすぎ
+今回の変更は「次に何を探せ」とは指定していません。要求しているのは high confidence の場合に premise 番号を明記することだけです。したがって、探索対象を特定シグナルに固定する変更ではありません。
 
-### NOT_EQ への影響
-- 高リスク。
-- 真の NOT_EQ であっても、
-  - changed path を actual inputs で具体化
-  - assertion が検出する差分を file:line で明示
-  という追加義務が生じる。
-- これは実質的に **NOT_EQ の立証責任引き上げ** です。BL-2 / BL-6 / BL-14 と同型の回帰リスクがあります。
-- 特に turn budget が厳しいケースでは、`D3 check` 記入のための探索で UNKNOWN 化しやすい。
+この点で failed-approaches.md の最初の禁止原則には基本的に抵触しません。
 
-### 一方向作用の有無
-**あります。**
-表面上は両方向に D3 を要求していますが、**既存制約との差分としては DIFFERENT 主張側への新規負荷が中心**です。したがって、提案者の「一方向にしか作用しないわけではない」という主張には同意できません。
+### 4-2. 探索の自由度を削りすぎない
+読み始める順番や、どの境界を先に見るかを固定していないため、探索経路の自由度はほぼ維持されています。この点でも大きな抵触はありません。
 
----
+### 4-3. 局所的な仮説更新を前提修正義務へ直結させすぎない
+今回の変更は、仮説が崩れた瞬間に premise の修正を義務化するものではありません。high confidence を名乗る条件を厳しくするだけで、局所更新と global premise 管理を強く結びつけてはいません。
 
-## 4. failed-approaches.md ブラックリスト・共通原則との照合
+この意味で、failed-approaches にある「探索中の局所的な仮説更新を、即座の前提修正義務に直結させすぎない」にも大筋では抵触しません。
 
-### 実質同一・近縁のもの
+### 4-4. 結論直前の新しい必須メタ判断の追加
+変更箇所は Step 3 であり、Step 5.5 の pre-conclusion self-check ではありません。したがって blacklist の中でも最も危険な「結論直前の新しい判定ゲート追加」には当たりません。
 
-#### 4.1 BL-6（対称化の実効差分）に抵触
-- 表面上は SAME / DIFFERENT 両方への D3 義務だが、
-- 既存状態との差分では **DIFFERENT 側の立証要求追加** が本体。
-- よって **BL-6 の再発** とみなすべき。
+### 4-5. ただし残る懸念
+懸念がゼロではありません。現行 SKILL.md にはすでに
+- `EVIDENCE: [what supports this hypothesis — cite premises or prior observations]`
+- `Do not treat guesses as premises. Every later claim must reference a premise by number.`
 
-#### 4.2 BL-8（受動的記録フィールド）に近い
-- `D3 check:` は本質的に新しい記録欄。
-- file:line 引用を求めても、過去の失敗履歴上、**記録欄の追加は能動的検証を保証しない**。
-- 「AI がそれっぽい D3(a)(b) を書く」だけで終わる危険がある。
+があり、すでに evidence-premise linkage はかなり要求されています。そのため今回の変更は、新原則の導入というより既存要求の再ラベル化に近い面があります。
 
-#### 4.3 BL-10（Reachability ゲート）の近縁
-- D3(a) は reachability をより具体化したものだが、依然として「その入力で changed path に入るか」を別項目化している。
-- これは BL-10 の **条件を少し細かくした変形** であり、失敗モードに十分な新規弁別力があるとまでは言えない。
+つまり、「本質的に同じ失敗の再演」ではないが、「既存ガードレールの重複強調」に留まって効果が薄い」リスクはあります。
 
-#### 4.4 BL-16（Comparison 周辺の観測フレーム追加）に近い
-- `Comparison` 行の直下に D3 チェックを足すのは、実質的に **Comparison 周辺に観測基準を埋め込む** 変更。
-- 「first observation point」注釈の失敗を、より形式化して再導入しているに近い。
+## 5. 汎化性チェック
 
-#### 4.5 共通原則 #2, #5, #8 にも懸念
-- **#2 出力側の制約**: 提案者は「DEFINITIONS の追加だから入力側」と主張するが、実際には `Comparison` 直下の `D3 check` という **出力テンプレート変更** が主要部分。
-- **#5 入力テンプレートの過剰規定**: D3(a)/(b) という2軸で比較を固定し、他の差分経路を後景化する可能性がある。
-- **#8 受動的記録フィールド**: そのまま該当。
+## 5-1. 明示的な固有識別子の有無
+提案文には、ベンチマーク対象リポジトリ名、テスト名、関数名、クラス名、ファイルパス、ケース ID、対象コード断片の引用は含まれていません。
 
-### 結論
-この提案は、表現や配置を変えているものの、**実質効果としては過去失敗の再演**です。したがって rubric 上は **承認不可** です。
+含まれている具体表現は主に
+- `Step 3`
+- `CONFIDENCE`
+- `P[N]`
+- `Guardrail #1/#2/#4`
+- `iter-39`
+- 変更行数
 
----
+のような、SKILL 自身またはイテレーション運用上のメタ情報です。これは benchmark target を狙い撃ちする固有識別子とは性質が違います。
 
-## 5. 全体の推論品質がどう向上すると期待できるか
+厳密に言えば `iter-39` のような数値付き運用メタ情報は proposal 文中に存在します。ただし、これは過剰適合を示す benchmark case ID ではなく、単なる反復管理ラベルです。したがって、汎化性違反として強く問題視する必要はありません。
 
-狙い通りに働けば、
-- コード差異の発見だけで NOT_EQ に飛ばない
-- テスト入力・観測可能出力・assertion の接続を意識する
+## 5-2. ドメイン・言語・テストパターン依存性
+提案は
+- 特定言語の構文
+- 特定フレームワーク
+- 特定のテストスタイル
+- 特定のリポジトリ構造
 
-という点で、**EQUIV 側の誤判定抑制** は少し期待できます。
+を前提としていません。premise 番号への grounding は、任意の言語・任意の静的コード推論タスクで成立します。
 
-しかし実際には、過去履歴から見てこの種の改善は
-- 比較の自由な因果追跡を新しい記述フレームへ圧縮し
-- 記述オーバーヘッドを増やし
-- 真の NOT_EQ を UNKNOWN / EQUIV に流しやすくする
+このため、汎化性は高いと判断できます。
 
-可能性の方が高いです。したがって、**全体推論品質の純改善は期待しにくい** と判断します。
+## 6. 全体の推論品質への期待改善
 
----
+期待できる改善は次の 3 点です。
 
-## 6. 修正要求と代替提案
+1. 高確信のハードルが少し上がる
+- 「なんとなく high」と書きにくくなり、根拠の外在化が促される。
 
-### 判定
-**修正を求めます。**
+2. unsupported certainty の早期露見
+- 仮説自体は立ててもよいが、high confidence を付けるには premise linkage が必要なため、思い込み混入が可視化されやすくなる。
 
-### 未試行カテゴリからの代替案
-この案を通さず、**カテゴリ F（原論文の未活用アイデア）** から、テンプレート欄追加ではなく **既存 core method / guardrail の簡潔な再設計** を検討すべきです。
+3. 既存コアを壊さず calibration を補強できる
+- premises / tracing / refutation / conclusion という研究コアを変えずに、確信表明だけを狭く補強している。
 
-具体的には例えば:
-- compare 専用の新フィールド追加ではなく、**Step 4 の interprocedural trace table の既存 VERIFIED 行動記述を compare に自然接続する 1 文の guardrail**
-- あるいは原論文の anti-skip 機構を使い、**「changed code を読んだら、その直後に downstream handler / caller を最低1段追う」** のような、記録欄ではなく実際の探索行動を増やす変更
+一方で、限界も明確です。
+- 新しい証拠収集行動を増やす変更ではない
+- refutation の粒度を直接強化する変更でもない
+- agent が単に `medium` を多用するだけなら、推論そのものは改善しない
 
-この方向なら、
-- BL-8 型の「記録欄追加」を避けられ
-- BL-16 型の「Comparison 周辺のフレーミング追加」も避けられ
-- `DIFFERENT` だけの追加立証要求にもなりにくい
+したがって、期待値としては「大幅な能力向上」ではなく、「過剰確信による取りこぼし・見落としをわずかに減らす軽量な calibration 改善」です。
 
-ため、より有望です。
+## 最終判断
 
----
+私はこの提案を、
+- 汎用的で
+- 研究コアに整合し
+- blacklist を実質回避しており
+- 回帰リスクが低い
 
-## 最終結論
-**承認: NO（理由: iter-26 / BL-6 / BL-8 / BL-10 / BL-16 に実質的に近く、変更前との差分で見ると `DIFFERENT` 側への追加立証要求として作用するため。研究的な問題設定は妥当だが、提案されたテンプレート変更メカニズムは既存失敗パターンの再包装であり、NOT_EQ 回帰リスクが高い。）**
+という理由で前向きに評価します。
+
+ただし、追加効果は限定的であり、既存の EVIDENCE / premise discipline とかなり近いため、「効くとしても小さく効く」タイプの変更です。大きな改善を約束する提案としては弱いですが、1 行変更としては合理的です。
+
+承認: YES

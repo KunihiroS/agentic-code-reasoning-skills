@@ -1,0 +1,170 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/12/26 08:29:12] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+まず参照が許可されているファイルを読みます。
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ┊ 📖 preparing read_file…
+  ┊ 📖 preparing read_file…
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      Objective.md  0.8s
+  ┊ 📖 preparing read_file…
+  ┊ 📖 read      failed-approaches.md  0.8s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+ファイルを読み終えました。次に proposal.md の出力先ディレクトリを作成し、提案を書きます。
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ┊ 💻 preparing terminal…
+  ┊ 💻 $         mkdir -p benchmark/swebench/runs/iter-10  0.2s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+SKILL.md の内容を精査した結果を踏まえ、proposal.md を作成します。
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ┊ ✍️ preparing write_file…
+  ┊ ✍️  write     benchmark/swebench/runs/iter-10/proposal.md  0.6s
+  ┊ review diff
+a/benchmark/swebench/runs/iter-10/proposal.md → b/benchmark/swebench/runs/iter-10/proposal.md
+@@ -1,233 +1,91 @@
+-# Iteration 10 — 改善案（Proposal）
++# Iteration 10 — Proposal
+ 
+-## 前イテレーション（iter-9）の分析
++## カテゴリ: E (表現・フォーマットを改善する)
+ 
+-### スコアサマリー
++### このカテゴリを選択した理由
+ 
+-- iter-9 スコア: 80%（16/20）
+-- EQUIV 正答率: 7/10（70%） — 15368, 13821, 15382 が誤（NOT_EQUIVALENT と誤判定）
+-- NOT_EQ 正答率: 9/10（90%） — 14787 が誤（EQUIVALENT と誤判定）
++カテゴリ E の定義（Objective.md の Exploration Framework セクション）は「曖昧な指示をより
++具体的な言い回しに変える」「例示を追加または改善する」を含む。今回のメカニズムは「曖昧文言の
++具体化」である。
+ 
+-### 失敗パターン分析
++SKILL.md の Step 4 に「Read the actual definition. Do not infer behavior from the name.」
++という指示がある。これは重要な禁止事項だが、「名前から推測してはいけない」という否定形の言い方
++しかしていない。否定形の禁止ルールは「何をすべきか」を直接示さないため、実践時の判断が曖昧になりやすい。
++同じ列（Behavior 列）を「実際にどう埋めるべきか」という行動指示に置き換えることで、
++読み手の認知負荷を下げ、VERIFIED 記入の精度を高められる。
+ 
+-**パターン A（EQUIV 偽陽性 × 3）**: 15368・13821・15382 は引き続き NOT_EQUIVALENT と誤判定。
+-iter-9 の Propagation check（乖離点 → アサーション到達の確認）が加わっているにもかかわらず、
+-エージェントはコードパス上の乖離を発見し「伝播する」と結論付ける。
+-
+-考えられる原因: Propagation check では「この乖離はテストアサーションに到達するか?」と問うが、
+-アサーションの具体的な内容（何を、どのファイルの何行目で検査しているか）を
+-エージェントが事前に把握していないため、「到達する」の判断が表面的な
+-コールパス有無の確認（BL-10 的な形式的通過）で終わっている可能性がある。
+-Propagation の先に何があるかを知らずにトレースしているため、
+-「どこかの assertion に値が届く」という曖昧な答えで DIFFERENT 結論に至っている。
+-
+-**パターン B（NOT_EQ 偽陰性 × 1）**: 14787 は EQUIVALENT と誤判定。
+-NOT_EQ だが、エージェントが実際の差異箇所を特定できていない可能性がある。
+-アサーション箇所が何を検査しているかを把握した上でトレースすれば、
+-差異がアサーションに影響することを検出しやすくなるかもしれない。
++他のカテゴリへの非該当理由:
++- A/B/C: 推論の順序・情報取得・比較枠組みの変更ではなく、既存行の文言精緻化のみ
++- D: メタ認知チェックポイントの追加ではない
++- F: 原論文の未活用アイデアの導入ではない
+ 
+ ---
+ 
+-## 選択した Exploration Framework カテゴリ
++## 改善仮説
+ 
+-**カテゴリ B: 情報の取得方法を改善する**
+-
+-### 選択理由
+-
+-カテゴリ B はこれまで BL-5（P3/P4 の形式を PREMISES に記録）で一度試みられたが、
+-PREMISES への記録（分析開始前の抽象的な記述）と、**分析中・テスト単位での具体的な
+-ファイル参照**とでは根本的にメカニズムが異なる。
+-
+-iter-6〜9 で試みたカテゴリ（D, A, F, F）の共通点は「乖離発見後に検証ステップを追加する」
+-アプローチである。これに対し、カテゴリ B の「探索の優先順位付けを変える」は
+-**乖離を探すより先にアサーションを読む**という順序の変化であり、
+-これまで明示的に試みられていない。
+-
+-BL-5 との違い:
+-- BL-5: PREMISES（P3/P4）に「テストが何を検査するか」を抽象記述する形式変更
+-- 本提案: ANALYSIS OF TEST BEHAVIOR の **各テストブロック内** に `Assertion:` 行を追加し、
+-  テスト分析を開始する前に **そのテストのアサーション（file:line）を実際に読む** ことを義務化
+-- 場所・粒度・タイミングが異なる: PREMISES（全体前提）ではなく、per-test の分析ステップ内
++「関数の振る舞いを名前から推測するな」という否定形の禁止規則を、「定義を読み、実際の制御フローを
++要約せよ」という肯定形の行動指示に書き直すことで、トレース表の VERIFIED 欄に記入される内容の
++精度が上がり、名前依存の誤推論から生じる判定ミスが減る。
+ 
+ ---
+ 
+-## 改善仮説（1つ）
++## 変更内容
+ 
+-**compare モードの ANALYSIS OF TEST BEHAVIOR における各テストブロックの冒頭に
+-`Assertion:` アンカー行（file:line 引用必須）を追加することで、
+-エージェントが Divergence/Propagation 分析を始める前にそのテストが
+… omitted 215 diff line(s) across 1 additional file(s)/section(s)
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+`benchmark/swebench/runs/iter-10/proposal.md` を作成しました。内容を簡潔にまとめます。
+
+---
+
+## proposal.md の要約
+
+**カテゴリ: E — 曖昧文言の具体化**
+
+**改善仮説:**
+Step 4（Interprocedural tracing）の Rules 第一項にある否定形の禁止規則
+「Do not infer behavior from the name.」は、何をすべきかを示していない。
+これを肯定形の行動指示に補完することで、VERIFIED 欄の記入精度が上がり、
+名前依存の誤推論を減らせる。
+
+**変更内容（1行、hard limit 5行以内）:**
+
+```
+変更前:
+- Read the actual definition. Do not infer behavior from the name.
+
+変更後:
+- Read the actual definition and summarize its control flow in the Behavior column. Do not infer behavior from the name.
+```
+
+**選定理由:**
+- 変更は既存行への文言追加のみ。新規ステップ・フィールド・セクションなし。
+- compare / diagnose / explain 全モードで使われる Step 4 に波及するため overall 品質に効く。
+- failed-approaches.md の3原則すべてに非抵触（探索指示ではなく記録規則の精緻化）。
+`benchmark/swebench/runs/iter-10/proposal.md` を作成しました。内容を簡潔にまとめます。
+
+---
+
+## proposal.md の要約
+
+**カテゴリ: E — 曖昧文言の具体化**
+
+**改善仮説:**
+Step 4（Interprocedural tracing）の Rules 第一項にある否定形の禁止規則
+「Do not infer behavior from the name.」は、何をすべきかを示していない。
+これを肯定形の行動指示に補完することで、VERIFIED 欄の記入精度が上がり、
+名前依存の誤推論を減らせる。
+
+**変更内容（1行、hard limit 5行以内）:**
+
+```
+変更前:
+- Read the actual definition. Do not infer behavior from the name.
+
+変更後:
+- Read the actual definition and summarize its control flow in the Behavior column. Do not infer behavior from the name.
+```
+
+**選定理由:**
+- 変更は既存行への文言追加のみ。新規ステップ・フィールド・セクションなし。
+- compare / diagnose / explain 全モードで使われる Step 4 に波及するため overall 品質に効く。
+- failed-approaches.md の3原則すべてに非抵触（探索指示ではなく記録規則の精緻化）。
+- 研究コア構造（番号付き前提・仮説駆動探索・手続き間トレース・必須反証）は維持。
+
+session_id: 20260412_082912_8215a7
