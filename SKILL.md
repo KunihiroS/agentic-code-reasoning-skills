@@ -84,9 +84,7 @@ OBSERVATIONS from [filename]:
   O[N]: [another finding with file:line]
 
 HYPOTHESIS UPDATE:
-  H[M]: CONFIRMED / REFUTED / REFINED — [explanation];
-        if REFUTED or REFINED, revisit the premises P[N] that supported H[M]
-        and correct any that no longer hold before proceeding.
+  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]
 
 UNRESOLVED:
   - [remaining questions]
@@ -456,7 +454,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified — e.g., via exception handlers, default values, or guard clauses. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
 
 ### General

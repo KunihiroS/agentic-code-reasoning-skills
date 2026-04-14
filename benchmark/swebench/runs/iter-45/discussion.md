@@ -1,192 +1,215 @@
-# Iteration 45 — 監査コメント
+# Iteration 45 — Discussion
 
 ## 総評
-提案の問題意識（「コード差異を見つけただけで NOT_EQ に飛ぶ短絡を防ぎたい」）自体は妥当です。しかし、**今回の実効差分は Compare の最終 `COUNTEREXAMPLE` 文言を assertion-centric に厳格化するだけ**であり、既存の失敗履歴と照合すると **BL-2 / BL-15 / BL-16 / iter-42却下理由の再発**にかなり近いです。特に、**変更前との差分で見ると NOT_EQ 側にしか直接作用しない**ため、提案が主張する EQUIV 改善メカニズムは弱いです。
+
+提案の狙いは理解できる。変更は 1 行で小さく、既存の Step 3 に埋め込むため複雑性の増加も限定的である。また、「仮説を立てた瞬間に、その仮説を覆す証拠を意識させる」という方向性自体は、一般的な自己検証・較正・反証志向の研究潮流とは整合する。
+
+ただし、監査上は 2 点が重い懸念である。
+
+1. failed-approaches.md が禁じている「確信度に追加のメタ判断を結びつける」失敗方向と、機能的にかなり近い。
+2. 実効的な改善効果が EQUIVALENT 側に偏っており、NOT_EQUIVALENT 側への上積みは弱い。つまり「片方向にしか効かない」リスクがある。
+
+このため、現時点では承認は見送るのが妥当と判断する。
 
 ---
 
-## 1. Web 検索に基づく学術的・実務的評価
+## 1. 既存研究との整合性
 
-DuckDuckGo MCP で確認した関連知見:
+### 参照した Web ソース
 
-1. **Agentic Code Reasoning (arXiv)**  
-   URL: https://arxiv.org/abs/2603.01896  
-   要点:
-   - semi-formal reasoning は、**explicit premises / execution-path tracing / formal conclusion** を要求する「certificate」として働く。
-   - 精度向上の主因は、**分析ループ内でケースを飛ばさず追跡させること**にある。
-   評価:
-   - 提案の「premise 参照型」発想そのものは、この論文の方向性と整合する。
-   - ただし今回の適用先は **分析本体ではなく final COUNTEREXAMPLE**。論文の効き方は主に exploration/trace 過程の構造化であって、**最後の出力証明書の wording 強化だけでは弱い**。
+1. Agentic Code Reasoning
+   - URL: https://arxiv.org/abs/2603.01896
+   - 要点: 半形式的推論は、明示的な premises・execution path tracing・formal conclusion を要求することで、 unsupported claim や case skip を減らす「certificate」として機能する。
+   - 本提案との関係: Step 3 の時点で仮説の反転条件を言語化させる発想は、この「推論過程を構造化して飛躍を減らす」という原論文の方向性と概ね整合する。
 
-2. **A Literature Survey of Assertions in Software Testing (Springer, ECBS 2023)**  
-   URL: https://link.springer.com/chapter/10.1007/978-3-031-49252-5_8  
-   要点:
-   - assertions は program behavior をチェックする有用な自動化技法であり、研究上も重要な test oracle。
-   - 一方で assertion 研究は test oracle 全体の一部であり、テストの観測・検証は assertion 文だけに尽きない。
-   評価:
-   - 「テストが何を観測しているかへ接続せよ」という方向は支持できる。
-   - しかし **観測点を assertion 行へ固定するのは過剰**。実務上のテスト失敗は例外、setup/teardown、副作用、状態変化など assertion 文外でも生じるため、assertion-only 化にはリスクがある。
+2. Reflexion: Language Agents with Verbal Reinforcement Learning
+   - URL: https://arxiv.org/abs/2303.11366
+   - 要点: 言語的な自己反省を明示的に行わせることで、逐次的な意思決定やコーディング成績が改善する。
+   - 本提案との関係: 仮説時点で「何が見つかれば見方を変えるか」を言わせるのは軽量な reflection とみなせるため、方向性としては支援材料になる。
 
-3. **On the Rationale and Use of Assertion Messages in Test Code (arXiv 2408.01751)**  
-   URL: https://arxiv.org/abs/2408.01751  
-   要点:
-   - assertion messages は failure troubleshooting、test understandability、documentation に有益。
-   - assertion は失敗理解の重要な手掛かりだが、実務ではそれだけで failure diagnosis が完結するとは言っていない。
-   評価:
-   - assertion を参照させること自体には実務的価値がある。
-   - ただしこの知見は **「assertion を見ると理解しやすい」** を支持するものであって、**「NOT_EQ の証明は assertion 行参照を必須にすべき」** までは支持しない。
+3. Chain-of-Verification Reduces Hallucination in Large Language Models
+   - URL: https://arxiv.org/abs/2309.11495
+   - 要点: まず回答を出し、その後で検証質問を立て、独立に検証することで hallucination を減らす。
+   - 本提案との関係: 初期仮説に対して検証観点を明示するのは CoVe 的発想と整合する。ただし CoVe の本質は「独立した verification step」を持つことにあり、今回提案の 1 行追加を直接支持する強い証拠ではない。
 
-### 学術的・実務的な結論
-- **支持できる点**: テストの観測対象まで追わせたい、という狙いは研究・実務の両面で妥当。
-- **支持しにくい点**: その実装を **COUNTEREXAMPLE の assertion-centered な最終出力制約**として入れるのは、研究が示す改善メカニズム（探索過程の構造化）より弱く、しかも観測点を assertion に寄せすぎている。
+4. Let’s Verify Step by Step
+   - URL: https://arxiv.org/abs/2305.20050
+   - 要点: outcome supervision より process supervision の方が複雑推論で有効であり、中間推論の質管理が効く。
+   - 本提案との関係: CONFIDENCE に補助説明を加えて中間推論を質的に管理する方向性は、一般論としては整合的。
 
----
+5. Language Models (Mostly) Know What They Know
+   - URL: https://arxiv.org/abs/2207.05221
+   - 要点: 適切な形式で問えば、モデルは自分の正答可能性をある程度較正できる。
+   - 本提案との関係: CONFIDENCE を単なる high/medium/low から、反転条件付きの較正的表現にする発想には一定の理論的追い風がある。
 
-## 2. Exploration Framework のカテゴリ選択は適切か
+### 監査判断
 
-**結論: カテゴリ F としての新規性は弱いです。**
+整合性は「中程度にある」が、「直接の実証裏付け」は弱い。
 
 理由:
-- iter-8 ですでに **localize の divergence 観点を compare に移植**する F 案が試されている。
-- iter-38 でも **localize の premise-reference 型 claim を compare に移植**する F 案が提案されている。
-- iter-39/40/43 周辺でも、論文の anti-skip 機構や downstream verification を compare に移植する F 系が繰り返されている。
-
-したがって今回の提案は、表現上は F だが、**「localize の premise-reference パターンを compare に持ち込む」系統としては既出**です。しかも適用先が `COUNTEREXAMPLE` なので、F の中でも既存の「出力証明強化」寄りであり、新規カテゴリを選べているとは言い難いです。
+- 既存研究は broadly には「自己検証」「プロセス supervision」「反証志向」が有効だと示している。
+- しかし今回の提案固有の形、つまり「仮説欄の CONFIDENCE 行に反転条件を 1 フレーズ添える」という設計を直接支持する研究は、今回確認できた範囲ではない。
+- したがって、研究整合性はプラスだが、承認の決め手になるほど強い根拠ではない。
 
 ---
 
-## 3. EQUIV / NOT_EQ の両方への影響と、実効的差分の分析
-
-### 実効的差分
-変更前:
-```text
-COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-  Test [name] will [PASS/FAIL] with Change A because [reason]
-  Test [name] will [FAIL/PASS] with Change B because [reason]
-  Therefore changes produce DIFFERENT test outcomes.
-```
-
-変更後:
-```text
-COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-  Test [name]: assertion checks [specific condition — cite file:line]
-  With Change A, this assertion [PASSES/FAILS] because [trace ...]
-  With Change B, this assertion [FAILS/PASSES] because [trace ...]
-  Therefore the assertion produces DIFFERENT outcomes under Change A vs Change B.
-```
-
-### 重要な点
-この差分は **`required if claiming NOT EQUIVALENT` のブロックにしか存在しません**。  
-つまり、**エージェントが EQUIV と判断した経路では一切発火しない**変更です。
-
-### EQUIV への影響
-- 提案文では EQUIV 偽陰性の改善を主張しているが、直接の構造変化は EQUIV 経路にない。
-- 期待できるのは「NOT_EQ を書こうとしたときに書きにくくなるので、結果として NOT_EQ を出しにくくなる」程度。
-- これは本質的に **EQUIV 推論の質向上ではなく、NOT_EQ 側の閾値上昇**です。
-
-### NOT_EQ への影響
-- 真の NOT_EQ ケースでは、これまでより **assertion 行・file:line・asserted condition までの説明**が必要になる。
-- 複雑な失敗（例外、setup/teardown、副作用、複数観測点）では、証明コストが上がり、UNKNOWN/EQUIV への流出リスクが増える。
-
-### 一方向にしか作用しないか
-**はい。実効差分はほぼ一方向です。**
-- 変更対象は NOT_EQ の最終証明書のみ。
-- EQUIV 側の `NO COUNTEREXAMPLE EXISTS` も、ANALYSIS ループも、checklist も不変。
-- よってこの変更は、表現上は A/B 対称でも、**変更前との差分で見ると NOT_EQ にだけ追加制約がかかる**。
-
-これは failed-approaches の共通原則 #6
-> 「対称化」は既存制約との差分で評価せよ
-にそのまま抵触します。
-
----
-
-## 4. failed-approaches ブラックリスト / 共通原則との照合
-
-### 4.1 ブラックリストとの実質同型性
-
-#### BL-2: NOT_EQ 判定の証拠閾値・厳格化
-- BL-2 には **counterexample にアサーションまでのトレースを要求**した失敗が明記されている。
-- 今回の提案はまさに `COUNTEREXAMPLE` に対し、assertion condition と file:line を追加要求している。
-- 「Claims ではなく COUNTEREXAMPLE だから違う」という主張は弱い。**実効としては NOT_EQ の立証責任引き上げ**で同じ。
-
-#### BL-15: COUNTEREXAMPLE 文言変更
-- BL-15 は `COUNTEREXAMPLE` の wording をいじっても upstream の探索は改善しない、という失敗。
-- 今回も変更箇所は `COUNTEREXAMPLE` のみで、**探索行動ではなく最終証明書の文言変更**。
-- したがって BL-15 の再発色が濃い。
-
-#### BL-16 / iter-44 / iter-42 却下理由との近さ
-- BL-16 は「内部コード差分ではなく観測点で比較せよ」という framing を output 側へ入れて失敗。
-- iter-44 は「テストのアサーションが検査する観測対象」への比較単位移行を提案しており、今回と問題設定がかなり近い。
-- iter-42 再提案の冒頭でも **assertion-centric なテンプレート変更は BL-5 / BL-8 / BL-11 / BL-14 / BL-16 の再発**として退けられている。
-
-### 4.2 共通原則との照合
-
-#### 原則 #1: 判定の非対称操作
-抵触します。  
-文言上は A/B 対称でも、**NOT_EQ を主張するときだけ追加証明を要求**しているため、判定の実効差分は非対称です。
-
-#### 原則 #2: 出力側の制約は効果がない
-抵触します。  
-今回の変更は分析ループではなく、最終 `COUNTEREXAMPLE` のテンプレート変更です。これは典型的な **出力側の制約**です。
-
-#### 原則 #3: 探索量の削減
-直接は抵触しませんが、逆方向に **証明コストを増やすだけで探索改善がない**ため、総合的には不利です。
-
-#### 原則 #4: 同じ方向の変形は表現を変えても同じ結果
-抵触します。  
-「assertion checks を1行追加」「premise-reference を移植」という表現の違いがあっても、効果の本質は **NOT_EQ を書きにくくすること**です。
-
-#### 原則 #5: 入力テンプレートの過剰規定
-assertion 固定という意味で近いです。特に BL-11 で指摘されたように、テスト結果のメカニズムを assertion に寄せるのは視野狭窄を招きます。
-
-#### 原則 #6: 対称化の実効差分
-明確に抵触します。  
-新規制約は `NOT EQUIVALENT` ブロックのみに追加され、EQUIV 側には差分がありません。
+## 2. Exploration Framework のカテゴリ選定は適切か
 
 ### 判定
-**承認: NO**
+
+カテゴリ D（メタ認知・自己チェック）は概ね妥当。
+
+### 理由
+
+- 変更の主機能は「次に何を読むか」を直接固定することではなく、「いま持っている仮説への過信を下げる」ことにある。
+- その意味で、B（取得方法）や C（比較枠組み）より D が中心カテゴリである。
+- 一方で、実装形式は単に Step 3 テンプレートの文言を変えるだけなので、E（表現・フォーマット）としての側面も強い。
+
+### 監査コメント
+
+カテゴリ D として分類するのは許容範囲だが、純粋な D というより「D 寄りの E」である。分類ミスとまでは言わないが、提案書は D であることをやや強く言い過ぎている。
 
 ---
 
-## 代替案（未試行カテゴリから）
+## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定への作用
 
-### 提案カテゴリ: A — 推論の順序・構造を変える
+### EQUIVALENT への作用
 
-**代替アプローチ案**:  
-`ANALYSIS OF TEST BEHAVIOR` の各 relevant test で、先に **A/B それぞれの「テストが実際に観測する outcome」** を書かせ、その後で PASS/FAIL 比較を書くように順序を明示する。
+ここには比較的はっきり効く可能性がある。
 
-例の方向性:
-- 先に `Observed under Change A: [returned value / raised exception / visible state change]`
-- 次に `Observed under Change B: [...]`
-- 最後に `Therefore this test outcome is SAME/DIFFERENT`
+- EQUIVALENT 側の典型失敗は、差分の影響範囲を十分に潰し切らないまま「同じだろう」と早期収束すること。
+- CONFIDENCE に「何が見つかればこの確信が変わるか」を書かせると、探索者が未確認の反証候補を自覚しやすくなる。
+- そのため、「差分が実はテストに届くのに見落とす」タイプの誤りを減らす可能性はある。
 
-理由:
-- 変更が **main analysis loop** に作用し、final counterexample wording だけをいじらない。
-- assertion 固定にせず、例外・状態変化・副作用も扱える。
-- EQUIV / NOT_EQ の両方に同じ順序変更がかかるため、実効差分が片側に寄りにくい。
+### NOT_EQUIVALENT への作用
 
-※これは「新しい記録欄を大量追加する」方向ではなく、**既存 Claim → Comparison の順序関係を outcome-first に整理する**軽量な構造変更として検討するのがよいです。
+ここへの効果は限定的。
+
+- compare モードにはすでに
+  - structural triage
+  - per-test tracing
+  - mandatory counterexample
+  - pre-conclusion self-check
+  がある。
+- NOT_EQUIVALENT を正しく言うには、最終的に「どの test assertion がどう分岐するか」を示す必要があるため、Step 3 の CONFIDENCE 補助は決定因ではない。
+- せいぜい、「最初に見つけた差分が本当に relevant か」を少し疑いやすくする補助効果がある程度。
+
+### 片方向性の確認
+
+理論上は両方向に作用しうるが、実効差分はかなり非対称で、主に EQUIVALENT 側に寄る。
+
+- EQUIVALENT: 早期収束・確証バイアスへの抑制として効きうる
+- NOT_EQUIVALENT: 既存の counterexample obligation がすでに強いため、上積みは小さい
+
+したがって、「両方に効く」と一般化しすぎるのは危険である。実効的には EQUIVALENT 寄りの変更であり、片方向に近い。
 
 ---
 
-## 5. 全体の推論品質への期待効果
+## 4. failed-approaches.md の汎用原則との照合
 
-今回案のままでは、全体品質の向上は限定的か、むしろ悪化リスクが高いです。
+### 提案側の主張
 
-- 良い点: NOT_EQ を安易に主張する雑な反例を多少は抑える可能性がある。
-- 悪い点:
-  - 反例構成のコストだけ上がり、分析そのものは改善しない。
-  - assertion に観測点を寄せすぎて、例外・setup/teardown・副作用ベースの差異を取りこぼしうる。
-  - EQUIV 改善の根拠が「NOT_EQ を出しにくくする」ことに依存しており、汎用的な推論力向上ではない。
+提案書は「Step 3 に置くから Step 5.5 の禁則には触れない」と説明している。
 
-したがって、**全体の推論品質を底上げする変更としては弱い**と判断します。
+### 監査判断
+
+文面上は回避しているが、機能上は失敗原則にかなり近い。
+
+#### (a) 「探索で探すべき証拠の種類を事前固定しすぎる」への近さ
+
+提案は open-ended であるため、厳密な固定ではない。ここは提案書の反論に一理ある。
+
+ただし実際には、各仮説に対して「この仮説を崩す証拠」を先に 1 つ言語化させるので、探索者はその imagined falsifier を中心に探索しやすくなる。これは探索の自由度を少し削る。
+
+つまり、非抵触と言い切るのは強すぎる。より正確には「弱い形で接近している」である。
+
+#### (b) 「探索の自由度を削りすぎない」への近さ
+
+1 フレーズ追加なので負荷は軽いが、探索開始時点の認知フレームを固定する副作用はある。特に compare では、差分の表れ方が test path / import path / fixture path / config path など複数ありうるため、先に 1 つの overturn condition を想定させると視野が細るおそれがある。
+
+#### (c) 「結論直前の自己監査に新しい必須メタ判断を増やしすぎない」への近さ
+
+形式上は Step 3 なので、この原則への直接抵触ではない。
+
+しかし failed-approaches.md の本質は「確信度に追加のメタ評価軸を結びつけると、推論を萎縮・複雑化させやすい」という点にある。今回の変更はまさに CONFIDENCE にメタ評価を足すものであり、位置を前にずらしただけで同じ失敗族に属する。
+
+### 総合判定
+
+「完全に非抵触」とは言えない。むしろ本質的には blacklist の近傍にある。
+
+私の評価は以下:
+- 形式上の一致: していない
+- 機能上の類似: 強い
+- リスク水準: 中程度以上
 
 ---
 
-## 6. 結論
+## 5. 汎化性チェック
 
-- 問題設定は理解できるが、実装位置が悪いです。  
-- `COUNTEREXAMPLE` の assertion-centric 強化は、既存研究の「探索過程の構造化」という効き方より弱く、かつ failed-approaches の BL-2 / BL-15 / BL-16 と実質的に重なります。  
-- 変更前との差分で見ると **NOT_EQ 側にしか直接作用しない**ため、提案が主張する EQUIV 改善は構造的に裏付けられていません。
+### ベンチマーク固有情報の混入チェック
 
-**承認: NO（理由: BL-2/BL-15/BL-16 系の再発であり、実効差分が NOT_EQ 側の立証責任引き上げに偏るため）**
+明確な違反は見当たらない。
+
+含まれていないもの:
+- 特定リポジトリ名
+- 特定テスト名
+- 特定 benchmark case ID
+- 対象コードベース固有の関数名・クラス名
+- 対象リポジトリ由来の実コード断片
+
+含まれているもの:
+- `SKILL.md 77 行目付近` という行番号参照
+- `CONFIDENCE: high / medium / low ...` という SKILL.md 自身の文言引用
+- `compare mode` や `EQUIVALENT` といった一般概念
+
+### 監査判断
+
+これらは benchmark overfitting の証拠ではない。
+
+特に SKILL.md 自身の変更前後引用は、Objective.md の監査ルーブリック上も本来は許容される類である。したがって、point 5 の厳格 literal 読みでは「コード断片がある」と言えなくもないが、監査上は違反として数えるべきではない。
+
+### ドメイン依存性チェック
+
+- 提案は特定言語・特定フレームワークを明示的には仮定していない。
+- ただし説明の重心が compare / EQUIVALENT に寄りすぎているため、diagnose / explain / audit-improve への波及効果は十分論証されていない。
+- そのため「言語依存」は弱いが、「タスク依存」はややある。
+
+結論として、汎化性はおおむね保たれているが、恩恵の説明が compare 側へ偏っている。
+
+---
+
+## 6. 全体の推論品質がどう向上すると期待できるか
+
+### 期待できる改善
+
+- 仮説形成の瞬間に、未確認の反証可能性を意識させる
+- high confidence の乱発を抑えやすくする
+- 次の探索先を「確信の補強」ではなく「確信の揺らぎ点の確認」に向けやすくする
+
+### 限界
+
+- 既存の Step 5 / Step 5.5 / compare の counterexample obligations と役割が近く、追加の価値が重複しやすい
+- 反転条件を 1 つ言語化することで、かえってその条件に探索を寄せる危険がある
+- compare 以外のモードでどう効くかが弱く、skill 全体の改善としては根拠が薄い
+
+### 実務的評価
+
+「少し良くなる可能性」はあるが、「既存失敗原則に触れずに安全に上積みできる改善」とまでは言えない。期待値はプラスでも、blacklist 近傍のため採用優先度は低い。
+
+---
+
+## 結論
+
+この提案の長所は以下である。
+- 小変更である
+- 一般的な自己検証研究とは方向性が合う
+- EQUIVALENT 側の premature closure を抑える可能性がある
+
+しかし短所の方が監査上は重い。
+- failed-approaches.md の「確信度に追加メタ判断を結びつける」失敗方向と本質的に近い
+- 実効差分が EQUIVALENT 側に偏り、NOT_EQUIVALENT 側の改善根拠が弱い
+- 既存の refutation / counterexample 機構との役割重複が大きい
+
+よって、現時点では見送りが妥当。
+
+承認: NO（理由: failed-approaches.md の禁則と機能的に近く、改善効果が EQUIVALENT 側へ偏る一方で、NOT_EQUIVALENT 側の上積み根拠が弱いため）
