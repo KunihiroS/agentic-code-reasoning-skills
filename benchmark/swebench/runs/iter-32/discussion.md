@@ -1,258 +1,212 @@
-# Iteration 32 — discussion
+# Iteration 32 — 監査ディスカッション
 
 ## 総評
 
-**現案は承認できません。**
-問題設定自体（「コード差分を見つけただけで NOT_EQ に飛ぶ」「downstream で差分が吸収される可能性を見落とす」）は妥当ですが、**提案された変更の実効差分は過去に既に危険だと判定したものとほぼ同型**です。
+提案の狙い自体は妥当です。とくに compare モードで「見つかった差異が本当にテスト境界で観測可能か」を問う方向は、観測可能性に基づく等価性判断として一般原則に合っています。
 
-特に今回の提案は、
-- 既存の Guardrail 5 がすでに含んでいる `downstream code does not already handle ...` の compare 向け言い換えであり、
-- 実際の発火点は **「内部差分を見つけた後」** なので、
-- 変更前との差分としては **NOT_EQ 候補局面にだけ追加慎重さを入れる** 方向に作用します。
+ただし、今回の実効差分は
 
-これは **iter-30 時点で既に監査で却下した懸念と同じ** です。
+- `Test outcome same: YES / NO`
+  から
+- `Test outcome same: YES / NO — if NO, state which assertion diverges and why the difference is observable at the test boundary`
 
----
+への1行追加であり、直接効くのは `NO` を書く場合だけです。
 
-## 1. Web 検索に基づく妥当性評価（DuckDuckGo MCP）
+そのため、提案文が主張する
 
-まず透明性のために記します。`ddg_search_search` では複数回検索を試しましたが、今回は DuckDuckGo 側の bot detection で結果を取得できませんでした。代わりに、**MCP の `ddg_search_fetch_content` を用いて既知の関連論文ページ本文を取得**し、その内容を根拠に評価します。
+- false NOT_EQUIVALENT の抑制
+- false EQUIVALENT の抑制
 
-### 1-1. Agentic Code Reasoning
-- URL: https://arxiv.org/abs/2603.01896
-- MCP 取得要点:
-  - semi-formal reasoning は **explicit premises / execution-path tracing / formal conclusions** を要求し、unsupported claim を防ぐ「certificate」として機能する。
-  - patch equivalence を含む複数タスクで精度改善を報告している。
-- 本提案への含意:
-  - 「下流まで追うべき」という問題意識そのものは原論文と整合する。
-  - ただし、その知見は **すでに SKILL.md の Guardrail 5 に反映済み** であり、今回の変更は新規導入というより既存ガードレールの compare-specific な再表現に留まる。
+のうち、前者には直接効きますが、後者には直接は効きません。ここが今回の最大の監査論点です。
 
-### 1-2. LLMDFA: Analyzing Dataflow in Code with Large Language Models
-- URL: https://arxiv.org/abs/2402.10754
-- MCP 取得要点:
-  - reliable な code analysis のために、問題を複数のサブタスクへ分解し、program values の依存関係や path feasibility を扱う。
-  - 幻覚を抑えるには、単なる説明追加ではなく、**分析手順そのものの分解と検証** が重要とされる。
-- 本提案への含意:
-  - 「差分が下流の観測点まで伝播するか」を見る発想自体は学術的に支持できる。
-  - しかし今回の提案は **Guardrail に 1 文足すだけ** で、LLMDFA のようなサブタスク分解や検証行動の追加にはなっていない。したがって、研究的方向性は合うが、**この実装粒度で効果が出る根拠は弱い**。
+結論から言うと、方向性はよい一方で「両方向に効く改善」という説明に対して実際の差分が片方向です。よって現状案は承認しません。
 
-### 1-3. SemCoder: Training Code Language Models with Comprehensive Semantics Reasoning
-- URL: https://arxiv.org/abs/2406.01006
-- MCP 取得要点:
-  - Code LLM は static text pattern は得意でも、**execution effects / dynamic states / overall input-output behavior** の統合が弱い。
-  - local execution effect と overall behavior をつなぐ reasoning が重要。
-- 本提案への含意:
-  - 「内部差分 ≠ テスト結果差分」という主張は妥当。
-  - ただし SemCoder が示しているのは **局所差分から観測結果までをつなぐ実際の reasoning** の重要性であり、今回案のような注意書き追加がその reasoning を十分に増やすとは限らない。
+## 1. 既存研究との整合性
 
-### 1-4. Code Prompting Elicits Conditional Reasoning Abilities in Text+Code LLMs
-- URL: https://aclanthology.org/2024.emnlp-main.629/
-- MCP 取得要点:
-  - 入力表現の構造化により、entity/state tracking が改善する。
-  - 一方で prompt/template の細かな表現差が挙動に大きく影響しうる。
-- 本提案への含意:
-  - 文言変更が全く無意味とは言えない。
-  - しかし逆に言えば、**小さな wording 差分でも片方向のアンカーとして働く** ため、安全性は高くない。今回の変更は「internal behavior difference」を前景化した後に追加確認を要求するので、NOT_EQ 側の自己証明負荷として作用するリスクがある。
+DuckDuckGo MCP で取得した参照 URL と要点:
 
-### 1-5. Anchoring bias in large language models: an experimental study
-- URL: https://link.springer.com/article/10.1007/s42001-025-00435-2
-- MCP 取得要点:
-  - LLM は initial framing に強く影響される。
-  - 単純な CoT や reflection では anchoring bias は十分に緩和されない。
-- 本提案への含意:
-  - 「内部差分を見つけたら assertion まで届くか確認せよ」という wording は、意図としては慎重化だが、実際には **“difference” を先にアンカーとして強調** する。
-  - その結果、EQUIV 偽陽性を減らすどころか、真の EQUIV ケースでも「差異があるのだから差は重要だろう」という方向へ注意を固定する危険がある。
+1. https://arxiv.org/abs/2603.01896
+   - Agentic Code Reasoning 原論文。
+   - 明示的前提、実行経路トレース、形式的結論を要求する semi-formal reasoning が、未根拠な結論やケース飛ばしを防ぐという主張。
+   - 今回の提案は「差異を見つけたあと、その差異が観測可能な失敗に届くかを明示する」という点で、この certificate 的発想と整合する。
+   - ただし原論文のコアは「個別項目ごとの根拠付き追跡」であり、片側の判定枝だけを強化するより、EQUIVALENT/NOT_EQUIVALENT の両側で観測根拠を揃える方がより自然。
 
-### 小結
-- **学術的妥当性（問題意識）**: ある
-- **学術的妥当性（この具体的変更）**: 弱い
-- **実務的評価**: downstream propagation の確認自体は良い習慣だが、今回の変更は既存 Guardrail 5 と重複し、しかも差異発見後にのみ実効性を持つため、回帰リスクが高い
+2. https://en.wikipedia.org/wiki/Observational_equivalence
+   - observational equivalence は「observable implications において区別不能」であること。
+   - compare モードの等価性判定を「テスト境界で観測可能な差」に結びつける今回の提案は、この一般概念に整合する。
+   - 逆に言えば、観測可能性を持ち出すなら YES/NO の両方で観測ベースの説明責務を揃えた方が概念的には一貫する。
 
----
+3. https://en.wikipedia.org/wiki/Oracle_(software_testing)
+   - テスト oracle は、入力に対する正しい出力・期待結果を与える情報源。
+   - 既存テストでは assertion がその oracle の具体化であることが多い。
+   - 提案の「どの assertion が分岐するかを書け」は、差異を oracle レベルに接続する要求として妥当。
+   - ただし oracle ベースで考えるなら、「差異が oracle に届かないので same」と言う側にも本来は説明責務がある。
 
-## 2. Exploration Framework のカテゴリ選択は適切か？同一カテゴリが既に試されていないか？
+4. https://en.wikipedia.org/wiki/Assertion_(software_development)
+   - assertion はプログラム状態について、その地点で常に真であるべき述語。
+   - テスト境界での assertion divergence を明示させるのは、差異を最終観測点へ接続するという意味で妥当。
+   - ただし assertion への接続要求が `NO` の場合だけに限定されると、観測可能性フレームの導入としては半分だけの適用になる。
 
-### 判定
-**適切ではありません。主張されているカテゴリ F の新規性は弱く、同種の方向は既に試され、しかも一度監査で退けられています。**
+5. https://en.wikipedia.org/wiki/Counterexample-guided_abstraction_refinement
+   - 反例を具体化して、その反例が本物かどうかで推論精度を上げる枠組み。
+   - 今回の提案は、NOT_EQUIVALENT 主張時に「どの assertion が割れるか」という具体反例の質を上げる点で似た効果がある。
+   - しかし EQUIVALENT 側では新しい refutation obligation は増えないため、反例不在の吟味強化としては弱い。
 
-### 理由
-提案書はカテゴリ F（原論文の未活用アイデア導入）としていますが、`docs/design.md` では既に
-- error analysis を guardrails に翻訳した
-- incomplete reasoning chains / downstream handling の見落としを Guardrail に反映した
-と整理されています。
+小結:
+- 研究・一般原則との整合性はある。
+- ただし整合しているのは主に「観測可能性を明示する」という方向性であって、今回の1行差分がその原理を十分に両方向へ実装しているとは言いにくい。
 
-実際、現行 `SKILL.md` の Guardrail 5 はすでに次を含みます。
+## 2. Exploration Framework のカテゴリ選定は適切か
 
-> verify that downstream code does not already handle the edge case or condition you identified
-
-したがって今回の案は、**未活用アイデア導入ではなく、既存ガードレールの compare-specific 言い換え** です。実装の性質としては F より **E（表現改善）寄り** です。
-
-### 過去イテレーションとの照合
-この方向はすでに近い形で試されています。
-
-- **iter-30 の監査で、ほぼ同じ方向が NO 判定**
-  - `benchmark/swebench/runs/iter-30/discussion.md` では、Guardrail 5 への compare 向け追記案について
-  - **「既存 Guardrail 5 の言い換えに留まり新規性が弱く、差異発見後の追加確認として実効的に NOT_EQ 側へ偏る」**
-  - と明確に却下されています。
-
-- 関連する失敗・却下方向
-  - BL-6: 差異方向への追加 trace 義務
-  - BL-14: DIFFERENT 主張時の backward verify
-  - iter-30 discussion: propagation/downstream/assertion 到達確認の Guardrail 追記は危険と判断済み
-
-よって、**カテゴリ F の未試行案とは評価できません**。
-
----
-
-## 3. EQUIV / NOT_EQ の両方への影響と、変更前との差分分析
-
-## 3.1 変更前との差分
-現行 Guardrail 5:
-
-> After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified.
-
-提案後の追加文:
-
-> For `compare` mode specifically: when you find that two changes produce different internal behavior, verify that the behavior difference propagates all the way to what the test assertion actually evaluates ...
-
-この追加文の発火条件は明確です。
-**「two changes produce different internal behavior を見つけたとき」**です。
-
-つまり、変更前との差分として新たに入るのは、
-- SAME/EQUIV を検討している局面一般ではなく、
-- **差異を見つけた後の局面**
-への追加確認です。
-
-## 3.2 EQUIV への影響
-### 期待できる正の効果
-- EQUIV 偽陽性の典型である「内部差分発見 → 即 NOT_EQ」を抑制する可能性はある。
-- 提案者が狙っている failure mode には理屈上は合う。
-
-### ただし限界が大きい
-- この failure mode は **すでに Guardrail 5 の射程内**。
-- よって今回の改善余地は、新しい推論操作の導入ではなく **salience の微調整** に近い。
-- EQUIV 側に効くとしても、改善幅は限定的と見るべき。
-
-## 3.3 NOT_EQ への影響
-こちらの回帰リスクの方が大きいです。
-
-- 真の NOT_EQ ケースでも、まずは内部差分を見つける。
-- その直後にさらに「assertion まで届くか」を確認させるので、実効的には **NOT_EQ 候補時の追加慎重化** になる。
-- wording 上は対称でも、変更前との差分は **NOT_EQ 側の立証負荷増** に近い。
-
-この点は BL-6 / BL-14 と同型です。
-
-## 3.4 一方向にしか作用しないか？
-**はい。実効差分はかなり一方向です。**
-
-提案書は「両方向に効く」と述べていますが、差分評価は wording ではなく **変更前から何が増えるか** で見るべきです。今回増えるのは、
-- 差異発見後
-- compare モードで
-- assertion までの propagation 確認
-を要求することです。
-
-これは実質的に **NOT_EQ 候補時だけに追加行動を要求する** もので、EQUIV 側に同程度の新規義務は増えません。
-
----
-
-## 4. failed-approaches.md のブラックリスト・共通原則との照合
-
-### 結論
-**この提案はブラックリスト・共通原則に抵触します。承認不可です。**
-
-## 4.1 BL との類似
-
-### BL-6（Guardrail 4 の「対称化」）との類似
-BL-6 の失敗本質は、
-- 表面上は対称
-- だが既存制約との差分では NOT_EQ 側にだけ新規制約が乗った
-ことでした。
-
-今回も同じです。
-- 表面上: compare モード全体への補足
-- 実効差分: **差異を見つけた後だけ assertion 伝播確認を追加**
-
-したがって、**BL-6 の再発** とみなすべきです。
-
-### BL-14（Backward Trace 追加）との類似
-BL-14 は DIFFERENT 主張時に追加検証を要求し、NOT_EQ の立証責任を上げて失敗しました。
-今回の案も、backward という語は使っていないだけで、実質は
-- 関数レベル差異から
-- assertion まで
-- 因果連鎖をもう一段つなげ直せ
-という要求です。
-
-作用方向は BL-14 と同じです。
-
-### BL-15 / 共通原則 #2 に近い懸念
-今回の変更は出力ブロックではなく guardrail なので BL-15 と完全同一ではありません。
-ただし、**探索ステップそのものを構造的に変えず、文言レベルで慎重さを追加する** 点では近い懸念があります。研究が支持するのは tracing 行動の制度化であって、言い換えの追加ではありません。
-
-## 4.2 共通原則との照合
-
-- **原則 #1 判定の非対称操作**
-  - 抵触します。
-  - 発火条件が差異発見後なので、実効的には NOT_EQ 側の追加慎重化です。
-
-- **原則 #4 同じ方向の変更は表現を変えても同じ結果**
-  - 抵触します。
-  - propagation / downstream handling / assertion 到達確認という表現違いでも、効果方向は BL-6 / BL-14 と同じです。
-
-- **原則 #6 対称化は差分で評価せよ**
-  - 強く抵触します。
-  - wording 上は compare 全体向けでも、変更前との差分は差異発見後の追加確認だけです。
-
-- **原則 #12 アドバイザリな非対称指示も立証責任引き上げになる**
-  - 該当します。
-  - Guardrail は「助言」に見えても、モデルにとっては自己証明義務として作用します。
-
-よって、**承認: NO** です。
-
-### 別カテゴリからの代替案（未試行寄り）
-**カテゴリ B: 情報の取得方法を改善する** から、次の方向を提案します。
-
-> `compare` の relevant test 特定（D2）で、変更シンボルを直接参照するテストだけでなく、**その caller / wrapper / helper を経由して到達するテストを repo search で拾う** ことを明示し、最初に「最も近い oracle-bearing caller」を優先して追う。
+判定: 概ね適切。
 
 理由:
-- これは **判定閾値の操作ではなく、証拠の集め方** の改善。
-- 追加の慎重義務を NOT_EQ 側だけに課さない。
-- BL-12 のような固定順序化ではなく、**探索優先順位の改善** に留まる。
-- EQUIV/NOT_EQ の両方で relevant test の取りこぼしや過剰スコープを減らす可能性がある。
+- この変更は「何を探すか」よりも、「見つかった差異を compare モードでどう評価するか」を変える提案である。
+- したがって主分類は Objective.md のカテゴリ C「比較の枠組みを変える」、とくに「差異の重要度を段階的に評価する」に入れるのが自然。
+- 実際、提案は構造差分や edge case 差分を見つけた後、それが test boundary に届くかで差異の重みづけをしようとしている。
 
----
+ただし補足:
+- 実装内容は「新しい比較基準の導入」というより「NO を書くときの記述義務の追加」に近い。
+- そのため副次的にはカテゴリ D（メタ認知・自己チェック強化）にも少しまたがる。
+- それでも主たる作用点は compare テンプレート内部の差異評価なので、C とするのは不合理ではない。
 
-## 5. 全体の推論品質がどう向上すると期待できるか
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方への作用
 
-限定的には、
-- downstream handling を思い出しやすくする
-- コード差異とテスト差異の混同を少し減らす
-といった効果はありえます。
+### 3.1 NOT_EQUIVALENT への作用
 
-しかし期待できる改善は **構造的な推論能力向上ではなく、既存 Guardrail 5 の salience 微増** に留まります。しかもその salience 増加は差異発見後に集中するため、
-- 真の NOT_EQ での過剰慎重化
-- 結論遅延
-- UNKNOWN / EQUIV への揺り戻し
-を招くリスクの方が大きいです。
+ここには直接効きます。
 
-総じて、**全体品質の改善よりも回帰リスクが勝る** と判断します。
+期待できる改善:
+- 内部実装差異を見つけただけで NOT_EQUIVALENT と早合点する誤りを減らしやすい。
+- `NO` と書く以上は
+  - どの assertion が分岐するのか
+  - なぜ test boundary で観測可能なのか
+  を書く必要があるため、観測不可能な内部差異を過大評価しにくくなる。
+- 既存の COUNTEREXAMPLE セクションとも整合し、NOT_EQUIVALENT 証明の粒度が上がる。
 
----
+要するに、この変更の主効果は false NOT_EQUIVALENT の抑制です。
 
-## 6. 承認するか、修正を求めるか
+### 3.2 EQUIVALENT への作用
 
-### 結論
-**修正を求めます。現案のままでは承認できません。**
+ここには直接はほぼ効きません。
 
-### 主理由
-1. **カテゴリ F の新規性がない**
-   - downstream handling は既に Guardrail 5 に実装済み。
-2. **iter-30 で実質的に同型案が却下済み**
-   - 同じ懸念を繰り返している。
-3. **変更前との差分が一方向**
-   - 差異発見後の assertion propagation 確認は、実効的に NOT_EQ 側の追加慎重化。
-4. **failed-approaches の BL-6 / BL-14 / 原則 #6 / #12 に抵触**
-   - wording を変えただけで、効果方向は同じ。
+理由:
+- 新しい義務は `if NO` で始まっており、`YES` を書く場合には追加要求がない。
+- したがって「差異は見つけたが影響なし」と判断する側、すなわち false EQUIVALENT が起こりやすい側には、新しい記述強制がかからない。
+- 提案文では「影響なし短絡も減る」と書かれているが、文言差分そのものはそれを構造的には担保していない。
 
----
+既存 SKILL.md による間接カバーはある:
+- Guardrail #4: subtle differences を dismiss する前に relevant test を trace せよ
+- NO COUNTEREXAMPLE EXISTS: EQUIVALENT 主張時には反例があるならどんな形かを述べる
 
-**承認: NO（理由: 既存 Guardrail 5 の言い換えに留まり、変更前との差分が「差異発見後の追加確認」として実効的に NOT_EQ 側へ偏るため。BL-6 / BL-14 / 共通原則 #1・#4・#6・#12 の再発）**
+しかし重要なのは、これらは既存ルールであり、今回の差分が EQUIVALENT 側に新たに加える圧力ではないということです。
+
+### 3.3 実効差分の結論
+
+この提案は、説明上は両方向改善をうたっているが、実効差分としては片方向です。
+
+- 直接強化: NOT_EQUIVALENT
+- 間接効果のみ: EQUIVALENT
+
+監査観点 3 に対する回答としては、「片方向にしか作用しない度合いが強い」です。
+
+## 4. failed-approaches.md の汎用原則との照合
+
+### 原則1: 探索すべき証拠種類をテンプレートで事前固定しすぎない
+判定: 大筋で非抵触。
+
+- 今回の変更は、探索前に「どの種類の証拠を探せ」と増やすものではない。
+- 差異を `NO` と評価する際の根拠記述を具体化するだけで、探索空間そのものは固定していない。
+
+ただし軽微な注意:
+- assertion への接続を強く言いすぎると、将来的に「assertion 形式で説明できる差異しか拾わない」方向へ硬化するおそれはある。
+- ただし今回の1行だけなら、その懸念はまだ小さい。
+
+### 原則2: 探索ドリフト対策で探索の自由度を削りすぎない
+判定: 非抵触。
+
+- 読み始めの順序、境界の先確定、探索優先順位には触れていない。
+- 変更点は記録フェーズ寄りであり、探索経路を半固定する類ではない。
+
+### 原則3: 局所的な仮説更新を前提修正義務に直結させすぎない
+判定: 非抵触。
+
+- 仮説更新ループには手を入れていない。
+- premise 管理の負荷を増やす変更でもない。
+
+### 原則4: 結論直前の自己監査に新しい必須メタ判断を増やしすぎない
+判定: ほぼ非抵触。
+
+- Step 5.5 の self-check を増やしていない。
+- compare テンプレート内の1フィールド精緻化に留まる。
+
+補足:
+- とはいえ `NO` 側には新しい小さな判定ゲートが追加される。
+- ただしこれは自己監査の肥大化ではなく、既存 COUNTEREXAMPLE 義務の手前での明確化に近いので、failed-approaches の「危険な複雑化」とは本質的に別。
+
+小結:
+- failed-approaches.md の失敗原則の再演とは言いにくい。
+- 少なくとも「同じ失敗の言い換え」を強く疑う必要はない。
+
+## 5. 汎化性チェック
+
+### 5.1 具体的な数値 ID / リポジトリ名 / テスト名 / コード断片の有無
+
+判定: ルール違反ではない。
+
+確認結果:
+- ベンチマーク対象リポジトリ名: なし
+- テスト名: なし
+- ケース ID: なし
+- ベンチマーク固有のファイルパス・関数名・クラス名: なし
+- ベンチマーク実コード断片: なし
+
+含まれているもの:
+- `Iteration 32`
+- `カテゴリ C`
+- `Guardrail #4`
+- `Step 5.5`
+- SKILL.md 自身の変更前後の行引用
+
+これらはベンチマーク対象の固有識別子ではなく、改善プロセスと SKILL.md 自身への自己参照です。Objective.md の R1 基準に照らしても、SKILL.md の自己引用は減点対象外です。
+
+### 5.2 暗黙のドメイン依存性
+
+判定: 大きな問題はないが、少し注意点あり。
+
+- `assertion` や `test boundary` という語は、言語・フレームワークを問わず一般的な testing 概念として通用する。
+- そのため Django 固有、Python 固有、単体テスト固有の過剰適合ではない。
+
+ただし注意:
+- 一部の実テストは明示的 assertion というより、例外発生の有無、戻り値比較、スナップショット、ログ、副作用の確認などで oracle を持つ。
+- したがって「which assertion diverges」という表現は一般性は高いが、厳密には「which assertion / check / oracle observation diverges」の方がさらに汎化的。
+
+この点は軽微な汎化性懸念であり、即否決理由ではないが、表現上の改善余地です。
+
+## 6. 全体の推論品質への期待効果
+
+期待できる向上:
+- compare モードで、差異発見から NOT_EQUIVALENT 結論へ飛ぶ短絡を減らす。
+- 「観測可能な差かどうか」を書かせることで、内部状態差と test-oracle 差を分離しやすくなる。
+- COUNTEREXAMPLE 記述の質が上がり、NOT_EQUIVALENT 証明の説明責務が明確になる。
+
+期待しにくい向上:
+- false EQUIVALENT の抑制。
+- 提案文はここも改善対象としているが、実際の差分は YES 側の説明義務を増やしていない。
+- したがって overall 改善はあるとしても、提案文が言うほど対称的ではない。
+
+最も妥当な期待値:
+- 「全体の推論品質を広く底上げする変更」というより、
+- 「NOT_EQUIVALENT を出すときの観測可能性の立証を強め、過剰な非等価判定を減らす変更」
+として評価するのが正確です。
+
+## 最終判断
+
+判定要約:
+- 研究整合性: 良い
+- カテゴリ選定: 妥当
+- failed-approaches との関係: 大きな問題なし
+- 汎化性: 概ね良好
+- 最大の問題: 実効差分が `NO` 側にしか直接作用せず、提案文の「false EQUIVALENT も減る」という主張を支えきれていない
+
+承認: NO（理由: 変更の直接効果が NOT_EQUIVALENT 側に偏っており、EQUIVALENT 側の誤判定抑制を実効的には強化していないため。提案の説明と実際の1行差分に非対称性がある。）
