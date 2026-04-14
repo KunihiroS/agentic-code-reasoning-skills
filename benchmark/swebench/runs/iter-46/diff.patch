@@ -1,12 +1,13 @@
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..164e341 100644
+index d8962e9..22b30cf 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -414,6 +414,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+@@ -454,7 +454,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
  3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
  4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
- 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
-+5a. **In `compare` mode: if `Observed` is an intermediate value, read one downstream consumer before comparing.** If the value written in `Observed under Change A` or `Observed under Change B` is taken directly from the changed function's output and has not yet reached the code the test observes, read the next function or caller that receives that value before writing `Comparison:`. One hop is sufficient — do not require full end-to-end tracing. This prevents stopping at intermediate differences that cancel out downstream.
+-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
++5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis — verify both upstream (where the value was set or the state was created) and downstream (where it is consumed or checked).
  6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
  
  ### General

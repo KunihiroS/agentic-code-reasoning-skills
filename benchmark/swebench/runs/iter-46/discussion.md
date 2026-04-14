@@ -1,248 +1,191 @@
-# Iteration 46 — 監査コメント
+# Iteration 46 — discussion
 
 ## 総評
-問題設定自体、つまり **「変更関数の中間差異で止まらず、テストが最終的に観測する地点まで推論連鎖を完了させたい」** という狙いは妥当です。これは `docs/design.md` の *Incomplete reasoning chains* と整合しています。
 
-ただし、**今回の実効差分は `Observed under Change A/B` の記述対象を assertion/exception-handler の終端へさらに狭く固定すること**です。これは、
-- 既に iter-45 系で導入済みの `Observed` 方向の再調整であり、
-- 過去に失敗した **assertion-centric な観測点固定** と実質効果がかなり近く、
-- EQUIV 改善よりもむしろ **NOT_EQ で必要な end-to-end 証明コストを上げる** 方向に作用する懸念があります。
+提案は、既存 Guardrail #5 の末尾に 1 文を補い、「不完全な推論チェーン」の意味を downstream 側だけでなく upstream 側まで明示するものです。変更規模は小さく、研究コア（前提・探索・手続き間トレース・反証）を壊さずに、既存ガードレールの曖昧さを減らす方向です。
 
-結論から言うと、**このままの提案は承認しにくい**です。
+私の結論は条件付きで前向きです。今回の案は overfitting 的ではなく、汎用原則として筋が通っています。特に、片方向トレースで早期収束してしまう誤りを減らす可能性があります。一方で、効く方向は主として「片側だけ見て結論する」誤りの抑制であり、劇的な能力拡張ではありません。したがって期待値は「限定的だが健全な改善」です。
 
----
+## 1. 既存研究との整合性
 
-## 1. Web 検索に基づく学術的・実務的評価
+DuckDuckGo MCP の search は複数クエリで結果取得に失敗しました（bot detection ないし空結果）。そのため、DuckDuckGo MCP の fetch_content で直接 canonical URL を取得して確認しました。
 
-DuckDuckGo MCP の `ddg_search_search` は今回 no results だったため、`ddg_search_fetch_content` で直接関連 URL を取得して確認しました。
+### 参照 URL と要点
 
-### 1-1. Agentic Code Reasoning
-- URL: https://arxiv.org/abs/2603.01896
-- 要点:
-  - semi-formal reasoning は **explicit premises / execution-path tracing / formal conclusion** を要求する certificate として働く。
-  - 改善の主因は、**分析ループの中でケースを飛ばさず追跡させること**にある。
-  - failure analysis として **incomplete reasoning chains** が明示されている。
-- 評価:
-  - 提案の狙い自体、つまり「下流処理まで追う」は論文と整合する。
-  - ただし論文が支持しているのは **探索過程の構造化** であって、**観測点を assertion/handler に狭く固定すること**までは直接支持していない。
-  - よって、今回案は *方向性は合うが実装が狭すぎる*。
+1) https://arxiv.org/abs/2603.01896
+- 要点: Agentic Code Reasoning は semi-formal reasoning を「明示的 premises・execution path tracing・formal conclusion」を要求する structured prompting として定義している。
+- 要点: 目的は、未支持の主張やケース飛ばしを防ぐ certificate として働かせること。
+- 整合性: 今回の提案はこの枠組みを変えず、「trace execution paths」をより完全にする補助説明であり、研究コアと整合する。
 
-### 1-2. CodeQL Docs — About data flow analysis
-- URL: https://codeql.github.com/docs/writing-codeql-queries/about-data-flow-analysis/
-- 要点:
-  - 実務的なプログラム解析では、重要なのは値が「どこで生まれたか」だけでなく、**どこへ伝播し、どこで使われるか** を追うこと。
-  - local data flow だけでなく **global / interprocedural data flow** が必要になる。
-  - ただし精度とコストのトレードオフがあり、分析対象の source/sink は適切に絞る必要がある。
-- 評価:
-  - 「変更関数の返り値だけで止まらず、下流の use site まで追え」という提案の大筋は実務的にも正しい。
-  - しかし CodeQL 的観点では、追うべき sink は **assertion 文だけに限定されない**。実際には例外、状態変化、resource leak、他の observable side effect なども sink になりうる。
-  - 今回案は sink を過度に assertion/exception-handler に寄せており、実務的には狭い。
+2) https://en.wikipedia.org/wiki/Program_slicing
+- 要点: program slicing は、ある地点の変数値に影響しうる文を依存関係に沿って遡って求める考え方で、debugging・program analysis で使われる。
+- 要点: 記事中では static slice は依存を backtracking して求めると説明されている。
+- 整合性: 「値がどこで作られたかを upstream に辿る」発想は、一般的なデータ依存追跡と整合的であり、提案文の upstream 明示は自然。
 
-### 1-3. Program slicing（背景知見）
-- URL: https://en.wikipedia.org/wiki/Program_slicing
-- 要点:
-  - slicing は、ある **point of interest** の値に影響する文をたどる考え方。
-  - debugging や program understanding では、**観測点に影響する依存関係を追う** のが基本。
-  - ただし slicing criterion は 1 つの statement/variable に固定されるため、criterion を狭く取りすぎると重要経路を落としうる。
-- 評価:
-  - 提案が「中間差異ではなく観測点を基準に追うべき」と考えるのは妥当。
-  - 一方で、今回の criterion を **“test assertion or exception handler receives”** に固定すると、setup/teardown failure、暗黙の state verification、複合オラクルを落とすリスクがある。
+3) https://en.wikipedia.org/wiki/Use-define_chain
+- 要点: UD/DU chain は、ある use に到達する定義、ある定義から到達する use を追跡するデータフロー解析の基本概念。
+- 要点: value の定義点と使用点の両方を見ることが最適化や解析の前提になる。
+- 整合性: 提案がいう upstream/downstream の両確認は、定義点と使用点の双方を押さえるという一般的データフロー観と一致する。
 
-### 1-4. On the Rationale and Use of Assertion Messages in Test Code
-- URL: https://arxiv.org/abs/2408.01751
-- 要点:
-  - assertion は failure troubleshooting、test understandability、documentation に有益。
-  - ただし assertion は **テスト理解の一部** であり、デバッグ過程全体の代替ではない。
-- 評価:
-  - assertion を参照させること自体には価値がある。
-  - しかし、この知見は **「assertion を見ると理解しやすい」** を支持するだけで、**「観測点を assertion/handler に固定せよ」** を支持するものではない。
+### 監査所見
 
-### 学術的・実務的なまとめ
-- **支持できる部分**: 下流観測点まで trace する、という発想そのもの。
-- **支持しにくい部分**: 観測点の定義を assertion/exception-handler に狭く固定すること。
-- したがって、**提案の仮説は半分正しいが、テンプレートへの落とし込みが過剰に狭い**という評価です。
+研究・一般プログラム解析の観点から見ると、この提案は新奇な理論を持ち込むものではなく、既存のデータフロー追跡の常識を Guardrail の wording に落とし込むものです。そのため、整合性は高いです。
 
----
-
-## 2. Exploration Framework のカテゴリ選択は適切か？ 過去カテゴリとの重複はないか？
-
-## 結論
-**カテゴリ F としての新規性は弱い**です。実効的には F というより、**カテゴリ E/C/B の既存失敗の再変形**に近いです。
-
-### 理由1: 既に F 系で「incomplete reasoning chains の compare 反映」は何度も触っている
-過去の proposal / failed approaches を見ると、F 系ではすでに以下が試されています。
-- iter-8 / iter-9: localize 由来の手法移植
-- iter-38 / iter-39 / iter-40 / iter-42: 論文コアや anti-skip、verified behavior を compare に移植
-- iter-45: `Observed under Change A/B` を導入する outcome-first 構造化
-
-今回案は、**iter-45 の `Observed` 導入をさらに assertion/handler 終端に寄せる微修正**であり、カテゴリ F の未活用アイデア導入というより、**既導入アイデアの wording tightening** です。
-
-### 理由2: 実効差分は F より E/C に近い
-変更内容は 2 行の文言差し替えであり、実際に起きることは
-- 比較単位を「変更コードの出力」ではなく「テスト終端の観測値」に寄せる（カテゴリ C 的）
-- テンプレート文言を具体化する（カテゴリ E 的）
-です。
-
-つまり、**分類上 F と言っていても、効果としては過去の assertion-centric framing の再挑戦**です。
-
-### 理由3: 近い既失敗がある
-特に近いのは以下です。
-- **BL-5**: assertion 条件の記録形式強化 → assertion 行への注意固定で NOT_EQ が回帰
-- **BL-11**: outcome mechanism 注釈 → テスト側の failure mechanism ラベル付けが目的化
-- **BL-13**: assertion 時点の key value 固定 → 少数の代理表現への圧縮が失敗
-- **BL-16**: first observation point 注釈 → 観測点 framing の追加が比較推論を強化しなかった
-- **iter-44 proposal**: 「テストのアサーションが検査する観測対象」を比較単位にする案
-
-よって、**カテゴリ F の未試行サブアプローチとは言いにくい**です。
-
----
-
-## 3. EQUIV / NOT_EQ の両方への影響と、実効的差分の分析
-
-### 変更前（iter-45 の proposal 上）
-```text
-Observed under Change A: [returned value / raised exception / visible state change — cite file:line]
-Observed under Change B: [returned value / raised exception / visible state change — cite file:line]
-```
-
-### 変更後
-```text
-Observed under Change A: [value or exception that the test assertion or exception handler receives — trace from changed code through all downstream functions, cite file:line]
-Observed under Change B: [value or exception that the test assertion or exception handler receives — trace from changed code through all downstream functions, cite file:line]
-```
-
-### 実効差分
-この差分の本質は 2 つです。
-1. `Observed` の対象を **広い observable outcome** から **assertion/exception-handler の終端値** に狭める
-2. `Observed` を埋めるために **all downstream functions** を通る完全トレースを要求する
-
-### EQUIV への影響
-**改善可能性はある**です。
-- 現在の EQUIV 偽陰性は、まさに「中間差異で止まる」ことが原因なので、終端観測点まで追わせれば改善余地はあります。
-- 特に、変更関数で A≠B でもテスト観測点で A=B に収束するケースには効きます。
-
-ただし、改善メカニズムの核は **“downstream end point まで追う”** であって、**“assertion/handler に限定する”** ではありません。後者は余計です。
-
-### NOT_EQ への影響
-**回帰リスクは無視できません。むしろこちらが主要懸念です。**
-- 真の NOT_EQ でも、従来より **完全な下流トレース + assertion/handler 受領値への接続** が必要になります。
-- 実際のテスト差異は、assert 文そのものではなく、setup/teardown failure、implicit exception propagation、stateful side effects、複数観測の合成で決まることがあります。
-- その場合、この wording は **観測対象の視野を狭めたうえで証明コストを増やす** ため、UNKNOWN や EQUIV への流出を起こしやすいです。
-
-### 一方向にしか作用しないか？
-**完全な一方向ではないが、実効差分は NOT_EQ 側により重く作用しやすい**です。
-
-理由:
-- EQUIV の改善に必要なのは「途中で止まるな」という構造だけで足りる。
-- しかし今回の追加差分は、それに加えて **assertion/handler 受領値までの完全 end-to-end 証明** を要求している。
-- 真の NOT_EQ では、差異を主張する際にこの完全接続がより重い立証コストとして効く。
-
-したがって、表面上は A/B 対称でも、**変更前との差分で見ると “NOT_EQ を言うための end-point 証明負担を上げる” 効果が強い**です。これは BL-2 / BL-14 系の懸念と近いです。
-
----
-
-## 4. failed-approaches.md のブラックリストおよび共通原則との照合
-
-## 4-1. 表現が違っても、実質効果が同じではないか？
-**はい。かなり近いです。**
-
-### BL-5 との近さ
-BL-5 は assertion 条件の exact 記録を要求した結果、
-- assertion 行に注意が固定され、
-- setup/side effect/例外/全体フローが漏れ、
-- NOT_EQ が回帰しました。
-
-今回案も「assertion or exception handler receives」に観測点を固定しており、**言い換えは違うが、視野をテスト終端の一部の型へ狭める効果**は似ています。
-
-### BL-11 / BL-13 / BL-16 との近さ
-- BL-11: outcome mechanism 注釈
-- BL-13: key value at assertion
-- BL-16: first observation point 注釈
-
-これらはすべて、**比較推論を強める代わりに観測フレームを新たに固定し、そのフレーム記述が目的化した**失敗でした。今回案も本質的には同じで、
-- 「最終観測点は assertion/handler」
-- 「そこまで all downstream functions を trace」
-という新しいフレームを課しています。
-
-### BL-2 / BL-14 との近さ
-完全同一ではありませんが、**実質的に NOT_EQ の立証コストを上げる**点で近いです。
-- BL-2: NOT_EQ の証拠閾値厳格化
-- BL-14: DIFFERENT 主張時の backward verify
-
-今回案は verdict-conditioned ではないものの、**真の NOT_EQ で必要になる end-to-end assertion/handler 接続の記述コスト**を増やします。
-
-## 4-2. 共通原則への抵触
-
-### 共通原則 #2（出力側の制約）
-**半抵触です。**
-今回の変更箇所は ANALYSIS の `Observed` なので pure output block ではありません。ただし、実効としては **Observed に書くべき最終表現の狭い規定**であり、探索行動の自由度を狭める色が強いです。探索改善より wording 制約に寄っています。
-
-### 共通原則 #5（入力テンプレートの過剰規定）
-**抵触の可能性が高いです。**
-- `value or exception that the test assertion or exception handler receives`
-- `through all downstream functions`
-という指定は、何をどこまでどう書くかをかなり細かく固定しています。
-- setup/teardown failure や state verification のような assertion/handler 以外の観測をテンプレート上で周辺化します。
-
-これは BL-5 / BL-11 / BL-13 / BL-16 で繰り返し失敗した **“観測フレームの過剰規定”** に近いです。
-
-### 共通原則 #6（対称化の実効差分）
-**要注意です。**
-文言上は A/B 対称ですが、既に `Observed` がある状態からの差分で見ると、追加されたのは
-- assertion/handler までの完全 downstream trace
-- その終端値への接続義務
-です。
-
-この追加負担は、特に **DIFFERENT を確信したい場面**で重く効きやすく、実効的には NOT_EQ 側へ不利に働く可能性があります。
+## 2. Exploration Framework のカテゴリ選定は適切か
 
 ### 判定
-**承認: NO**
+概ね適切です。
 
-理由:
-- BL-5 / BL-11 / BL-13 / BL-16 系の **assertion-centric / observation-frame over-specification** の再発リスクが高い
-- 変更前との差分としては、EQUIV 改善のコアである「途中で止まるな」よりも、**終端の表現固定と完全証明義務**が前面に出ている
-- その結果、NOT_EQ 側の回帰リスクを十分に抑えられていない
+### 理由
+提案者はカテゴリ E（表現・フォーマット改善）の中の「曖昧文言の具体化」と位置付けています。実際、変更対象は Guardrail #5 の末尾文言 1 箇所で、探索テンプレートやステップ順を変えていません。実装レベルでは明らかに wording clarification です。
 
----
+ただし内容面では、単なる表現改善に留まらず、探索時に「確認方向を片側に寄せるな」という軽い行動誘導も含みます。したがって、実質的には B（情報の取得方法）や F（原論文のエラー分析の具体化）にも少しまたがっています。
 
-## 代替案（未試行寄りの別アプローチ）
+それでも、今回の変更が
+- 新しい探索手順を追加していない
+- 順序や必須チェックを増やしていない
+- 既存 Guardrail の曖昧語を具体化している
+という点を考えると、主カテゴリを E とする整理は妥当です。
 
-### 提案カテゴリ: A — 推論の順序・構造を変える
-**代替方向**: `Observed` の定義を assertion/handler に狭めるのではなく、**各 relevant test で「A/B それぞれの観測を書き切ってから、両者を比較する」ことだけを順序として強化**する。
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方に対する作用
 
-具体例:
-- `Observed under Change A/B` は広いまま維持する（returned value / raised exception / visible state change）
-- その代わり `Comparison:` の前に、**A と B の観測が “same sink / same observation boundary” で比較されているか** を1文で確認させる、あるいは `Claim` より `Comparison` の導出順をさらに厳密化する
+ここは今回の監査で最重要です。
 
-この方向なら、
-- EQUIV 偽陰性に効く「途中停止の防止」は残しつつ、
-- assertion 固定による視野狭窄を避けられます。
+### 変更前の実効
+変更前 Guardrail #5 は、明示的には downstream 側の確認しか要求していません。
+そのため、実運用では次の二種類の片側誤りが残ります。
 
-あるいは **カテゴリ B** として、テンプレート文言ではなく **探索優先順位** に落とし込み、
-- 「Observed が中間値に見える場合は、同じ test path 上の次の consumer を 1 hop だけ読む」
-のような、**完全 downstream 義務ではない軽量な読解規則**にする方が安全です。
+- downstream だけ見て「もう処理済みだから差は無害」と早期判断する
+- downstream だけ見て、そもそもその値や状態が upstream でどう生成されるかを確認しない
 
----
+### 変更後の実効
+変更後は「value/state がどこで作られたか」と「どこで消費・検査されるか」の両側確認が明示されます。つまり、片方向だけの trace 完了を incomplete chain として扱いやすくなります。
 
-## 5. 全体の推論品質がどう向上すると期待できるか？
+### EQUIVALENT 判定への作用
+主な効き方は「偽の NOT_EQUIVALENT を減らす」方向です。
 
-この案が狙う改善点は理解できます。もしうまく働けば、
-- コード差異から即 NOT_EQ に飛ぶ短絡を減らし、
-- EQUIV 偽陰性をいくらか減らす
-可能性はあります。
+典型例:
+- ある差分が downstream のコード上では目立って見える
+- しかし upstream を辿ると、その値や状態が実際の relevant test では生成されない、または到達条件が満たされない
+- この場合、差分は観測結果に効かず EQUIVALENT の可能性が高い
 
-ただし、現状の wording だと期待できる向上は限定的です。
-- 推論品質を改善する核は「最終観測点まで追うこと」
-- 一方、提案文で実際に強く追加されているのは「assertion/handler へ固定すること」
+つまり upstream 確認の追加は、「見えた差分が実際に到達可能か」を確かめる働きを持ちます。これは EQUIVALENT 側の precision 向上に効きやすいです。
 
-前者は有益ですが、後者は副作用が大きいです。よって、**全体の推論品質の純改善より、EQUIV 改善と NOT_EQ 回帰のトレードオフになる可能性が高い**と見ます。
+### NOT_EQUIVALENT 判定への作用
+こちらでは「偽の EQUIVALENT を減らす」方向にも働きます。
 
----
+典型例:
+- downstream では一見同じような check/handling が存在する
+- しかし upstream を辿ると、値の生成条件・既定値・状態遷移が異なる
+- その結果、実際にはある relevant test で別の値や別の分岐に到達し、テスト結果が分岐する
 
-## 6. 結論
-- 提案の問題意識は妥当
-- しかし、実装が **assertion/exception-handler 中心に狭すぎる**
-- その結果、過去のブラックリスト、特に **観測点固定・入力テンプレート過剰規定** 系と実質的に近い
-- EQUIV 改善の核心である「途中で止まるな」は支持できるが、そのために **終端観測の型まで固定する必要はない**
+したがって、この変更は NOT_EQUIVALENT 側にも効きます。downstream 側の「見かけの収束」に騙されにくくなるためです。
 
-**承認: NO（理由: assertion/handler への観測点固定が BL-5/11/13/16 系の再発に近く、NOT_EQ 側の立証コスト増と視野狭窄の回帰リスクが高いため）**
+### 片方向にしか作用しないか？
+いいえ。片方向専用の変更ではありません。
+
+- EQUIVALENT 側では「差分はあるが効かない」を裏づけるための upstream 確認に効く
+- NOT_EQUIVALENT 側では「下流で似て見えても上流起点が違う」を拾うために効く
+
+したがって、理論上は両方向に作用します。
+
+### ただし期待効果の非対称性
+ただし効果量は対称ではない可能性があります。README では persistent failure が EQUIVALENT 側に寄っていると説明されています。今回の変更は「片側だけ見て差分を大きく見積もる」誤りに特に効きそうなので、実務上は EQUIVALENT 側への寄与がやや大きいと予想します。
+
+しかし提案文自体は特定ラベルを直接誘導していないため、この非対称性は overfitting の証拠にはなりません。
+
+## 4. failed-approaches.md の汎用原則との照合
+
+### 原則 1: 探索で探すべき証拠の種類をテンプレートで事前固定しすぎない
+抵触は軽微またはなしです。
+
+今回の変更は「必ずこの証拠をこの順で集めよ」というテンプレート追加ではなく、incomplete chain の意味を upstream/downstream 両面に言い換えたものです。証拠種別を細かく事前固定してはいません。
+
+### 原則 2: 探索の自由度を削りすぎない
+概ね抵触しません。
+
+upstream/downstream の両確認を促すのは方向性の補助であって、読み始め順や境界確定順の固定ではありません。特に「どこから先に読むか」は強制していないため、探索経路の半固定には当たりません。
+
+### 原則 3: 局所的仮説更新を即座の前提修正義務に直結させすぎない
+抵触しません。
+
+今回の文言は仮説更新や premise maintenance の規律ではなく、推論チェーンの完全性に関する guardrail です。
+
+### 原則 4: 結論直前の自己監査に新しい必須メタ判断を増やしすぎない
+ここも概ね問題ありません。
+
+変更先は Step 5.5 の self-check ではなく Guardrail であり、新たな checklist 項目や判定ゲートを導入していません。実効上は「より丁寧に trace せよ」という圧力を少し足しますが、failed-approaches が禁じる種類の明示的ゲート追加ではありません。
+
+### 総評
+failed-approaches.md に書かれた失敗の再演には見えません。特に危険だった「探索順序の半固定」「新メタ判断の追加」「証拠種別のテンプレ固定」には踏み込んでいません。
+
+## 5. 汎化性チェック
+
+### 提案文に固有 ID / リポジトリ名 / テスト名 / 実コード断片があるか
+ルール違反に当たるものは見当たりません。
+
+確認結果:
+- 具体的な benchmark case ID: なし
+- 特定リポジトリ名: なし
+- 特定テスト名: なし
+- 対象 repo の実コード断片: なし
+- 特定関数・クラス・ファイルパスの引用: なし
+
+提案文にあるものは
+- Guardrail #5 の変更前後引用
+- compare / diagnose / explain など SKILL.md 自身の概念名
+- 「関数 A / B / C」の抽象例
+のみです。これは audit rubric 上も許容範囲です。
+
+### 暗黙のドメイン依存はないか
+大きな問題はありません。
+
+提案は
+- ある値や状態がどこで生成されたか
+- どこで使われたか・検査されたか
+を両方見る、という一般的データフロー原則です。これは言語非依存・フレームワーク非依存です。
+
+注意点を挙げるなら、「upstream/downstream」という語はデータフローや call chain を想起しやすく、宣言的設定やメタプログラミング、ビルド生成コード、イベント駆動系では少し抽象度が不足することがあります。ただし proposal の補足括弧が
+- where the value was set or the state was created
+- where it is consumed or checked
+と説明しているため、かなり一般化できています。
+
+## 6. 全体の推論品質がどう向上すると期待できるか
+
+期待される改善は次の通りです。
+
+1) 早期収束の抑制
+- 「下流にガードがあった」だけで結論する誤り
+- 「上流で値が作られているはずだ」だけで結論する誤り
+を両方減らしやすいです。
+
+2) 既存構造との一貫性向上
+- Diagnose ではすでに upstream root cause tracing を重視している
+- Explain では created / modified / used を記録させている
+- Compare でも relevant test path tracing を要求している
+今回の wording は、この既存構造を Guardrail 層で横断的に再確認する役割を持ちます。
+
+3) 反証可能性の補強
+片側トレースで生じる「もっともらしいが不完全な説明」を減らすため、反証の材料が増えます。特に、差分が無害か有害かの判定において、到達可能性と処理有無の両面を確認しやすくなります。
+
+4) 低コストでの品質改善
+1 行追記であり、テンプレート肥大化や複雑な新手順追加なしに、推論の抜けを埋める可能性があります。複雑性増加に対する改善効率は高いです。
+
+### 限界
+- これは exploration breadth を広げる変更ではなく、既存 trace の completeness を少し補強する変更です。
+- したがって、効果は「致命的な盲点を一つ潰す」タイプであり、大幅な性能ジャンプを保証するものではありません。
+- 既に upstream/downstream の両確認を自然にやれているケースでは、追加効果は小さいです。
+
+## 最終判定
+
+承認: YES
+
+### 理由
+- 研究コアと整合している
+- failed-approaches.md の禁止方向をほぼ踏んでいない
+- EQUIVALENT / NOT_EQUIVALENT の両方に理論上作用し、片方向専用のラベル誘導ではない
+- 汎化性違反となる固有識別子や repo 依存の痕跡がない
+- 変更規模が極小で、複雑性増加に対して回帰リスクが低い
+
+### 留保
+期待効果は「中程度以下だが健全」です。大きな改善を約束する類ではなく、既存 Guardrail の曖昧さを減らして片側トレース由来の誤判定を減らす、という性質の提案として評価するのが適切です。

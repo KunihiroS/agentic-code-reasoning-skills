@@ -2,28 +2,39 @@
 
 ## 前イテレーションの分析
 
-- 前回スコア: 70%（14/20）
-- 失敗ケース: django__django-15368, django__django-13821, django__django-15382, django__django-14787, django__django-12262, django__django-14122
-- 失敗原因の分析:
-  - EQUIV 偽陰性（15368, 13821, 15382）: 変更関数の返り値（中間値）を `Observed` に記録した後、downstream の wrapper/handler を読まずに `Comparison: DIFFERENT` と判定した。実際には差異が downstream で吸収され、テストが観測する時点では同一値になっていた。
-  - NOT_EQ UNKNOWN（14787, 12262, 14122）: ターン上限に達して判定不能になったケース。今回の変更との直接的な関連は低い。
+- 前回スコア: 不明（iter-45 の scores.json 未参照）
+- 失敗ケース: 記載なし
+- 失敗原因の分析: Guardrail #5 の文言が「downstream のみ確認する」という
+  一方向の読み取りを許容しており、upstream（値が生成・設定される箇所）の
+  確認が促されていなかった。片方向のトレースで完了したとみなす
+  早期収束が失敗の一因と推定される。
 
 ## 改善仮説
 
-`compare` モードの Guardrail に「`Observed under Change A/B` に書いた値が変更関数の直接出力（中間値）であれば、その値が渡される次の downstream consumer を 1 hop 読んでから `Comparison:` を書く」という軽量な読解規則を追加することで、推論連鎖が途中で止まるケース（EQUIV 偽陰性）を減らせる。
+Guardrail #5 の末尾文言に「upstream と downstream の両方を検証する」という
+方向性を明示することで、エッジケース発見後に片方向トレースで完了と
+みなす誤りを減らし、推論チェーン全体の完全性が向上する。
 
 ## 変更内容
 
-`## Guardrails` → `### From the paper's error analysis` 内の Guardrail 5 と 6 の間に、新規 Guardrail 5a を追加した。
+SKILL.md の Guardrail #5 末尾文を 1 行変更した。
 
-```
-5a. **In `compare` mode: if `Observed` is an intermediate value, read one downstream consumer before comparing.** If the value written in `Observed under Change A` or `Observed under Change B` is taken directly from the changed function's output and has not yet reached the code the test observes, read the next function or caller that receives that value before writing `Comparison:`. One hop is sufficient — do not require full end-to-end tracing. This prevents stopping at intermediate differences that cancel out downstream.
-```
+変更前の末尾:
+「Confident-but-wrong answers often come from thorough-but-incomplete analysis.」
 
-既存の Guardrail・テンプレートブロック（ANALYSIS OF TEST BEHAVIOR 等）への変更なし。追加のみ（3行）。
+変更後:
+「Confident-but-wrong answers often come from thorough-but-incomplete analysis
+— verify both upstream (where the value was set or the state was created)
+and downstream (where it is consumed or checked).」
+
+削除行: 0、変更行: 1（既存文への末尾追記）。
 
 ## 期待効果
 
-- **EQUIV 正答率の改善（15368, 13821, 15382）**: Observed に中間値が書かれた場合に 1 hop 先を読む行動が促されることで、差異が downstream で収束するケースを正しく EQUIV と判定できる見込み。
-- **NOT_EQ 回帰リスクの抑制**: 真の NOT_EQ では downstream を 1 hop 読んでも差異が維持されるため、`Comparison: DIFFERENT` の判断は変わらない。「1 hop」という量の限定により full downstream trace 義務とならず、証明コストを大幅に増やさない。
-- `Observed` フィールドの記述要件は変更しないため、BL-5/11/13/16 が指摘する観測フレームの過剰規定を踏まない。
+- `diagnose` モード: 症状サイトと根本原因サイトの分離（Guardrail #3 との連携）
+  において、upstream 方向への探索を明示的に促す表現が補強される。
+- `compare` モード: 変更点から upstream / downstream 両方向にトレースする
+  ことで、片方だけが見逃していた副作用の検出精度が向上する。
+- `explain` モード: Data flow analysis の「生成 → 変更 → 使用」三点追跡と
+  Guardrail 層の一貫性が増し、双方向確認の習慣が強化される。
+- 変更は言語・フレームワーク非依存の汎用原則であり、過剰適合のリスクはない。
