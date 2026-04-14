@@ -1,185 +1,189 @@
-# Iteration 37 — 監査コメント
+# Iter-37 監査コメント
 
 ## 総評
-結論から言うと、**今回の提案は承認しません**。発想の核（「コード差異」ではなく「下流の観測点まで追わせる」）自体は研究的にも妥当ですが、**このリポジトリでは既に近い方向が複数回失敗しており、しかも今回の実効差分は proposal が述べるほど新規でも対称でもありません**。とくに、`assertion or exception` までを `because` 句に要求する変更は、過去の BL-2 / BL-11 / BL-16 の失敗コアとかなり近く、NOT_EQ 側の立証負荷や入力テンプレートのアンカリングを再発させる懸念が強いです。
+提案の狙い自体は理解できる。差分読解の初動で意味的に重要な変更へ注意を寄せる、という発想は一般論としてもっともらしい。
+ただし、今回の具体案は `failed-approaches.md` に明記された失敗方向とかなり近く、しかも `import-only changes` を付随的変更として一段低く扱う文言が汎化性を損ねる。
+結論として、現状の文案のままでは承認しにくい。
 
 ---
 
-## 1. 既存研究・コード推論知見にもとづく評価（MCP 利用）
+## 1. 既存研究との整合性
 
-### MCP での確認結果
-DuckDuckGo MCP の `ddg_search_search` は今回、複数クエリで `No results were found` となり検索結果を返しませんでした。そこで、同じ MCP サーバーの `ddg_search_fetch_content` を使い、関連する既知の公開 URL の本文を確認しました。
+### 参照した Web 情報
+1. arXiv: Agentic Code Reasoning
+   - URL: https://arxiv.org/abs/2603.01896
+   - 要点: 明示的前提、実行経路トレース、形式的結論からなる semi-formal reasoning が、patch equivalence / fault localization / code QA の精度を改善すると述べる。つまり「探索を構造化して、重要な証拠に注意を集中させる」方向性そのものは研究と整合的。
 
-### 参照 URL と要点
-1. **Agentic Code Reasoning**  
-   URL: https://arxiv.org/abs/2603.01896  
-   要点: semi-formal reasoning は「explicit premises」「execution path tracing」「formal conclusion」により、エージェントがケースを飛ばしたり根拠なく主張したりするのを防ぐ。  
-   評価への含意: **構造化トレースの強化そのものは論文の方向性と整合的**。したがって、「より下流まで追え」という問題意識自体は妥当。
+2. Google Engineering Practices: What to look for in a code review
+   - URL: https://google.github.io/eng-practices/review/reviewer/looking-for.html
+   - 要点: コードレビューでは style より design / functionality / complexity を重視すべきとされる。したがって「まず機能的・意味的差分を見る」という高レベル方針には一般的妥当性がある。
 
-2. **Chain-of-Thought Prompting Elicits Reasoning in Large Language Models**  
-   URL: https://arxiv.org/abs/2201.11903  
-   要点: 中間推論ステップの明示は複雑推論を改善しうる。  
-   評価への含意: 明示的な reasoning scaffold は一般には有効。ただし、この論文は**どの粒度・どの表現が最適か**までは保証しない。つまり「構造化すれば何でも良い」ではない。
+3. Google Engineering Practices: Small CLs
+   - URL: https://google.github.io/eng-practices/review/developer/small-cls.html
+   - 要点: 大きい変更ほど重要点が見落とされやすく、レビュー品質が下がる。提案が「限られた探索コストを核心差分へ寄せたい」と考える根拠にはなる。
 
-3. **ReAct: Synergizing Reasoning and Acting in Language Models**  
-   URL: https://arxiv.org/abs/2210.03629  
-   要点: reasoning trace と外部情報取得を往復させることで hallucination や error propagation を抑える。  
-   評価への含意: 改善が効くのは、単なる wording 強化よりも、**実際の探索行動を変えるとき**。今回の案は 2 行の wording 変更であり、探索行動の変化が弱い可能性がある。
+4. Martin Fowler: Definition of Refactoring
+   - URL: https://martinfowler.com/bliki/DefinitionOfRefactoring.html
+   - 要点: refactoring は observable behavior を変えない変更である。つまり cosmetic / structural cleanup と semantic change を区別する発想自体はソフトウェア工学上自然。
 
-4. **LLMDFA: Analyzing Dataflow in Code with Large Language Models**  
-   URL: https://arxiv.org/abs/2402.10754  
-   要点: hallucination を抑えるには、subtask decomposition や小さなコード片に合わせた意味追跡が有効。  
-   評価への含意: 「差異を見つけたら assertion まで因果を追う」という狙いは理解できるが、LLMDFA 的に有効なのは**具体的で検証可能な中間分析**であり、単なる文言の追加だけでは弱い。
+5. Python Language Reference: The import system
+   - URL: https://docs.python.org/3/reference/import.html
+   - 要点: import は単なる見た目ではなく、モジュール探索・初期化・名前束縛・副作用を伴う。したがって `import-only changes` を一般に「付随的変更」とみなすのは危険。
 
-### 学術的・実務的評価
-- **学術的には部分的に妥当**です。下流観測点まで追わせる方向は、semi-formal reasoning / CoT / ReAct / dataflow 的発想と整合します。
-- しかし**実務的にはこの repo の失敗履歴と衝突**します。過去の実験では、「assertion / observation point / outcome mechanism」をテンプレート上で具体化する方向は、探索改善よりも**アンカリング・追加負荷・NOT_EQ 側の立証負担増**として作用してきました。
-- したがって、**一般論としては良いが、このプロジェクトの既知の挙動を踏まえると採用根拠としては弱い**、という評価です。
+### 研究整合性の結論
+- 良い点:
+  - 「証拠収集の注意を重要差分へ集中させる」方向は、semi-formal reasoning の趣旨と矛盾しない。
+  - style より functionality を優先する、という一般的レビュー原則とも整合する。
+- 問題点:
+  - 提案文の具体化が粗い。特に `import-only` を formatting/comment と同列に落とすのは、言語横断の一般原則として弱い。
+  - 研究が推しているのは「重要な証拠の取りこぼし防止」であって、「読解順序の半固定」それ自体ではない。
 
 ---
 
-## 2. Exploration Framework のカテゴリ選択は適切か？過去の同一カテゴリ試行との関係
+## 2. Exploration Framework のカテゴリ選定は適切か
 
 ### 判定
-**カテゴリ F を名乗ること自体は可能だが、未試行メカニズムとは言いにくい**です。
+カテゴリ B「情報の取得方法を改善する」は表面的には妥当。
+実際、提案は「何を結論するか」ではなく「差分をどう読むか」を変えているため、A/C/D/E/F よりは B に近い。
+
+### ただし重要な留保
+今回のメカニズムは B の中でもかなり危うい部類で、実質的には「読解順序の半固定」である。
+`Objective.md` の B には確かに「探索の優先順位付けを変える」が含まれるが、`failed-approaches.md` はまさにこの種の変更に対して警戒を明示している。
+
+特に以下と近い:
+- `failed-approaches.md`:
+  - 「探索ドリフト対策を追加する際は、探索の自由度を削りすぎない」
+  - 「とくに『どこから読み始めるか』『どの境界を先に確定するか』のような読解順序の半固定は…探索経路を早期に細らせ…構造差分や別粒度の手掛かりを拾う余地を減らしやすい」
+
+したがって、カテゴリ B を選んだこと自体は不自然ではないが、選んだメカニズムは blacklist に非常に近い。
+
+---
+
+## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定への作用
+
+## 3.1 変更前との実効的差分
+現行の `SKILL.md` は compare モードでまず:
+- S1: modified files 比較
+- S2: completeness 確認
+- S3: 大規模差分では structural / high-level semantic comparison を優先
+
+ここに提案は新たに:
+- 「任意サイズのパッチで logic/control-flow changes を formatting/comment/import-only より先に読む」
+
+を加える。これは見た目以上に強い追加で、単なる補足ではなく、全サイズ・全ケース向けの読解順序ルールになる。
+
+## 3.2 EQUIVALENT 側への作用
+プラスに働く可能性:
+- cosmetic diff が多いケースで、些末差分に認知コストを使いすぎず、意味差分の有無を先に確認できる。
+- その結果、表面的差分に引きずられて NOT_EQUIVALENT に寄る誤りは減る可能性がある。
+- 逆に、真の semantic difference を先に見つけやすくなるため、浅い探索のまま誤って EQUIVALENT と言う事故も減る可能性がある。
+
+ただし限界:
+- 本当に EQUIVALENT かを示すには、最後は「差分が cosmetic に留まる」ことの確認が必要であり、後回しにした差分も結局読む必要がある。
+- したがって改善幅は「初動の注意配分」レベルに留まる。
+
+## 3.3 NOT_EQUIVALENT 側への作用
+提案文は「NOT_EQUIVALENT は既に 100% なので悪化しにくい」と述べるが、これは楽観的すぎる。
+
+悪化しうる点:
+1. `import-only` が意味的変更である場合
+   - Python では import は副作用・初期化・名前束縛に関与する。
+   - 他言語でも import/use/include/annotation/registration/dependency wiring のみの変更が挙動差を生む。
+   - そのため `import-only` を付随扱いすると、NOT_EQUIVALENT の決定的証拠を初動で軽視しうる。
+
+2. 構造差分よりローカルなロジック差分へ意識が吸われる場合
+   - 現行 S1/S2 は「ファイル欠落」「モジュール欠落」「test data 欠落」のような強い NOT_EQ シグナルを先に拾う設計。
+   - 追加文は S3 にぶら下がる形でも、「まず logic/control-flow を読め」という別の優先軸を与えるため、実運用では S1/S2 の早期判定力を相対的に弱めるおそれがある。
+
+3. ロジック差分が目立たない NOT_EQ ケースを取りこぼす可能性
+   - 設定、登録、データ、import、例外伝播、デコレータ、メタデータ変更などは、見た目上 `logic/control-flow` ではなくてもテスト結果を変えうる。
+
+### 小結
+この変更は実効的には両方向対称ではない。
+- 主作用: 「cosmetic ノイズより semantic 差分に注意を寄せる」ことで EQUIVALENT/NOT_EQUIVALENT の双方に理論上プラス
+- ただし実際の文言は `import-only` を過度に軽視するため、NOT_EQUIVALENT 側の安全性を削るリスクがある
+
+よって「片方向にしか作用しないか」という問いへの答えは:
+- 形式上は両方向に作用する
+- しかし実質上は、ロジック変更が前面に出るケースに偏って効く
+- その一方で、非ロジック系の意味差分を含む NOT_EQUIVALENT を悪化させうる
+
+---
+
+## 4. failed-approaches.md との照合
+
+### 結論
+抵触なしとは言いにくい。むしろ、かなり近い再演である。
 
 ### 理由
-今回の提案は「localize の終端明示を compare の claim に移す」という説明ですが、実効的には以下の既存失敗とかなり近いです。
+提案は「証拠の種類は固定していないからセーフ」と主張するが、`failed-approaches.md` が禁じているのはそれだけではない。より本質的には、探索の経路を初期段階で細らせること自体が危険だと述べている。
 
-- **BL-16 / iter-30**: `first observation point` を compare 判定直前に明示  
-  → 今回も本質は「内部差異ではなく、テスト観測点まで見よ」です。表現は違いますが、**下流観測点への着地をテンプレートで強制する**という意味で近い。
-- **BL-11 / iter-23**: outcome mechanism（assertion / exception / setup / side effect）注釈追加  
-  → 今回は列挙範囲を狭めて `assertion or exception` にしただけで、**テスト結果メカニズムをテンプレート側から明示する**方向は共通。
-- **BL-2 系**: NOT_EQ を主張するために assertion までのトレースを要求  
-  → 今回は fail-to-pass claim 全体に掛けているが、実効的には**FAIL / DIFFERENT を支えるときに効く証拠要求**になりやすい。
-- **BL-14 / iter-27**: backward trace で assertion から差分へ因果連鎖を要求  
-  → 方向は逆でも、実質は「assertion をゴールにした完全性要求」の追加で近い。
+該当箇所の趣旨:
+- 「探索の自由度を削りすぎない」
+- 「どこから読み始めるか」の半固定は、構造差分や別粒度の手掛かりを拾う余地を減らす
 
-したがって、**カテゴリ F の新規導入というより、BL-16/11/2 系の再表現**とみるべきです。
+今回の追加文はまさに:
+- どこから読み始めるか
+- 何を先に読み、何を後回しにするか
 
----
-
-## 3. EQUIV / NOT_EQ への影響と、変更前からの実効差分分析
-
-### 変更前との差分
-変更前:
-- `because [trace through code — cite file:line]`
-
-変更後:
-- `because [trace through changed code to the assertion or exception — cite file:line]`
-
-proposal は「2 行だけの軽微な wording change」と言いますが、実効差分は軽微ではありません。追加されたのは単なる明確化ではなく、**トレースの終端条件**です。
-
-### EQUIV への期待効果
-これは理解できます。EQUIV 誤判定の典型は、
-- コード差異を見つける
-- その差異がテスト結果へ届くかを見ずに DIFFERENT とする
-というショートカットです。
-
-そのため、**「assertion / exception まで追え」**は EQUIV 偽陽性の抑制には理屈上効きます。
-
-### NOT_EQ への回帰リスク
-ここが proposal より重いです。
-
-1. **新しい要求は“深い到達証明”である**  
-   真の NOT_EQ でも、差異が副作用・状態変化・setup/teardown・複数段の間接観測で効くケースでは、`assertion or exception` という wording がむしろ狭い。
-
-2. **FAIL 主張のほうが実効的に影響を受けやすい**  
-   `PASS` は「失敗に至らない」で済む一方、`FAIL` は「どの assertion / exception で失敗するか」を説明しやすい/要求されやすい。結果としてこの変更は名目上 A/B 対称でも、**実務上は DIFFERENT / FAIL 側の立証負荷として働きやすい**です。
-
-3. **fail-to-pass ブロックしか変えていない**  
-   pass-to-pass で差が出る NOT_EQ ケースには作用せず、改善対象も限定的です。にもかかわらず、fail-to-pass では証拠負担が増えるので、**利得は局所・負担は実質的**です。
-
-### 一方向にしか作用しないか？
-**はい、実効的には一方向に寄る懸念が強い**です。
-
-表面上は `Claim C[N].1` と `Claim C[N].2` の両方を同じように変えていますが、共通原則 #6 が言う通り、見るべきは「変更後の対称性」ではなく**変更前との差分がどちらに効くか**です。
-
-今回の差分は「trace を deeper にしろ」であり、これは過去の履歴上、主に
-- DIFFERENT を出すとき
-- FAIL を確定させるとき
-- 反例を構成するとき
-にだけ重く効いています。
-
-したがって、**proposal の『対称だから安全』という主張には同意できません**。
-
----
-
-## 4. failed-approaches.md のブラックリスト・共通原則との照合
-
-### 実質同型の疑いが強いもの
-
-#### a. BL-16（first observation point）との類似
-- BL-16 の本質: 「内部コード差分でなく、テストが最初に観測できる点で比較せよ」
-- 今回の本質: 「changed code から assertion / exception まで追え」
-- 評価: **ほぼ同方向**。観測点の位置を `Comparison:` から `because` に移しただけで、狙いも効果も近い。
-
-#### b. BL-11（outcome mechanism 注釈）との類似
-- BL-11 は assertion / exception / side effect などを列挙し、アンカーになって失敗。
-- 今回は `assertion or exception` に絞っているが、これは改善ではなく、むしろ**観測メカニズムをさらに狭く規定**している。
-- 評価: **原則 #5（入力テンプレートの過剰規定）に接近**。
-
-#### c. BL-2 / BL-14 との類似
-- 今回は COUNTEREXAMPLE を直接いじっていないが、実効的には「FAIL/DIFFERENT を主張するには assertion 終端を示せ」という方向に寄る。
-- これは **NOT_EQ の立証責任引き上げ**に近い。
-
-### 共通原則との照合
-
-#### 共通原則 #1 / #6（判定の非対称操作・対称化の実効差分）
-**抵触懸念あり**。文面は対称でも、差分は FAIL / DIFFERENT 側に重く効く。
-
-#### 共通原則 #2（出力側の制約）
-今回の変更は出力テンプレートの wording 変更に近く、**探索行動の強制力が弱い**。ReAct 的にも、効果が出やすいのは wording より行動変更。
-
-#### 共通原則 #5（入力テンプレートの過剰規定）
-**抵触懸念あり**。`assertion or exception` は、実際のテスト結果メカニズムをその 2 類型へ寄せる。
-
-#### 共通原則 #8（受動的記録は検証を誘発しない）
-今回の変更は新フィールド追加ではないので BL-8 そのものではないが、やはり**「文言を変えるだけで本当に assertion まで読むか」は不確実**です。
+を固定している。
+これは failed-approaches の警告の中心にかなり近い。
 
 ### 監査判断
-**承認: NO**。
-
-理由は、
-1. 既存失敗（BL-16/11/2 系）と実質的に近いこと、
-2. 実効差分が DIFFERENT/FAIL 側の追加立証として働く懸念が強いこと、
-3. `assertion or exception` という規定が観測点を狭めること、
-の 3 点です。
-
-### 代替案（未試行メカニズム）
-完全に未使用の大カテゴリはもう少ないですが、**少なくとも今回よりブラックリスト距離がある案**としては、
-
-- **カテゴリ B（情報の取得方法）**: relevant test の同定後、各 test について「変更シンボルの差分行」ではなく「その test が読む/比較する最終データ依存値」を起点に、参照元を 1 段だけ遡って読むことを要求する  
-  - ポイント: assertion/exception といった固定観測点ラベルを足さず、**どの値が outcome を決めるかを test ごとに抽出**する
-  - BL-11/16 のような観測点アンカリングを避けつつ、コード差異→テスト結果のジャンプを減らせる可能性がある
-  - ただし `Key value` 欄のような新フィールド化は BL-13 に近づくので避け、**探索指示としてだけ書く**のがよい
+提案書内の「抵触なし」という自己評価には同意しない。
+少なくとも「明確な懸念あり」であり、ブラックリスト方向との距離は近い。
 
 ---
 
-## 5. 全体の推論品質にどう寄与しうるか
+## 5. 汎化性チェック
 
-提案の狙い自体は正しいです。もしうまく働けば、
-- コード差異の発見で止まらず、
-- テストが実際に観測する地点まで因果を追い、
-- EQUIV 偽陽性を減らす
-という改善は期待できます。
+### 明示的なルール違反の有無
+- ベンチマーク対象リポジトリ名: なし
+- テスト名: なし
+- ケース ID: なし
+- ベンチマーク実コード断片: なし
 
-ただし、この repo の履歴では同系統の wording 強化は、
-- 観測点ラベルへのアンカリング
-- NOT_EQ 側の証拠要求増
-- タスクの本筋ではなく「どう書くか」への注意シフト
-に化けやすかったです。
+この点では大きな overfitting の痕跡は見当たらない。
 
-したがって、**理論上の方向性は良いが、今回の具体化は推論品質向上よりも既知の回帰モード再発リスクが上回る**と見ます。
+### ただし補足
+提案内には `SKILL.md` 自身の文言引用があるが、これは変更前/後比較のための自己引用であり、`Objective.md` の R1 の減点対象外と読める。したがって、これ自体を違反とは扱わない。
+
+### 暗黙のドメイン依存性
+ここが本質的懸念。
+提案は以下を暗に仮定している:
+- semantic difference は主に logic/control-flow に表れる
+- import-only changes は多くの場合 cosmetic である
+- formatting/comment/import は同じ「付随的変更」群として扱ってよい
+
+これらは一般原則としては強すぎる。
+- Python: import 自体が実行・副作用・初期化に関与しうる
+- Java/C#/Go/TypeScript などでも annotation, registration, dependency wiring, module resolution, build metadata 変更が挙動差を生みうる
+- 設定ファイルや test data の差分は control-flow 変更なしでも test outcome を変える
+
+よって、表面上は具体名を出していないが、実質的には「意味差分はロジックに現れやすい」という特定パターンへ寄った提案であり、汎化性は満点ではない。
 
 ---
 
-## 6. 結論
+## 6. 全体の推論品質への期待効果
 
-- 研究整合性: **部分的に Yes**
-- repo の失敗履歴との整合: **No**
-- EQUIV 改善可能性: **ある**
-- NOT_EQ 回帰リスク: **proposal の見積もりより高い**
-- カテゴリ新規性: **不十分**
+### 期待できる改善
+- 差分のノイズに振り回されず、意味のある変化へ早く到達するという点では一定の改善余地がある。
+- 特に「大差分で探索コストが不足しがち」という問題意識は妥当。
 
-**承認: NO（BL-16 / BL-11 / BL-2 系と実質的に近く、実効差分が FAIL/DIFFERENT 側の立証負荷として作用する懸念が強いため）**
+### ただし現行文案の問題
+- 効果の源泉が「重要差分への注意集中」であるのに、実装文言が「読解順序の固定」と「import-only の軽視」になっている。
+- そのため、改善の核より副作用の方が目立つ。
+
+### より安全な方向性
+もし同じ狙いを維持するなら、以下のような弱いヒューリスティックに留める方がよい。
+例:
+- cosmetic-only edit と potential semantic edit を区別して triage せよ
+- ただし import / config / registration / metadata changes は cosmetic とみなすな
+- S1/S2 の structural gap 検出を最優先とし、それを上書きしない
+
+つまり、「読解順序の固定」ではなく「semantic-risk tagging の注意喚起」に寄せるならまだ検討余地がある。
+
+---
+
+## 最終判定
+承認: NO（理由: `failed-approaches.md` が禁じる「読解順序の半固定」に実質的に近く、`import-only changes` を付随扱いする文言が汎化性と NOT_EQUIVALENT 側の安全性を損なうため）
