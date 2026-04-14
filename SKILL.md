@@ -84,7 +84,9 @@ OBSERVATIONS from [filename]:
   O[N]: [another finding with file:line]
 
 HYPOTHESIS UPDATE:
-  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]
+  H[M]: CONFIRMED / REFUTED / REFINED — [explanation];
+        if REFUTED or REFINED, revisit the premises P[N] that supported H[M]
+        and correct any that no longer hold before proceeding.
 
 UNRESOLVED:
   - [remaining questions]
