@@ -1,211 +1,201 @@
-# Iteration 42 — 監査コメント
+# Iteration 42 — 監査ディスカッション
 
 ## 総評
-結論から言うと、この提案は**承認しません**。狙い自体（「コード差分を見つけただけで NOT_EQ に飛ばず、テストの観測点まで到達しているか確認させたい」）は妥当ですが、**提案された実効差分は過去の失敗群とかなり近く、特に BL-5 / BL-8 / BL-11 / BL-14 / BL-16 の複合再発**に見えます。加えて、提案者が主張する Exploration Framework 上の位置づけ（カテゴリ A の未試行介入）も厳密には成立していません。
+提案の狙い自体は理解できます。compare モードで STRUCTURAL TRIAGE と Core Method Step 2 の対応を明示し、詳細トレース前に構造差分を確認させたい、という意図です。
+
+ただし、現行の `SKILL.md` では compare テンプレート側にすでに
+
+- `STRUCTURAL TRIAGE (required before detailed tracing)`
+- `If S1 or S2 reveals a clear structural gap ... you may proceed directly to FORMAL CONCLUSION with NOT EQUIVALENT`
+
+が明記されています（`SKILL.md` の Compare 節）。つまり今回の 1 行追加は、新しい推論メカニズムの導入というより、「既存 compare 専用要件を Core Method Step 2 に再掲して結び直す」変更です。実効差分は小さく、改善が出るとしても主に NOT_EQUIVALENT 側の早期判定補助に偏ると見ます。
+
+また、`failed-approaches.md` が警戒している「読解順序・境界確定の半固定」に本質的にかなり近いです。よって、監査としては慎重寄り、結論としては不承認です。
 
 ---
 
-## 1. Web 検索に基づく妥当性評価（MCP / DuckDuckGo）
+## 1. 既存研究との整合性
 
-以下を MCP で確認しました。
+DuckDuckGo MCP で取得した公開情報に基づく確認結果です。
 
-### 1-1. Structured intermediate reasoning 自体の有効性
-- **Structured Chain-of-Thought Prompting for Code Generation**  
-  URL: https://arxiv.org/abs/2305.06599  
-  要点: 中間推論を構造化するとコード課題の性能が改善しうる。つまり、**「推論を構造化する」という方向性自体は研究的に支持される**。
-- 評価: 本提案の「Claim の前に 1 ステップ置く」発想は、この一般論とは整合的。
+### 1-1. Agentic Code Reasoning 論文
+- URL: https://arxiv.org/abs/2603.01896
+- 要点:
+  - 論文の中心は、explicit premises、execution-path tracing、formal conclusion を強制する semi-formal reasoning が、未実行のコード推論の精度を上げるという点です。
+  - したがって、「前提フェーズで何を完了させるかを明確化する」という方向性自体は、研究コアとは矛盾しません。
+  - ただし論文の主要改善要因は、証拠の明示化・トレース・反証であり、構造トリアージをさらに前倒しすること自体が独立した強い改善因子として示されているわけではありません。
 
-### 1-2. backward reasoning / assertion 起点 reasoning の理論的妥当性
-- **Reasoning About Code (Williams College course material)**  
-  URL: https://www.cs.williams.edu/~freund/cs326/ReasoningAboutCode.html  
-  要点: weakest precondition や backward reasoning では、**最終的に満たすべき条件（postcondition / assertion）から逆算する**のが基本。
-- 評価: 提案者の「アサーションを先に確認してからそこへ向けてトレースする」という説明は、**形式手法の発想としては妥当**。
+評価:
+- 研究コアとの整合性はあります。
+- しかし「研究に強く裏づけられた改善」というより、「既存テンプレートの順序解釈を揃える軽微な整備」に近いです。
 
-### 1-3. assertions は program behavior の観測点だが、それだけでは十分でない
-- **Programming With Assertions (Oracle Java docs)**  
-  URL: https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html  
-  要点: assertions は program の仮定や振る舞いを検証する有効な手段で、バグ検出や保守性向上に有益。  
-- **A Literature Survey of Assertions in Software Testing (Springer, ECBS 2023)**  
-  URL: https://link.springer.com/chapter/10.1007/978-3-031-49252-5_8  
-  要点: assertions は test oracle として重要だが、研究上も assertion だけで testing の全問題が解けるわけではなく、**engineering aspects・test generation・oracle problem と組み合わせて扱われる**。
-- **Best practices for writing unit tests (.NET / Microsoft Learn)**  
-  URL: https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices  
-  要点: unit test は executable documentation だが、良いテストは assertion だけでなく setup や dependency isolation を含む全体設計で成立する。
-- 評価: **「テストの assertion は重要な観測点」という前提は実務的にも妥当**です。ただし同時に、**テスト結果は assertion 行だけでなく setup / 例外 / side effect / teardown にも依存しうる**ため、テンプレートで assertion を特権化すると視野狭窄が起きやすい、というのが既存知見と整合します。
+### 1-2. Program comprehension の一般知見
+- URL: https://en.wikipedia.org/wiki/Program_comprehension
+- 要点:
+  - 既存コード理解は program comprehension という独立分野で研究されており、保守作業での理解過程そのものが主題です。
+  - 高レベル構造の把握と詳細読解の往復は自然な理解過程として整合的です。
 
-### 学術的・実務的な結論
-- **賛成できる点**: 「観測点から逆向きに因果を確認する」発想そのものは妥当。
-- **反対する点**: 今回の実装は backward reasoning を本当に導入しているのではなく、**assertion を書かせる記録欄を 1 行増やしているだけ**です。これは研究上有効な“構造化推論”の本体より、**入力テンプレートの局所的な追加**に近い。
-- したがって、**理論の方向はよいが、提案された具体策は弱く、しかも既存の失敗パターンに近い**と評価します。
+評価:
+- 「最初に全体構造を見る」こと自体は一般的に不自然ではありません。
+- ただし、この種の理解は本来 top-down / bottom-up の往復を含みやすく、一度きりの coarse-first を強く固定することまで一般知見が支持しているわけではありません。
 
----
+### 1-3. Static program analysis の一般知見
+- URL: https://en.wikipedia.org/wiki/Program_analysis
+- 要点:
+  - 実行せずに正しさや安全性を推論する静的解析は有用だが、近似的であり、過不足のある判断になりうる。
+  - したがって高レベルの構造スクリーニングは有用でも、それだけで意味的同値性の十分条件にはならない。
 
-## 2. Exploration Framework のカテゴリ選択は適切か？過去に同一カテゴリは試されていないか？
+評価:
+- STRUCTURAL TRIAGE を「詳細読解前のトリアージ」として使うのは妥当です。
+- しかしそれを強い順序ゲートとして固定しすぎると、粗い構造情報に引っ張られるリスクもあります。
 
-### 結論
-**カテゴリ A としての整理は不適切、少なくとも「未試行のカテゴリ」という主張は成立しません。**
-
-### 理由
-提案者はこれを「カテゴリ A: 推論の順序・構造を変える（逆方向推論）」と述べていますが、実効差分を見ると、実際に変わるのは
-
-- `For each relevant test:` の中に
-- `Asserts: [assertion at file:line]`
-
-を追加するだけです。
-
-これは**本格的な reverse reasoning ステップの追加**というより、
-- テスト観測点に関する**記録フィールドの追加**（BL-8 系）
-- assertion / observation point を明示させる**入力テンプレートの規定強化**（BL-5, BL-11, BL-16 系）
-
-に近いです。
-
-さらに、カテゴリ A 系の試行はすでに複数あります。
-- **BL-12**: Entry から読む固定順序化
-- **BL-14**: backward trace の追加
-- **BL-16**: first observation point 注釈
-- **BL-10**: reachability gate による分析順序の変更
-
-したがって、**「A が未試行」という前提は誤り**です。加えて、今回の変更は A というより **E/B の小さなテンプレート改変**として現れており、カテゴリ自己申告と実態がずれています。
+総合すると、研究整合性は「中程度に良い」です。研究コアを壊してはいませんが、強い研究的必然性がある改善とは言いにくいです。
 
 ---
 
-## 3. EQUIV / NOT_EQ への影響と、変更前との差分分析
+## 2. Exploration Framework のカテゴリ選定は適切か
 
-### 変更前との差分
-現行テンプレートにはすでに以下があります。
-- `P3/P4: The ... tests check [specific behavior]`
-- 各 test ごとに `Claim ... because [trace through code — cite file:line]`
+提案者はカテゴリ A「推論の順序・構造を変える」を選んでいます。
 
-今回の実効差分は、**各 relevant test ごとに assertion を file:line 付きで先に記録させる**ことだけです。
-
-つまり追加される圧力は:
-1. テストソースを読む
-2. assertion を同定する
-3. その assertion を中心に Claim を書く
-
-です。
-
-### EQUIV への作用
-EQUIV 偽陰性（コード差分はあるが観測点が変わらない）に対しては、提案者の狙い通り一定の改善余地があります。  
-特に「内部差分を見ただけで DIFFERENT と言う」癖にはブレーキがかかる可能性があります。
-
-### NOT_EQ への作用
-一方で NOT_EQ では、失敗メカニズムが
-- assertion そのもの
-- 例外送出
-- setup failure
-- 副作用による後続失敗
-- 状態変化の差
-
-など多様です。ここで `Asserts:` を前置すると、モデルは**まず assertion 行を埋めることを目標化**しやすく、assertion に還元しづらい差分を扱いにくくなります。これは failed-approaches にある BL-5 / BL-11 の失敗理由とほぼ同型です。
-
-### 一方向にしか作用しないか？
-提案者は「全テスト対称適用なので非対称ではない」と主張していますが、**既存制約との差分で見ると実効は非対称寄り**です。
+結論から言うと、完全に不適切ではありませんが、やや過大評価です。
 
 理由:
-- 現状でも NOT_EQ を出すには `Claim ... because [trace]` が必要
-- そこへさらに `Asserts:` が入ると、**DIFFERENT を出す前の説明負荷**が増える
-- EQUIV は「assertion に届かない / assertion を変えない」で安全側に倒れやすい
+- 変更後の文言はたしかに「Step 2 の一部として STRUCTURAL TRIAGE を完了せよ」と書くので、形式上は順序の明示化です。
+- しかし compare テンプレートには現時点ですでに「required before detailed tracing」とあり、実運用上の順序はもう定義済みです。
+- したがって今回の本質は、新しい順序設計というより「既存 compare 専用指示を Core Method の Step 2 に再アンカーする」ことです。
 
-つまり文面は対称でも、**実務上は NOT_EQ の立証側に重く効く**可能性が高いです。これは
-- BL-2（証拠閾値の引き上げ）
-- BL-6（対称化の実効差分）
-- BL-14（DIFFERENT 側 backward verify）
+そのため、実質は
+- A: 順序・構造の明示化
+- E: 表現・フォーマット改善（対応関係の明確化）
+の中間です。
 
-の教訓と一致します。
-
-### 予測
-- **EQUIV**: 一部改善の可能性はある
-- **NOT_EQ**: 回帰リスクが高い
-- **総合**: 全体精度改善の期待値は低い、むしろ 85% → 75–80% 系の過去回帰パターンに近い
+監査観点では、「カテゴリ A の新規メカニズム」と言うより「既存 order requirement の明文化強化」とみるのが妥当です。探索フレームワーク上の新規性は高くありません。
 
 ---
 
-## 4. failed-approaches.md のブラックリスト・共通原則との照合
+## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定への作用
 
-### 4-1. 実質同一効果の既存失敗案
-この提案は、表現は違っても以下と実質的に近いです。
+ここは提案文の自己評価より厳しく見るべきです。
 
-#### BL-5: P3/P4 で assertion 条件を記録
-- 相違点: 位置が per-test loop 内に移った
-- 実質: **assertion を template 上で明示的に先に書かせる**点は同じ
-- Fail Core 再発: assertion 行に注意を固定し、setup / side effect / 例外 / test flow を落としやすい
+### 3-1. 変更前との実効差分
+変更前でも compare テンプレートにはすでに
+- STRUCTURAL TRIAGE を detailed tracing より前に行うこと
+- S1/S2 で clear structural gap があれば NOT EQUIVALENT に直行してよいこと
+が書かれています。
 
-#### BL-8: 受動的な記録フィールド追加
-- 相違点: `Relevant to` ではなく `Asserts:`
-- 実質: **新しい記録欄を増やしても、能動的検証そのものは保証しない**
-- file:line 引用があっても、「読んだ」ことは保証しても「正しく比較した」ことは保証しません
+したがって今回の実効差分は、
+- compare テンプレート内の要求を
+- Core Method Step 2 にも書いて
+- 「premises を書く段階で triage まで済ませる」と明示する
+ことです。
 
-#### BL-11 / BL-16: outcome mechanism / observation point への注視
-- 相違点: `Comparison:` 直前ではなく `Claim` 前
-- 実質: **観測点・assertion を明示させることで分析をそのフレームに寄せる**
-- Fail Core 再発: 比較推論そのものではなく、観測点の説明を目的化しやすい
+これはゼロではありませんが、効果は限定的です。
 
-#### BL-14: backward trace
-- 相違点: DIFFERENT のみではなく全 test に適用
-- 実質: 「assertion から逆算する」という認知操作を追加しており、**backward reasoning を導入したい**という発想自体は同系列
-- しかも今回は backward reasoning を本当には実装せず、assertion 記録だけを追加しているので、効果はさらに弱い
+### 3-2. NOT_EQUIVALENT への作用
+主なプラスはここです。
 
-### 4-2. 共通原則との照合
+効くケース:
+- 片方の変更だけが特定ファイル/モジュール/テストデータを触っている
+- failing test が参照する構成要素が一方に欠けている
+- 構造差分だけで強い否定証拠になる
 
-#### 原則 #5: 入力テンプレートの過剰規定
-**抵触の可能性が高いです。**  
-`Asserts:` によって「何を見るか」を assertion に寄せるため、規定外の重要信号が落ちやすい。
+この場合、詳細トレース前に negative evidence を固めやすくなるため、
+- 無駄な深掘りを減らす
+- 構造差分の見落としを減らす
+- NOT_EQUIVALENT の早期到達を促す
+という改善は期待できます。
 
-#### 原則 #8: 受動的記録フィールドは能動的検証を誘発しない
-**抵触します。**  
-`cite file:line` は参照行の記録を強めますが、検証行動そのものを増やすわけではありません。
+### 3-3. EQUIVALENT への作用
+こちらへの直接的な改善は弱いです。
 
-#### 原則 #6: 対称化の実効差分で評価
-**抵触します。**  
-文面は対称でも、既存の `Claim because trace` に追加される差分は NOT_EQ 側の説明負荷を相対的に重くしやすい。
+理由:
+- 構造差分が「ない」ことは、EQUIVALENT の十分条件ではありません。
+- EQUIVALENT を出すには、従来どおり per-test tracing、counterexample 不在の確認、下流の振る舞い確認が必要です。
+- つまり triage の前倒しは、EQUIVALENT の証明コストを本質的には減らしません。
 
-#### 原則 #1 / #12: 判定の非対称操作・アドバイザリな非対称指示
-明示的な非対称ではありませんが、**実効としては DIFFERENT 側の立証負荷上昇**に近く、危険です。
+むしろ弱い副作用として、
+- ファイル差分の対称性に安心してしまう
+- 粗い一致を意味的一致の proxy と誤認しやすくなる
+可能性があります。
 
-### 判定
-この照合結果から、**ブラックリストの実質再発と判断します。**
+### 3-4. 片方向にしか作用しないか
+かなりの程度で「はい」です。
 
-そのため、要件どおり結論は **承認: NO** です。
+この変更は、
+- NOT_EQUIVALENT には早期の否定証拠を与える
+- EQUIVALENT には同等の強い早期肯定証拠を与えない
+ため、実質的に非対称です。
 
-### 代替提案（未採用カテゴリから）
-代替としては、**カテゴリ F: 原論文の未活用アイデアの導入**を推します。  
-具体的には、assertion 固定ではなく、原論文の「read the actual definition / verified behavior」志向を compare に強める形で、
-
-- `because` 節で引用する関数については、**名前や差分要約ではなく、実定義を読んでその test input に対する effect を 1 行で verified に記録する**
-- 対象は「Claim で実際に引用する関数のみ」に限定し、テーブル全面拡張はしない
-
-という方向です。これは assertion 中心ではなく**因果鎖の各リンクの実定義確認**を強化するため、EQUIV/NOT_EQ の双方に比較的対称に効きやすいです。
-
----
-
-## 5. 全体の推論品質への期待
-
-本提案がうまく働くなら、
-- 「内部差分がある」→「DIFFERENT」
-の短絡を減らす点では一定の効果があるでしょう。
-
-しかし実際には、改善されるのは主に
-- assertion 行にきれいに還元できる EQUIV 失敗
-
-に限られ、同時に
-- setup / exception / side effect / state mutation を含む NOT_EQ
-- assertion が本質でないテスト失敗
-
-で回帰するリスクが高いです。よって、**推論品質全体を上げるというより、観測点のフレーミングを強める局所改変**に留まると見ます。
+提案文では「equiv / not_eq どちらにも偏らず底上げ」と述べていますが、この点は支持しにくいです。実際には NOT_EQUIVALENT 側への寄与が中心で、EQUIVALENT 側は高く見積もっても間接効果にとどまります。
 
 ---
 
-## 6. 結論（承認可否）
+## 4. failed-approaches.md の汎用原則との照合
 
-**修正を求めます。**
+ここが最も重要な懸念点です。
 
-理由を一言で言うと、
-- 発想の理論的方向はよい
-- しかし実装差分は backward reasoning ではなく assertion 記録欄の追加に留まる
-- その結果、過去の失敗した assertion-centric / observation-centric テンプレート強化と同型になっている
+`failed-approaches.md` には次の警告があります。
 
-ためです。
+- 探索ドリフト対策を追加する際は、探索の自由度を削りすぎない
+- とくに「どこから読み始めるか」「どの境界を先に確定するか」のような読解順序の半固定は、探索経路を早期に細らせ、構造差分や別粒度の手掛かりを拾う余地を減らしやすい
 
-## 最終判定
-**承認: NO（BL-5 / BL-8 / BL-11 / BL-14 / BL-16 の実質再発であり、EQUIV 改善より NOT_EQ 回帰リスクが上回るため）**
+今回の提案は、まさに
+- どこから読むか: まず STRUCTURAL TRIAGE
+- どの境界を先に確定するか: ファイル差分・モジュール網羅性
+を compare モードで半固定する提案です。
+
+提案文では「何を探すかではなく、どのステップで行うかだけなので非該当」と整理していますが、この自己判定には同意できません。failed-approaches 側は、証拠種類を固定しなくても、読解順序や境界確定の前倒し自体が探索自由度を削ると明示的に警告しています。
+
+もちろん、今回の変更は 1 行であり、強制力も compare モードに限定されています。そのため危険度は高くありません。しかし「本質が同じ過去失敗の再演ではないか」という問いには、かなり近いと答えざるを得ません。
+
+監査上は、提案者の「非該当」判定は甘いです。
+
+---
+
+## 5. 汎化性チェック
+
+### 5-1. 明示的なルール違反の有無
+提案文中を確認した限り、以下のような明示的ルール違反はありません。
+
+- 具体的なベンチマークケース ID
+- 特定リポジトリ名
+- 特定テスト名
+- 実コード断片
+- 特定言語/フレームワーク依存の API 名
+
+この点は適合です。
+
+### 5-2. 暗黙のドメイン依存の有無
+大きな問題はありませんが、軽微な偏りはあります。
+
+- 提案は「patch comparison で file/module completeness が効く」タイプのタスクには自然です。
+- しかし compare タスク全般では、同じファイル群を触っていても意味的には非等価、あるいは構造差があってもテスト上は等価、というケースがありえます。
+- そのため、この変更は patch-diff 型の compare には相性がよい一方、意味差分の本体が control flow や API semantics にあるケースではレバレッジが小さいです。
+
+つまり、明示的 overfitting はないが、効きやすい問題形状はやや限定されています。
+
+---
+
+## 6. 全体の推論品質がどう向上すると期待できるか
+
+### 期待できる改善
+- compare テンプレートの既存要求と Core Method Step 2 の接続が明示される
+- 明らかな structural gap がある NOT_EQUIVALENT ケースで、無駄な詳細トレースを減らせる
+- 「PREMISES を書く前後で triage を忘れる」ような運用上のぶれは多少減る可能性がある
+
+### 期待しにくい点
+- README にある残課題は主に EQUIVALENT 側の trace/scope judgment の誤りです
+- 今回の提案は、そこに直接効く変更ではありません
+- 既存 compare テンプレートにすでに triage-first がある以上、改善幅はかなり小さいはずです
+
+### 総合評価
+推論品質への寄与がゼロとは言いません。しかし、
+- 変更前からほぼ同じ要求が compare テンプレートに存在し
+- 増分効果が主に NOT_EQUIVALENT 側へ偏り
+- failed-approaches が警戒する順序固定に近い
+以上から、今回の提案を「全体品質を有意に上げる有望仮説」とまでは評価できません。
+
+---
+
+## 最終結論
+承認: NO（理由: 実効差分が小さく、改善効果が主に NOT_EQUIVALENT 側の早期否定に偏る一方、`failed-approaches.md` が明示的に警戒する「読解順序・境界確定の半固定」に本質的に近いため。研究コアとの整合性はあるが、汎用的改善としての説得力は十分でない。）
