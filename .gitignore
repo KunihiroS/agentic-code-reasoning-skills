@@ -78,8 +78,3 @@ benchmark/swebench/runs/localize-*/
 benchmark/swebench/runs/variance-*/
 benchmark/swebench/runs/archive.jsonl.old
 
-# Old iterations (pre-benchmark-overhaul)
-benchmark/swebench/runs/iter-[1-9]/
-benchmark/swebench/runs/iter-[1-9][0-9]/
-benchmark/swebench/runs/iter-1[0-1][0-9]/
-!benchmark/swebench/runs/iter-0/
