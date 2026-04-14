@@ -99,14 +99,14 @@ Update this table **in real time during Step 3** — add each row the moment you
 
 For every function or method encountered on a relevant code path, record:
 
-| Function/Method | File:Line | Behavior (VERIFIED) |
-|-----------------|-----------|---------------------|
-| [name] | [file:N] | [actual behavior after reading the definition] |
+| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to test |
+|-----------------|-----------|---------------------|-------------------|
+| [name] | [file:N] | [actual behavior after reading the definition] | [which test(s) and why this function is on the relevant path] |
 
 **Rules:**
 - Read the actual definition. Do not infer behavior from the name.
 - Mark the Behavior column VERIFIED only after reading the source.
-- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
+- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
 - Trace through conditionals, mapping tables, and configuration — not just the happy path.
 - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
 
