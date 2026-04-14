@@ -1,211 +1,216 @@
-# Iteration 44 — 監査コメント
+# Iter-44 Discussion
 
-## 総評
-提案の問題意識自体は妥当です。iter-43 の `nearest downstream consumer` が「最初の消費者で止まる」挙動を誘発し、差異が最終的な観測境界まで伝播するか/吸収されるかを見落とした、という分析はかなり説得的です。
+## 監査結論
 
-ただし、**今回の提案はカテゴリ E（表現改善）と説明されているものの、実効差分は「downstream trace を 1 段から複数段へ伸ばす」という探索方針の変更であり、実質的には iter-41 / iter-43 と同系統のカテゴリ B 改変**です。したがって、failed-approaches.md の共通原則 #4（同じ方向の変更は表現を変えても同じ結果になりやすい）に照らすと、**「前回失敗した同じ trace 方向の再調整」に留まっている懸念が強い**です。
+現案は「差異の存在」から一歩進めて「その差異がテスト上の観測可能な差になるか」を問おうとしており、狙い自体は妥当です。しかし、提案された具体文言 `Difference reaches a test assertion` は比較対象を「assertion 到達」に狭めすぎています。既存の `compare` 定義はテストの pass/fail outcome 全体を比較対象としているため（`SKILL.md` の D1/D2）、この文言は研究コアと完全には噛み合いません。
 
-加えて、変更前との差分を厳密に見ると、この提案は **EQUIV 改善のために downstream trace をより深く要求する**ものであり、実効的には **NOT_EQ 側に追加の確認コストを載せる方向**にも働きます。よって、そのままの承認は難しいです。
+そのため、現状の文言のままでは承認しません。
 
----
+## 1. 既存研究との整合性
 
-## 1. 既存研究・コード推論知見に基づく評価（Web 検索）
+### 参照した Web 情報
 
-DuckDuckGo MCP で確認した結果、提案の「差異を downstream に追って観測境界まで見る」という発想自体には学術的な裏付けがあります。一方で、**“nearest consumer を chain に変えるだけで十分か” は別問題**です。
+DuckDuckGo MCP の search エンドポイントでは今回複数回 `No results were found` が返り、検索結果一覧の取得はできませんでした。そのため、同じ DuckDuckGo MCP の fetch_content を用いて既知の公開 URL を取得し、整合性を確認しました。
 
-### (a) Client-specific equivalence checking / impact boundary search
-- URL: https://ieeexplore.ieee.org/document/9285657
-- URL: https://conf.researchr.org/details/ase-2020/ase-2020-papers/79/Scaling-Client-Specific-Equivalence-Checking-via-Impact-Boundary-Search
-- 要点:
-  - 変更の影響を「downstream component 側の impact boundary」まで追う、という発想は patch equivalence / impact analysis と整合的。
-  - つまり、**差異を見つけた関数そのものではなく、その差異がクライアントの観測境界でどう現れるかを見る**のは妥当。
-- 本提案への示唆:
-  - `nearest consumer` より `boundary` を意識する方が研究知見には近い。
-  - ただし論文側の主眼は「impact boundary を見つける」ことであり、**単に chain を長くすること**ではない。したがって、今回の wording 変更は方向としては良いが、**boundary の見つけ方が曖昧なまま**で、実装者の期待ほど強い改善を保証しない。
+1. https://arxiv.org/abs/2603.01896
+   - 要点: Agentic Code Reasoning は、明示的 premises、execution-path tracing、formal conclusion を要求する semi-formal reasoning により、patch equivalence を含む複数タスクで精度改善を示している。
+   - 含意: 今回の提案は「差異を見つけた後に、その差異が観測結果へ届くかを明示する」という方向なので、structured evidence chain を強める点では論文の精神に整合する。
 
-### (b) Interprocedural analysis の一般知見
-- URL: https://www.cs.cornell.edu/courses/cs6120/2020fa/lesson/8/
-- 要点:
-  - 手続き間解析では call graph をまたいで影響を追う必要がある。
-  - ただし **context sensitivity と分析コストのトレードオフ**があり、深く追うほど精度は上がるが高コスト化しやすい。
-- 本提案への示唆:
-  - `nearest` で止まるのは浅すぎるが、`chain ... toward the assertion boundary` は逆に深くしすぎるリスクがある。
-  - 特に UNKNOWN/turn 枯渇が既に問題化しているベンチマークでは、**深掘りの一般化は NOT_EQ 側のターンコスト増**を招きうる。
+2. https://en.wikipedia.org/wiki/Program_slicing
+   - 要点: program slicing は、ある観測点の値に影響しうる文や依存関係を遡って特定する考え方であり、debugging や program analysis に使われる。
+   - 含意: 「差異がどこに効くか」を観測点基準で絞る発想自体は一般的で、テスト観測点への到達性を問うことには理論的な自然さがある。
 
-### (c) Program slicing / observation-based dependency の知見
-- URL: https://coinse.github.io/publications/pdfs/Lee2021ua.pdf
-- URL: http://www0.cs.ucl.ac.uk/staff/w.emmerich/lectures/3C05-04-05/ProgramSlicing-Essay.pdf
-- URL: https://repositorium.uminho.pt/bitstreams/ebd8b743-3925-4940-8c71-15d5ef4f893c/download
-- 要点:
-  - forward slice は「ある差異がどこへ伝播するか」を追うのに有効。
-  - backward / assertion-based slicing は「どの文・値が観測点に影響するか」を絞るのに有効。
-  - 実務的には **forward だけ/ backward だけでなく、観測点を基準に両者をつなぐ方が精度が高い**。
-- 本提案への示唆:
-  - `chain of downstream consumers` は forward slice 寄りで、発想は妥当。
-  - しかし、**観測境界（assertion/exception boundary）を固定する backward 側の anchor が弱い**ため、「どこまで追えば十分か」が曖昧なまま残る。
-  - したがって、研究的には「半分正しい」が、**改善案としてはまだ粗い**。
+3. https://en.wikipedia.org/wiki/Change_impact_analysis
+   - 要点: change impact analysis は、変更の結果どこに影響が及ぶかを dependency / traceability の観点から評価する。
+   - 含意: 差異の重要度を、依存やトレースを通じて評価するという着眼は妥当。
 
-### 学術的・実務的総合評価
-- **学術的には**: downstream 伝播と観測境界を結ぶ発想は妥当。
-- **実務的には**: `nearest` の回帰要因を除く方向は理解できるが、**単なる wording 修正ではなく探索深度の増加**なので、ターンコストと回帰リスクの検証なしに承認しづらい。
+4. https://en.wikipedia.org/wiki/Regression_testing
+   - 要点: regression testing は変更後も既存機能が期待通りかを再確認するもので、ときに change impact analysis により適切なテスト部分集合を選ぶ。
+   - 含意: 「差異の有無」だけでなく「その差異が既存テストの観測結果に影響するか」を問うのは regression testing の文脈でも自然。
 
----
+5. https://en.wikipedia.org/wiki/Observational_equivalence
+   - 要点: observational equivalence は、観測可能な含意が同一なら区別不能とみなす考え方。
+   - 含意: compare モードの本質は内部差分の有無ではなく、既存テストから見た観測可能差分の有無にある。したがって「重要度」を問う方向は正しい。
 
-## 2. Exploration Framework のカテゴリ選択は適切か？同一カテゴリの既試行有無
+### 研究整合性の評価
 
-### 判定
-**カテゴリ選択は不適切です。名目上は E でも、実効的には B です。**
+方向性は整合的です。特に `README.md` と `docs/design.md` が強調するのは、
+- 明示的 premises
+- per-item tracing
+- mandatory refutation
+- 観測可能な結果に基づく formal conclusion
 
-### 理由
-提案者は「曖昧な指示の具体化」だから E と整理していますが、変更前後の実効差分は次です。
+であり、提案はこのうち「trace から観測結果までのつながり」を明文化しようとしています。
 
-- 変更前: `nearest downstream consumer` を次の read target にする
-- 変更後: `chain of downstream consumers ... toward the test's assertion or exception boundary` を追う
+ただし問題は、提案文言が「observable test outcome」ではなく「test assertion」へ狭く固定している点です。論文・README・design が定義している compare の対象は test outcome であり、assert 文だけではありません。例外で途中失敗するテスト、fixture/setup 失敗、タイムアウト、フレームワーク側の失敗、`raises` 期待などは、必ずしも「assertion 到達」で表現できません。このため、研究のコアと完全整合とは言い切れません。
 
-これは単なる wording 微修正ではなく、**どこまで読むかという探索深度・取得情報の範囲の変更**です。従って、Exploration Framework 上は **カテゴリ B（情報の取得方法）** と見るのが自然です。
+結論: 方向性は整合、文言は狭すぎる。
 
-### 既試行との重複
-同系統は既に複数回試されています。
+## 2. Exploration Framework のカテゴリ選定は適切か
 
-- **iter-41**: nearest consumer / relevant test call path への anchoring
-- **iter-43**: nearest downstream consumer を明示
-- **iter-44（今回）**: nearest を chain へ置換し、boundary を明記
+提案者はカテゴリ C「比較の枠組みを変える」を選んでいます。これは概ね妥当です。
 
-したがって、今回の提案は **未試行カテゴリ E の新機軸ではなく、iter-41/43 系の trace 方向の再調整**です。failed-approaches.md の共通原則 #4「同じ方向の変更は表現を変えても同じ結果になる」に対する警戒が必要です。
+理由:
+- 変更対象は `compare` モードの EDGE CASES 欄であり、探索順序そのものではない。
+- 追加しようとしている判断軸は「差異の重要度評価」で、Objective.md のカテゴリ C の例示そのものに近い。
+- `difference exists?` から `difference matters to observed test outcome?` へ比較粒度を変える発想なので、B や D より C の方が近い。
 
-また、カテゴリ E 自体も過去に
-- iter-23
-- iter-30
-- iter-31
-などで試行され、BL-11 / BL-16 系の「表現変更が新たなアンカーや局所フレームを作る」失敗が記録されています。今回はそれらと完全同一ではないにせよ、**“表現改善だから別物” とみなすには無理がある**というのが監査上の判断です。
+ただし副作用として、これはカテゴリ D 的な「必須の追加判断」にも少し踏み込みます。1 行追加ではあるものの、実質的には compare の各 edge case に対して新しい判定項目を増やします。そのため、C として妥当だが、D 的な複雑化リスクがゼロではありません。
 
----
+## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定への作用
 
-## 3. EQUIV / NOT_EQ への影響と、変更前との差分分析
+### 変更前との差分
 
-## 実効差分
-変更前（iter-43）の本質:
-- 差異を見つけたら **最初の downstream consumer を読む**
+現行テンプレートでは、EDGE CASES で求められているのは:
+- Change A behavior
+- Change B behavior
+- Test outcome same: YES / NO
 
-変更後（今回）の本質:
-- 差異を見つけたら **consumer chain を assertion/exception boundary に向けて追う**
+だけです（`SKILL.md` の EDGE CASES 節）。
 
-つまり実効差分は、**trace を 1 hop から multi-hop に伸ばすこと**です。
+一方、現行でも NOT_EQUIVALENT を結論する場合は、すでに COUNTEREXAMPLE 節で
+- diverging assertion の特定
+- 具体的な PASS/FAIL 分岐の記述
 
-### EQUIV への影響
-**改善可能性はある**。
+が要求されています（`SKILL.md` の COUNTEREXAMPLE 節）。
 
-- iter-43 の regressions（13821, 11179）の原因分析は筋が通っている。
-- 最初の consumer 自体に A/B 差があっても、さらに downstream で吸収されるなら EQUIV になりうる。
-- よって、`nearest` を外して boundary 方向へ延ばすのは、**EQUIV 偽陰性の抑制には合理的**。
+つまり、提案の実効差分は「差異が assertion に届くか」を COUNTEREXAMPLE より前、edge-case 記録段階で先に明示させる点です。
 
-### NOT_EQ への影響
-**中立とは言い切れず、悪化リスクがある**。
+### EQUIVALENT への作用
 
-理由は 2 つあります。
+ここへの効果は比較的大きいです。
 
-1. **追加コスト**
-   - 真の NOT_EQ では最初の consumer で十分に差異が観測可能なことも多い。
-   - そこからさらに boundary まで追う指示は、ターンコストを増やす。
-   - 既に UNKNOWN が turn 枯渇で出ている環境では、これは無視できない。
+期待できる改善:
+- 小さな意味差や構造差を見つけた瞬間に `NOT EQUIVALENT` へ倒れるのを防ぎやすい。
+- 「差異はあるが、既存テストの観測点には届かない」という説明が書きやすくなる。
+- `README.md` にある observational な比較発想と整合する。
 
-2. **実質的な立証責任の上昇**
-   - 提案者は「両方向に効く」と主張しているが、変更前との差分で見ると、**新たに課されるのは“そこで止まらずもっと追え” という義務**。
-   - EQUIV は途中で吸収点を見つければ恩恵を受けやすい。
-   - NOT_EQ は「差異が伝播する」と感じても、boundary までの追加トレースを心理的に要求されやすい。
-   - この点で、差分は完全に対称とは言えない。
+つまり、偽陽性の NOT_EQUIVALENT を減らし、EQUIVALENT 判定の精度を上げる方向には効きやすいです。
 
-### 一方向にしか作用しないか？
-**完全な一方向ではないが、EQUIV 改善寄りで、NOT_EQ 側には主に追加負担として作用する可能性が高い**です。
+### NOT_EQUIVALENT への作用
 
-したがって、提案書の「中立〜改善」という見積もりは楽観的すぎます。監査上は、
-- EQUIV: 改善余地あり
-- NOT_EQ: 改善もありうるが、UNKNOWN 増加リスクあり
-という評価です。
+ここへの追加効果は限定的です。
 
----
+理由:
+- 現行でも true NOT_EQUIVALENT を出すには、COUNTEREXAMPLE で diverging assertion を示す必要がある。
+- したがって、提案が加えるのは本質的に新しい証拠義務というより「その義務を前倒しで意識させる」効果。
 
-## 4. failed-approaches.md ブラックリスト / 共通原則との照合
+改善可能性はあるものの、EQUIVALENT 側ほど大きくはありません。
 
-### 4.1 実質的に同じ効果ではないか？
-**はい。iter-41 / iter-43 の downstream-trace 系の再調整であり、実質的に同系列です。**
+### 片方向にしか作用しないか
 
-- iter-41: changed output を consume する関数を読む
-- iter-43: nearest downstream consumer を読む
-- iter-44: chain of downstream consumers を読む
+完全に片方向だけ、とは言いません。ただし実質的には非対称です。
 
-メカニズム名は違っても、本質は一貫して **「差異を downstream に追わせる」** です。これは failed-approaches.md の共通原則 #4 に抵触する懸念があります。
+- 主効果: false NOT_EQUIVALENT の抑制 = EQUIVALENT 側の改善
+- 副効果: true NOT_EQUIVALENT の根拠を早めに整理 = NOT_EQUIVALENT 側にも少し寄与
 
-### 4.2 共通原則との照合
+よって、提案文の「両方向の精度が向上する」は言い過ぎです。正確には「両方向に理論上は寄与しうるが、主効果は EQUIVALENT 側」であり、左右対称の改善とは見なしにくいです。
 
-#### 共通原則 #1（判定の非対称操作）
-- 明示的な verdict-conditioned rule ではないため、形式上は抵触しません。
-- ただし、変更前との差分としては NOT_EQ 側の確認負担を増やすので、**実効的な非対称性の懸念**はあります。
+さらに重要な懸念として、assertion 中心の文言は true NOT_EQUIVALENT を取りこぼす危険もあります。差異が
+- assertion 実行前の例外
+- setup/fixture の失敗
+- timeout / hang
+- framework-level failure
 
-#### 共通原則 #2（出力側の制約）
-- 出力テンプレートは触っていないため直接抵触しません。
+として現れる場合、「Difference reaches a test assertion: NO」でも test outcome は DIFFERENT になりえます。このため、文言次第では NOT_EQUIVALENT 側に回帰リスクがあります。
 
-#### 共通原則 #3（探索量の削減）
-- これは逆方向で、探索量を増やします。原則 #3 そのものには抵触しません。
-- ただし、**ターン予算の観点では増加コストが無視できない**です。
+## 4. failed-approaches.md の汎用原則との照合
 
-#### 共通原則 #4（同方向の変形）
-- **最も強く抵触**します。
-- 今回は iter-43 の失敗原因を「nearest という一語」に帰着していますが、監査上は **同方向の trace policy を再調整しているだけ**に見えます。
+提案文は「すべて非抵触」と主張していますが、そこまでは言えません。限定的な緊張関係があります。
 
-#### 共通原則 #5（入力テンプレートの過剰規定）
-- `toward the test's assertion or exception boundary` は新たな観測終点を導入しており、軽度の過剰規定リスクがあります。
-- BL-16 ほど強くはないが、**新しい trace 終端フレームのアンカー**にはなりえます。
+### 原則 1: 探索シグナルを事前固定しすぎない
 
-#### 共通原則 #6（対称化の実効差分）
-- 提案文面は対称的に見えても、変更前との差分は「もっと追え」の追加義務です。
-- そのため、**差分評価では中立と断定できません**。
+軽度の抵触リスクがあります。
 
-### 4.3 監査結論
-上記理由により、**ブラックリスト完全一致ではないが、共通原則 #4 と #6 に実質的に抵触**すると判断します。
+今回の追加は「差異を見たら assertion 到達性を見る」という特定の証拠型を新たに固定します。読解順序や探索開始点を固定するものではありませんが、compare における重要証拠を assertion-chain にやや寄せます。
 
-そのため、結論は **承認: NO** です。
+ただし、compare の定義自体が test outcome 中心なので、完全に不適切とは言いません。問題は assertion という狭い語で固定している点です。もし `observable test outcome / test oracle` のような表現なら、この原則との緊張はかなり弱まります。
 
-### 未試行カテゴリからの代替提案
-**カテゴリ C（比較の枠組みを変える）** から、次の方向を提案します。
+### 原則 2: 探索の自由度を削りすぎない
 
-> 各 relevant test について、まず「このテストで A/B を比較する唯一の観測対象は何か（返り値・例外・永続状態・assert 入力）」を 1 つ定め、その観測対象に対してのみ A/B の因果連鎖を比較する。
+大きな抵触はありませんが、少し注意が必要です。
 
-ポイント:
-- downstream chain を長くするのではなく、**比較枠組みを“観測対象の同一性”に固定**する。
-- 「nearest consumer を読むか / chain を読むか」という B 系の繰り返しから外れられる。
-- 既存の BL-16 のような `Comparison:` 直前注釈ではなく、**探索対象の比較単位そのものをそろえる**方向で設計すべき。
-- 実装するなら、新たな記録欄追加ではなく、既存 Claim 記述の前提として比較対象を 1 つに揃える程度の最小変更が望ましい。
+1 行追加なので探索順序や読み始めを縛るものではありません。ただし「差異の重要度」を assertion-chain でしか表現しにくくすると、差異の現れ方が assertion 以外であるケースを見落とす可能性があります。
 
----
+### 原則 3: 局所仮説更新を前提修正義務に直結させすぎない
 
-## 5. 全体の推論品質への期待
+ほぼ非抵触です。今回の追加は premises 修正義務を増やしていません。
 
-提案が狙っている「最初の差異で止まらず、観測境界まで伝播/吸収を確認する」は、推論品質の観点では正しい方向です。これがうまく働けば、
+### 原則 4: 結論直前の自己監査に新しい必須メタ判断を増やしすぎない
 
-- コード差分 ≠ テスト差分、をより一貫して扱える
-- downstream handling の見落としを減らせる
-- EQUIV の偽陰性を減らせる
+形式上は Step 5.5 ではないので直接抵触ではありません。しかし compare の各 edge case に新しい必須欄を足すため、実質的には micro-gate です。規模が小さいので致命的ではないものの、「まったく非抵触」という提案者評価は甘いです。
 
-という改善は期待できます。
+総合すると、failed-approaches との関係は「非抵触」ではなく「小さな追加であるため許容可能だが、assertion への固定は原則 1 と 4 に軽い緊張がある」が正確です。
 
-ただし今回の形だと、
-- 前回の同系統変更の再調整に留まる
-- boundary までの trace がターンコストを押し上げる
-- NOT_EQ 側の追加確認負担が増える
+## 5. 汎化性チェック
 
-ため、**“全体の推論品質を上げる” より “特定回帰の修復に寄りすぎている”** というのが監査上の見立てです。
+### 明示的なルール違反の有無
 
----
+提案文には以下は含まれていません。
+- ベンチマーク対象リポジトリ名
+- 特定テスト名
+- ケース ID
+- 対象リポジトリの実装コード断片
 
-## 6. 結論
+一方で、以下は含まれています。
+- `SKILL.md` 内部の line 参照
+- `SKILL.md` テンプレートの引用
+- `file:line` といった一般表現
 
-**修正を求めます。**
+これらは提案対象である SKILL.md 自身の自己引用・差分指定であり、過剰適合の証拠とは言いません。したがって、この観点での明確なルール違反はありません。
 
-- 問題分析は妥当
-- 研究的な方向性も概ね妥当
-- しかし提案の実体はカテゴリ E ではなく、iter-41/43 系の B 方向の再調整
-- 変更前との差分は EQUIV 改善寄りだが、NOT_EQ 側には追加コストとして作用しうる
-- failed-approaches.md の共通原則 #4 / #6 に抵触する懸念がある
+### 暗黙のドメイン仮定
 
-**承認: NO（iter-41/43 と同系列の downstream-trace 再調整であり、カテゴリ E としては不適切。実効差分は NOT_EQ 側の確認負担を増やす可能性があり、共通原則 #4 / #6 に抵触する懸念が強いため）**
+ここには懸念があります。
+
+`Difference reaches a test assertion` という文言は、暗黙に以下を強く想定しています。
+- テストの主要 oracle が明示的 assertion で表現される
+- 差異の観測点が assertion line に集約できる
+- pass/fail 差が assertion 到達性でうまく説明できる
+
+しかし汎用的には、テストの観測可能差分は assertion 以外でも生じます。
+- assertion 前例外
+- framework matcher / context manager による成功失敗
+- property-based test の反例検出
+- snapshot / golden file 差分
+- timeout / non-termination
+- setup / teardown / fixture failure
+
+よって、提案は benchmark 固有名詞では過剰適合していない一方で、テスト様式としては「assertion-centric unit test」にやや寄っています。これは汎化性の弱点です。
+
+## 6. 全体の推論品質への期待効果
+
+### 良い点
+
+- 差異発見直後に「その差は本当に重要か」を問わせるため、浅い差分過大評価を抑える。
+- `compare` モードで、観測可能差分までの証拠チェーンを前倒しで意識させる。
+- 現行の `Test outcome same: YES / NO` より一段細かい中間表現になるため、EQUIVALENT 判定の説明品質は上がりやすい。
+
+### 悪い点 / リスク
+
+- 「assertion に届くか」が重要度評価の唯一の言語になると、observable outcome 全体より狭い。
+- 既存の COUNTEREXAMPLE と役割重複があり、NOT_EQUIVALENT 側の純増効果は小さい。
+- モデルが `file:line if YES` を満たせないときに、安易に `NO` と書いてしまうと false EQUIVALENT の温床になりうる。
+
+### 総合評価
+
+狙いは良いが、現文言は少し狭いです。改善したい本質は
+「差異がある」ではなく
+「その差異が既存テストの観測可能な oracle / outcome を変えるか」
+を問うことです。
+
+もしこの本質に合わせて文言を一般化できれば、全体推論品質への寄与は十分見込めます。
+
+## 監査上の最終判断
+
+現案のままでは不承認です。
+
+主理由:
+1. `assertion` への固定が compare の定義である test outcome より狭い。
+2. 改善効果は主に EQUIVALENT 側で、提案文ほど対称ではない。
+3. failed-approaches との関係を「完全非抵触」とする評価は甘い。
+4. assertion 前例外や framework-level failure を扱いにくく、汎化性に穴がある。
+
+### 承認判断
+
+承認: NO（`Difference reaches a test assertion` が汎用比較基準として狭すぎ、observable test outcome 全体を表せていないため。主効果も EQUIVALENT 側に偏っており、提案理由の対称性主張は過大。）

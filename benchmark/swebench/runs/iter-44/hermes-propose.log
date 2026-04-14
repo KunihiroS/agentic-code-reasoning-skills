@@ -1,0 +1,176 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/15/26 00:55:03] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 preparing read_file…
+  ┊ 📖 preparing read_file…
+  ┊ 📖 preparing read_file…
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      Objective.md  0.9s
+  ┊ 📖 read      failed-approaches.md  0.8s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+カテゴリ C のメカニズムを具体的に検討するため、SKILL.md の compare モードの STRUCTURAL TRIAGE および EDGE CASES セクションを精査します。
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ┊ 📖 preparing read_file…
+  ┊ 📖 read      SKILL.md  0.8s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+これで十分な分析ができました。出力先ディレクトリを作成してから proposal.md を書きます。
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ┊ 💻 preparing terminal…
+  ┊ 💻 $         mkdir -p benchmark/swebench/runs/iter-44  0.2s
+  ┊ ✍️ preparing write_file…
+  ┊ ✍️  write     benchmark/swebench/runs/iter-44/proposal.md  0.6s
+  ┊ review diff
+a/benchmark/swebench/runs/iter-44/proposal.md → b/benchmark/swebench/runs/iter-44/proposal.md
+@@ -1,198 +1,115 @@
+-# Iteration 44 — 改善提案（再提出）
++# Iter-44 Proposal
+ 
+-## iter-43 の分析
++## Exploration Framework カテゴリ: C（強制指定）
+ 
+-- **スコア**: 65%（13/20）
+-- **失敗ケース**:
+-  - EQUIV 偽陰性（NOT_EQ と誤判定）: `15368`（17 turns）, `11179`（11 turns）, `13821`（15 turns）, `15382`（20 turns）
+-  - NOT_EQ 偽陽性（EQUIV と誤判定）: `14787`（26 turns）
+-  - NOT_EQ UNKNOWN（31 turns ターン枯渇）: `11433`, `14122`
++カテゴリ C は「比較の枠組みを変える」に対応する。今回選択した具体的なメカニズムは
++「差異の重要度を段階的に評価する」である。
+ 
+-- **iter-43 変更の副作用分析**:
+-  - iter-43 が修正したケース: `11603`, `12663`（NOT_EQ UNKNOWN → 正答）
+-  - iter-43 が新規破損させたケース: `13821`, `11179`（EQUIV → NOT_EQ 誤判定に転落）
+-  - 根本原因: iter-43 の「nearest downstream consumer」指示がエージェントを最初の消費者で止まらせた。`13821`/`11179` では、downstream consumer 自体がコードレベルで A/B 異なる挙動を示すが、その差異はテストが直接アサートする観測対象（return value / assert 引数）にまで伝播しない。エージェントはコードレベルの中間差異を見つけた時点で DIFFERENT と判断し、テストのアサーション境界でその差異が吸収されるかを確認しなかった。
++### 選択理由
++
++現行の STRUCTURAL TRIAGE（S1/S2/S3）は「差異が存在するか」のバイナリ判定に
++留まっている。EDGE CASES セクションも "Test outcome same: YES / NO" という
++二値分類のみで、差異が観測されたときにその差異がテスト結論を変えるほど
++「重要か」を明示的に評価する手順がない。
++
++この結果、次の失敗パターンが起きやすい:
++- 軽微な意味差（型変換、例外の種類違い）を発見した直後に
++  重要度評価をスキップして NOT EQUIVALENT と結論する（EQUIV の誤判定）
++- 逆に、機能的に無関係な構造差（コメント、ログ追加など）を
++  差異として記録しながら重要度を問わずスルーし、EQUIVALENT と誤判定する
++
++カテゴリ C の「差異の重要度を段階的に評価する」メカニズムはこの空白を
++既存のテンプレート内の精緻化として埋めることができる。
+ 
+ ---
+ 
+-## 監査フィードバックの整理
++## 改善仮説（1 つ）
+ 
+-初回 iter-44 提案（「nearest を chain に置き換える」）は以下の理由で却下された：
+-
+-1. **カテゴリ誤分類**: 表現改善（E）と説明したが、実効差分は downstream trace の深度変更（B）であり、iter-41/43 と同系統。
+-2. **共通原則 #4 抵触**: iter-41/43 と同じ「downstream を深く辿る」方向の再調整に留まっている。
+-3. **NOT_EQ 側への追加コスト**: EQUIV 改善はあり得るが、NOT_EQ 側に追加確認負担が発生しうる。
+-
+-監査からの代替提案：**カテゴリ C（比較の枠組みを変える）**：
+-> 各 relevant test について、まず「このテストで A/B を比較する唯一の観測対象は何か」を 1 つ定め、その観測対象に対してのみ A/B の因果連鎖を比較する。実装するなら、新たな記録欄追加ではなく、既存 Claim 記述の前提として比較対象を 1 つに揃える程度の最小変更が望ましい。
+-
+----
+-
+-## 選択した Exploration Framework カテゴリ
+-
+-**カテゴリ C: 比較の枠組みを変える**
+-
+-具体的には：**「A/B 比較の単位を『コードレベルの中間差異の有無』から『テストのアサーションが検査する観測対象での差異の有無』へ移行する」**
+-
+-### 選択理由
+-
+-iter-41/43 はいずれも「どこまで downstream を辿るか（B 方向: 情報取得方法の変更）」に焦点を当てた。監査の指摘通り、これを繰り返しても改善しない。
+-
+-問題の本質を別の角度から再定義する：
+-
+-**現在のエージェントの誤認**: コード差異（関数の返り値・例外が A/B で異なる）= NOT_EQ の証拠  
+-**正しい比較単位**: テストのアサーションが検査する観測対象（assert で比較している値・捕捉している例外・検証している状態）での A/B 差異 = NOT_EQ の証拠
+-
+-コード中間差異がどれほど明確でも、それがテストのアサーション境界に到達しなければ EQUIV である。逆に、コード差異がテストの観測対象を変えるなら NOT_EQ である。
+-
+-現在の Compare checklist "trace at least one relevant test through the differing path" は方向性として正しいが、**何に向かって trace するか（比較単位）** が明示されていない。その結果、エージェントはコード差異を trace の「到達目標」と誤認し、観測対象まで追わずに結論を出す。
+-
+-→ **比較単位を「テストのアサーションが検査する観測対象」に明示することで、この誤認を構造的に除去する。**
+-
+-### BL-16 との区別
+-
+-BL-16 はこれと類似した発想（「コード差分ではなく観測点で比較せよ」）を試みたが、実装が **Compare テンプレートの `Comparison:` 直前への注釈追加（出力側フォーマット変更）** だった。その失敗原因は「出力直前のアンカリング」と「新たな観測フレームへの圧縮」だった。
+-
+-本提案は **Compare checklist への探索方針変更**として実装する（出力テンプレートを変更しない）。checklist はエージェントが **探索・trace を行う前の行動指針** であり、出力フォーマットの変更ではない。これが BL-16 との本質的な違いである：
+-
+-| 観点 | BL-16（失敗） | 本提案 |
+… omitted 202 diff line(s) across 1 additional file(s)/section(s)
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+proposal.md を書きました。内容の要点を以下に示します。
+
+---
+
+カテゴリ: C — 比較の枠組みを変える
+具体メカニズム: 差異の重要度を段階的に評価する
+
+改善仮説:
+compare モードで差異を発見した時点で、その差異が fail-to-pass テストのアサーション
+到達経路上に位置するかどうかを明示的に評価させると、EQUIV/NOT_EQUIVALENT 両方向の
+誤判定が減る。
+
+変更箇所:
+EDGE CASES RELEVANT TO EXISTING TESTS テンプレート内に 1 行追加。
+
+変更前:
+    - Test outcome same: YES / NO
+
+変更後:
+    - Difference reaches a test assertion: YES / NO (cite file:line if YES)
+    - Test outcome same: YES / NO
+
+変更規模: 1 行追加、削除なし（hard limit 5 行以内に適合）
+
+期待効果:
+1. 小さな意味差を見つけた後に重要度評価をスキップして NOT EQUIVALENT と誤断する
+   パターンの抑制（NOT_EQUIVALENT 誤判定の低減）
+2. 経路外の差異を "経路外と明示できない" まま EQUIVALENT に倒す
+   パターンの抑制（EQUIV 誤判定の低減）
+3. EDGE CASES 記録から証拠チェーンの欠落を表面化させる副次効果
+
+failed-approaches.md 全原則との照合: 非抵触（探索手順・順序への介入なし、
+proposal.md を書きました。内容の要点を以下に示します。
+
+---
+
+カテゴリ: C — 比較の枠組みを変える
+具体メカニズム: 差異の重要度を段階的に評価する
+
+改善仮説:
+compare モードで差異を発見した時点で、その差異が fail-to-pass テストのアサーション
+到達経路上に位置するかどうかを明示的に評価させると、EQUIV/NOT_EQUIVALENT 両方向の
+誤判定が減る。
+
+変更箇所:
+EDGE CASES RELEVANT TO EXISTING TESTS テンプレート内に 1 行追加。
+
+変更前:
+    - Test outcome same: YES / NO
+
+変更後:
+    - Difference reaches a test assertion: YES / NO (cite file:line if YES)
+    - Test outcome same: YES / NO
+
+変更規模: 1 行追加、削除なし（hard limit 5 行以内に適合）
+
+期待効果:
+1. 小さな意味差を見つけた後に重要度評価をスキップして NOT EQUIVALENT と誤断する
+   パターンの抑制（NOT_EQUIVALENT 誤判定の低減）
+2. 経路外の差異を "経路外と明示できない" まま EQUIVALENT に倒す
+   パターンの抑制（EQUIV 誤判定の低減）
+3. EDGE CASES 記録から証拠チェーンの欠落を表面化させる副次効果
+
+failed-approaches.md 全原則との照合: 非抵触（探索手順・順序への介入なし、
+結論前ゲートへの追加なし、局所仮説更新フローとも独立）
+
+session_id: 20260415_005503_efb600
