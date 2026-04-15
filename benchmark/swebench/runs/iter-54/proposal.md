@@ -1,103 +1,103 @@
-# iter-54 改善提案
+# Iteration 54 — Proposal
 
-## 親イテレーション iter-39 の選定理由
+## Exploration Framework カテゴリ
 
-iter-39 (スコア 75%) は直近の有効なベースラインとして選定した。iter-41 (85%) は
-iter-39 より上位だが、iter-39 のブランチから出発することが指示されているため iter-39 を親とする。
-iter-39 では5件の失敗（13821, 15382, 14787, 11433, 12663）があり、特に EQUIV 誤判定
-（13821: EQUIV → NOT_EQ）と UNKNOWN（15382, 14787, 12663: 31 turns 到達）が顕著だった。
+カテゴリ: A — 推論の順序・構造を変える
 
-## 選択した Exploration Framework カテゴリ
+### カテゴリ内での具体的なメカニズム選択理由
 
-**カテゴリ E: 表現・フォーマットを改善する** — 「曖昧な指示をより具体的な言い回しに変える」
+カテゴリ A には「逆方向推論 (backward reasoning)」がある。
+現在の `compare` テンプレートの PREMISES セクションは「変更 A/B が何をしているか」を順方向に
+列挙するだけで終わっている。これは証拠収集の前提を揃えるが、「どの差異が判定を左右するか」
+という問いを立てる前にトレースへ進ませてしまう。
 
-iter-39 はカテゴリ A/B（Compare checklist への探索行動義務追加）を用いた。
-カテゴリ E は今回の親イテレーションでは未使用であり、既存の Guardrail 5 の用語の曖昧さを
-解消することで認知的理解を改善できると判断した。
+逆方向推論を PREMISES の末尾に 1 行として埋め込むことで、エージェントはトレース開始前に
+「もし NOT EQUIVALENT であれば、どこで分岐するか」を明示的に予測する。
+この予測は探索経路そのものを変えず (探索の自由度は保持)、証拠の読み方の「向き」を
+変えるだけである。予測と実際のトレース結果を突き合わせることで、
+「差異を見落としたままトレースを終える」という失敗パターンが早期に検出できる。
 
-新規ステップ・フィールド・テンプレート要素の追加は一切行わない。
+カテゴリ B (情報取得方法) や E (表現改善) ではなくカテゴリ A を選んだのは、
+変更が「何を読むか」ではなく「どの順序で問いを立てるか」に作用するためである。
+
 
 ## 改善仮説
 
-**仮説**: Guardrail 5 の「downstream code」という用語が曖昧であるため、
-エージェントが「downstream = callee（呼び出し先）」と誤解し、
-「変更関数 → 呼び出し先」方向のみを検証して「変更関数 → 呼び出し元 caller → テスト assertion」
-方向の確認を省略している可能性がある。
-`compare` モードでは「downstream」を「テスト call path 上の callers（変更関数の出力を受け取る側）」
-として明示することで、Guardrail 5 が意図した「不完全な推論チェーンを信用するな」という原則が
-compare モードで正しく機能するようになる。
+比較判定に先立って「判定を左右しうる最小の意味的差異」を PREMISES 段階で
+逆方向に予測させると、エージェントはその予測を反証または確認するためにトレースを行うため、
+差異の見落とし (subtle difference dismissal) と EQUIVALENT への早期収束が減少し、
+overall 正答率が向上する。
 
-これにより、変更関数でコード差分を発見した後に caller が差分を吸収・正規化するかを
-確認するという動作が、既存の checklist 項目（iter-39 追加済み）と Guardrail の両面から
-強化される。
 
-## SKILL.md のどこをどう変えるか
+## SKILL.md への具体的な変更
 
-### 対象
+### 変更対象
 
-Guardrails セクションの Guardrail 5（既存行への文言追加）
+`compare` テンプレート内の PREMISES セクション末尾 (P4 の直後、ANALYSIS の直前)
 
-### 変更内容
+### 変更前 (該当行)
 
-**変更前:**
 ```
-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+P4: The pass-to-pass tests check [specific behavior, if relevant]
 ```
 
-**変更後:**
+### 変更後
+
 ```
-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified — in `compare` mode, callers on the test call path are downstream, not just callees. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+P4: The pass-to-pass tests check [specific behavior, if relevant]
+P_inv: If the changes are NOT EQUIVALENT, the minimum divergence is predicted at:
+       [name the narrowest code location or behavioral difference that would cause
+        a test outcome to differ — derive from P1–P4 before reading any file]
 ```
 
-追加内容: `— in \`compare\` mode, callers on the test call path are downstream, not just callees.`（既存行の文中への挿入）
+### 変更の意図
 
-## EQUIV と NOT_EQ 両方の正答率への影響予測
+- P_inv は「逆方向前提 (inverse premise)」として機能する。
+- PREMISES フェーズを先に閉じてからトレースへ進む既存の直列構造は維持する。
+- P_inv は P1–P4 を根拠に導出するため、根拠のない推測ではなく証拠連鎖の一部となる。
+- トレース後に P_inv が REFUTED された場合はその事実を COUNTEREXAMPLE CHECK で
+  明示する。CONFIRMED された場合は COUNTEREXAMPLE の具体的な根拠として引用できる。
+- 追加は 2 行 (P_inv 宣言行 + 内容記述行) であり、5 行以内の制約を満たす。
 
-### EQUIV 正答率（iter-39 で 7/10）→ 8/10 改善見込み
 
-- **13821（EQUIV → NOT_EQ）**: エージェントが変更関数でコード差分を発見した際、
-  Guardrail 5 の「downstream code には callers も含まれる」という明示的な指示により、
-  caller が差分を吸収しているかを確認する動機が強化される。EQUIVALENT への正答改善が期待できる。
-- **15382（EQUIV → UNKNOWN）**: 31 turns で結論未達。本変更の直接的な作用は限定的。
+## 期待される一般的な推論品質への効果
 
-### NOT_EQ 正答率（iter-39 で 8/10）→ 8/10 維持見込み
+### 減少が期待される失敗パターン
 
-- 真の NOT_EQ では caller が差分を伝播させるため、caller を確認しても NOT_EQ の根拠が
-  強化されるだけで判定は変わらない。立証責任の非対称化は発生しない。
-- UNKNOWN 案件（14787, 12663）への影響は indirect であり、本変更だけで回復するとは
-  断言できないが、悪化させる要因も見当たらない。
+1. **subtle difference dismissal** (Guardrail #4 が対象とする失敗類型)
+   - 現状: 差異を発見しても「テスト結果に影響しない」と即断する。
+   - 改善後: P_inv で「この差異がテスト分岐を生む」と先に予測しているため、
+     発見した差異を P_inv と照合せずに棄却しにくくなる。
 
-## failed-approaches.md のブラックリストおよび共通原則との照合
+2. **EQUIVALENT への早期収束**
+   - 現状: 表面的な等価性を確認した時点でトレースを打ち切る傾向がある。
+   - 改善後: P_inv が「もし違うとしたらここだ」と具体的な場所を指しているため、
+     その場所を検証するまでトレースを継続する動機づけとなる。
 
-### ブラックリスト照合
+### overall ドメインへの適用
 
-| BL | 内容 | 本提案との関係 |
-|----|------|--------------|
-| BL-2 | NOT_EQ の証拠閾値・厳格化 | ✅ 非該当：判定閾値を操作しない。Guardrail の用語を明確化するのみ |
-| BL-6 | Guardrail 4 の対称化 | ✅ 非該当：Guardrail 4 ではなく Guardrail 5 を修正。対称化ではなく用語定義の明確化 |
-| BL-9 | メタ認知的自己チェック追加 | ✅ 非該当：自己評価フィールドを追加しない |
-| BL-14 | 逆方向推論義務（Backward Trace）| ✅ 非該当：逆方向推論を要求しない |
-| BL-21 | 1-hop downstream 固定ルール | ✅ 非該当：固定 hop 数を指定しない。方向性（callers が downstream）の定義のみ |
-| BL-23 | nearest consumer 伝播/吸収の義務化 | 近接だが非該当：BL-23 は Checklist に新規 ACTION を追加した。本提案は Guardrail の用語定義を既存行内で精緻化するのみ。新規 checklist item・記録フィールド・アクション義務は追加しない |
-| BL-26 | Guardrail 5 への双方向完全義務追加 | 近接だが非該当：BL-26 は「callers が吸収しないこと」と「テスト観測点まで繋がること」の 2 つの verify 義務を追加した。本提案は「callers も downstream である」という用語定義の明確化に限定し、新たな verify 義務を追加しない |
+P_inv は PREMISES 内の 1 前提として機能し、全テストのトレース共通の参照点となる。
+equiv / not_eq どちらの方向にも効く (equiv では P_inv が REFUTED されたことの
+証拠として使い、not_eq では P_inv が CONFIRMED される形で結論を支える)。
 
-### 共通原則との照合
 
-| # | 原則 | 照合結果 |
-|---|------|---------|
-| #1 | 判定の非対称操作は失敗する | ✅ EQUIV/NOT_EQ 双方向に中立。用語定義の明確化は閾値移動を生じない |
-| #2 | 出力側の制約は効果がない | ✅ 出力を制約しない。Guardrail の意味的精緻化 |
-| #3 | 探索量の削減は有害 | ✅ 探索量を削減しない。むしろ caller 方向の探索を促進 |
-| #4 | 同方向変更は同結果 | ✅ 方向性: iter-39 は Checklist 追加、本提案は Guardrail 既存行精緻化。機構が異なる |
-| #5 | 入力テンプレートの過剰規定は視野を狭める | ✅ 記録フィールドや必須記述を追加しない。用語の意味を明確化するのみ |
-| #6 | 対称化は既存差分で評価せよ | ✅ 既存 Guardrail 5 は「downstream を verify せよ」という義務が既にある。本提案はその用語範囲を compare モード向けに明確化するもので、新規義務を追加しない |
-| #8 | 受動的記録は能動検証を誘発しない | ✅ 記録フィールドを追加しない |
-| #15 | 固定長局所追跡ルールを観測境界の代わりに使うな | ✅ 固定 hop 数を指定しない |
-| #19 | エンドツーエンド完全立証義務は予算枯渇を招く | ✅ 完全立証を義務付けない。「callers も downstream」という方向定義のみ |
+## failed-approaches.md の汎用原則との照合
+
+| 原則 | 本提案との関係 |
+|------|---------------|
+| 探索を「特定シグナルの捜索」へ寄せすぎない | P_inv は「読む順序」や「どのファイルを読むか」を制約しない。探索経路の自由度は変えていない |
+| 探索ドリフト対策で読解順序を半固定しない | 変更は PREMISES 内の思考の向きであり、ファイルを読む順序には触れない |
+| 局所的な仮説更新を即座の前提修正義務に直結させない | P_inv は探索中の更新義務ではなく、トレース開始前の 1 回の予測である。仮説更新ループとは独立 |
+| 既存ガードレールを特定の追跡方向で具体化しすぎない | P_inv は Guardrail #4 を特定方向に絞るのではなく、判定直前ではなく判定前提として逆方向の問いを前置するだけ |
+| 結論直前の自己監査に新しい必須のメタ判断を増やさない | 変更は Step 2 (PREMISES) への追記であり、Step 5.5 (Pre-conclusion self-check) や Step 6 には触れない |
+
+全 5 原則との抵触なし。
+
 
 ## 変更規模の宣言
 
-- **追加行数**: 0 行（既存の 1 行への文言追加・精緻化。新規行の追加なし）
-- **削除行数**: 0 行
-- **変更の種類**: 既存 Guardrail 5 の文中に補足句を挿入
-- **変更規模**: 極小（1 文中への句挿入）
+追加行数: 2 行 (P_inv 宣言行と内容記述行)
+削除行数: 0 行
+合計変更行数 (追加のみカウント): 2 行
+
+hard limit 5 行以内を満たしている。

@@ -73,7 +73,7 @@ Before opening any file, write:
 ```
 HYPOTHESIS H[N]: [what you expect to find and why]
 EVIDENCE: [what supports this hypothesis — cite premises or prior observations]
-CONFIDENCE: high (grounded in P[N]) / medium / low
+CONFIDENCE: high / medium / low
 ```
 
 After reading, record:
