@@ -123,7 +123,7 @@ For `compare` and `audit-improve`:
 COUNTEREXAMPLE CHECK:
 If my conclusion were false, what evidence should exist?
 - Searched for: [what]
-- Found: [what — cite file:line]
+- Found: [cite file:line if evidence exists; or "NONE FOUND — searched [specific pattern] in [file(s)]"]
 - Result: REFUTED / NOT FOUND
 ```
 
