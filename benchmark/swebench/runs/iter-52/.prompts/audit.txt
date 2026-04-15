@@ -1,54 +1,97 @@
 あなたは SKILL.md の変更に対する監査役です。
 
-以下のファイルを参照してください:
-- Objective.md の Audit Rubric セクション
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
 - README.md
 - docs/design.md
 - docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
 
-以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
-Objective.md に定義された audit.md フォーマットに従って
-benchmark/swebench/runs/iter-52/audit.md を作成してください。
+この 6 ファイル以外を read / search / list してはいけません。
 
-合格基準: 全項目 2 以上、かつ合計 14/21 以上
+【出力先】
+benchmark/swebench/runs/iter-52/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
 
 diff:
 diff --git a/SKILL.md b/SKILL.md
-index 01886cd..c82c6c1 100644
+index cf289c7..ea9f217 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -414,7 +414,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
- 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
- 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
- 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
--5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
-+5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis. In `compare` mode, a common form of incomplete chain: a semantic difference exists in the changed code but is neutralized by intermediate callers before reaching the test assertion.
- 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
+@@ -123,7 +123,7 @@ For `compare` and `audit-improve`:
+ COUNTEREXAMPLE CHECK:
+ If my conclusion were false, what evidence should exist?
+ - Searched for: [what]
+-- Found: [what — cite file:line]
++- Found: [cite file:line if evidence exists; or "NONE FOUND — searched [specific pattern] in [file(s)]"]
+ - Result: REFUTED / NOT FOUND
+ ```
  
- ### General
 
 rationale:
 # Iteration 52 — 変更理由
 
 ## 前イテレーションの分析
 
-- 前回スコア: 85% (17/20)
-- 失敗ケース: django__django-15368, django__django-13821, django__django-11433
-- 失敗原因の分析: 15368 と 13821 はコード差異を発見したにもかかわらずテスト結果が同じ（EQUIV）であるケースを NOT_EQUIVALENT と誤判定。11433 は 31 ターン内に収束できず UNKNOWN となった。
+- 前回スコア: 不明（iter-51 の scores.json 未参照）
+- 失敗ケース: 詳細は scores.json 参照
+- 失敗原因の分析: Step 5 COUNTEREXAMPLE CHECK の `Found:` フィールドで、
+  反証が見つからなかった場合に探索努力を省略した "NONE FOUND" 一言で済ませる
+  記述が発生しやすかった。これが EQUIVALENT 誤判定に繋がる探索省略を招いていた。
 
 ## 改善仮説
 
-Guardrail 5 の「不完全な推論チェーン」への注意に対し、`compare` モードにおける典型的な不完全チェーンの形——「変更コード内の意味論的差異が中間 caller に吸収・正規化されて test assertion に到達しない」パターン——を 1 文で明示することで、モデルがコード差異発見後に「その差異が本当に PASS/FAIL に繋がるか」を既存 checklist 項目と連動して意識しやすくなり、EQUIV の偽陰性を減らせる。
+Step 5 反証チェックの `Found:` フィールドに「証拠が存在した場合」と
+「証拠が存在しなかった場合」の両方の記述例を明示することで、
+探索省略を自己検出しやすくし、全体的な推論品質が向上する。
 
 ## 変更内容
 
-`## Guardrails > From the paper's error analysis` 内の Guardrail 5 の末尾に以下の 1 文を追記した。
+`compare` および `audit-improve` 用 COUNTEREXAMPLE CHECK ブロックの
+`Found:` フィールドを以下のとおり精緻化した（1行変更）。
 
-> In `compare` mode, a common form of incomplete chain: a semantic difference exists in the changed code but is neutralized by intermediate callers before reaching the test assertion.
+変更前:
+```
+- Found: [what — cite file:line]
+```
 
-追加行数: 1（既存行への末尾付加）、削除行数: 0。
+変更後:
+```
+- Found: [cite file:line if evidence exists; or "NONE FOUND — searched [specific pattern] in [file(s)]"]
+```
 
 ## 期待効果
 
-- django__django-15368 / 13821: コード差異→中間 caller による吸収パターンの認識が促進され、偽陰性が 0〜1 件改善する可能性がある。
-- 全体スコア予測: 85〜90%（17〜18/20）。NOT_EQ の正答ケースへの影響は軽微（宣言的情報追加であり新たな立証義務を課さない）。
+- 反証が見つからなかった場合に探索した内容と対象を明記させることで、
+  探索省略による偽 EQUIVALENT 誤判定が減少すると予想する。
+- 反証が見つかった場合は `cite file:line` の明示要件が維持されるため、
+  根拠の曖昧な NOT_EQUIVALENT 誤判定も抑制される。
+- 変更規模が1行であるため、既存の正答ケースへの回帰リスクは極めて低い。

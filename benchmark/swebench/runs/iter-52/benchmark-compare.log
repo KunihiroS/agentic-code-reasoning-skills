@@ -1,0 +1,123 @@
+Generated 20 prompt files in /tmp/tmp.9NZM6k7UqS
+
+--- [1] instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 / without_skill  06:58:48
+[DONE]  instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 / without_skill  45s
+[START] instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 / with_skill  06:59:33
+[DONE]  instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 / with_skill  149s
+
+--- [2] instance_gravitational__teleport-3587cca7840f636489449113969a5066025dd5bf (gravitational/teleport) ---
+[START] instance_gravitational__teleport-3587cca7840f636489449113969a5066025dd5bf / without_skill  07:02:02
+[DONE]  instance_gravitational__teleport-3587cca7840f636489449113969a5066025dd5bf / without_skill  32s
+[START] instance_gravitational__teleport-3587cca7840f636489449113969a5066025dd5bf / with_skill  07:02:34
+[DONE]  instance_gravitational__teleport-3587cca7840f636489449113969a5066025dd5bf / with_skill  55s
+
+--- [3] instance_NodeBB__NodeBB-a5afad27e52fd336163063ba40dcadc80233ae10-vd59a5728dfc977f44533186ace531248c2917516 (NodeBB/NodeBB) ---
+[START] instance_NodeBB__NodeBB-a5afad27e52fd336163063ba40dcadc80233ae10-vd59a5728dfc977f44533186ace531248c2917516 / without_skill  07:03:29
+[DONE]  instance_NodeBB__NodeBB-a5afad27e52fd336163063ba40dcadc80233ae10-vd59a5728dfc977f44533186ace531248c2917516 / without_skill  37s
+[START] instance_NodeBB__NodeBB-a5afad27e52fd336163063ba40dcadc80233ae10-vd59a5728dfc977f44533186ace531248c2917516 / with_skill  07:04:06
+[DONE]  instance_NodeBB__NodeBB-a5afad27e52fd336163063ba40dcadc80233ae10-vd59a5728dfc977f44533186ace531248c2917516 / with_skill  84s
+
+--- [4] instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan (NodeBB/NodeBB) ---
+[START] instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan / without_skill  07:05:31
+[DONE]  instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan / without_skill  151s
+[START] instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan / with_skill  07:08:02
+[DONE]  instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan / with_skill  68s
+
+--- [5] instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan (element-hq/element-web) ---
+[START] instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan / without_skill  07:09:10
+[DONE]  instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan / without_skill  48s
+[START] instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan / with_skill  07:09:58
+[DONE]  instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan / with_skill  260s
+
+--- [6] instance_element-hq__element-web-8f3c8b35153d2227af45f32e46bd1e15bd60b71f-vnan (element-hq/element-web) ---
+[START] instance_element-hq__element-web-8f3c8b35153d2227af45f32e46bd1e15bd60b71f-vnan / without_skill  07:14:18
+[DONE]  instance_element-hq__element-web-8f3c8b35153d2227af45f32e46bd1e15bd60b71f-vnan / without_skill  114s
+[START] instance_element-hq__element-web-8f3c8b35153d2227af45f32e46bd1e15bd60b71f-vnan / with_skill  07:16:12
+[DONE]  instance_element-hq__element-web-8f3c8b35153d2227af45f32e46bd1e15bd60b71f-vnan / with_skill  192s
+
+--- [7] instance_tutao__tutanota-09c2776c0fce3db5c6e18da92b5a45dce9f013aa-vbc0d9ba8f0071fbe982809910959a6ff8884dbbf (tutao/tutanota) ---
+[START] instance_tutao__tutanota-09c2776c0fce3db5c6e18da92b5a45dce9f013aa-vbc0d9ba8f0071fbe982809910959a6ff8884dbbf / without_skill  07:19:24
+[DONE]  instance_tutao__tutanota-09c2776c0fce3db5c6e18da92b5a45dce9f013aa-vbc0d9ba8f0071fbe982809910959a6ff8884dbbf / without_skill  79s
+[START] instance_tutao__tutanota-09c2776c0fce3db5c6e18da92b5a45dce9f013aa-vbc0d9ba8f0071fbe982809910959a6ff8884dbbf / with_skill  07:20:43
+[DONE]  instance_tutao__tutanota-09c2776c0fce3db5c6e18da92b5a45dce9f013aa-vbc0d9ba8f0071fbe982809910959a6ff8884dbbf / with_skill  54s
+
+--- [8] instance_ansible__ansible-6cc97447aac5816745278f3735af128afb255c81-v0f01c69f1e2528b935359cfe578530722bca2c59 (ansible/ansible) ---
+[START] instance_ansible__ansible-6cc97447aac5816745278f3735af128afb255c81-v0f01c69f1e2528b935359cfe578530722bca2c59 / without_skill  07:21:37
+[DONE]  instance_ansible__ansible-6cc97447aac5816745278f3735af128afb255c81-v0f01c69f1e2528b935359cfe578530722bca2c59 / without_skill  148s
+[START] instance_ansible__ansible-6cc97447aac5816745278f3735af128afb255c81-v0f01c69f1e2528b935359cfe578530722bca2c59 / with_skill  07:24:05
+[DONE]  instance_ansible__ansible-6cc97447aac5816745278f3735af128afb255c81-v0f01c69f1e2528b935359cfe578530722bca2c59 / with_skill  126s
+
+--- [9] instance_future-architect__vuls-4a72295de7b91faa59d90a5bee91535bbe76755d (future-architect/vuls) ---
+[START] instance_future-architect__vuls-4a72295de7b91faa59d90a5bee91535bbe76755d / without_skill  07:26:11
+[DONE]  instance_future-architect__vuls-4a72295de7b91faa59d90a5bee91535bbe76755d / without_skill  41s
+[START] instance_future-architect__vuls-4a72295de7b91faa59d90a5bee91535bbe76755d / with_skill  07:26:52
+[DONE]  instance_future-architect__vuls-4a72295de7b91faa59d90a5bee91535bbe76755d / with_skill  45s
+
+--- [10] instance_flipt-io__flipt-3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8 (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8 / without_skill  07:27:37
+[DONE]  instance_flipt-io__flipt-3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8 / without_skill  246s
+[START] instance_flipt-io__flipt-3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8 / with_skill  07:31:43
+[DONE]  instance_flipt-io__flipt-3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8 / with_skill  189s
+
+--- [11] instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a (navidrome/navidrome) ---
+[START] instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a / without_skill  07:34:53
+[DONE]  instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a / without_skill  34s
+[START] instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a / with_skill  07:35:27
+[DONE]  instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a / with_skill  28s
+
+--- [12] instance_flipt-io__flipt-2ca5dfb3513e4e786d2b037075617cccc286d5c3 (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-2ca5dfb3513e4e786d2b037075617cccc286d5c3 / without_skill  07:35:55
+[DONE]  instance_flipt-io__flipt-2ca5dfb3513e4e786d2b037075617cccc286d5c3 / without_skill  33s
+[START] instance_flipt-io__flipt-2ca5dfb3513e4e786d2b037075617cccc286d5c3 / with_skill  07:36:28
+[DONE]  instance_flipt-io__flipt-2ca5dfb3513e4e786d2b037075617cccc286d5c3 / with_skill  181s
+
+--- [13] instance_flipt-io__flipt-406f9396ad65696d58865b3a6283109cd4eaf40e (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-406f9396ad65696d58865b3a6283109cd4eaf40e / without_skill  07:39:29
+[DONE]  instance_flipt-io__flipt-406f9396ad65696d58865b3a6283109cd4eaf40e / without_skill  88s
+[START] instance_flipt-io__flipt-406f9396ad65696d58865b3a6283109cd4eaf40e / with_skill  07:40:57
+[DONE]  instance_flipt-io__flipt-406f9396ad65696d58865b3a6283109cd4eaf40e / with_skill  127s
+
+--- [14] instance_flipt-io__flipt-e91615cf07966da41756017a7d571f9fc0fdbe80 (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-e91615cf07966da41756017a7d571f9fc0fdbe80 / without_skill  07:43:04
+[DONE]  instance_flipt-io__flipt-e91615cf07966da41756017a7d571f9fc0fdbe80 / without_skill  48s
+[START] instance_flipt-io__flipt-e91615cf07966da41756017a7d571f9fc0fdbe80 / with_skill  07:43:52
+[DONE]  instance_flipt-io__flipt-e91615cf07966da41756017a7d571f9fc0fdbe80 / with_skill  45s
+
+--- [15] instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b / without_skill  07:44:37
+[DONE]  instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b / without_skill  80s
+[START] instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b / with_skill  07:45:57
+[DONE]  instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b / with_skill  135s
+
+--- [16] instance_flipt-io__flipt-65581fef4aa807540cb933753d085feb0d7e736f (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-65581fef4aa807540cb933753d085feb0d7e736f / without_skill  07:48:12
+[DONE]  instance_flipt-io__flipt-65581fef4aa807540cb933753d085feb0d7e736f / without_skill  38s
+[START] instance_flipt-io__flipt-65581fef4aa807540cb933753d085feb0d7e736f / with_skill  07:48:50
+[DONE]  instance_flipt-io__flipt-65581fef4aa807540cb933753d085feb0d7e736f / with_skill  41s
+
+--- [17] instance_navidrome__navidrome-e12a14a87d392ac70ee4cc8079e3c3e0103dbcb2 (navidrome/navidrome) ---
+[START] instance_navidrome__navidrome-e12a14a87d392ac70ee4cc8079e3c3e0103dbcb2 / without_skill  07:49:31
+[DONE]  instance_navidrome__navidrome-e12a14a87d392ac70ee4cc8079e3c3e0103dbcb2 / without_skill  69s
+[START] instance_navidrome__navidrome-e12a14a87d392ac70ee4cc8079e3c3e0103dbcb2 / with_skill  07:50:40
+[DONE]  instance_navidrome__navidrome-e12a14a87d392ac70ee4cc8079e3c3e0103dbcb2 / with_skill  202s
+
+--- [18] instance_flipt-io__flipt-524f277313606f8cd29b299617d6565c01642e15 (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-524f277313606f8cd29b299617d6565c01642e15 / without_skill  07:54:02
+[DONE]  instance_flipt-io__flipt-524f277313606f8cd29b299617d6565c01642e15 / without_skill  64s
+[START] instance_flipt-io__flipt-524f277313606f8cd29b299617d6565c01642e15 / with_skill  07:55:06
+[DONE]  instance_flipt-io__flipt-524f277313606f8cd29b299617d6565c01642e15 / with_skill  149s
+
+--- [19] instance_flipt-io__flipt-ebb3f84c74d61eee4d8c6875140b990eee62e146 (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-ebb3f84c74d61eee4d8c6875140b990eee62e146 / without_skill  07:57:35
+[DONE]  instance_flipt-io__flipt-ebb3f84c74d61eee4d8c6875140b990eee62e146 / without_skill  42s
+[START] instance_flipt-io__flipt-ebb3f84c74d61eee4d8c6875140b990eee62e146 / with_skill  07:58:17
+[DONE]  instance_flipt-io__flipt-ebb3f84c74d61eee4d8c6875140b990eee62e146 / with_skill  120s
+
+--- [20] instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 (future-architect/vuls) ---
+[START] instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / without_skill  08:00:18
+[DONE]  instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / without_skill  196s
+[START] instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / with_skill  08:03:34
+[DONE]  instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / with_skill  75s
+
+=== Compare Pro Benchmark complete: 20 instances, 3961s total ===
