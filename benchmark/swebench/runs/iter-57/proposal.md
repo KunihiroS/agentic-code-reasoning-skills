@@ -1,132 +1,83 @@
-# Iteration 57 — 改善提案
+# Iter-57 改善提案
 
-## 親イテレーション (iter-33) の選定理由
+## Exploration Framework カテゴリ: D — メタ認知・自己チェックの強化
 
-iter-33 (スコア 70%, 14/20) はスコア的には低いが、その失敗パターンに明確な因果関係があるため、
-改善の起点として選んだ。
+### カテゴリ D 内での具体的メカニズム選択理由
 
-iter-33 の直前のベースライン（iter-32 相当）は 85%（17/20）であり、iter-33 で追加した
-D2 の 5 行が NOT_EQ 側の 3 件（13417, 11433, 14122）を新たに UNKNOWN（31 turns）へ
-退行させた。つまり iter-33 の変更は EQUIV 偽陰性 3 件を解決しないまま、新たに NOT_EQ
-UNKNOWN 3 件を引き起こした。この因果関係が明確なため、「iter-33 の追加を差し戻す」
-という仮説が検証可能かつ効果が予測しやすい。
+カテゴリ D のメカニズムは以下の3つ:
+1. 推論途中で思い込みを疑うチェックポイントを追加
+2. 結論に至った推論チェーンの弱い環を特定させる
+3. 確信度と根拠の対応を明示させる
 
-## Exploration Framework カテゴリ
+今回は「3. 確信度と根拠の対応を明示させる」を選択する。
 
-**カテゴリ E: 表現・フォーマットを改善する**（具体的には「冗長・有害な指示を削除して
-認知負荷を下げる」）
+理由: SKILL.md の Step 5.5 は証拠の存在（file:line が引用されているか、VERIFIED マークがあるか、実際の検索が行われたか）を確認するが、「確信度レベルと支持している証拠の強度・数が整合しているか」を問う仕組みがない。HIGH 確信度の主張が単一の観察や弱い推論に依拠している場合でも、現行のチェックリストはそれを検出できない。これは「確信度と根拠の対応を明示させる」が埋める空白であり、かつ既存のチェック項目への精緻化（文言追加）として 5 行以内に収められる。
 
-### 選択理由
+「推論チェーンの弱い環を特定させる」は failed-approaches.md の「推論中の最弱点を特定して確信度へ結びつける追加評価軸」制限に抵触するリスクがある。「思い込みチェックポイントの追加」は新規ステップとなりやすく、5 行制限と新規セクション禁止に引っかかる。「確信度と根拠の対応」は既存の Step 5.5 最終項目の末尾に文言を補うだけで実現でき、制約を満たす。
 
-- iter-33 自身はカテゴリ B（情報の取得方法を改善する）を選択し、テスト読解の優先順序と
-  検索制限を D2 に追加した。今回は「追加した指示が推論品質を下げた」という逆方向の
-  診断に基づく修正であるため、カテゴリ E（表現整理・簡潔化）が最適。
-- カテゴリ A（推論順序）、B（情報取得）、D（メタ認知）では数多くの失敗が蓄積しており、
-  安全に試せる余地が少ない。
-- カテゴリ E の「冗長な部分を簡潔にして認知負荷を下げる」は直接適合する。
 
-## 改善仮説（1つ）
+## 改善仮説
 
-**iter-33 が D2 に追加した 5 行（テスト読解優先順序 ＋ 検索制限句）を削除することで、
-NOT_EQ 側 3 件の UNKNOWN 退行が解消され、スコアが 70% → 85% 前後に回復する。**
+Step 5.5 の最終チェック項目（結論が証拠の範囲を超えていないかを確認する項）に、「CONFIDENCE: HIGH を主張する場合、複数の独立した証拠が揃っているか」という自己確認の観点を付加することで、証拠が薄いまま過剰な確信度を付与する誤りを抑制できる。
 
-根拠：
 
-1. **検索制限 "Do not expand the search to callers or wrappers not referenced by tests."**
-   が、NOT_EQ 証拠を間接テスト経由でしか見つけられないケース（13417, 11433, 14122）で、
-   エージェントが適切なテストに到達できずにターン上限（31 turns）を使い切った可能性が高い。
-
-2. **テスト優先順序 "read first those whose assertions directly observe the primary output"**
-   は、直接アサーションを持つテストを優先させることで、間接テストが証拠となる NOT_EQ
-   ケースを後回しにし、前述の問題を悪化させた可能性がある。
-
-3. pre-iter-33 状態（D2 にこの追加なし）は 85%（17/20）を達成しており、同一 SKILL.md
-   の他のすべての部分は変更されていない。差し戻しにより 85% 相当の性能に戻ると期待できる。
-
-## SKILL.md のどこをどう変えるか
+## SKILL.md の変更内容
 
 ### 変更箇所
 
-`## Compare` セクション内の Certificate template の `DEFINITIONS D2` ブロック。
+Step 5.5 の 4 番目のチェック項目（SKILL.md 146–148 行目）。
 
-### 変更内容（削除のみ）
-
-**Before（iter-33 追加済みの現在の状態）：**
+### 変更前
 
 ```
-    To identify them: search for tests referencing the changed function, class,
-    or variable. When multiple tests are found, read first those whose
-    assertions directly observe the change's primary output — its return value,
-    raised exception, or directly modified attribute — before tests that only
-    transitively invoke the changed code through intermediate layers. Do not
-    expand the search to callers or wrappers not referenced by tests.
-    If the test suite is not provided, state this as a constraint
-    in P[N] and restrict the scope of D1 accordingly.
+- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+      If a semantic difference was found, did I trace at least one relevant test through the differing
+      path before concluding it affects (or does not affect) the outcome? (cf. Guardrail #4)
 ```
 
-**After（差し戻し後）：**
+### 変更後
 
 ```
-    To identify them: search for tests referencing the changed function, class,
-    or variable. If the test suite is not provided, state this as a constraint
-    in P[N] and restrict the scope of D1 accordingly.
+- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+      If a semantic difference was found, did I trace at least one relevant test through the differing
+      path before concluding it affects (or does not affect) the outcome? (cf. Guardrail #4)
+      If claiming CONFIDENCE: HIGH, is that confidence backed by at least two independent pieces of
+      traced evidence rather than a single observation or inference?
 ```
 
-### 変更規模
+### 変更規模の宣言
 
-- **追加行数**: 0 行（hard limit: 5 行以内 ✅）
-- **削除行数**: 5 行（制限対象外）
+追加: 2 行（hard limit 5 行以内。削除: 0 行）
 
-## EQUIV と NOT_EQ の両方の正答率への影響予測
 
-### NOT_EQ 正答率（現状 7/10 → 期待 10/10）
+## 一般的な推論品質への期待効果
 
-- 13417, 11433, 14122 の 3 件はいずれも 31 turns（ターン上限）で UNKNOWN だった。
-- 削除により「callers/wrappers への検索を禁止する」制限がなくなり、エージェントが
-  間接テストを通じて NOT_EQ 証拠を発見できるようになる。
-- これら 3 件は pre-iter-33 時点では正答していたため、差し戻しにより正答に戻ると予測。
+### 抑制が期待される失敗パターン
 
-### EQUIV 正答率（現状 7/10 → 期待 7/10 維持または 8/10 微改善）
+1. **過剰確信による誤判定 (overall)**
+   単一の証拠（例: 構造上の差分のみ、名前からの推論のみ）から HIGH 確信度の EQUIVALENT/NOT EQUIVALENT 結論を出すケースを抑制する。証拠が 1 つしかないことをモデル自身が気づくと、MEDIUM や LOW への訂正、あるいは追加確認行動が促される。
 
-- EQUIV 偽陰性 3 件（15368, 13821, 15382）は pre-iter-33 時点でも不正解だった。
-  本提案ではこれらは直接改善しない（別イテレーションの課題）。
-- ただし「テスト読解優先順序」の削除により、エージェントが固定された優先バイアスなく
-  テストを探索できるようになり、EQUIV 側で微改善の可能性もある（期待値は変化なし）。
-- 悪化リスクは低い：pre-iter-33 時点で EQUIV は 7/10 が正答しており、D2 を元に戻す
-  だけなのでその状態より悪化する根拠がない。
+2. **EQUIV 誤判定 (equiv 方向の精度)**
+   2 つの実装が同じ振る舞いをすると誤判定するケースの多くは、差分が見つからなかった（= 単一の「証拠なし」観察）まま HIGH で EQUIVALENT と結論づけるパターン。「独立した証拠が 2 つ以上あるか？」という問いは、こうした消去法ベースの高確信を牽制する。
 
-## failed-approaches.md のブラックリストおよび共通原則との照合
+3. **Guardrail #5 違反（不完全チェーン）との相乗**
+   既存の Guardrail #5「下流コードがすでに処理していないか確認する」と組み合わさることで、証拠の量だけでなく下流までの完全性も問うダブルチェックになる。
 
-### ブラックリスト照合
 
-| BL | 内容 | 本提案との関係 |
-|----|------|---------------|
-| BL-17 | caller/wrapper へ検索を積極的に拡張 → 70% に低下 | 本提案は「拡張禁止の解除」であり、積極的拡張命令の追加ではない。中立状態への復帰。異なるメカニズム |
-| BL-22 | 特定パターンからの関連性推定を禁止 → 75% に低下 | 本提案は禁止文の削除。同様に禁止を追加する方向ではない |
-| その他 | 各 BL は「何かを追加して失敗」 | 本提案は「追加を削除して戻す」のみ。追加はゼロ |
+## failed-approaches.md 汎用原則との照合
 
-**ブラックリスト抵触なし。**
+| 原則 | 照合結果 |
+|------|----------|
+| 次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎる | 非抵触。「何を探すか」を固定するのではなく、「主張した確信度が複数証拠に裏付けられているか」という確認を求めるだけで、探索経路は変更しない。 |
+| 探索の自由度を削りすぎない | 非抵触。探索の順序・対象・境界を変更しない。結論直前の自己チェックへの追記であり、探索フェーズには介入しない。 |
+| 局所的な仮説更新を即座の前提修正義務に直結させすぎない | 非抵触。仮説更新プロセス（Step 3）ではなく Step 5.5 のみに影響し、前提の再点検義務を課すものではない。 |
+| 既存ガードレールを特定の追跡方向で具体化しすぎない | 非抵触。特定のトレース方向（例: 「上流を辿れ」）を指示するものではなく、既に辿った証拠の数を振り返る汎用的な確認。 |
+| 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない | **要注意**。本変更は既存の Step 5.5 第 4 項への文言追加であり、新規項目の追加ではない。ただし実質的に「確信度の妥当性チェック」という観点が加わる。失敗原則は「特定の検証経路の半必須化」を禁じており、本変更は検証経路ではなく証拠充足性の自己確認であるため抵触しないと判断する。また「反証が見つからなかった場合の記録様式を細かく規定しすぎる」には該当しない（記録様式ではなく確信度と証拠の対応の確認のみ）。 |
 
-### 共通原則との照合
-
-| # | 原則 | 照合 |
-|---|------|------|
-| 1 | 判定の非対称操作は必ず失敗する | 削除対象の「Do not expand」は NOT_EQ 側にのみ不利な制限だった。削除することで非対称性が解消される。✅ |
-| 2 | 出力側の制約は効果がない | 削除のみ。出力制約の追加なし。✅ |
-| 3 | 探索量の削減は常に有害 | 検索制限の削除＝探索量の回復。✅ |
-| 4 | 同じ方向の変更は表現を変えても同じ結果 | 差し戻し後は「前回成功した状態」への復帰。新しい方向性の変更ではない。✅ |
-| 5 | 入力テンプレートの過剰規定は探索視野を狭める | 過剰規定の削除。原則の正方向への適用。✅ |
-| 13 | relevant test 集合の低精度な拡張は有害 | 拡張命令は追加していない。中立状態への復帰のみ。✅ |
-| 14 | 条件付き特例探索追加でも主ループを強化しなければ低下 | 特例探索命令の追加なし。✅ |
-| 16 | ネガティブプロンプトによる禁止は過剰適応を招く | ネガティブプロンプト（"Do not expand"）を削除する側。原則の正方向。✅ |
-
-**共通原則抵触なし。**
 
 ## 変更規模の宣言
 
-- **追加行数**: 0 行（hard limit 5 行以内 ✅）
-- **削除行数**: 5 行（制限対象外）
-- **変更対象**: `## Compare` セクション → Certificate template → `DEFINITIONS D2` ブロックのみ
-- **変更性質**: iter-33 で追加した 5 行を完全に差し戻す。他のセクション・フィールド・
-  テンプレートへの変更なし。研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、
-  必須反証）はすべて維持。
+- 追加行数: 2 行
+- 削除行数: 0 行
+- 合計変更規模: 2 行（hard limit 5 行以内、適合）
+- 変更種別: 既存行への文言追加・精緻化のみ（新規ステップ・新規フィールド・新規セクションなし）
