@@ -106,7 +106,7 @@ For every function or method encountered on a relevant code path, record:
 **Rules:**
 - Read the actual definition. Do not infer behavior from the name.
 - Mark the Behavior column VERIFIED only after reading the source.
-- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
+- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
 - Trace through conditionals, mapping tables, and configuration — not just the happy path.
 - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
 
@@ -144,8 +144,6 @@ Before writing the formal conclusion, check each item below. If any answer is **
 - [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
 - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
 - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
-      If a semantic difference was found, did I trace at least one relevant test through the differing
-      path before concluding it affects (or does not affect) the outcome? (cf. Guardrail #4)
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
@@ -253,8 +251,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 ### Compare checklist
 - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
 - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
-- Identify changed files for both sides; for each changed file, locate the
-  enclosing function or method boundary before tracing callers or callees
+- Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing

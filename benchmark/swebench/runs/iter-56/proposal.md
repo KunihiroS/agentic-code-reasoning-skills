@@ -1,91 +1,146 @@
-# Iteration 56 — 改善案 (proposal)
+# Iter-56 — Proposal
 
-## 親イテレーション選定理由
+## Exploration Framework カテゴリ: C（強制指定）
 
-親イテレーションとして **iter-35（85%, 17/20）** を選定した。理由は以下の通り:
+### カテゴリ C の定義（Objective.md より）
 
-- iter-35 は直近の安定したベースラインとして最高スコアを記録しており、その後の試行（iter-36〜55）は API 制限・認知負荷増・回帰のいずれかで悪化または評価不能に終わった
-- iter-35 の実際の変更（`because` 節に「to the assertion or exception — cite file:line」を追加）は、テンプレートの証拠品質を向上させ、75% → 85% の改善をもたらした
-- 残る 3 つの失敗ケース（15368, 13821: EQUIV→NOT_EQ, 11433: NOT_EQ→UNKNOWN）は異なるメカニズムで発生しており、改善余地が明確に残っている
+> C. 比較の枠組みを変える（比較粒度、差異重要度、変更分類）
+> - テスト単位ではなく、関数単位・モジュール単位で比較する
+> - 差異の重要度を段階的に評価する
+> - 変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う
 
-## 選択した Exploration Framework カテゴリ
+### カテゴリ C 内でのメカニズム選択理由
 
-**カテゴリ E: 表現・フォーマットを改善する**
+カテゴリ C には 3 つのメカニズムが並ぶ。そのうち「差異の重要度を段階的に評価する」を選択する。
 
-> 曖昧な指示をより具体的な言い回しに変える
+理由は以下の通り。
 
-選択理由:
+1. **変更分類（リファクタリング/バグ修正/機能追加）の事前判定**は、STRUCTURAL TRIAGE が既に
+   S1（修正ファイル一覧）と S2（完全性）という構造差分を先行評価するステップを持っており、
+   変更分類はその自然な延長である。しかし現行の STRUCTURAL TRIAGE は「あるかないか」の二値
+   判定（同一ファイルか否か）を行うだけで、差異の影響の深刻度を段階化していない。
 
-- iter-35 はカテゴリ E に相当する変更（`because` 節の文言精緻化）で成功した。同一カテゴリ内でも、今回は**異なる場所（Claim テンプレートではなくチェックリスト）・異なるメカニズム（証拠の記録方法ではなく判定基準の明確化）**を対象とする
-- カテゴリ A（順序）= BL-12/14 で失敗、カテゴリ B（探索方法）= BL-17/22 で失敗、カテゴリ C（比較枠組み）= BL-7/11/16 等で失敗、カテゴリ D（メタ認知）= BL-9/10 で失敗、カテゴリ F（論文未活用）= BL-24/25/26 等で失敗または評価不能。カテゴリ E の「既存行文言の精緻化」は今イテレーションの親（iter-35）が使用し成功した唯一のカテゴリ
-- 5 行以内制約のもとで、既存テキストの修正によって意味的な改善が可能であるため実装可能
+2. **差異の重要度の段階評価**は、現行 SKILL.md の ANALYSIS OF TEST BEHAVIOR と
+   EDGE CASES RELEVANT TO EXISTING TESTS の間にある空白を埋める。現行は「差異が存在する」
+   という事実と「テスト結果が SAME / DIFFERENT か」という二値結論を直接つなぐ構造であり、
+   「存在するが軽微」「存在するが全テスト経路外」「存在しかつ実質的」という段階が明示化
+   されていない。このためエージェントは意図せず DIFFERENT という結論を回避するか、または
+   差異の重さを過大評価して NOT EQUIVALENT に引っ張られやすい。
 
-## 改善仮説
+3. 残りの「テスト単位ではなく関数単位で比較する」は STRUCTURAL TRIAGE S1/S2 と
+   Step 4 の interprocedural trace table が既にカバーしており、追加変更の余地が小さい。
 
-**チェックリスト項目 6 の「observable test outcome」という表現の曖昧さが EQUIV 偽陽性（NOT_EQ 誤判定）を引き起こしている。エージェントは「コード実行経路が異なる（intermediate observable が違う）」を「テストの PASS/FAIL 結果が異なる」と混同している可能性がある。「observable test outcome」を「PASS/FAIL result」に精緻化し、「not merely the internal execution path」という対比句を加えることで、コード差分からテスト結果への短絡（jumps-to-conclusion）を抑制できる。**
+よって **「差異の重要度を段階化する」** メカニズムを今回の実装対象とする。
 
-根拠:
-- 15368・13821 はともに EQUIV であるにも関わらず NOT_EQ と誤判定される。エージェントはコード差分を発見し、それをもとに COUNTEREXAMPLE を構成するが、テストの assert 条件に対して A/B の最終的な PASS/FAIL を正確に区別できていない
-- 現行チェックリスト: "verify that the difference produces a different **observable test outcome**"
-- 「observable outcome」はコード実行中の任意の観測可能な値（中間変数、返り値等）と解釈できる。エージェントは「Change B の返り値が Change A と異なる → observable outcome が異なる → NOT_EQ」という誤った連鎖を形成しやすい
-- 「PASS/FAIL result of at least one relevant test, not merely the internal execution path」に変更することで、エージェントが検証すべきゴールポストが「テストの実行合否」に固定される
-- iter-35 の変更（`because` 節への trace 義務）は「どこまでトレースするか」を指定した。今回の変更は「何を証明したとみなすか」を指定する。異なるメカニズムであり、BL-25（assertion/exception まで全 trace 義務）とも異なる（チェックリストの判断基準の明確化であり、template の obligation ではない）
+---
 
-## SKILL.md のどこをどう変えるか
+## 改善仮説（1つ）
 
-**変更箇所**: `## Compare` セクションの `### Compare checklist` 内
+compare モードにおいて、変更間の意味的差異が発見された際にその差異の
+**テスト到達可能性（reachability）** を段階的に分類させることで、
+エージェントが「差異は存在するが既存テストに到達しない」「差異が到達し
+かつ観察可能」という中間状態を明示的に扱えるようになり、
+EQUIVALENT 判定の精度（過剰 NOT_EQUIVALENT 方向の誤判定の削減）
+と NOT_EQUIVALENT 判定の精度（差異の軽視による誤 EQUIVALENT の削減）
+の両方が改善される。
 
-**変更前（現行）**:
+差異の扱いは従来「差異がある → counterexample を探す」という二段跳びだったが、
+「差異がある → その差異は既存テストの実行経路上に乗るか → 乗るならどのアサーションに
+影響するか」という三段階にすることで、トレースの抜け落ちを減らす。
+
+---
+
+## SKILL.md の変更内容
+
+### 対象箇所
+
+SKILL.md の compare モード内の STRUCTURAL TRIAGE セクション（S1〜S3 の直後、
+PREMISES の直前）。
+
+現行は S3 の後に「If S1 or S2 reveals a clear structural gap…」という早期終了
+条件が書かれているだけで、差異の重要度段階評価への言及がない。
+
+### 変更前（現行 SKILL.md の該当行 — S3 末尾から PREMISES 直前）
+
 ```
-- Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference produces a different observable test outcome by tracing through at least one test
+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
+
+If S1 or S2 reveals a clear structural gap (missing file, missing module
+update, missing test data), you may proceed directly to FORMAL CONCLUSION
+with NOT EQUIVALENT without completing the full ANALYSIS section.
 ```
 
-**変更後（提案）**:
+### 変更後
+
 ```
-- Do not conclude NOT EQUIVALENT from a code difference alone — verify that the difference changes the PASS/FAIL result of at least one relevant test, not merely the internal execution path
+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+      prioritize structural differences (S1, S2) and high-level semantic
+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+      is infeasible for large patches and produces unreliable conclusions.
+  S4: Difference severity — for each semantic difference found, classify
+      it as: (a) NOT_REACHABLE by any relevant test path, (b) REACHABLE
+      but producing identical observable outputs, or (c) REACHABLE and
+      producing divergent outputs. Only class (c) justifies NOT EQUIVALENT.
+
+If S1 or S2 reveals a clear structural gap (missing file, missing module
+update, missing test data), you may proceed directly to FORMAL CONCLUSION
+with NOT EQUIVALENT without completing the full ANALYSIS section.
 ```
 
-**変更の説明**:
-- `produces a different observable test outcome by tracing through at least one test` → `changes the PASS/FAIL result of at least one relevant test, not merely the internal execution path`
-- 新規追加行: **0 行**（既存行の文言修正のみ）
-- ポイント 1: "observable test outcome" → "PASS/FAIL result" — 「テストが pass するか fail するか」という明確な二値の結果を目標に固定する
-- ポイント 2: "by tracing through at least one test" の削除（"relevant test" という語が引き継ぐため情報量は維持）
-- ポイント 3: "not merely the internal execution path" の追加 — 「コード実行経路の差異」と「テスト合否の差異」を明示的に区別させる対比句
+### 変更規模の宣言
 
-## EQUIV と NOT_EQ の正答率への予測影響
+追加行数: 4 行（S4 の 4 行を新たに追加）
+削除行数: 0 行
+合計変更: 4 行 ≤ 5 行（hard limit 内）
 
-### EQUIV（現状 8/10 = 80%）→ 予測 9〜10/10 = 90〜100%
+---
 
-- 15368・13821: エージェントがコード差分から PASS/FAIL 差分を導出しようとする際、"not merely the internal execution path" という対比句が「コード経路の差 ≠ テスト結果の差」という意識を喚起する。これによりエージェントは NO COUNTEREXAMPLE EXISTS セクションでより厳密に「テストが実際に FAIL に変わるか」を確認するよう誘導される可能性がある
-- 他の EQUIV ケース（現状正答済み）: チェックリスト項目は advisory であり、既に PASS/FAIL を正しくトレースしているケースに悪影響を与えない
+## 一般的な推論品質への期待効果
 
-### NOT_EQ（現状 9/10 = 90%）→ 予測 9/10 = 90%
+### 対象となる失敗パターン
 
-- 11433 UNKNOWN（31 turns）: 今回の変更はチェックリスト 1 行の修正であり、認知負荷の増加はほぼない。11433 のターン消費は変更コードの複雑さに起因すると推測されるため、この変更では直接的な改善・悪化は見込みにくい
-- "not merely the internal execution path" という文言は NOT_EQ 方向への制約ではなく、PASS/FAIL を証拠として提示できれば条件を満たすという意味で、真の NOT_EQ ケースの立証ハードルは変わらない
-- **懸念**: "changes the PASS/FAIL result" という表現が NOT_EQ の立証をより厳密に求めると受け取られた場合、BL-2 に近い効果（NOT_EQ 閾値の引き上げ）を生む可能性がある。ただし現行文言の「verify that the difference produces a different observable test outcome」も同等の要求をしており、delta は表現の明確化のみであるため、この懸念は小さいと判断する
+1. **過剰 NOT_EQUIVALENT**（EQUIVALENT → NOT_EQUIVALENT 誤判定）  
+   意味的差異が検出された時点で NOT EQUIVALENT 結論に飛ぶケース。
+   S4 は差異を三クラスに分類する義務を課すため、「差異はあるが (a) or (b)」
+   という中間判断を明示化する。これにより NOT_REACHABLE な差異を根拠に
+   NOT EQUIVALENT とする早計な結論を抑止する。
 
-## failed-approaches.md ブラックリストおよび共通原則との照合
+2. **差異の軽視による誤 EQUIVALENT**（NOT_EQUIVALENT → EQUIVALENT 誤判定）  
+   差異に気づいてはいるが「影響はない」と曖昧に判断して EQUIVALENT に倒すケース。
+   S4 の (c) クラスの定義（REACHABLE かつ観察可能な divergent outputs）により、
+   差異の重さを根拠なく過小評価することへの抑止が働く。
 
-| チェック項目 | 評価 |
+3. **Guardrail #4（微小差異の却下）の補強**  
+   既存 Guardrail #4:「Do not dismiss subtle differences. If you find a semantic
+   difference between compared items, trace at least one relevant test through
+   the differing code path before concluding the difference has no impact.」
+   S4 はこのガードレールを STRUCTURAL TRIAGE の段階に前倒しし、比較の早い段階で
+   差異の重要度クラスを確定させる枠組みを提供する。
+
+---
+
+## failed-approaches.md の汎用原則との照合結果
+
+| 原則（要約） | 照合結果 |
 |---|---|
-| BL-2（NOT_EQ 証拠閾値・厳格化）| 今回は「何が証拠か」を明確化するのみで、証拠量の要求は変えない。「PASS/FAIL 結果を示せ」は元の「observable test outcome を示せ」と同等の要求。ただし境界上のリスクあり（後述） |
-| BL-5（前提収集テンプレートの具体化）| 対象は checklist（処理方針）であり、PREMISES テンプレート（前提収集形式）の変更ではない ✓ |
-| BL-9（メタ認知自己チェック）| チェックリスト項目の文言精緻化であり、「自分は〜をしたか？」という自己評価を求めるものではない ✓ |
-| BL-14（非対称なアドバイザリ指示）| 変更は NOT_EQ 結論を出す際の基準明確化。元の文言も同じ非対称性を持っており、delta は「observable」→「PASS/FAIL result, not merely execution path」という精緻化のみ。非対称性は変えていない（既存の非対称性を継承） |
-| BL-25（because 節への assertion/exception 追加）| 対象は checklist であり Claim テンプレートではない。また BL-25 は全 Claim に対する完全トレース義務（高コスト）だったが、今回はチェックリストの判断基準の精緻化（低コスト） ✓ |
-| 共通原則 #1（判定の非対称操作）| 既存の項目 6 も NOT_EQ 方向にのみ述べる非対称な記述。今回の変更は同じ非対称性を維持しつつ表現を精緻化するもので、新たな非対称性を追加しない ✓（既存と同等）|
-| 共通原則 #5（入力テンプレートの過剰規定）| "PASS/FAIL result" という明確化は、探索視野を「PASS/FAIL に関係するテスト」に絞るものではなく、最終的な検証のゴールを定めるものであるため過剰規定には当たらない ✓ |
-| 共通原則 #6（対称化は差分で評価）| 変更の実効差分: "observable test outcome" → "PASS/FAIL result of at least one relevant test, not merely internal execution path"。差分は「observable」の定義明確化のみ。方向性は既存と同じ（NOT_EQ 方向への慎重さを求める）✓ |
-| 特定ケースの狙い撃ち | 変更は特定ケース ID を参照せず、汎用的なコード推論の誤りパターン（コード差分とテスト結果差分の混同）に対処する ✓ |
+| 探索すべき証拠の種類をテンプレートで事前固定しすぎない | 適合：S4 は差異の**分類**を求めるが、どの差異を探すか・どのファイルを読むかは固定しない。探索経路は自由なまま。 |
+| 探索の自由度を削りすぎない（ドリフト対策が探索幅を狭める問題） | 適合：S4 は STRUCTURAL TRIAGE 内に置かれ、詳細トレース (Step 3/4) の順序・幅には介入しない。 |
+| 局所的な仮説更新を即座の前提修正義務に直結させすぎない | 適合：S4 は差異クラスの宣言であり、前提の再訂正義務は一切含まない。 |
+| 既存の汎用ガードレールを特定の追跡方向で具体化しすぎない | 適合：S4 は方向非依存（どの関数・モジュールにも適用可能）な三クラス分類である。 |
+| 結論直前の自己監査に新しい必須メタ判断を増やしすぎない | 適合：S4 は結論前ではなく STRUCTURAL TRIAGE（結論よりずっと前の段階）に配置。 |
 
-**境界上のリスク（BL-2 との類似性）**:
-- 変更後の "changes the PASS/FAIL result" は "produces a different observable test outcome" よりも厳密に見える可能性があり、これが NOT_EQ の立証ハードルを実質的に上げる（BL-2 の Fail Core: 閾値の移動）リスクが存在する
-- ただし: BL-2 は「カウンター例にアサーションまでのトレースを要求」「仮想環境での反例を禁止」等の**探索行動への新しい制約**を追加したものであり、今回は既存行の「observable test outcome」を「PASS/FAIL result」に言い換えるのみ。semantic な要求は同等であり、探索行動への新しい制約は追加しない
+**抵触する原則: なし**
+
+---
 
 ## 変更規模の宣言
 
-- **新規追加行数**: 0 行（hard limit 5 行以内を大きく下回る）
-- **変更対象**: 既存チェックリスト項目 1 行の文言精緻化のみ
-- **削除行数**: 0 行
-- **変更規模**: 最小（single-line modification）
+- 追加行: 4 行（S4 の項目本文）
+- 削除行: 0 行
+- Hard limit（5 行）以内: **適合**
+- 新規ステップ・新規フィールド・新規セクション: 既存 STRUCTURAL TRIAGE 内の
+  S3 に続く番号付き項目（S4）の追加であり、構造上はリストの延長。
+  新規セクションの追加ではない。
