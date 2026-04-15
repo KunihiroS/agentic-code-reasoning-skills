@@ -1,110 +1,112 @@
-# Iteration 55 — 改善提案
+# Iteration 55 — Improvement Proposal
 
-## 親イテレーション (iter-31) の選定理由
+## Exploration Framework カテゴリ: B
 
-iter-31 はスコア 85%（17/20）で、過去イテレーション群の中で最も安定した高スコアを示している。
-iter-31 の変更（Guardrail 2 へのトレース終着点の明示）はCategory E アプローチで、
-「コード差分発見 → テスト結果相違の推論ジャンプ」を防ぐ観点で効果的だった。
-残存失敗3件（15368, 13821, 15382）はいずれも EQUIV 偽陽性（NOT_EQ と誤判定）であり、
-この方向の改善余地が残っている。
-
-## Exploration Framework カテゴリ: F
+カテゴリ B「情報の取得方法を改善する」の中から、今回は
+**「コードの読み方の指示を具体化する」** メカニズムを選択する。
 
 ### 選択理由
 
-- iter-31 は **Category E**（表現・フォーマットの改善）を使用。今回は異なるカテゴリを選ぶ必要がある。
-- **Category F（原論文の未活用アイデアを導入する）** を選択する。
-- 具体的には「論文に書かれているが SKILL.md に完全には反映されていない手法を探す」の観点から、
-  Step 4 の反証的トレース要件（"if this trace were wrong, what concrete input..."）が
-  **例外処理** に限定されており、**一般的な条件分岐**（if/elif/else）には明示的に適用されていない点に着目する。
-- 論文のコアである「半形式的推論と反証可能性の確保」という原則は、例外処理だけでなく
-  あらゆる分岐ロジックに等しく適用されるべきだが、現行の SKILL.md ではその適用範囲が曖昧になっている。
+カテゴリ B の 3 つのメカニズムのうち、
+「探索の優先順位付けを変える」は failed-approaches.md の
+「探索ドリフト対策として探索の自由度を削りすぎない」原則に
+触れやすい。「何を探すかではなく、どう探すかを改善する」は
+カテゴリ A（順序変更）や C（比較枠組み）と混同しやすい。
 
-## 改善仮説（1つ）
+「コードの読み方の指示を具体化する」は、
+現行 SKILL.md の Step 4 が持つ "UNVERIFIED 時の代替探索" 手順
+（テスト用途 → 型シグネチャ → ドキュメント）に注目する。
+この優先順位は既に明示されているが、
+「なぜその順序か」の根拠が書かれていないため、
+実際の探索時に順番が曖昧になりやすい。
+根拠を一言付記することで読み方を具体化し、
+探索の自由度は削らずに判断軸を与えられる。
 
-Step 4 トレーステーブルの反証的入力トレース要件（"if this trace were wrong..."）の適用範囲を、
-「ループ内の例外処理または多岐分岐制御フロー」という曖昧な記述から
-「あらゆる多岐分岐制御フロー（条件分岐、例外処理、ループ）」へと明示的に拡張することで、
-エージェントは条件分岐を含む**全ての関数**のトレース行を確定する前に反証的入力を考慮するようになる。
-これにより、コード差分が存在する条件分岐において「テストが実際にその分岐を実行するか」を
-関数トレース段階で確認する習慣が形成され、EQUIV 偽陽性（コード差分発見→テスト結果相違の即断）を抑制できる。
 
-## SKILL.md への具体的な変更内容
+## 改善仮説
 
-### 変更対象
+ソースが入手不能な関数の代替証拠を探す際、
+検索順序の根拠が明示されていないと、
+推論エージェントは最も情報量の少ない証拠から探索を始めたり、
+順序を任意に入れ替えたりしやすい。
+探索優先順位の「理由」を一語で付記するだけで、
+エージェントは実際の動作を最も直接的に示す証拠
+（テスト用途）を先に当たる習慣を維持しやすくなり、
+UNVERIFIED 行に対する代替根拠の信頼性が安定して向上する。
 
-`### Step 4: Interprocedural tracing` セクション内 **Rules** の最終箇条書き（現在 1 行）
 
-### 変更前（1行）
+## SKILL.md の変更内容
+
+### 変更箇所
+
+Step 4「Interprocedural tracing」の Rules セクション、
+UNVERIFIED 時の代替探索手順を記述した一文。
+
+### 変更前（SKILL.md line 109）
 
 ```
-- For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
+- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
 ```
 
-### 変更後（1行）
+### 変更後（変更規模: 1 行の文言追加・精緻化）
 
 ```
-- For any multi-branch control flow (conditionals, exception handling, loops): after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
+- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior most directly), then type signatures (constrain possible behaviors), then documentation (least reliable, may be stale). Optionally probe language behavior with an independent script.
 ```
 
-### 変更の要点
+### 差分要約（追加テキストのみ抜粋）
 
-- **変更箇所**: `"For exception handling inside loops or multi-branch control flows:"` → `"For any multi-branch control flow (conditionals, exception handling, loops):"`
-- **変更行数**: 1行変更（追加行数 = 0、削除行数 = 0）
-- **変更内容の性質**: 既存ルールの適用スコープを曖昧な表現から明示的な列挙へ精緻化
+- "shows actual behavior" → "shows actual behavior most directly"
+- "then type signatures" → "then type signatures (constrain possible behaviors)"
+- "then documentation" の後ろに "(least reliable, may be stale)" を追加
 
-## 期待する効果の予測
+変更行数: 1 行（既存行への文言追加のみ）
 
-### EQUIV 正答率への影響（現在 7/10 = 70%）
 
-- **改善方向**: 「条件分岐での差分を発見した際、その分岐をテストが実際に実行するかを
-  トレース段階で確認するよう促す」ことで、EQUIV 偽陽性が減少することを期待する。
-- **対象**: 残存 EQUIV 偽陽性（15368, 13821, 15382）の一部が改善される可能性がある。
-  これらはコード差分が条件分岐に存在し、テスト入力がその分岐を実行しない可能性が高い。
-- **予測**: 7/10 → 8〜9/10（+1〜2件）
+## 一般的な推論品質への期待効果
 
-### NOT_EQ 正答率への影響（現在 10/10 = 100%）
+### 対象となる失敗パターン
 
-- **対称性**: 本変更はトレーステーブルの質向上であり、EQUIV/NOT_EQ 両方向に等しく適用される。
-  NOT_EQ 方向への立証責任を引き上げるものではない。
-- **リスク**: 条件分岐を持つ関数での1関数あたりのトレースコスト微増はあるが、
-  既存の例外処理ケースで同様のコストは許容されており、増加幅は限定的。
-- **予測**: 10/10 を維持（中立〜わずかにリスクあり）
+1. **Third-party library guessing（ドキュメント先読みバイアス）**
+   — docs/design.md §4.1.1 が列挙する「サードパーティライブラリの
+   動作を名前や公式ドキュメントから推測する」失敗。
+   ドキュメントが "least reliable, may be stale" と明示されることで、
+   エージェントはドキュメントへの過信を抑制しやすくなる。
 
-### 総合スコア予測
+2. **Subtle difference dismissal（微細差分の軽視）**
+   — テスト用途が "most directly" と明示されることで、
+   実際の呼び出し文脈を先に確認する動機が高まり、
+   テストが関数の差異を実際に行使しているかどうかの
+   見落としが減る。
 
-85%（17/20）→ 87〜90%（17.5〜18/20）
+### EQUIV / NOT_EQ への影響
 
-## failed-approaches.md ブラックリストおよび共通原則との照合
+- EQUIV 誤判定の一因として「UNVERIFIED 関数の動作を
+  ドキュメントベースで安易に同一とみなす」パターンが挙げられる。
+  テスト用途を最優先で確認する習慣の強化は、
+  この誤判定の抑制に直接寄与する（EQUIV 精度向上）。
+- NOT_EQ 判定への悪影響はほぼない。
+  検索順序の根拠付記は判定方向を変えず、
+  証拠収集の質を高めるだけであるため。
 
-### ブラックリスト照合
 
-| BL番号 | 内容 | 本提案との関係 | 判定 |
-|--------|------|--------------|------|
-| BL-2 | NOT_EQ 証拠閾値の厳格化 | NOT_EQ 判定への立証責任を変更しない | **非該当** |
-| BL-5 | テンプレートの過剰規定 | テンプレートフィールドを追加しない。既存ルールの対象範囲を明確化するのみ | **非該当** |
-| BL-6 | 対称化（既存制約との差分が非対称） | 変更差分は「条件分岐でも既存の例外ケース相当の反証トレースを行う」ことのみ。EQUIV/NOT_EQ 両方向に均等に作用する | **非該当** |
-| BL-8 | 受動的記録フィールドの追加 | フィールドを追加せず。既存の能動的トレース要求の適用範囲を広げる | **非該当** |
-| BL-9 | メタ認知的自己チェック | 「自分はやったか？」を問うものではなく、具体的な入力を使った能動的トレースを要求する | **非該当** |
-| BL-14 | 逆方向推論（NOT_EQ に高度検証を要求） | NOT_EQ 方向にのみ要求する非対称な追加ではない | **非該当** |
-| BL-20 | because 節への関数単位 verified effect 義務 | Claims テンプレートではなく、Step 4 トレーステーブルルールの精緻化 | **非該当** |
-| BL-21 | 1 hop downstream 義務化 | 固定ホップ数の追加ではなく、すでに読んでいる関数内の条件分岐に対する反証入力を考える | **非該当** |
-| BL-25 | because 節へのアサーション到達トレース義務 | Claims テンプレートの変更ではなく、Step 4 行確定前の短い反証確認の拡張 | **非該当** |
+## failed-approaches.md との照合
 
-### 共通原則との照合
+| 汎用原則 | 本提案との関係 |
+|---|---|
+| 探索シグナルの事前固定による確認バイアス強化 | 非抵触: 探索先の種類を固定しておらず、既存順序の根拠を付記するだけ |
+| 探索の自由度を削りすぎない | 非抵触: 優先順位は既に存在しており、その変更ではなく根拠明示のみ |
+| 局所的な仮説更新を前提修正義務に直結させすぎない | 非抵触: 仮説更新のサイクルには無関係 |
+| 既存ガードレールを特定の追跡方向で具体化しすぎない | 非抵触: Step 4 の UNVERIFIED 処理は "方向非依存" のまま; 根拠の明示は探索経路を半固定しない |
+| 結論直前の自己監査に新しいメタ判断を増やしすぎない | 非抵触: 変更は Step 5.5 および Step 5 とは無関係 |
 
-1. **判定の非対称操作は必ず失敗する**: 本変更はトレース品質向上であり、EQUIV/NOT_EQ の一方に閾値移動をもたらさない。**適合**
-2. **出力側の制約は効果がない**: 本変更は入力/処理側（関数トレース方法）を変える。**適合**
-3. **探索量の削減は常に有害**: 本変更は探索を削減しない（むしろ条件分岐での確認を追加する）。**適合**
-4. **同じ方向の変更は表現を変えても同じ結果**: 本変更は過去に試みた NOT_EQ 閾値操作とは根本的に異なる（トレーステーブルの品質向上）。**適合**
-5. **入力テンプレートの過剰規定は探索視野を狭める**: テンプレートにフィールドを追加せず、視野制約を導入しない。**適合**
-6. **対称化は既存制約との差分で評価**: 変更差分は「一般的な条件分岐でも反証入力トレースを行う」で、EQUIV/NOT_EQ 両方向に均等に作用する。**適合**
+全ての汎用原則との抵触なし。
+
 
 ## 変更規模の宣言
 
-- **追加行数**: 0 行（変更は 1 行の文言修正のみ）
-- **削除行数**: 0 行
-- **変更行数**: 1 行
-- **hard limit（5行）への適合**: 超過なし
-- **新規ステップ/フィールド/セクション**: なし
-- **研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）への影響**: なし（Step 4 の既存ルールを精緻化するのみ）
+- 変更行数（追加・変更）: **1 行**
+- 削除行数: **0 行**
+- 上限 5 行以内: **適合**
+- 新規ステップ・新規フィールド・新規セクション: **なし**
+- 変更の性質: 既存行への文言追加（根拠語句の挿入）のみ
