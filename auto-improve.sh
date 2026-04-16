@@ -41,15 +41,14 @@ PI_PROVIDER="github-copilot"
 PI_MODEL="gemini-3.1-pro-preview"
 
 # 8.8: 監査役を Hermes Agent に置換 (旧 Pi)
-HERMES_PROVIDER="copilot"
+HERMES_PROVIDER="openai-codex"
 HERMES_MODEL="gpt-5.4"
 
-# 8.8.2 (2026-04-09): 提案者/実装者も Hermes に統一。Copilot CLI の /critique が
-# 機能ゼロ (実測 70k〜120k tokens/call、品質改善ゼロ) かつプロセス制御が弱いため撤廃。
-# propose/implement は Hermes 経由 copilot provider + claude-sonnet-4.6 を使う
-# (認証は gh auth token 経由で自動解決)。
-HERMES_PROPOSER_PROVIDER="copilot"
-HERMES_PROPOSER_MODEL="claude-sonnet-4.6"
+# Phase 3 (2026-04-16): copilot → openai-codex に移行 (copilot 使用上限対策)。
+# propose/implement は Hermes 経由 openai-codex/gpt-5.2 を使う。
+# 監査役/メタエージェントは openai-codex/gpt-5.4。
+HERMES_PROPOSER_PROVIDER="openai-codex"
+HERMES_PROPOSER_MODEL="gpt-5.2"
 
 # オプション解析
 PARSED_OPTS=()

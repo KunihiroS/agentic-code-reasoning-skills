@@ -73,10 +73,10 @@ Phase 3 は「改善プロセスそのもの（プロンプトテンプレート
 
 | 役割 | ツール | モデル | 変更対象 |
 |------|--------|--------|----------|
-| 提案者/実装者 | Hermes Agent | copilot/claude-sonnet-4.6 | SKILL.md |
-| 監査役 | Hermes Agent | copilot/gpt-5.4 | — (読取のみ) |
+| 提案者/実装者 | Hermes Agent | openai-codex/gpt-5.2 | SKILL.md |
+| 監査役 | Hermes Agent | openai-codex/gpt-5.4 | — (読取のみ) |
 | ベンチマーク | Pi | github-copilot/claude-haiku-4.5 | — (評価のみ) |
-| **メタエージェント** | **Hermes Agent** | **copilot/claude-sonnet-4.6** | **prompts/*.txt** |
+| **メタエージェント** | **Hermes Agent** | **openai-codex/gpt-5.4** | **prompts/*.txt** |
 
 ### ループフロー
 
