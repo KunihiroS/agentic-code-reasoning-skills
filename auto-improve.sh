@@ -235,6 +235,9 @@ run_hermes_proposer() {
 # =============================================================================
 
 run_meta_agent() {
+  # カレントディレクトリをリポルートに固定
+  cd "$REPO_DIR"
+
   local meta_dir="$RUNS_DIR/meta-$(get_template_version)"
   mkdir -p "$meta_dir"
 
@@ -261,42 +264,48 @@ for e in scored[-10:]:
   local tag_name="meta-v${TEMPLATE_VERSION}"
   git tag -f "$tag_name" 2>/dev/null || true
 
+  # .version をメタエージェントに触らせないよう退避
+  cp "$TEMPLATE_VERSION_FILE" "$TEMPLATE_VERSION_FILE.bak"
+
   # メタエージェント実行
   log "メタエージェント起動 (template_v${TEMPLATE_VERSION})"
   render_template "meta-propose" > "$meta_dir/meta-prompt.txt"
   run_hermes_proposer "$meta_dir/meta-prompt.txt" "$meta_dir/hermes-meta.log"
 
-  # テンプレートが変更されたか確認
-  if git diff --quiet -- prompts/; then
+  # .version をメタエージェントが変更していたら復元（スクリプト側で管理する）
+  cp "$TEMPLATE_VERSION_FILE.bak" "$TEMPLATE_VERSION_FILE"
+  rm -f "$TEMPLATE_VERSION_FILE.bak"
+
+  # テンプレートが変更されたか確認（.version 以外の prompts/ ファイル）
+  if git diff --quiet -- prompts/*.txt prompts/*.json; then
     log "メタエージェント: テンプレート変更なし"
     return 1
   fi
 
   # テンプレート構文検証
-  local validation_ok=true
   for tpl_file in "$PROMPTS_DIR"/*.txt; do
     local tpl_name
     tpl_name=$(basename "$tpl_file" .txt)
-    # manifest に登録されているテンプレートのみ検証
     if python3 -c "import json; m=json.load(open('$PROMPTS_DIR/manifest.json')); exit(0 if '$tpl_name' in m['templates'] else 1)" 2>/dev/null; then
-      # 変数プレースホルダーが壊れていないか簡易チェック
       if ! grep -qP '\$\{[A-Za-z_]+\}' "$tpl_file" 2>/dev/null; then
         log "警告: $tpl_file に変数プレースホルダーがありません"
       fi
     fi
   done
 
-  # バージョンインクリメント
+  # バージョンインクリメント（スクリプト側で管理）
   local new_version=$((TEMPLATE_VERSION + 1))
   echo "$new_version" > "$TEMPLATE_VERSION_FILE"
   log "テンプレートバージョン: $TEMPLATE_VERSION → $new_version"
 
-  # コミット
+  # コミット & プッシュ
   git add prompts/ "$meta_dir"
-  git commit -m "meta-v${new_version}: テンプレート更新 by メタエージェント" || true
+  git commit -m "meta-v${new_version}: テンプレート更新 by メタエージェント" 2>&1 || true
   git tag -f "meta-v${new_version}" 2>/dev/null || true
-  git push --tags 2>/dev/null || true
+  git push 2>&1 || true
+  git push --tags 2>&1 || true
 
+  log "メタエージェント完了: template_v${new_version} をコミット・プッシュ"
   return 0
 }
 
