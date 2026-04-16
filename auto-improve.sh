@@ -30,7 +30,7 @@ MAX_AUDIT_RETRY=1        # Phase 2 H2: 3 → 1 (再試行は 1 回のみ)
 GOAL_WINDOW=5
 GOAL_PERFECT_COUNT=2
 START_ITER=1
-MAX_ADDED_LINES=5        # H1: 5行 hard limit (Phase 1)
+export MAX_ADDED_LINES=5        # H1: 5行 hard limit (Phase 1)
 STAGED_GATE_THRESHOLD=3  # Phase 2: Staged Eval で 5ケース中 3 以上正答なら Full 実行
 ESCAPE_MODE=0            # Phase 2: 構造改革エスケープハッチ
 STEEPNESS=20             # 8.1.A: score_prop sigmoid steepness (高いほど高スコア親優先)
@@ -226,6 +226,46 @@ run_hermes_proposer() {
     < /dev/null 2>&1 | tee "$log_file"
 }
 
+
+# テンプレート展開 (Phase 3: prompts/ 外部化)
+PROMPTS_DIR="$REPO_DIR/prompts"
+TEMPLATE_VERSION_FILE="$PROMPTS_DIR/.version"
+
+get_template_version() {
+  if [ -f "$TEMPLATE_VERSION_FILE" ]; then
+    cat "$TEMPLATE_VERSION_FILE"
+  else
+    echo "0"
+  fi
+}
+
+get_template_hash() {
+  cat "$PROMPTS_DIR"/*.txt 2>/dev/null | sha256sum | cut -d' ' -f1
+}
+
+render_template() {
+  local tpl_name="$1"
+  local tpl_file="$PROMPTS_DIR/${tpl_name}.txt"
+  if [ ! -f "$tpl_file" ]; then
+    log "ERROR: テンプレート $tpl_file が見つかりません"
+    return 1
+  fi
+  # manifest.json から変数リストを取得し、明示的に envsubst に渡す
+  local vars
+  vars=$(python3 -c "
+import json
+m = json.load(open('$PROMPTS_DIR/manifest.json'))
+tpl = m['templates'].get('$tpl_name', {})
+print(' '.join('\${' + v + '}' for v in tpl.get('vars', [])))
+" 2>/dev/null)
+  if [ -z "$vars" ]; then
+    # manifest にない場合はそのまま出力 (変数展開なし)
+    cat "$tpl_file"
+  else
+    envsubst "$vars" < "$tpl_file"
+  fi
+}
+
 # =============================================================================
 # メインループ
 # =============================================================================
@@ -261,11 +301,11 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
 
   # === 0. 親選択 (Phase 2: ドメインローテーション + escape モード対応) ===
   if [ "$ESCAPE_MODE" -eq 1 ]; then
-    focus_domain="overall"
+    export focus_domain="overall"
     parent_genid=$(select_parent_genid overall best)
     log "Escape モード: 親=iter-${parent_genid} (best)"
   else
-    focus_domain=$(get_focus_domain "$current_iter")
+    export focus_domain=$(get_focus_domain "$current_iter")
     parent_genid=$(select_parent_genid "$focus_domain" score_prop)
     log "フォーカスドメイン: $focus_domain, 親: iter-${parent_genid}"
   fi
@@ -296,104 +336,16 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
     4) FORCED_CAT="E"; FORCED_CAT_DESC="表現・フォーマットを改善する (曖昧文言の具体化、簡潔化、例示)" ;;
     5) FORCED_CAT="F"; FORCED_CAT_DESC="原論文の未活用アイデアを導入する (localize/explain 手法の compare 応用、エラー分析知見)" ;;
   esac
+  export FORCED_CAT FORCED_CAT_DESC
   log "Hermes ($HERMES_PROPOSER_MODEL): 分析・改善案作成中... [強制カテゴリ: $FORCED_CAT]"
 
   # 出力先ファイル (Copilot がここに書く)
-  PROPOSAL_PATH="benchmark/swebench/runs/iter-${current_iter}/proposal.md"
+  export PROPOSAL_PATH="benchmark/swebench/runs/iter-${current_iter}/proposal.md"
 
   if [ "$ESCAPE_MODE" -eq 1 ]; then
-    cat > "$PROMPT_DIR/propose.txt" << PROMPT
-あなたは SKILL.md という汎用コード推論フレームワークの改善担当です。
-
-【参照してよいファイルの完全なリスト】
-- SKILL.md
-- Objective.md
-- README.md
-- failed-approaches.md
-- docs/design.md
-- docs/reference/agentic-code-reasoning.pdf
-
-この 6 ファイル以外を read / search / list してはいけません。
-現在のディレクトリ構造を ls / find / grep で探索する必要もありません。
-
-【出力先】
-${PROPOSAL_PATH}
-
-【今回のモード】
-構造改革エスケープモード。通常の 5 行 hard limit を解除し、新規セクション
-追加も許可します。ただし以下の制約は維持されます。
-
-【提案ルール】
-- SKILL.md は特定の言語・フレームワーク・テストデータに依存しない汎用フレームワークである。
-  改善案も同様に汎用原則として正当化できなければならない。
-- 提案には **ベンチマーク対象リポジトリの固有識別子** (リポジトリ名、ファイルパス、
-  関数名、クラス名、テスト名、テスト ID、実装コードの引用) を一切含めないこと。
-  ただし以下は許可される: SKILL.md 自身の文言引用、一般概念名 (Guardrail #4 等)、
-  抽象的な説明文、SKILL.md の自己引用を含む \`\`\` ブロック。
-- failed-approaches.md の汎用原則のいずれかに抵触する変更は提案しない。
-- 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持する。
-- 改善仮説は 1 つだけ。
-
-現在の SKILL.md の集約スコアは過去最高水準にある。汎用的な観点から、
-推論プロセスのどこに改良余地があるかを検討してください。
-PROMPT
+    render_template "propose-escape" > "$PROMPT_DIR/propose.txt"
   else
-    cat > "$PROMPT_DIR/propose.txt" << PROMPT
-あなたは SKILL.md という汎用コード推論フレームワークの改善担当です。
-
-【参照してよいファイルの完全なリスト】
-- SKILL.md
-- Objective.md
-- README.md
-- failed-approaches.md
-- docs/design.md
-- docs/reference/agentic-code-reasoning.pdf
-
-この 6 ファイル以外を read / search / list してはいけません。
-現在のディレクトリ構造を ls / find / grep で探索する必要もありません。
-
-【出力先】
-${PROPOSAL_PATH}
-
-【今回のフォーカスドメイン】
-${focus_domain}
-これは compare モードの判定方向を意味します:
-- overall: 全体的な推論品質の向上
-- equiv: 2 つの実装が同じ振る舞いを持つと判定する精度の向上
-- not_eq: 2 つの実装が異なる振る舞いを持つと判定する精度の向上
-
-【提案ルール】
-- SKILL.md は特定の言語・フレームワーク・テストデータに依存しない汎用フレームワークである。
-  改善案も同様に汎用原則として正当化できなければならない。
-- 提案には **ベンチマーク対象リポジトリの固有識別子** (リポジトリ名、ファイルパス、
-  関数名、クラス名、テスト名、テスト ID、実装コードの引用) を一切含めないこと。
-  ただし以下は許可される: SKILL.md 自身の文言引用、一般概念名 (Guardrail #4 等)、
-  抽象的な説明文、SKILL.md の自己引用を含む \`\`\` ブロック。
-- failed-approaches.md の汎用原則のいずれかに抵触する変更は提案しない。
-- 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持する。
-- 改善仮説は 1 つだけ。
-- 変更規模は ${MAX_ADDED_LINES} 行以内 (hard limit、超過時は自動リジェクト)。
-  既存行への文言追加・精緻化のみ可。新規ステップ・新規フィールド・新規セクション
-  の追加は原則不可。削除行はこの制限に含めない。
-
-【強制カテゴリ (今回の提案はこのカテゴリに従うこと)】
-${FORCED_CAT}. ${FORCED_CAT_DESC}
-
-- このイテレーションではカテゴリ ${FORCED_CAT} のみを使用すること
-- 他のカテゴリに該当する変更は提案しないこと
-- カテゴリの定義は Objective.md の Exploration Framework セクションを参照
-- 強制ローテーションは iter-87〜106 の偏り (B/E に集中、D/F が 0 回) を
-  是正するための措置
-
-【proposal.md に含めるべき内容】
-- Exploration Framework のカテゴリ: ${FORCED_CAT} (強制指定) と、このカテゴリ内での
-  具体的なメカニズム選択理由
-- 改善仮説 (1 つだけ、抽象的・汎用的な記述)
-- SKILL.md のどこをどう変えるか (具体的な変更内容)
-- 一般的な推論品質への期待効果 (どのカテゴリ的失敗パターンが減るか)
-- failed-approaches.md の汎用原則との照合結果
-- 変更規模の宣言
-PROMPT
+    render_template "propose-normal" > "$PROMPT_DIR/propose.txt"
   fi
 
   run_hermes_proposer "$PROMPT_DIR/propose.txt" "$ITER_DIR/hermes-propose.log"
@@ -401,39 +353,8 @@ PROMPT
 
   # === 2. ディスカッション ===
   log "Hermes: ディスカッション..."
-  DISCUSSION_PATH="benchmark/swebench/runs/iter-${current_iter}/discussion.md"
-  cat > "$PROMPT_DIR/discuss.txt" << PROMPT
-あなたは SKILL.md という汎用コード推論フレームワークの改善に対する監査役です。
-実装者から改善案が提案されました。
-
-【参照してよいファイルの完全なリスト】
-- ${PROPOSAL_PATH}
-- SKILL.md
-- failed-approaches.md
-- Objective.md
-- README.md
-- docs/design.md
-
-この 6 ファイル以外を read / search / list してはいけません。
-DuckDuckGo MCP による Web 検索は許可します (改善案の汎用的妥当性の調査用)。
-
-【出力先】
-${DISCUSSION_PATH}
-
-【監査観点】
-1. 既存研究との整合性 (mcp ツール DuckDuckGo MCP で Web 検索し URL と要点を記載)
-2. Exploration Framework のカテゴリ選定は適切か。汎用原則として理にかなっているか。
-3. この変更は EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方に対してどう作用するか。
-   変更前との実効的差分を分析し、片方向にしか作用しないか確認する。
-4. failed-approaches.md の汎用原則との照合。表現を変えても本質が同じ過去失敗の
-   再演になっていないか。
-5. **汎化性チェック**: 提案文中に具体的な数値 ID, リポジトリ名, テスト名, コード断片
-   が含まれていないか。含まれていれば実装者のルール違反であり指摘すること。
-   提案が特定のドメイン・言語・テストパターンを暗黙に想定していないか。
-6. 全体の推論品質がどう向上すると期待できるか。
-
-最後に「承認: YES」または「承認: NO（理由）」を明記してください。
-PROMPT
+  export DISCUSSION_PATH="benchmark/swebench/runs/iter-${current_iter}/discussion.md"
+  render_template "discuss" > "$PROMPT_DIR/discuss.txt"
 
   run_hermes "$PROMPT_DIR/discuss.txt" "$ITER_DIR/hermes-discuss.log"
 
@@ -453,27 +374,8 @@ PROMPT
   # === 3. 実装 ===
   # 8.8.2: /critique (Rubber Duck) は撤廃 — 実測で品質改善ゼロ・70k〜120k tokens/call
   log "Hermes ($HERMES_PROPOSER_MODEL): 実装中..."
-  RATIONALE_PATH="benchmark/swebench/runs/iter-${current_iter}/rationale.md"
-  cat > "$PROMPT_DIR/implement.txt" << PROMPT
-${PROPOSAL_PATH} の改善案に従い、以下を順番に実行してください:
-
-1. SKILL.md を編集する (proposal.md に記載した変更のみ)
-2. ${RATIONALE_PATH} を Objective.md の rationale.md フォーマットに従い作成する
-
-【参照してよいファイルの完全なリスト】
-- ${PROPOSAL_PATH}
-- SKILL.md
-- Objective.md (rationale フォーマットのため)
-
-この 3 ファイル以外を read / search / list する必要はありません。
-
-【制約】
-- 変更規模は ${MAX_ADDED_LINES} 行以内 (hard limit、escape モード時は解除)
-- proposal.md に記載のない変更は行わない
-- rationale.md には **ベンチマーク対象リポジトリの固有識別子** (リポジトリ名、
-  ファイルパス、関数名、クラス名、テスト名、テスト ID、実装コードの引用) を
-  一切含めない。SKILL.md 自身の文言引用や一般概念名は許可される。
-PROMPT
+  export RATIONALE_PATH="benchmark/swebench/runs/iter-${current_iter}/rationale.md"
+  render_template "implement" > "$PROMPT_DIR/implement.txt"
 
   run_hermes_proposer "$PROMPT_DIR/implement.txt" "$ITER_DIR/hermes-implement.log"
   log "Hermes: 実装完了"
@@ -500,57 +402,10 @@ PROMPT
     log "監査 試行 $retry/$MAX_AUDIT_RETRY"
     git diff -- SKILL.md > "$ITER_DIR/diff.patch"
 
-    AUDIT_PATH="benchmark/swebench/runs/iter-${current_iter}/audit.md"
-    cat > "$PROMPT_DIR/audit.txt" << PROMPT
-あなたは SKILL.md の変更に対する監査役です。
-
-【参照してよいファイルの完全なリスト】
-- Objective.md (Audit Rubric セクション)
-- README.md
-- docs/design.md
-- docs/reference/agentic-code-reasoning.pdf
-- failed-approaches.md
-- SKILL.md (変更前後の確認用)
-
-この 6 ファイル以外を read / search / list してはいけません。
-
-【出力先】
-${AUDIT_PATH}
-
-【タスク】
-プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
-Objective.md の audit.md フォーマットに従って結果を出力してください。
-(注: 旧 R7 は R1 に統合されました)
-
-合格基準: 全項目 2 以上、かつ合計 12/18 以上
-
-【出力フォーマット】
-audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
-- 合格時: \`## 判定: PASS\` または \`## 監査結果: PASS\`
-- 不合格時: \`## 判定: FAIL\` または \`## 監査結果: FAIL\`
-
-【R1 採点の厳密な定義】
-R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
-以下の区別を厳密に守ってください:
-
-- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
-  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
-   実装コードの引用) が含まれている場合
-- 2-3 点 (OK): 以下は減点対象**外**:
-  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
-  * 一般概念名 ("Guardrail #4", "observational equivalence",
-    "test oracle", "call chain" 等)
-  * 抽象的な日本語/英語の説明文
-  * proposal/rationale 自体の構造を示すマークダウン記号 (\`\`\` ブロック等)
-    ※ \`\`\` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
-    ※ \`\`\` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
-
-diff:
-$(cat "$ITER_DIR/diff.patch")
-
-rationale:
-$(cat "$ITER_DIR/rationale.md" 2>/dev/null || echo '(未作成)')
-PROMPT
+    export AUDIT_PATH="benchmark/swebench/runs/iter-${current_iter}/audit.md"
+    export DIFF_CONTENT="$(cat "$ITER_DIR/diff.patch")"
+    export RATIONALE_CONTENT="$(cat "$ITER_DIR/rationale.md" 2>/dev/null || echo '(未作成)')"
+    render_template "audit" > "$PROMPT_DIR/audit.txt"
 
     run_hermes "$PROMPT_DIR/audit.txt" "$ITER_DIR/hermes-audit-${retry}.log"
 
@@ -563,26 +418,8 @@ PROMPT
       log "監査 FAIL (試行 $retry)"
       if [ "$retry" -lt "$MAX_AUDIT_RETRY" ]; then
         log "Copilot: 監査指摘を反映して再改善..."
-        cat > "$PROMPT_DIR/revise.txt" << PROMPT
-監査役が改善案を不合格と判断しました。指摘内容を読み、SKILL.md と rationale.md を修正してください。
-
-【参照してよいファイルの完全なリスト】
-- ${AUDIT_PATH} (監査結果)
-- ${PROPOSAL_PATH}
-- ${RATIONALE_PATH}
-- SKILL.md
-- failed-approaches.md
-- Objective.md
-
-この 6 ファイル以外を read / search / list してはいけません。
-
-【制約】
-- 変更規模は ${MAX_ADDED_LINES} 行以内を維持
-- 具体的な数値 ID, リポジトリ名, テスト名は書かない
-
-監査結果:
-$(cat "$ITER_DIR/audit.md" 2>/dev/null)
-PROMPT
+        export AUDIT_CONTENT="$(cat "$ITER_DIR/audit.md" 2>/dev/null)"
+        render_template "revise" > "$PROMPT_DIR/revise.txt"
         run_hermes_proposer "$PROMPT_DIR/revise.txt" "$ITER_DIR/hermes-revise-${retry}.log"
       fi
     fi
@@ -628,34 +465,9 @@ PROMPT
   # いずれかのスコアが親より低下した場合は failed-approaches.md に追記
   if [ "$compare_score" -lt "$prev_compare" ] || [ "$audit_score" -lt "$prev_audit" ]; then
     log "スコア低下 — failed-approaches.md 更新中..."
-    DIFF_PATH="benchmark/swebench/runs/iter-${current_iter}/diff.patch"
-    cat > "$PROMPT_DIR/update-bl.txt" << BLPROMPT
-今回試した SKILL.md の変更により、スコアが低下しました (Compare: ${prev_compare}%→${compare_score}%, Audit: ${prev_audit}%→${audit_score}%)。
-
-failed-approaches.md は **汎用原則集** です。新しいエントリを追加する場合、以下のルールを必ず守ってください。
-
-【参照してよいファイルの完全なリスト】
-- ${PROPOSAL_PATH}
-- ${RATIONALE_PATH}
-- ${DIFF_PATH}
-- failed-approaches.md (追記対象)
-
-この 4 ファイル以外を read / search / list してはいけません。
-
-【追加してよい内容】
-- 試した変更の **抽象的な性質** (例: 「Guardrail に新しい禁止事項を追加した」)
-- 失敗の **汎用的なメカニズム** (例: 「ネガティブプロンプトによる過剰適応を引き起こした」)
-- 既存の汎用原則との関連付け
-- 新たな汎用原則として一般化できる場合のみ、新しい原則を追記
-
-【書いてはいけない情報】
-- 具体的な数値 ID, リポジトリ名, テスト名, コード断片
-- iter 番号
-- per-case の正解/不正解の詳細
-
-既存の原則の単なる変種なら、既存原則に統合する形でも可。
-原則 1 つあたり数行程度の簡潔な記述で十分です。
-BLPROMPT
+    export DIFF_PATH="benchmark/swebench/runs/iter-${current_iter}/diff.patch"
+    export prev_compare compare_score prev_audit audit_score
+    render_template "update-bl" > "$PROMPT_DIR/update-bl.txt"
     run_hermes "$PROMPT_DIR/update-bl.txt" "$ITER_DIR/hermes-bl-update.log" || log "BL 更新失敗（続行）"
     log "BL 更新完了"
   fi

@@ -1,0 +1,18 @@
+監査役が改善案を不合格と判断しました。指摘内容を読み、SKILL.md と rationale.md を修正してください。
+
+【参照してよいファイルの完全なリスト】
+- ${AUDIT_PATH} (監査結果)
+- ${PROPOSAL_PATH}
+- ${RATIONALE_PATH}
+- SKILL.md
+- failed-approaches.md
+- Objective.md
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【制約】
+- 変更規模は ${MAX_ADDED_LINES} 行以内を維持
+- 具体的な数値 ID, リポジトリ名, テスト名は書かない
+
+監査結果:
+${AUDIT_CONTENT}

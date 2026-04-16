@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "templates": {
+    "propose-normal": {
+      "file": "propose-normal.txt",
+      "vars": ["PROPOSAL_PATH", "focus_domain", "MAX_ADDED_LINES", "FORCED_CAT", "FORCED_CAT_DESC"],
+      "role": "proposer"
+    },
+    "propose-escape": {
+      "file": "propose-escape.txt",
+      "vars": ["PROPOSAL_PATH"],
+      "role": "proposer"
+    },
+    "discuss": {
+      "file": "discuss.txt",
+      "vars": ["PROPOSAL_PATH", "DISCUSSION_PATH"],
+      "role": "auditor"
+    },
+    "implement": {
+      "file": "implement.txt",
+      "vars": ["PROPOSAL_PATH", "RATIONALE_PATH", "MAX_ADDED_LINES"],
+      "role": "proposer"
+    },
+    "audit": {
+      "file": "audit.txt",
+      "vars": ["AUDIT_PATH", "DIFF_CONTENT", "RATIONALE_CONTENT"],
+      "role": "auditor"
+    },
+    "revise": {
+      "file": "revise.txt",
+      "vars": ["AUDIT_PATH", "PROPOSAL_PATH", "RATIONALE_PATH", "MAX_ADDED_LINES", "AUDIT_CONTENT"],
+      "role": "proposer"
+    },
+    "update-bl": {
+      "file": "update-bl.txt",
+      "vars": ["prev_compare", "compare_score", "prev_audit", "audit_score", "PROPOSAL_PATH", "RATIONALE_PATH", "DIFF_PATH"],
+      "role": "auditor"
+    }
+  }
+}
