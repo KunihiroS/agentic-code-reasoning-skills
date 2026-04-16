@@ -1,0 +1,88 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-1/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 9d1e9fb..d6ba4a6 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -68,6 +68,7 @@ P3: ...
+ Do not treat guesses as premises. Every later claim must reference a premise by number.
+ 
+ ### Step 3: Hypothesis-driven exploration
++Exploration priority is not a fixed reading order; choose the next action by discriminative power — what unresolved uncertainty it resolves.
+ Before opening any file, write:
+ 
+ ```
+@@ -90,6 +91,7 @@ UNRESOLVED:
+   - [remaining questions]
+ 
+ NEXT ACTION RATIONALE: [why the next file or step is justified]
++OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
+ ```
+ 
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
+
+rationale:
+# Iteration 1 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: （不明: 本タスクでは数値が与えられていない）
+- 失敗ケース: （不明: 本タスクではケース一覧が与えられていない）
+- 失敗原因の分析: 既存の探索ログ要件では「次のアクションの正当化」が抽象的になりやすく、未解決の分岐（反証・代替仮説）を判別するための高判別力な情報収集よりも、低情報の深掘りや確認バイアスに寄るリスクがある。
+
+## 改善仮説
+
+探索の各ステップで「次の読解/検索がどの不確実性を減らすか（どの仮説や主張を confirm vs refute するか）」を短く明示できるようにすると、探索が漂流しにくくなり、反証・代替仮説の判別に必要な証拠取得へ誘導され、推論品質が安定する。
+
+## 変更内容
+
+- Step 3 の探索ログテンプレートに、`NEXT ACTION RATIONALE` に続く任意項目として `OPTIONAL — INFO GAIN` を 1 行追加した。
+- Step 3 の直前に、探索の優先順位は固定順ではなく「未解決の不確実性を最短で潰す判別力」で決める旨を 1 行追加した。
+
+## 期待効果
+
+- 探索漂流の抑制: 「何を得たいか」が明文化されるため、低シグナルな箇所の長時間追跡が減る。
+- 早合点の抑制: confirm だけでなく refute の観点がログに現れやすくなり、結論を固める前に未解決の分岐を潰しやすくなる。
+- 確認バイアスの抑制: 次アクションの選択基準が「補強」ではなく「判別」に寄るため、代替仮説の排除に必要な証拠を優先しやすくなる。

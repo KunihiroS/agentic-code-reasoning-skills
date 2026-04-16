@@ -1,198 +1,98 @@
-Installed 39 packages in 66ms
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/11/26 21:04:26] INFO     Processing request of type            server.py:727
+[04/16/26 23:14:48] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-まず参照してよいファイルを読み込みます。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      SKILL.md  0.8s
   ┊ 📖 read      Objective.md  0.8s
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      failed-approaches.md  0.8s
-  ┊ 📖 read      README.md  0.8s
-  ┊ 📖 preparing read_file…
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      failed-approaches.md  0.9s
+  ┊ 📖 read      README.md  0.9s
   ┊ 📖 read      docs/design.md  0.8s
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-全ファイルの読み込みが完了しました。分析を進めて proposal.md を作成します。
-
----
-
-分析メモ:
-
-- カテゴリ B の定義: 「コードの読み方の指示を具体化する」「何を探すかではなく、どう探すかを改善する」「探索の優先順位付けを変える」
-- 今回の焦点: overall (全体的な推論品質の向上)
-- 変更規模: 既存行への文言追加・精緻化のみ、5行以内
-
-SKILL.md を精査すると、Step 3 の NEXT ACTION RATIONALE フィールドは現在「次のファイルまたはステップが正当化される理由」と指示するが、「何を探すか」の観点からの優先度（例えば、現在の仮説を棄却できる最小の反証を持つファイルを先に読む）が明示されていない。
-
-Guardrail #5「不完全なチェーンを信用するな」と docs/design.md の「Incomplete reasoning chains」との対応を見ると、探索が不十分な理由の一つは "NEXT ACTION RATIONALE" が任意的・後付け的になりやすいことにある。エージェントは仮説に都合の良いファイルを先に読む傾向があり、カテゴリ B の「探索の優先順位付けを変える」と合致する改善点となる。
-
-具体的な変更箇所: Step 3 の `NEXT ACTION RATIONALE` 行の指示文
-
-現在:
-```
-NEXT ACTION RATIONALE: [why the next file or step is justified]
-```
-
-この記述では「なぜ次のファイルを読むか」という justification の自由記述に留まっている。カテゴリ B の「どう探すか」を改善するには、「仮説を最も直接的に確認または棄却できる情報源を優先せよ」という優先順位の原則を埋め込む必要がある。
-
-failed-approaches との照合:
-- 原則 #3「探索量の削減は常に有害」: 探索量は変えない、順序・優先度の変更
-- 原則 #8「受動的な記録フィールドの追加は能動的な検証を誘発しない」: 新規フィールドではなく既存フィールドの精緻化
-- 原則 #25「事前検証手順の義務化は探索予算を枯渇させる」: 事前ゲートの追加ではない
-- 原則 #11「探索順序の固定は探索の偏りを生む」: 「固定」ではなく「現在の最弱仮説を叩く方向への優先」という原則を示す
-
-原則 #11 が最も注意が必要だが、それは「開始順序のテンプレート固定」への警告であり、今回は「その時点での最弱リンクを優先する」という原則であり、固定ではなく仮説状態に応じた動的優先順位付け。両者は異なる。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 💻 preparing terminal…
-  ┊ 💻 $         mkdir -p benchmark/swebench/runs/iter-1  0.2s
-  ┊ ✍️ preparing write_file…
   ┊ ✍️  write     benchmark/swebench/runs/iter-1/proposal.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-1/proposal.md → b/benchmark/swebench/runs/iter-1/proposal.md
-@@ -0,0 +1,100 @@
-+# Iteration 1 — Proposal
+@@ -1,100 +1,58 @@
+-# Iteration 1 — Proposal
++# Iter-1 Proposal (focus_domain: overall)
+ 
+-## Exploration Framework カテゴリ: B (強制指定)
++## Exploration Framework のカテゴリ
++- カテゴリ: **B. 情報の取得方法を改善する**（強制指定）
++- メカニズム選択: **「次に何を読む/探すか」の正当化を、情報利得（どの不確実性を減らすか）として具体化**
++  - 理由: 既存フレームワークは仮説駆動探索を要求する一方で、「次の探索行動の選び方」が抽象的なため、低シグナルな箇所を長く追って探索が漂流しやすい。情報利得の言語化は、読む順序の半固定（失敗原則で警戒される）ではなく、**選択基準**を与えるだけで探索幅を保ちつつ効率を上げられる。
+ 
+-カテゴリ B の定義は「情報の取得方法を改善する」であり、具体的には
+-「コードの読み方の指示を具体化する」「何を探すかではなく、どう探すかを
+-改善する」「探索の優先順位付けを変える」の3つのメカニズムを含む。
++## 改善仮説（1つだけ）
++探索の各ステップで「この次の読解/検索がどの仮説差分を判別するか」を短く明示させると、探索行動が高判別力の証拠取得に寄り、全体的な推論品質（見落とし/早合点/漂流）が下がる。
+ 
+-今回はこのうち **探索の優先順位付けを変える** を選択する。
+-
+-理由: 残る2つ（読み方の具体化・何を探すか）は既存の Guardrail、
+-VERIFIED マーキング、テンプレートのフィールド群で概ねカバーされている。
+-一方、「どの情報源を先に読むか」の優先基準は Step 3 の NEXT ACTION
+-RATIONALE に委ねられているが、現在の文言はただ「次のファイルを読む
+-理由を書け」という自由記述に留まっており、優先原則が埋め込まれていない。
+-この空白が、エージェントが確証バイアス（仮説に都合のよいファイルを先に
+-読む）に陥る主要な入口となっており、全体的な推論品質の低下を招いている。
+-
+-
+-## 改善仮説
+-
+-NEXT ACTION RATIONALE の指示に「現在の最弱仮説を最も直接的に確認または
+-棄却できる情報源を優先せよ」という原則を埋め込むことで、探索が確証バイアス
+-ではなく反証優先の順序で行われるようになり、全モードにわたる推論品質が
+-向上する。
+-
+-
+-## 変更内容
+-
+-### 変更箇所
+-
+-SKILL.md の Step 3 (Hypothesis-driven exploration) に含まれる
+-NEXT ACTION RATIONALE フィールドの指示文を精緻化する。
+-
+-### 変更前 (既存行)
++## 現状ボトルネックの診断（SKILL.md 引用 + 失敗メカニズム 1つ）
++SKILL.md Step 3 の探索ログは、次アクションをこう書くよう求めているが基準が抽象的:
+ 
+ ```
+ NEXT ACTION RATIONALE: [why the next file or step is justified]
+ ```
+ 
+-### 変更後 (精緻化、既存行への追記)
++誘発される失敗メカニズム（1つ）:
++- 「正当化」の解釈が曖昧なため、(a) 直近で目に入った低情報の箇所の深掘り、または (b) 既に強い仮説を補強するだけの探索（確認バイアス）に寄って、**未解決の分岐（反証・代替仮説）を判別する証拠取得が後回し**になる。
+ 
+-```
+-NEXT ACTION RATIONALE: [why the next file or step is justified — prefer sources that can most directly confirm or refute the weakest current hypothesis]
++## 変更タイプ
++- **optional なガイド追加**
++- なぜ効くか: 既存の研究コア（仮説駆動探索・手続き間トレース・必須反証）を増設せずに、探索の「次手」の選択基準だけを最小限具体化できる。必須ゲート追加ではなく、ログの書き方の補助として認知負荷を小さく保てる。
 +
-+## Exploration Framework カテゴリ: B (強制指定)
++## SKILL.md のどこをどう変えるか（具体）
++対象: **Core Method → Step 3: Hypothesis-driven exploration** のテンプレート部分。
 +
-+カテゴリ B の定義は「情報の取得方法を改善する」であり、具体的には
-+「コードの読み方の指示を具体化する」「何を探すかではなく、どう探すかを
-+改善する」「探索の優先順位付けを変える」の3つのメカニズムを含む。
++提案変更（追加は最大 3 行想定）:
++1) Step 3 のログテンプレート内で、`NEXT ACTION RATIONALE` の直後に 1 行だけ追加（optional と明記）:
 +
-+今回はこのうち **探索の優先順位付けを変える** を選択する。
-+
-+理由: 残る2つ（読み方の具体化・何を探すか）は既存の Guardrail、
-+VERIFIED マーキング、テンプレートのフィールド群で概ねカバーされている。
-+一方、「どの情報源を先に読むか」の優先基準は Step 3 の NEXT ACTION
-+RATIONALE に委ねられているが、現在の文言はただ「次のファイルを読む
-+理由を書け」という自由記述に留まっており、優先原則が埋め込まれていない。
-+この空白が、エージェントが確証バイアス（仮説に都合のよいファイルを先に
-+読む）に陥る主要な入口となっており、全体的な推論品質の低下を招いている。
-+
-+
-+## 改善仮説
-+
-+NEXT ACTION RATIONALE の指示に「現在の最弱仮説を最も直接的に確認または
-+棄却できる情報源を優先せよ」という原則を埋め込むことで、探索が確証バイアス
-+ではなく反証優先の順序で行われるようになり、全モードにわたる推論品質が
-+向上する。
-+
-+
-+## 変更内容
-+
-+### 変更箇所
-+
-+SKILL.md の Step 3 (Hypothesis-driven exploration) に含まれる
-+NEXT ACTION RATIONALE フィールドの指示文を精緻化する。
-+
-+### 変更前 (既存行)
-+
-+```
-+NEXT ACTION RATIONALE: [why the next file or step is justified]
-+```
-+
-+### 変更後 (精緻化、既存行への追記)
-+
-+```
-+NEXT ACTION RATIONALE: [why the next file or step is justified — prefer sources that can most directly confirm or refute the weakest current hypothesis]
-+```
-+
-+### 変更規模の宣言
-+
-+変更行数: 1行 (既存行への文言追加)
-+削除行: 0行
-+合計変更行数: 1行 ← hard limit (5行) 以内
-+
-+
-+## 一般的な推論品質への期待効果
-+
-+### 対象となる失敗パターン
-+
-+1. **Incomplete reasoning chains (docs/design.md §4.3)**: 複数の関数を
-+   トレースしながら下流の処理を見落とすのは、「確証できる上流を先に読む」
-+   という順序バイアスの帰結である。最弱仮説を優先することで、
-+   下流の見落としが探索の前半に顕在化しやすくなる。
-+
-+2. **Subtle difference dismissal (docs/design.md §4.1.1)**: 差異を見つけた
-+   後に「影響なし」と判断するのは、差異の反証証拠（その差異を観測する
-+   テスト）を探索せずに結論した結果である。最弱仮説（差異は影響を持つ）
-+   を優先することで、反証探索が自然に先行する。
-+
-+3. **compare モードでの EQUIV 誤判定**: 両変更の意味が「同じはず」という
-+   先入観を持ったまま探索すると、差異の証拠を後回しにする。
-+   最弱仮説優先により、差異が実際に現れるパスが先に調査される。
-+
-+### overall フォーカスとの整合
-+
-+NEXT ACTION RATIONALE は compare / diagnose / explain / audit-improve の
-+全モードで使用される共通コアに位置している。変更は単一モードに閉じず、
-+全モードの探索フェーズに等しく作用するため、overall 品質向上に直結する。
-+
-+
-… omitted 22 diff line(s) across 1 additional file(s)/section(s)
++```diff
++ OBSERVATIONS from [filename]:
++   O[N]: ...
++ ...
++ NEXT ACTION RATIONALE: [why the next file or step is justified]
+++OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
+ ```
+ 
+-### 変更規模の宣言
++2) テンプレート外の短い追記（1–2 行）として、「探索の優先順位は固定順ではなく、判別力（どの未解決を最短で潰すか）で決める」旨を Step 3 直前/直後に添える。
+ 
+-変更行数: 1行 (既存行への文言追加)
+-削除行: 0行
+… omitted 65 diff line(s) across 1 additional file(s)/section(s)
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-proposal.md を出力しました。内容を確認します。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      benchmark/swebench/runs/iter-1/proposal.md  0.8s
+benchmark/swebench/runs/iter-1/proposal.md に提案を書き込みました。
 
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-benchmark/swebench/runs/iter-1/proposal.md の作成が完了しました。
-
----
-
-提案の要約を以下に示します。
-
-カテゴリ: B — 探索の優先順位付けを変える
-
-改善仮説 (1つ):
-Step 3 の NEXT ACTION RATIONALE フィールドに「現在の最弱仮説を最も
-直接的に確認または棄却できる情報源を優先せよ」という原則を埋め込む。
-
-具体的な変更 (1行、既存行への追記のみ):
-
-変更前:
-  NEXT ACTION RATIONALE: [why the next file or step is justified]
-
-変更後:
-  NEXT ACTION RATIONALE: [why the next file or step is justified — prefer sources that can most directly confirm or refute the weakest current hypothesis]
-
-根拠:
-- 現在の文言は探索の「理由の記述」に留まり、確証バイアスを防ぐ優先原則が存在しない。
-- この変更は全モード共通の探索コアに位置し、compare / diagnose / explain / audit-improve の全モードに等しく作用するため、overall フォーカスに合致する。
-- 「固定順序」ではなく仮説状態に依存した動的優先順位であるため、failed-approaches 原則 #11 (探索順序の固定) には抵触しない。"prefer" という非強制表現で強制的固定を回避している。
-benchmark/swebench/runs/iter-1/proposal.md の作成が完了しました。
-
----
-
-提案の要約を以下に示します。
-
-カテゴリ: B — 探索の優先順位付けを変える
-
-改善仮説 (1つ):
-Step 3 の NEXT ACTION RATIONALE フィールドに「現在の最弱仮説を最も
-直接的に確認または棄却できる情報源を優先せよ」という原則を埋め込む。
-
-具体的な変更 (1行、既存行への追記のみ):
-
-変更前:
-  NEXT ACTION RATIONALE: [why the next file or step is justified]
-
-変更後:
-  NEXT ACTION RATIONALE: [why the next file or step is justified — prefer sources that can most directly confirm or refute the weakest current hypothesis]
-
-根拠:
-- 現在の文言は探索の「理由の記述」に留まり、確証バイアスを防ぐ優先原則が存在しない。
-- この変更は全モード共通の探索コアに位置し、compare / diagnose / explain / audit-improve の全モードに等しく作用するため、overall フォーカスに合致する。
-- 「固定順序」ではなく仮説状態に依存した動的優先順位であるため、failed-approaches 原則 #11 (探索順序の固定) には抵触しない。"prefer" という非強制表現で強制的固定を回避している。
-- 新規ステップ・フィールド・セクションなし。変更行数: 1行 (hard limit 5行以内)。
-
-session_id: 20260411_210426_300b69
+session_id: 20260416_231448_0c3ee4
