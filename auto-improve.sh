@@ -33,6 +33,8 @@ START_ITER=1
 export MAX_ADDED_LINES=5        # H1: 5行 hard limit (Phase 1)
 STAGED_GATE_THRESHOLD=3  # Phase 2: Staged Eval で 5ケース中 3 以上正答なら Full 実行
 ESCAPE_MODE=0            # Phase 2: 構造改革エスケープハッチ
+META_MODE=0              # Phase 3: メタエージェント強制トリガー
+META_STAGNATION_WINDOW=5 # Phase 3: 停滞判定ウィンドウ
 STEEPNESS=20             # 8.1.A: score_prop sigmoid steepness (高いほど高スコア親優先)
 
 PI_PROVIDER="github-copilot"
@@ -57,7 +59,8 @@ while [[ $# -gt 0 ]]; do
     -s) START_ITER="$2"; shift 2 ;;
     --escape) ESCAPE_MODE=1; shift ;;
     --steepness) STEEPNESS="$2"; shift 2 ;;
-    *) echo "Usage: $0 [-n max_iterations] [-s start_iter] [--escape] [--steepness N]"; exit 1 ;;
+    --meta) META_MODE=1; shift ;;
+    *) echo "Usage: $0 [-n max_iterations] [-s start_iter] [--escape] [--steepness N] [--meta]"; exit 1 ;;
   esac
 done
 
@@ -227,6 +230,123 @@ run_hermes_proposer() {
 }
 
 
+
+# =============================================================================
+# メタエージェント (Phase 3)
+# =============================================================================
+
+run_meta_agent() {
+  local meta_dir="$RUNS_DIR/meta-$(get_template_version)"
+  mkdir -p "$meta_dir"
+
+  # スコアサマリーを生成
+  export SCORE_SUMMARY
+  SCORE_SUMMARY=$(python3 -c "
+import json
+entries = [json.loads(l) for l in open('$ARCHIVE_FILE') if l.strip()]
+scored = [e for e in entries if e.get('valid_parent') and e['scores'].get('audit', 0) > 0]
+for e in scored[-10:]:
+    g = e['genid']
+    c = e['scores'].get('compare', 0)
+    a = e['scores'].get('audit', 0)
+    tv = e.get('template_version', 0)
+    print(f'iter-{g}: compare={c}% audit={a}% (template_v{tv})')
+" 2>/dev/null)
+
+  export TEMPLATE_VERSION
+  TEMPLATE_VERSION=$(get_template_version)
+
+  export META_RATIONALE_PATH="$meta_dir/meta-rationale.md"
+
+  # テンプレートのバックアップ (ロールバック用)
+  local tag_name="meta-v${TEMPLATE_VERSION}"
+  git tag -f "$tag_name" 2>/dev/null || true
+
+  # メタエージェント実行
+  log "メタエージェント起動 (template_v${TEMPLATE_VERSION})"
+  render_template "meta-propose" > "$meta_dir/meta-prompt.txt"
+  run_hermes_proposer "$meta_dir/meta-prompt.txt" "$meta_dir/hermes-meta.log"
+
+  # テンプレートが変更されたか確認
+  if git diff --quiet -- prompts/; then
+    log "メタエージェント: テンプレート変更なし"
+    return 1
+  fi
+
+  # テンプレート構文検証
+  local validation_ok=true
+  for tpl_file in "$PROMPTS_DIR"/*.txt; do
+    local tpl_name
+    tpl_name=$(basename "$tpl_file" .txt)
+    # manifest に登録されているテンプレートのみ検証
+    if python3 -c "import json; m=json.load(open('$PROMPTS_DIR/manifest.json')); exit(0 if '$tpl_name' in m['templates'] else 1)" 2>/dev/null; then
+      # 変数プレースホルダーが壊れていないか簡易チェック
+      if ! grep -qP '\$\{[A-Za-z_]+\}' "$tpl_file" 2>/dev/null; then
+        log "警告: $tpl_file に変数プレースホルダーがありません"
+      fi
+    fi
+  done
+
+  # バージョンインクリメント
+  local new_version=$((TEMPLATE_VERSION + 1))
+  echo "$new_version" > "$TEMPLATE_VERSION_FILE"
+  log "テンプレートバージョン: $TEMPLATE_VERSION → $new_version"
+
+  # コミット
+  git add prompts/ "$meta_dir"
+  git commit -m "meta-v${new_version}: テンプレート更新 by メタエージェント" || true
+  git tag -f "meta-v${new_version}" 2>/dev/null || true
+  git push --tags 2>/dev/null || true
+
+  return 0
+}
+
+# メタエージェント後のロールバック判定
+check_meta_rollback() {
+  local current_version
+  current_version=$(get_template_version)
+  if [ "$current_version" -eq 0 ]; then
+    return 1  # ロールバック不要
+  fi
+
+  # 現バージョンでの直近 3 エントリを取得
+  local should_rollback
+  should_rollback=$(python3 -c "
+import json
+entries = [json.loads(l) for l in open('$ARCHIVE_FILE') if l.strip()]
+current_v = $current_version
+# このバージョンで実行されたエントリ
+ver_entries = [e for e in entries if e.get('template_version') == current_v and e.get('valid_parent')]
+if len(ver_entries) < 3:
+    print('wait')  # まだ 3 回未満
+    exit(0)
+# 前バージョンのベストスコア
+prev_entries = [e for e in entries if e.get('template_version', 0) == current_v - 1 and e.get('valid_parent')]
+if not prev_entries:
+    print('wait')
+    exit(0)
+prev_best_audit = max(e['scores'].get('audit', 0) for e in prev_entries)
+# 現バージョンの直近 3 エントリの平均
+recent_audits = [e['scores'].get('audit', 0) for e in ver_entries[-3:]]
+avg_recent = sum(recent_audits) / len(recent_audits)
+if avg_recent < prev_best_audit - 5:  # 5pp 以上の退行
+    print('rollback')
+else:
+    print('ok')
+" 2>/dev/null)
+
+  if [ "$should_rollback" = "rollback" ]; then
+    local prev_version=$((current_version - 1))
+    log "メタロールバック: template_v${current_version} → v${prev_version}"
+    git checkout "meta-v${prev_version}" -- prompts/ 2>/dev/null || true
+    echo "$prev_version" > "$TEMPLATE_VERSION_FILE"
+    git add prompts/
+    git commit -m "meta-rollback: template_v${current_version} → v${prev_version} (スコア退行)" || true
+    return 0
+  fi
+  return 1
+}
+
 # テンプレート展開 (Phase 3: prompts/ 外部化)
 PROMPTS_DIR="$REPO_DIR/prompts"
 TEMPLATE_VERSION_FILE="$PROMPTS_DIR/.version"
@@ -270,7 +390,7 @@ print(' '.join('\${' + v + '}' for v in tpl.get('vars', [])))
 # メインループ
 # =============================================================================
 
-echo "=== auto-improve.sh (Phase 2) ==="
+echo "=== auto-improve.sh (Phase 3: Meta-Agent) ==="
 echo "  提案/実装: Hermes ($HERMES_PROPOSER_PROVIDER/$HERMES_PROPOSER_MODEL)"
 echo "  監査役:    Hermes ($HERMES_PROVIDER/$HERMES_MODEL)"
 if [ "$ESCAPE_MODE" -eq 1 ]; then
@@ -291,8 +411,31 @@ if [ ! -f "$ARCHIVE_FILE" ]; then
   exit 1
 fi
 
+# Phase 3: メタエージェント判定 (ループ開始前)
+if [ "$META_MODE" -eq 1 ]; then
+  echo "[meta] --meta フラグ検出: メタエージェントを強制実行"
+  current_iter=0  # log 用 (実際のイテレーションではない)
+  if run_meta_agent; then
+    echo "[meta] テンプレート更新完了。通常ループを開始します。"
+  else
+    echo "[meta] テンプレート変更なし。通常ループを開始します。"
+  fi
+  META_MODE=0  # 一度だけ実行
+fi
+
 for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   log "========== イテレーション開始 =========="
+
+  # Phase 3: 停滞検知 → メタエージェント自動トリガー
+  if python3 "$BENCH_DIR/detect_stagnation.py" "$ARCHIVE_FILE" "$META_STAGNATION_WINDOW" 2>/dev/null; then
+    log "停滞検知: メタエージェントを起動"
+    if run_meta_agent; then
+      log "テンプレート更新完了。イテレーションを続行。"
+    fi
+  fi
+
+  # Phase 3: メタロールバック判定
+  check_meta_rollback || true
 
   ITER_DIR="$RUNS_DIR/iter-$current_iter"
   mkdir -p "$ITER_DIR"
