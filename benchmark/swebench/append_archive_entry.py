@@ -32,6 +32,27 @@ audit_score = calc_score(audit_json)
 snap_path = f"benchmark/swebench/runs/iter-{genid}/SKILL.md.snapshot"
 snap_exists = os.path.isfile(snap_path)
 
+# Template version tracking (Phase 3)
+import hashlib
+import glob
+
+prompts_dir = os.path.join(os.path.dirname(archive_file), "..", "..", "prompts")
+version_file = os.path.join(prompts_dir, ".version")
+template_version = 0
+if os.path.isfile(version_file):
+    try:
+        template_version = int(open(version_file).read().strip())
+    except (ValueError, IOError):
+        pass
+
+template_hash = ""
+tpl_files = sorted(glob.glob(os.path.join(prompts_dir, "*.txt")))
+if tpl_files:
+    h = hashlib.sha256()
+    for tf in tpl_files:
+        h.update(open(tf, "rb").read())
+    template_hash = h.hexdigest()[:16]
+
 entry = {
     "genid": genid,
     "parent_genid": parent_genid,
@@ -42,6 +63,8 @@ entry = {
         "overall": min(compare_score, audit_score),
     },
     "valid_parent": (valid_parent == "true") and snap_exists,
+    "template_version": template_version,
+    "template_hash": template_hash,
     "timestamp": datetime.datetime.now().isoformat(),
 }
 
