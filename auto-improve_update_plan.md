@@ -1386,8 +1386,8 @@ SWE-bench Verified の 20 件 pairs.json をそのまま使用。compare は SKI
 
 ### 14.7 次のステップ
 
-- [ ] Compare Pro Run 1 完了 → 結果確認
-- [ ] Audit Run 2 完了 → variance 確認
+- [x] Compare Pro Run 1〜3 完了 → 結果確認 (2026-04-16)
+- [x] Audit Run 1〜2 完了 → variance 確認 (2026-04-16)
 - [ ] auto-improve.sh 改修（上記 14.6 の方針に従い）
 - [ ] archive.jsonl リセット、新ベースラインで iter-0 記録
 - [ ] パイプライン再開
@@ -1417,9 +1417,11 @@ SWE-bench Verified の 20 件 pairs.json をそのまま使用。compare は SKI
 
 改修前は with_skill が without_skill より 7.4pp 劣っていたが、改修後は +3.3pp と逆転。STRUCTURAL TRIAGE により大規模パッチでの NOT_EQUIVALENT 誤判定が改善。ただし stdev 12.6% と揺れは大きい。
 
-### 14.9 現時点のベンチマーク総括 (2026-04-11)
+### 14.9 現時点のベンチマーク総括 (2026-04-11 → 2026-04-16 更新)
 
 #### Audit-Improve (security_bug 28件)
+
+**初回測定 (2026-04-11, §14.3 のデータ):**
 
 | | Run 1 | Run 2 | 平均 | stdev |
 |---|---|---|---|---|
@@ -1427,9 +1429,21 @@ SWE-bench Verified の 20 件 pairs.json をそのまま使用。compare は SKI
 | with_skill | 85.7% | 85.7% | 85.7% | 0% |
 | **Delta** | **+3.6pp** | **+3.6pp** | **+3.6pp** | — |
 
-極めて安定。SKILL.md は audit-improve で一貫して有効。
+**検証測定 (2026-04-16, iter-39 ベスト版 SKILL.md で再測定):**
+
+| | Run 1 | Run 2 | 平均 | stdev |
+|---|---|---|---|---|
+| without_skill (file+func) | 82.1% (23/28) | 82.1% (23/28) | 82.1% | 0% |
+| with_skill (file+func) | 89.3% (25/28) | 92.9% (26/28) | 91.1% | 2.5% |
+| **Delta** | **+7.2pp** | **+10.8pp** | **+9.0pp** | — |
+
+without_skill は4回とも完全に同じ値 (82.1%) で極めて安定。with_skill は初回測定 (85.7%) より検証測定 (91.1%) で大幅に改善。iter-39 ベスト版 SKILL.md の audit-improve 効果は **+9.0pp** と安定して有効。
+
+なお function match は with_skill/without_skill で差が小さい (67.9%〜75.0%) — file-level の特定には効くが function-level の精度向上は限定的。
 
 #### Compare Pro (20ペア、多言語・高難度)
+
+**初回測定 (2026-04-11, §14.8 改修後):**
 
 | | 改修後 avg (3 runs) | stdev |
 |---|---|---|
@@ -1437,10 +1451,28 @@ SWE-bench Verified の 20 件 pairs.json をそのまま使用。compare は SKI
 | with_skill | 58.3% | 12.6% |
 | **Delta** | **+3.3pp** | — |
 
-改善方向だが揺れが大きい。自動改善パイプラインでの改善余地あり。
+**検証測定 (2026-04-16, iter-39 ベスト版 SKILL.md で再測定):**
+
+| | Run 1 | Run 2 | Run 3 | 平均 | stdev |
+|---|---|---|---|---|---|
+| without_skill | 65% (13/20) | 50% (10/20) | 75% (15/20) | 63.3% | 10.3% |
+| with_skill | 75% (15/20) | 70% (14/20) | 65% (13/20) | 70.0% | 4.1% |
+| **Delta** | **+10pp** | **+20pp** | **-10pp** | **+6.7pp** | — |
+
+平均 +6.7pp で改善方向。初回測定 (+3.3pp) より delta が拡大。ただし Run 3 で逆転 (-10pp) が発生しており、without_skill の stdev (10.3%) が大きい。with_skill の方が stdev が小さい (4.1%) 点は、SKILL.md が推論を安定化させている可能性を示唆。
+
+#### 総合評価
+
+| ベンチマーク | without_skill 平均 | with_skill 平均 | Delta | 安定性 |
+|---|---|---|---|---|
+| **Audit** (28件, 4回) | 82.1% | 88.4% | **+6.3pp** | 高 (without stdev=0%, with stdev=3.5%) |
+| **Compare Pro** (20件, 6回) | 59.2% | 64.2% | **+5.0pp** | 中 (without stdev=8.6%, with stdev=10.5%) |
+
+SKILL.md は両ベンチマークで一貫してプラス効果。特に Audit での安定した改善が顕著。
 
 #### 現在の SKILL.md
 
 - `localize` → `diagnose` に改名、Activation gates 追加
 - Compare テンプレートに STRUCTURAL TRIAGE 追加
+- iter-39 ベスト版で検証完了
 - この版を auto-improve.sh 再開時のベースライン (iter-0) とする
