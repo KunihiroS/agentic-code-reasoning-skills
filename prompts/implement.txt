@@ -13,6 +13,11 @@ ${PROPOSAL_PATH} の改善案に従い、以下を順番に実行してくださ
   SKILL.md の該当箇所に **実際に反映** されているかを再読で確認する。
   （理由だけの言い換えに落ちていたら、差分プレビューと一致する形に戻す）
 
+- 追加の停滞対策（必須）:
+  - rationale.md に、Decision-point delta を発火させる **Trigger line（最終的に SKILL.md に入った文言）** を 1 行だけ自己引用して載せる。
+    - 形式: `Trigger line (final): "..."`（引用は SKILL.md の自己引用のみ。ベンチマーク対象リポジトリの固有識別子は書かない）
+  - 上の Trigger line が proposal の差分プレビューにあった Trigger line と一致する（または意図した一般化として同等）ことを 1 文で確認する。
+
 【参照してよいファイルの完全なリスト】
 - ${PROPOSAL_PATH}
 - SKILL.md

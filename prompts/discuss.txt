@@ -44,6 +44,8 @@ ${DISCUSSION_PATH}
      - **IF/THEN 形式で 2 行（Before/After）**になっているか？（YES/NO）
      - YES の場合でも、Before/After が「条件も行動も同じで理由だけ言い換え」なら compare 影響は薄い。
        → その場合は承認せず、Decision-point delta を“分岐として”変えるよう修正指示する。
+     - さらに、proposal の差分プレビュー内に **Trigger line（発火する文言の自己引用）** が含まれているか？（YES/NO）
+       → NO の場合: 実装がズレて compare が停滞しやすいので、他が良くても承認しない（まず Trigger line をプレビューに入れさせる）。
      - NO の場合: 監査コメントはまずここを具体化させる（他の指摘は増やしすぎない）
   2) Failure-mode target: 減らしたい誤判定（偽 EQUIV / 偽 NOT_EQUIV / 両方）と、そのメカニズム
   3) Non-goal: 変えないこと（探索経路の半固定・必須ゲート増・証拠種類の事前固定を避けるための境界条件）
