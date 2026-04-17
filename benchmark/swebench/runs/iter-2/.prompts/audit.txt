@@ -1,0 +1,89 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-2/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index d6ba4a6a..937f13e0 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -191,6 +191,9 @@ Before tracing individual functions, compare the two changes structurally:
+       prioritize structural differences (S1, S2) and high-level semantic
+       comparison over exhaustive line-by-line tracing. Exhaustive tracing
+       is infeasible for large patches and produces unreliable conclusions.
++  OPTIONAL — S4: Difference importance — label each discovered difference as ORACLE-VISIBLE
++      (can change an asserted output/exception/externally visible state) vs ORACLE-INVISIBLE,
++      and prioritize tracing ORACLE-VISIBLE differences to a concrete test oracle first.
+ 
+ If S1 or S2 reveals a clear structural gap (missing file, missing module
+ update, missing test data), you may proceed directly to FORMAL CONCLUSION
+@@ -259,6 +262,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Trace each test through both changes separately before comparing
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
++- Optional: classify differences by oracle-visibility to prioritize which ones must be traced to a concrete assertion
+ 
+ ---
+ 
+
+rationale:
+# Iteration 2 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 不明（未提供）
+- 失敗ケース: 不明（未提供）
+- 失敗原因の分析: compare において「差分を見つけた」こと自体を重要差分と誤認し、テストの観測点（test oracle / assertion）への結線が弱いまま EQUIV/NOT_EQUIV を早期確定しがち、という失敗メカニズムを想定。
+
+## 改善仮説
+
+差分を (1) テストの観測点に影響しうる差分（oracle-visible）と (2) 表現・構造の差（oracle-invisible）に分類してから追跡優先度を決めることで、表層差分に探索が吸い込まれにくくなり、比較判断（overall）の安定性が上がる。
+
+## 変更内容
+
+- Compare の STRUCTURAL TRIAGE に optional な S4（Difference importance: ORACLE-VISIBLE / ORACLE-INVISIBLE の分類と、oracle-visible を優先して concrete test oracle へ結線する指針）を 3 行追加。
+- Compare checklist に、差分を oracle-visibility で分類してトレース優先度を付ける optional ガイドを 1 行追加。
+
+## 期待効果
+
+- 「差分の存在」と「差分の重要度（oracle 可視性）」の混同を減らし、根拠（具体的な assertion へのトレース）に結び付いた比較結論を増やす。
+- その結果として、oracle 連結が薄いままの NOT_EQUIV 断定（偽 NOT_EQ）と、重要差分の見落とし（偽 EQUIV）の双方を減らしやすくなることを期待する。

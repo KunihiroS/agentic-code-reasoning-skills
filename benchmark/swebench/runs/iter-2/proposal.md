@@ -1,93 +1,97 @@
-# Iter-2 Proposal
+# Iter-2 Proposal (focus_domain: overall)
 
-## Exploration Framework カテゴリ: C (強制指定)
+## Exploration Framework
+- カテゴリ: C. 比較の枠組みを変える
+- メカニズム選択理由:
+  - `compare` の誤判定は「差分を見つけた」こと自体を“重要な差分”と取り違え、テストの観測点（oracle）に結び付かないまま EQUIV/NOT_EQUIV を早期確定しがち。
+  - そこで「差異重要度（oracle可視性）」という比較分類を導入し、同じ証拠（file:line トレース）をより高い識別力で使えるようにする。
 
-カテゴリ C は「比較の枠組みを変える」と定義されており、その具体的なメカニズムとして
-Objective.md は以下の 3 つを挙げている:
+## 改善仮説（1つ）
+差分を「テストの観測点に影響しうる差分（oracle-visible）」と「表現・構造の差（oracle-invisible）」に分類してから追跡優先度を決めると、差分探索が“重要度の低い差分”に吸い込まれにくくなり、全体の比較判断（overall）の安定性が上がる。
 
-- テスト単位ではなく関数単位・モジュール単位で比較する
-- 差異の重要度を段階的に評価する
-- 変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う
-
-今回選択するメカニズムは「差異の重要度を段階的に評価する」である。
-
-理由: STRUCTURAL TRIAGE は既にファイルレベルの欠落を捕捉するが、
-同一ファイルを変更している場合の比較ループにおいて、発見した差異が
-テスト観測に到達するかどうかの優先度判断が曖昧なままである。
-差異を発見したのちに「その差異がテスト観測に到達しうるか」という
-重要度評価を明示的に行う仕組みを持たせることで、Guardrail #4 の適用精度を
-上げ、かつ無関係な差異に対する深掘りターンの浪費を防ぐことができる。
-
-
-## 改善仮説
-
-compare モードにおいて、発見された差異の重要度を「テスト観測に到達しうるか否か」
-という軸で明示的に段階評価させることで、Guardrail #4（微細な差異を軽視しない）と
-探索予算の効率的な使用を両立させ、EQUIVALENT / NOT EQUIVALENT 双方の判定精度を
-汎用的に改善できる。
-
-
-## SKILL.md のどこをどう変えるか
-
-対象箇所: Compare チェックリスト (SKILL.md 258–259 行目付近)
-
-現行の Guardrail #4 の再文言化に当たる Compare checklist の既存行:
-
+## 現状ボトルネックの診断（SKILL.md 引用 + 誘発する失敗メカニズム 1つ）
+該当箇所（Compare テンプレート）:
 ```
-- When a semantic difference is found, trace at least one relevant test through the differing code path before concluding the difference has no impact
+STRUCTURAL TRIAGE (required before detailed tracing):
+Before tracing individual functions, compare the two changes structurally:
+  S1: ...
+  S2: ...
+  S3: ...
+```
+診断:
+- 構造差分（S1/S2）とスケール判断（S3）はあるが、「差分の重要度（テスト oracle に結び付くか）」の分類が明示されていない。
+- その結果、差分発見→（oracle 連結の薄いまま）“重大差分扱い”となり、(a) NOT_EQUIV の過剰確定（偽 NOT_EQ）または (b) EQUIV 側の反証探索が表層差分に偏って反証が空回り、のどちらかを誘発しうる。
+
+## 変更タイプ
+- optional なガイド追加
+- 理由: 新しい必須ゲートを増やさず、既存の STRUCTURAL TRIAGE の中で「比較分類（差異重要度）」を“任意の優先度付け”として添えるだけで、探索の自由度を落とさずに差分の扱いを改善できる。
+
+## SKILL.md のどこをどう変えるか（具体）
+対象: `## Compare` → `### Certificate template` → `STRUCTURAL TRIAGE` と `### Compare checklist`
+
+提案差分（追加は3行、削除なし）:
+```diff
+@@
+ STRUCTURAL TRIAGE (required before detailed tracing):
+ Before tracing individual functions, compare the two changes structurally:
+   S1: Files modified — list files touched by each change. Flag any file
+       modified in one change but absent from the other.
+   S2: Completeness — does each change cover all the modules that the
+       failing tests exercise? If Change B omits a file that Change A
+       modifies and a test imports that file, the changes are NOT EQUIVALENT
+       regardless of the detailed semantics.
+   S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+       prioritize structural differences (S1, S2) and high-level semantic
+       comparison over exhaustive line-by-line tracing. Exhaustive tracing
+       is infeasible for large patches and produces unreliable conclusions.
++  OPTIONAL — S4: Difference importance — label each discovered difference as ORACLE-VISIBLE
++      (can change an asserted output/exception/externally visible state) vs ORACLE-INVISIBLE,
++      and prioritize tracing ORACLE-VISIBLE differences to a concrete test oracle first.
+@@
+ ### Compare checklist
+@@
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
++ - Optional: classify differences by oracle-visibility to prioritize which ones must be traced to a concrete assertion
 ```
 
-この行の末尾に以下の文言を追加する（既存行への精緻化）:
+## 期待される "挙動差"（compare に効く形）
+- 変更前に起きがちな誤り（一般形）:
+  - 「意味的に違う」ことを見つけた時点で NOT_EQUIV に寄せ、テストの assertion（oracle）まで結び付けるトレースが薄いまま結論を出す（偽 NOT_EQ を増やす）。
+- 変更後にその誤りが減るメカニズム:
+  - 差分を oracle-visible / oracle-invisible に分類することで、比較の焦点が「oracle に効く差分の実証（反証可能な形）」へ自動的に寄り、差分の“重要度取り違え”が減る。
+- その結果として減る見込みの誤判定（片方向最適化にならない形で）:
+  - 主に「偽 NOT_EQ（本当は EQUIV だが差分の存在だけで NOT_EQ と誤判定）」が減る。
+  - 同時に、oracle-visible を優先して結び付けるため「偽 EQUIV（本当は NOT_EQ だが差分を oracle まで持って行けず見落とす）」も減らしやすい（見落としが起きるのは“oracle 連結の不足”なので、優先度付けがそこを補う）。
 
-```
-- When a semantic difference is found, trace at least one relevant test through the differing code path before concluding the difference has no impact; first classify the difference as observable (reachable by a test assertion) or non-observable (internal state only), then allocate tracing effort accordingly
-```
-
-変更規模宣言: 変更は上記 1 行のみの末尾への文言追加。追加文字列は 1 行に収まるため
-5 行以内制限内（実質 0 行削除 + 0 行追加 + 1 行精緻化 = 変更行数 1）。
-
+## 最小インパクト検証（思考実験で可）
+- ミニケース A（変更前は揺れる/誤るが、変更後は安定）:
+  - 2つの実装に、内部データ構造や表現の違い（順序・キャッシュ・補助関数の分割など）はあるが、テストが観測するのは戻り値・例外・外部状態の一部だけ。
+  - 変更前: 内部差分を見て NOT_EQ 寄りに判断が揺れる。
+  - 変更後: その差分を oracle-invisible とラベルし、oracle-visible に当たる差分（もしあれば）だけを assertion まで結び付けるため、結論が「テスト oracle ベース」に安定する。
+- ミニケース B（逆方向の誤判定を誘発しうる状況 + 悪化しない理由/回避策）:
+  - 内部差分が、間接的に外部観測へ影響する（例: 例外種別、ログ/メトリクス、順序、タイミング、グローバル状態の更新）タイプで、テストがそれを観測している可能性がある。
+  - 悪化しない理由/回避策:
+    - S4 の定義を「asserted output/exception/externally visible state」と広めに書き、例外・外部状態・順序等も oracle-visible に含めうるようにしている。
+    - さらに S4 は OPTIONAL であり、既存の「Trace each test…」「Provide a counterexample…」を置き換えないため、oracle 連結の要求（反証可能性）は弱まらない。
 
 ## 一般的な推論品質への期待効果
+- 「差分の存在」と「差分の重要度」を混同する失敗パターン（比較における salience バイアス）を減らす。
+- テスト oracle への結線を優先することで、根拠の薄い結論（特に NOT_EQ の断定）を抑制し、証拠駆動の比較が増える。
 
-### 減少が期待される失敗パターン
+## トレードオフ（overall 観点）
+- 悪化しうる経路（1つ）:
+  - oracle-visible を狭く解釈しすぎると、本来観測される差分（例外の型/メッセージ、外部状態更新、順序）を oracle-invisible と誤分類して偽 EQUIV を増やしうる。
+- 新しい必須手順を増やさずに避ける工夫:
+  - S4 の括弧書きを「output/exception/externally visible state」として広くし、分類の取りこぼしを減らす（“定義の精緻化”ではなく、optional ガイド内の表現で吸収）。
+  - OPTIONAL と明記し、探索の自由度を維持する（状況に応じて分類を更新できる）。
 
-1. 微細差異の過剰深掘りによる探索予算枯渇:
-   差異を発見するたびに無条件で深いトレースを実行しているケースでは、
-   non-observable と判断できる差異に対しては浅い確認で済ませることが
-   できるようになり、ターン予算を真に重要な差異（observable）の追跡に
-   集中させられる。
-
-2. Guardrail #4 の不均一な適用:
-   現行の文言は「少なくとも 1 つのテストをトレースせよ」という義務のみで、
-   重要度の判断基準を提供していない。observable / non-observable の軸を
-   明示することで、差異の重要度分類が判定前に必ず行われるようになり、
-   軽微な差異を「重要かもしれない」と過剰評価して NOT EQUIVALENT に
-   倒す誤判定（EQUIV 側の見逃し）も抑制できる。
-
-3. 比較粒度のカテゴリ C 的改善:
-   差異そのものの評価粒度が「差異の有無」から「テスト到達性のある差異か否か」
-   へと細かくなり、compare モード全体の判断の枠組みが精緻化される。
-
-
-## failed-approaches.md の汎用原則との照合結果
-
-| 原則 | 照合結果 |
-|------|----------|
-| #1 判定の非対称操作 | 非抵触。observable / non-observable の分類はどちらの判定方向にも同等に作用する。 |
-| #2 出力側の制約 | 非抵触。変更は「何を判断するか（処理側）」の改善であり、出力を直接制約しない。 |
-| #3 探索量の削減 | 非抵触。全体の探索量を削減するのではなく、探索の優先度配分を変えるものであり、observable な差異への探索は減らさない。 |
-| #4 同一方向の変更 | 非抵触。メカニズムは新規（重要度の段階評価）であり、過去の試みには同一機構は含まれていない。 |
-| #5 入力テンプレートの過剰規定 | 非抵触。「何を記録するか」を厳密化するのではなく「どう判断するか」の観点を追加している。 |
-| #7 分析前の中間ラベル生成 | 非抵触。分類は差異を発見した後（分析中）に行われ、分析前のラベル付けではない。 |
-| #8 受動的な記録フィールドの追加 | 非抵触。新しいフィールドやテーブル列を追加するのではなく、既存の行動指示を精緻化している。 |
-| #12 アドバイザリな非対称指示 | 非抵触。observable / non-observable の分類は両判定方向に同等の追加検証コストを課さない。分類結果が NOT EQUIVALENT 方向にのみ高い追加義務を課すことはなく、EQUIVALENT 方向においても observable な差異が見つかった場合は同様のトレースを要求する。 |
-| #17 中間ノードの局所的な分析義務化 | 非抵触。差異の重要度評価は中間ノードに固定するものではなく、テスト観測点（終端）への到達性を評価する目的で差異を出発点として判断するものである。 |
-| その他（#6, #9–#11, #13–#16, #18–#27） | 該当なし。いずれも本変更の機構（既存チェックリスト行への末尾追記）と直接的に抵触する原則は見当たらない。 |
-
+## failed-approaches.md との整合（1〜2点だけ具体）
+- 「次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」に整合:
+  - S4 は“探す証拠”を固定せず、既に見つかった差分の扱い（重要度分類）だけを補助する。証拠探索を特定シグナル検索へ寄せない。
+- 「探索の自由度を削りすぎない」に整合:
+  - 追加は OPTIONAL で、読解順序や特定の追跡方向を半固定化しない。既存の手続き（テストごとのトレース/反証）を置換しない。
 
 ## 変更規模の宣言
-
-- 削除行数: 0
-- 変更対象行数: 1（既存行への文言追加・精緻化のみ）
-- 新規ステップ / 新規フィールド / 新規セクション: なし
-- 合計変更行数: 1 (5 行以内制限を満たす)
+- 追加: 4行（うち Compare テンプレートに3行、チェックリストに1行）
+- 削除: 0行
+- 追加行は hard limit（5行以内）を満たす。

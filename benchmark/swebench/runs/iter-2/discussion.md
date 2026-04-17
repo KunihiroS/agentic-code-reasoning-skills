@@ -1,182 +1,138 @@
-# Iter-2 監査ディスカッション
+# Iter-2 Discussion
 
 ## 総評
-提案の狙い自体、すなわち「見つかった差異をテスト観測可能性の観点で整理する」は、観測可能な振る舞いに基づいて等価性を判断するという大原則には整合している。しかし、今回の具体的な差分はその原則を安全に実装できていない。
-
-結論から言うと、この変更は「比較の枠組みを少し精緻化する」よりも、「差異発見直後に observable / non-observable という中間ラベルを付け、そのラベルに応じて探索量を変える」変更として作用する。これは failed-approaches.md にある複数の失敗原則と本質的に衝突しており、特に EQUIVALENT 側にだけ実効的な影響を与える危険が高い。
+提案は、既存の `compare` が「差分を見つけたこと」と「テスト oracle に効く重要差分であること」を混同しやすい、という問題に対して、既存の STRUCTURAL TRIAGE に optional な優先度付けを足すもの。変更規模が小さく、研究コア（前提・トレース・反証・形式的結論）を弱めず、`compare` の証拠駆動性を補強する方向なので、監査 PASS の下限は満たしていると判断する。
 
 ## 1. 既存研究との整合性
 
-DuckDuckGo MCP の search は今回 no results だったため、同じ DuckDuckGo MCP の fetch_content で既知 URL を取得して確認した。
+### Web 調査メモ
+1. https://en.wikipedia.org/wiki/Test_Oracle
+   - 要点: test oracle は「入力とプログラム状態に対して何が正しい結果か」を与える情報源であり、実際の結果と期待結果を比較するための基準。
+   - 含意: 差分の重要性を「asserted output / exception / externally visible state」に結びつける発想自体は、テストの観測可能結果を中心に据えるので妥当。
 
-1. Agentic Code Reasoning
-   - URL: https://arxiv.org/abs/2603.01896
-   - 要点:
-     - semi-formal reasoning は「explicit premises」「trace execution paths」「formal conclusions」により、ケース飛ばしや unsupported claim を防ぐ certificate として働く。
-     - この論文の中心メカニズムは、ラベル付けよりも「明示的なトレース義務」にある。
-   - 整合性評価:
-     - 提案が「差異を見つけたらテスト側まで追う」という方向を維持する限り、論文の中心思想とは整合する。
-     - しかし「先に observable / non-observable に分類し、tracing effort を配分する」という部分は、論文が強く押している end-to-end tracing の代替として使われうるため、整合は部分的にとどまる。
+2. https://arxiv.org/html/2503.18597v1
+   - 要点: 回帰検査では「振る舞い差分を全部 regression とみなす」と false positive が増える。重要なのは、見つかった behavioral difference が intended か unintended かの分類。
+   - 含意: 提案の「差分は全部同格ではない」「oracle に結びつく差分を優先すべき」という方向性は、一般的な回帰判定の知見と整合する。
 
-2. Program slicing
-   - URL: https://en.wikipedia.org/wiki/Program_slicing
-   - 要点:
-     - program slicing は「ある観測点の値に影響しうる文」を、依存関係を遡って集める考え方。
-     - 重要なのは、観測点を固定して依存関係を追うことであり、局所差分を先に軽い/重いとラベル付けすることではない。
-   - 整合性評価:
-     - 「テストの assertion に到達するか」という発想自体は slicing 的で妥当。
-     - ただし実装案のように差異点から observable / non-observable を先に判定すると、観測点ベースではなく局所状態ベースのヒューリスティックになりやすい。
+3. https://softwarefoundations.cis.upenn.edu/plf-current/Equiv.html
+   - 要点: behavioral equivalence は、式なら全 state で同じ結果、コマンドなら同じ初期 state から同じ最終 state（または両方 diverge）を与えること。
+   - 含意: 等価性の本質が「観測可能な振る舞いの一致」にある以上、提案が差分を観測可能性で整理するのは一般原則として筋がよい。
 
-3. Observational equivalence
-   - URL: https://en.wikipedia.org/wiki/Observational_equivalence
-   - 要点:
-     - observational equivalence は、観測可能な含意が区別不能なら等価とみなすという考え方。
-     - 区別できるかどうかは「文脈に置いたときの observable implication」で決まる。
-   - 整合性評価:
-     - 提案が狙う「観測可能差異に優先度を置く」は、この原則には合っている。
-     - ただし observational equivalence は本来、局所的に internal state に見える差異でも、文脈次第で観測可能化しうることを前提にする。したがって、早い段階で non-observable とみなして tracing effort を下げる実装は、理論の安全な使い方ではない。
+### 評価
+研究的には、「観測される差分」と「単なる内部差分」を区別する発想は自然。しかも提案は compare の結論条件そのものを変えておらず、既存の per-test tracing / counterexample obligation の上に“探索優先度”を足すだけなので、README と docs/design.md が強調する certificate-based reasoning とも矛盾しない。
 
-小結:
-高レベルの着想は研究知見と整合するが、今回の具体的 wording は「観測可能性の確認」ではなく「観測可能性の先行ラベル化」に寄っており、研究コアとの整合は限定的である。
+## 2. Exploration Framework のカテゴリ選定
+提案者の分類 C「比較の枠組みを変える」は適切。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
+理由:
+- これは読み順固定や新しい自己監査ゲート追加ではなく、「発見済み差分をどう分類して比較判断に結びつけるか」の枠組み変更。
+- Objective.md の C 例示にある「差異の重要度を段階的に評価する」にかなり直接一致している。
+- B「情報の取得方法」よりも、取得済み情報の意味づけ変更が主眼なので C の方が正確。
 
-提案は Category C「比較の枠組みを変える」を選んでいる。形式上は理解できる。実際、差異の有無だけでなく、その差異がテスト観測に到達するかで粒度を上げるという発想は C の説明文にある「差異の重要度を段階的に評価する」に一致する。
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
 
-ただし、実効的には Category C 単独というより、Category B と D の失敗形に接近している。
+### 変更前との差分
+変更前:
+- 差分発見後、どの差分を深掘りすべきかの補助分類がない。
+- そのため、表層的・内部的な差分に注意が吸われ、oracle まで届かないまま重要差分扱いしやすい。
 
-- C らしい部分:
-  - 差異を binary に扱わず、観測可能性で粒度化する点。
-- C から逸脱している部分:
-  - 「first classify ... then allocate tracing effort accordingly」は、比較枠組みの変更というより探索予算の配分ルール変更である。
-  - しかもその配分は、差異点から観測点までの因果追跡を強めるのではなく、場合によっては弱める方向に働く。
+変更後:
+- 差分を ORACLE-VISIBLE / ORACLE-INVISIBLE に仮ラベルして、前者を先に test oracle へ結線する。
+- ただし mandatory obligation は不変で、EQUIVALENT なら「no counterexample exists」、NOT EQUIVALENT なら具体 counterexample が依然必要。
 
-したがってカテゴリ名としては C で説明可能だが、提案本文の実体は「比較の枠組み変更」より「探索量の条件付き削減」に近い。カテゴリ選定は表面上は適切だが、汎用原則としての実装は不適切である。
+### EQUIVALENT 判定への作用
+正方向:
+- 偽 NOT_EQUIVALENT を減らしやすい。内部実装差分・補助関数分割・キャッシュ・表現差などに過剰反応せず、実際の assertion 差に届くかで重要度を見直せるため。
 
-## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方にどう作用するか
+逆方向リスク:
+- ORACLE-INVISIBLE と早く決めすぎると、本当は観測される差分を見落として偽 EQUIVALENT を増やす危険がある。
+- とくに exception type/message、順序、外部状態更新、ログ/メトリクス、タイミング依存のような「一見内部だが test が拾う」差分は危ない。
 
-ここは提案文の自己評価と実効差分が最もズレている。
+### NOT_EQUIVALENT 判定への作用
+正方向:
+- 具体 counterexample に近い差分を優先するため、NOT_EQUIVALENT の根拠が強くなる。
+- 「差分があるから違うはず」ではなく、「この差分がこの assertion を割る」という形に寄せられる。
 
-### 変更前
-現行文:
-- When a semantic difference is found, trace at least one relevant test through the differing code path before concluding it has no impact
+逆方向リスク:
+- ORACLE-VISIBLE のみを実質上の主戦場にしすぎると、当初は visibility が低く見える差分から counterexample に至る経路を拾いにくくなる。
 
-この義務は、明確に「差異はあるが no impact と言いたいとき」に発火する。つまり主に EQUIVALENT 側の誤判定防止ガードである。
+### 片方向最適化か
+現状の提案文だけでも、片方向専用ではない。
+- 主効果は偽 NOT_EQ の抑制。
+- ただし、oracle 連結を優先するので偽 EQUIV の抑制にも理屈はある。
+- 一方で、偽 EQUIV 側の悪化リスクも明記されており、提案者自身が回避策を示している。
 
-### 変更後
-提案文:
-- ... before concluding it has no impact; first classify the difference as observable (reachable by a test assertion) or non-observable (internal state only), then allocate tracing effort accordingly
+よって「片方向にしか作用しない」提案ではない。ただし、効果の重心は EQUIVALENT 側の安定化にやや寄っている。
 
-### 実効差分
-新たに追加される実効は次の2点。
+## 4. failed-approaches.md との照合
 
-1. 差異発見後に中間ラベル observable / non-observable を作る
-2. そのラベルに応じて tracing effort を変える
+### 良い点
+- 「新しい必須ゲートを増やさない」点は failed-approaches の方針に合う。
+- 既存の反証義務や per-test tracing を置き換えないので、形式だけ増やして結論前チェックを過剰化するタイプではない。
 
-この差分は対称ではない。理由は、元の文自体が EQUIVALENT 側の no impact 結論にだけかかるガードだからである。そこへ「non-observable なら tracing effort を軽くしてよい」という運用余地を足すと、実質的には EQUIVALENT 側にだけ新しい近道を与える。
+### 懸念点
+本提案には、failed-approaches の次の失敗原則に近づく面が少しある。
+- 「次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」
+- 「既存の汎用ガードレールを、特定の追跡方向や観点で具体化しすぎない」
 
-### EQUIVALENT 側への作用
-- 作用は大きい。
-- 差異を見つけても「これは internal state only だ」と早期分類できれば、従来より浅い確認で no impact に進みやすくなる。
-- そのため、偽の EQUIVALENT を増やすリスクがある。
-- 特に compare タスクでは、局所状態の違いが後段の assertion へ届くかは tracing しないと分からないことが多く、non-observable ラベルはしばしば premature になりうる。
+理由:
+- S4 は optional ではあるが、実質的には「oracle-visible 差分を優先せよ」という追跡方向を与える。
+- これは弱い形ながら探索経路のバイアスになりうる。
 
-### NOT_EQUIVALENT 側への作用
-- 作用は限定的、またはほぼ間接的。
-- 既に observable と見えた差異はそのまま NOT_EQUIVALENT の候補になるが、これは現行でも relevant test を追えば十分に扱える。
-- 変更によって NOT_EQUIVALENT 側に新しく追加される強い検証手順はない。
-- むしろ誤って non-observable とラベル付けされた差異が NOT_EQUIVALENT 反例候補から早期に落ちるため、NOT_EQUIVALENT 側の recall を下げる恐れがある。
+ただし、本質的な再演とまでは言いにくい。
+- 証拠の種類を新たに固定しているというより、既に見つかった差分の優先順位付けをしているだけ。
+- 必須化されておらず、既存の反証義務も残る。
+- 読み始めの順序固定ではなく、STRUCTURAL TRIAGE 内の軽い補助線に留まっている。
 
-### 結論
-この変更は「両方向に同等に作用する」のではなく、変更前との差分ベースで見ると EQUIVALENT 側にのみ実効的に強く作用する。failed-approaches.md の原則 #6 がまさに警告しているパターンである。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-提案文の自己申告では非抵触とされているが、監査上はそう見ない。
-
-### 原則 #1 判定の非対称操作
-抵触懸念が強い。
-
-追加文は形式上は対称的に見えるが、差分としては EQUIVALENT 側の「no impact」結論にだけ新しい運用ルールを加えている。したがって実効は非対称。
-
-### 原則 #3 探索量の削減は常に有害
-抵触懸念あり。
-
-proposal では「non-observable に対しては浅い確認で済ませる」と明記しており、これは探索量削減そのもの。全探索を減らしていない、優先度配分だ、と書いているが、実効としては一部の差異に対する追跡を薄くする指示である。failed-approaches.md の観点では危険側。
-
-### 原則 #6 「対称化」は既存制約との差分で評価せよ
-実質的に抵触。
-
-現行 Guardrail #4 は既に「差異を軽視しない」側をカバーしている。そこへ observable / non-observable 分類を足しても、observable 側は既存義務と大差なく、non-observable 側だけが新しく軽く扱われる。差分は非対称。
-
-### 原則 #7 分析前の中間ラベル生成
-抵触懸念が非常に強い。
-
-proposal は「差異を発見した後なので分析前ではない」と主張するが、本質はそこではない。問題は「最終結論の前に、中間ラベルが後続推論をアンカリングするか」である。observable / non-observable はまさにその種のラベルで、しかも tracing effort を変える意思決定に直結している。これは危険な中間ラベル生成である。
-
-### 原則 #8 受動的な記録フィールド追加
-部分抵触ではない。
-
-新規フィールド追加ではないので #8 そのものではない。ただし、classification 自体が行動誘発よりラベル記述へ流れる危険は同質である。
-
-### 原則 #15 固定長の局所追跡で観測境界を近似するな
-部分的に近い懸念。
-
-今回 N-hop 指示はないが、「internal state only」という局所ラベルで観測境界を先に推定している点は、本質的には同じ危険を持つ。
-
-### 原則 #17 中間ノードの局所的な分析義務化
-抵触懸念あり。
-
-difference を observable / non-observable と差異点近傍で評価させるため、最終的な assertion への end-to-end tracing より、差異直後の局所状態解釈に注意が固定される。これは #17 の警告と近い。
-
-### 原則 #23 抽象的な問いだけでは改善しない
-軽度の懸念。
-
-「reachable by a test assertion」という方向は良いが、具体的にどう検証するかは増えていない。結果として、有用な探索ステップではなく soft framing に留まる可能性がある。
-
-小結:
-この提案は、failed-approaches.md の自己照合結果よりかなり危険側に見える。特に #1, #3, #6, #7, #17 との衝突が大きい。
+結論として、failed-approaches の「再演」ではなく「周辺リスクあり」レベル。
 
 ## 5. 汎化性チェック
 
 ### ルール違反の有無
-- 特定のベンチマーク用リポジトリ名: なし
-- 特定のテスト名: なし
-- 特定のケース ID: なし
-- ベンチマーク対象コード片の引用: なし
+明確な違反は見当たらない。
+- ベンチマークの具体ケース ID: なし
+- 特定リポジトリ名: なし
+- 特定テスト名: なし
+- ベンチマーク実コード断片: なし
 
-したがって、ベンチマーク固有識別子の混入という意味での overfitting ルール違反は見当たらない。
+### 補足
+- `Iter-2 Proposal` や `focus_domain: overall` は実験管理上のメタ情報であり、ベンチマーク対象の固有識別子ではない。
+- `~200 lines` や `5行以内` は閾値記述であって、ケース固有 ID ではない。
+- 差分例は SKILL.md 自己引用であり、Objective.md の R1 の減点対象外に入る。
 
-ただし以下は留意点。
+### ドメイン暗黙依存の有無
+大きなドメイン依存はない。`asserted output / exception / externally visible state` は言語横断的に通る。
+ただし、提案文はやや「テストが明示 assertion を持つ典型的単体テスト」を想起させやすい。イベント、並行性、性能、UI、ログ観測などでも成立することを説明に少し足すと、汎化性はさらに明確になる。
 
-1. proposal には SKILL.md の具体的行番号と文言引用が含まれる。
-   - これは Objective.md の R1 基準上は「SKILL.md 自身の文言引用」に当たり、通常は減点対象外。
-   - よって監査上は rule violation とはみなさない。
+## 6. 全体の推論品質への期待効果
+期待できる改善は次の通り。
 
-2. 「reachable by a test assertion」「internal state only」という言い回しは、やや xUnit 的・assertion-centric なテスト観を暗黙に前提している。
-   - 多くの言語・フレームワークには適用できるが、観測点が明示的 assertion ではなく、例外、ログ、出力フォーマット、プロトコル応答、メタデータ、副作用の有無などで定まるケースでは表現がやや狭い。
-   - よって厳密には「test assertion」という語は「test-observable outcome」など、より一般化された表現の方が安全。
+1. salience bias の緩和
+   - 差分の“見つけやすさ”ではなく“観測結果への接続性”で優先順位をつけられる。
 
-### 汎化性の総合評価
-着想自体は汎用的だが、文言は「assertion」という具体物に少し寄りすぎており、また internal state only という分類が言語・実装様式をまたいで安定に機能する保証は弱い。
+2. compare の証拠密度の向上
+   - NOT_EQUIVALENT の主張が、抽象的な意味差ではなく具体 assertion 差へ寄る。
 
-## 6. 全体の推論品質がどう向上すると期待できるか
+3. tracing effort の配分改善
+   - 大きな差分や内部差分が多いケースで、全部を同格に追う無駄を減らしやすい。
 
-期待できる潜在的な改善はある。
+4. 既存研究コアとの両立
+   - 前提、トレース、反証、結論の骨格はそのままで、比較判断の焦点だけを調整している。
 
-- 良い方向の仮説:
-  - 差異発見後に、最終的なテスト観測点との接続を意識させる
-  - 無関係な実装差異へ無制限に深入りするのを防ぐ
-  - compare モードで「差異の有無」から「観測可能差異かどうか」へ粒度を上げる
+## PASS に近づけるための具体的修正指示
+1. `ORACLE-INVISIBLE` を断定語にしないこと。
+   - 修正案: 「currently not connected to an existing test oracle」や「not yet shown oracle-visible」のように、暫定ラベルだと分かる表現へ弱める。
+   - 理由: 偽 EQUIVALENT の主因は早すぎる不可視判定なので、ここを“仮分類”にするだけで回帰リスクが下がる。
 
-しかし、今回の wording ではその利益より副作用が大きい。
+2. S4 の目的を「探索制約」ではなく「優先度付け」であると明記すること。
+   - 修正案: `prioritize first, but do not treat ORACLE-INVISIBLE as irrelevant without test-path tracing when it may affect observable behavior` に近い一文を説明部で補う。
+   - 理由: failed-approaches の「追跡方向の半固定」懸念を弱められる。
 
-主な理由:
-- observable / non-observable の先行分類がアンカリングになる
-- allocate tracing effort accordingly が探索削減の合図として読まれる
-- 現行 Guardrail #4 が守っている「差異を見つけたら relevant test まで追う」という強みを、例外付きの弱い義務へ変えてしまう
+3. 期待効果の記述を少し弱め、両方向性をより対称に書くこと。
+   - 修正案: 「主に偽 NOT_EQ を減らすが、oracle 連結不足に起因する偽 EQUIV の拾い直しにも補助的に効く」と書き換える。
+   - 理由: 現状は実際の重心が EQUIV 側安定化なのに、両側へ同程度に効くように見せており、監査上やや強弁に見える。
 
-したがって、推論品質の改善期待は「概念レベルではあるが、今回の具体案では低い」。むしろ EQUIVALENT 側の偽陽性と NOT_EQUIVALENT 側の見逃しを増やす回帰リスクがある。
+## 結論
+最大の懸念は「oracle-invisible の早期ラベルが偽 EQUIVALENT を誘発しうること」だが、これは optional な優先度付けであり、failed-approaches の本質的再演でも、汎化性違反でも、片方向最適化が明白な案でもない。軽微な表現修正で十分吸収可能。
 
-## 最終判断
-承認: NO（理由: 変更前との差分として見ると EQUIVALENT 側にだけ実効的に作用する非対称変更であり、observable / non-observable の中間ラベル生成と tracing effort の条件付き変更が failed-approaches.md の原則 #1, #3, #6, #7, #17 に強く抵触するため。高レベルの着想は妥当でも、今回の 1 行追加の形では汎用的改善としては不十分かつ回帰リスクが高い。）
+承認: YES
