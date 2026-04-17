@@ -1,185 +1,144 @@
-# Iter-3 監査ディスカッション
+# Iter-3 Discussion — 監査コメント
 
 ## 総評
+提案の狙い自体は理解できる。`UNVERIFIED` や unknown を結論の確信度へ接続し、過信を減らしたいという問題意識は、README / design が置く「証拠に基づく半形式的推論」「不確実性を隠さない」という方向と整合的である。
 
-現提案は、Step 3 の `CONFIDENCE` 行に「medium/low の場合は最も弱い前提と、それを解消する次の探索対象ファイルを 1 文で書く」という条件を足すだけの小変更であり、研究コアを大きく崩すものではありません。これは `SKILL.md` の共有コアにある仮説駆動探索の一部を微修正する提案です [SKILL.md:70-93]。
-
-ただし、監査観点では懸念が強いです。主な理由は次の 4 点です。
-
-1. 変更の発火条件が `CONFIDENCE: medium / low` という自己評価に依存しており、failed-approaches の原則 #9 と正面衝突しやすいこと [failed-approaches.md:26-26]。
-2. 実装位置が Step 3 の記録フィールド内部であり、実効としては「受動的な記録欄の拡張」に近く、原則 #8 の再演リスクが高いこと [failed-approaches.md:24-24]。
-3. 文面上は対称でも、変更前との差分としては EQUIVALENT 側の探索停止条件により強く作用しやすく、原則 #1 と #6 の非対称化リスクがあること [failed-approaches.md:10-10][failed-approaches.md:20-20]。
-4. proposal 自体にコード断片・行番号参照が含まれており、監査観点 5 の厳格運用ではルール違反を含むこと [benchmark/swebench/runs/iter-3/proposal.md:42-52]。
-
-以上より、現案は「意図は理解できるが、採用には弱い」という評価です。
+ただし今回の具体案は、`failed-approaches.md` が明示的に避けるべきだと述べている類型にかなり近い。特に「結論直前の自己監査に、新しい必須のメタ判断を増やしすぎない」「推論中の最弱点を特定して確信度へ結びつける」の再演に見えるため、このままでは監査 PASS の下限を満たしにくい。
 
 ## 1. 既存研究との整合性
+README と docs/design.md が示す研究コアは、番号付き前提・仮説駆動探索・手続き間トレース・反証可能性の維持である。今回の提案はこのコアを壊してはいないが、直接の研究コア強化というより「不確実性表明の補強」に属する。
 
-### DuckDuckGo MCP 調査
+DuckDuckGo MCP で確認した関連文献:
 
-DuckDuckGo MCP で以下の検索を試行しましたが、いずれも結果 0 件でした。
-- "LLM self evaluation reasoning paper"
-- "language models self correction paper"
-- "uncertainty calibration language models paper"
-- さらに簡略化した関連クエリ群
+1. https://arxiv.org/abs/2306.13063
+   - Xiong et al., "Can LLMs Express Their Uncertainty?"
+   - 要点: LLM の verbalized confidence は意思決定上重要だが、過信しがちであり、confidence elicitation や consistency 集約で改善余地がある。
+   - 整合性: 「confidence を雑に置かない」「不確実性表明を改善したい」という問題設定には整合する。
+   - 限界: この論文が支持しているのは uncertainty expression の改善一般であり、「結論ごとに decision-flip uncertainty を exactly one で必須記載させる」ことまでは直接支持しない。
 
-そのため、Web から直接安定して回収できた研究根拠は、README でも参照されている原論文 URL の直接取得に限られました。
+2. https://aclanthology.org/2024.emnlp-main.1205/
+   - Liu et al., "Can LLMs Learn Uncertainty on Their Own?"
+   - 要点: LLM の uncertainty 表現は人間の意思決定支援に有益で、改善可能。
+   - 整合性: 結論時に uncertainty を明示する方向は一般論として妥当。
+   - 限界: こちらも「不確実性を 1 個に圧縮して必須化する設計」の根拠には弱い。
 
-### 取得できた研究 URL と要点
+3. https://www.sciencedirect.com/science/article/pii/S0957417424000198
+   - Lofstrom et al., "Calibrated explanations: With uncertainty information and counterfactuals"
+   - 要点: explanation に uncertainty 情報と counterfactual 観点を組み込むと、説明の信頼性と意思決定支援が上がる。
+   - 整合性: uncertainty と counterfactual を結びつける発想自体は妥当。
+   - 限界: ただし本件のような「最も plausible な decision-flip uncertainty を必ず 1 つ書く」という運用ルールまでは導かれない。
 
-1. https://arxiv.org/abs/2603.01896
-   - 要点: semi-formal reasoning は、明示的前提・実行経路トレース・形式的結論を要求することで、unsupported claim と case skip を減らす「certificate」として機能する。
-   - 本提案との整合: Step 3 の探索ジャーナルをわずかに強化する、という意味では原論文の「構造化された探索」の方向には沿っています。
-   - ただし注意点: 原論文・README・design が強く押している主因は「premises / tracing / refutation / per-item iteration」であり、自己確信の言語化自体が主要メカニズムとして示されているわけではありません [README.md:47-57][docs/design.md:33-55]。
-
-### 整合性の結論
-
-- 高レベルでは整合的: 既存の semi-formal reasoning の枠内での微修正であり、研究コアを壊してはいません [Objective.md:214-220]。
-- 直接的研究根拠は弱い: 原論文が有効と示しているのは、自己評価の洗練そのものよりも、証拠収集と反証を強制する構造です [docs/design.md:42-55]。
-- したがって、本提案は「研究と矛盾はしないが、研究で強く支持された改善軸そのものでもない」です。
+結論として、研究との整合は「中程度」。confidence / uncertainty を改善する方向性には先行研究の一般支持があるが、今回の必須化の形は研究から強く要請されていない。
 
 ## 2. Exploration Framework のカテゴリ選定は適切か
+カテゴリ D（メタ認知・自己チェック）は表面的には適切。実際、提案は探索方法や比較枠組みよりも、結論直前の自己監査と confidence 表現を変える案だからである。
 
-### カテゴリ適合性
+ただし、カテゴリ適合と採用妥当性は別問題。Objective.md の D には「推論チェーンの弱い環を特定」「確信度と根拠の対応を明示」が例示されている一方、failed-approaches.md はその具体化が過剰になると失敗しやすいと補正している。したがって「D だから安全」ではなく、今回の案は D の中でも blacklist に近い側の実装になっている。
 
-proposal は Category D を選んでおり、その理由として D2/D3 の交差点、すなわち「弱い環の特定」と「確信度と根拠の対応付け」を挙げています [benchmark/swebench/runs/iter-3/proposal.md:3-24]。分類としては確かに D です。`CONFIDENCE` 欄を拡張し、弱い前提を 1 文で述べさせるので、表面上のカテゴリ選定は妥当です。
+## 3. EQUIVALENT 判定 / NOT_EQUIVALENT 判定への作用
+### 変更前との実効的差分
+SKILL.md Step 6 は現在:
+- 何が確立されたか
+- 何が未検証か
+- confidence をどう置くか
+を求めるが、confidence の付け方は自由度が高い。
 
-### ただし汎用原則としての妥当性は弱い
+今回の変更は、その自由度を削って
+- confidence を付ける
+- かつ exactly one の decision-flip uncertainty を命名する
+へ変えるもの。
 
-問題は、カテゴリ D 自体が failed-approaches の中で最も危険な領域の 1 つだという点です。原則 #9 は、自己チェックや自己評価はそのままでは機能せず、特に消極的結論と積極的結論に非対称に作用しやすいと述べています [failed-approaches.md:26-26]。今回の案も発火条件が `medium/low` である以上、入口は依然として自己評価です。
+つまり、探索経路や per-test trace そのものは変えず、最終結論の書き方に mandatory なメタ判断を 1 個追加するのが実効差分である。
 
-さらに、proposal は「外部的に検証可能な行動の直接要求」だと主張しますが [benchmark/swebench/runs/iter-3/proposal.md:18-25]、実際の変更文言は「どの file would resolve it と書く」までであり、「そのファイルを実際に読む」ことは要求していません [benchmark/swebench/runs/iter-3/proposal.md:50-52]。つまり、外部行動の誘発を期待してはいるが、文言レベルではまだ記録欄の強化に留まっています。
+### EQUIVALENT 側への作用
+プラス面:
+- 未検証要素を軽視して EQUIVALENT を断定する偽 EQUIV は減る可能性がある。
+- 特に「反証が見つからない」ことを「差異がない」に短絡する癖にはブレーキがかかる。
 
-結論として:
-- カテゴリ D への分類自体は正しい。
-- しかし「D だから良い」ではなく、D の中でも failed-approaches に最も接近した危険なメカニズムです。
-- 汎用原則としては、「弱点を言語化させること」より「次の探索を実行させること」の方が本筋であり、現案はそこまで届いていません。
+マイナス面:
+- EQUIVALENT を出すたびに「もし反転するならどの unknown か」を 1 つ必ず作る運用になり、証拠十分なケースでも人工的な不安要素を最後に挿入しやすい。
+- その結果、判定自体より confidence だけが下がる、あるいは結論が必要以上に腰砕けになる懸念がある。
 
-## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方への作用
+### NOT_EQUIVALENT 側への作用
+プラス面:
+- counterexample が弱いのに NOT_EQUIVALENT を急ぐケースでは、未検証点を可視化して過信を抑える効果はありうる。
 
-### 変更前との差分
+マイナス面:
+- しかし NOT_EQUIVALENT は compare テンプレート上、既に具体 counterexample と diverging assertion を要求している。そこにさらに「判断を反転させる unknown」を必須化しても、強い反例があるケースでは意思決定にほぼ寄与せず、むしろ確証的な結論へ余計なノイズを足す可能性がある。
 
-変更前:
-- `CONFIDENCE: high / medium / low` [SKILL.md:73-77]
+### 片方向最適化か
+完全な片方向最適化ではないが、実質的には EQUIVALENT 側の過信抑制に主に効く案で、NOT_EQUIVALENT 側への純増効果は弱い。しかも compare の意思決定境界そのものより、最終説明の tone / confidence 記述に作用する比率が高い。
 
-変更後:
-- `medium/low` のときに、最も弱い前提と、それを解消する次のファイルを 1 文で書かせる [benchmark/swebench/runs/iter-3/proposal.md:48-52]
+したがって「両方向に効く」とまでは言いにくい。少なくとも、提案本文が述べるほど対称的な改善ではない。
 
-差分として重要なのは、「high には何も追加されず、medium/low のときだけ追加負荷がかかる」点です。
+## 4. failed-approaches.md との照合
+ここが最大の懸念。
 
-### NOT_EQUIVALENT への作用
+failed-approaches.md 21-24 行は、結論直前の自己監査に新しい必須メタ判断を増やしすぎないこと、特に「推論中の最弱点を特定して確信度へ結びつける」類型を明確に警戒している。
 
-NOT_EQUIVALENT は、比較モードでは具体的 counterexample を 1 つ見つけられると一気に高確信になりやすいです。`COUNTEREXAMPLE` 節もその構造です [SKILL.md:226-230]。そのため、明確な差異を見つけたケースでは追加条件が発火しない、または短時間しか発火しない可能性があります。
+今回の置換案:
+- "Assigns a confidence level ... and names exactly one decision-flip uncertainty ..."
 
-効く場面はあります。
-- 弱い差異しか見えていない段階で、「何が最弱仮定か」を書かせることで、雑な NOT_EQ 推定を止める。
-- 名前推測や中間ノード推論だけで差異ありと誤認するケースを、追加探索に押し戻す。
+これは表現こそ少し違うが、本質的には
+- 最弱点 / 反転点を 1 つ特定し
+- それを confidence と接続し
+- 結論時に必須で出させる
+という設計であり、failed-approaches.md の警告とかなり直接に重なる。
 
-ただし、これは「NOT_EQ を良くする」より「雑な NOT_EQ を抑える」作用に近いです。
-
-### EQUIVALENT への作用
-
-EQUIVALENT は本質的に「反例がない」ことを扱うため、medium/low に留まりやすいです。比較テンプレートでも EQUIVALENT を主張する場合は `NO COUNTEREXAMPLE EXISTS` を要求しており、こちらは元々、差異の不在をより広く探す必要があります [SKILL.md:232-238]。
-
-そのため今回の差分は、実効的には EQUIVALENT 側でより頻繁に発火する可能性が高いです。つまり:
-- 良い方向: 早すぎる EQUIVALENT を減らし、取りこぼしていた NOT_EQ を拾う可能性がある。
-- 悪い方向: 真に EQUIVALENT なケースでも追加探索負荷が増え、収束遅延・ターン消費・安全側への別判定を招く可能性がある。
-
-### 非対称性の評価
-
-proposal は「EQUIV/NOT_EQ 双方に同じ条件で適用されるので非対称ではない」と述べます [benchmark/swebench/runs/iter-3/proposal.md:84-90]。しかし failed-approaches の原則 #6 は、対称な文言かどうかではなく「変更前との差分がどちらに実効するか」を見よと警告しています [failed-approaches.md:20-20]。
-
-今回の差分は、high-confidence 経路には何も足さず、medium/low 経路にだけ負荷を足します。そして medium/low は一般に EQUIVALENT 主張側で長く残りやすい。したがって、文面上対称でも、実効上は EQUIVALENT 側により強く作用する可能性が高いです。
-
-結論:
-- 片方向にしか作用しない、とまでは断言しません。
-- しかし「両方向に同程度に作用する」とも言えません。
-- 実効差分は EQUIVALENT 側に偏りやすく、非対称化リスクがあります。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 原則 #8 受動的な記録フィールドの追加
-
-もっとも近い失敗原則です [failed-approaches.md:24-24]。
-
-proposal は「単なる記録欄拡張ではなく、次のファイル明示により検証行動を誘発する」と主張します [benchmark/swebench/runs/iter-3/proposal.md:18-25]。しかし実際の diff は Step 3 の `CONFIDENCE` 行への文言追加だけで、新しい探索ステップも、実際にそのファイルを読む義務も追加していません [benchmark/swebench/runs/iter-3/proposal.md:54-57]。
-
-よって本質的には:
-- 記録欄に「弱点」と「次のファイル」を書かせる
-- しかし、その次のファイルを読むかは依然として任意
-
-となり、原則 #8 の「書くことは増えるが、調べることは保証されない」にかなり近いです。
-
-### 原則 #9 メタ認知的自己チェックの限界
-
-proposal は原則 #9 を回避できていると主張します [benchmark/swebench/runs/iter-3/proposal.md:82-90]。ただし、トリガーは依然として `CONFIDENCE: medium/low` です。つまり「自分はいま不確かか」を自己判定できることが前提です。ここが原則 #9 の危険点そのものです [failed-approaches.md:26-26]。
-
-また、「最も弱い仮定」を言語化させること自体が、自己評価能力への依存を完全には外していません。
-
-### 原則 #1 / #6 判定の非対称操作・差分評価
-
-前節の通り、文言上は対称でも、差分としては EQUIVALENT 側に強く効きやすいです [failed-approaches.md:10-10][failed-approaches.md:20-20]。したがって proposal の自己評価ほど安全ではありません。
-
-### 原則 #27 次仮説の即時確定
-
-proposal は反証後ではなく仮説段階で「どのファイルが解決するか」を 1 文で定めます [benchmark/swebench/runs/iter-3/proposal.md:29-33][benchmark/swebench/runs/iter-3/proposal.md:50-52]。これは原則 #27 の完全一致ではありませんが、「まだ十分な追加証拠がないのに、次の探索軸を先に固定する」という意味で近縁です [failed-approaches.md:62-62]。
-
-### 小結
-
-proposal は failed-approaches を引用して自ら安全性を論じていますが、監査上はむしろ以下の再演リスクがあります。
-- 強: #8, #9
-- 中: #1, #6
-- 弱〜中: #27
-
-「表現を変えた同型失敗」の可能性は無視できません。
+「Step 6 の既存 1 行を置換するだけだから新ゲートではない」という弁明も弱い。ファイルが禁じているのは行数増ではなく、実質的に新しい必須メタ判断が増えることだからである。今回の案はまさにそこに触れている。
 
 ## 5. 汎化性チェック
-
 ### 明示的ルール違反の有無
+提案文中に、禁止される具体的な数値 ID、ベンチマーク対象リポジトリ名、テスト名、実コード断片は見当たらない。
+- SKILL.md の自己引用は Objective.md 上も許容範囲
+- 例示も「外部要素の挙動」「未読の分岐」「入力制約」など抽象的
 
-あります。proposal には少なくとも以下が含まれます。
-- `SKILL.md 76行目` という具体的行番号 [benchmark/swebench/runs/iter-3/proposal.md:42-42]
-- 変更前/後のコード断片 [benchmark/swebench/runs/iter-3/proposal.md:44-52]
-
-ユーザー指定の監査観点 5 を厳格に読むなら、これは実装者ルール違反です。
-
-補足すると、Objective の R1 は「SKILL.md 自身の文言引用」は減点対象外としています [Objective.md:202-213]。しかし今回の監査指示はそれより厳格で、「proposal 文中に具体的な数値 ID, リポジトリ名, テスト名, コード断片が含まれていないか。含まれていればルール違反として指摘」と明示しています。したがって本監査では指摘対象にすべきです。
+したがって、明示的な汎化性違反は現時点ではなし。
 
 ### 暗黙のドメイン依存
+大きな言語依存・ドメイン依存は薄い。ただし「decision-flip uncertainty を exactly one 挙げる」という作法は、コード推論そのものより explanation style の規律であり、compare 以外のモードや強い証拠が既に揃っているケースでは有効性が不均一になりやすい。これは overfitting というより、タスク非対称性の懸念。
 
-proposal 自体は、特定リポジトリ名・特定テスト名・特定言語構文への依存はありません。そこは良い点です。
+## 6. 全体の推論品質への期待効果
+期待できる改善:
+- 過信した結論の抑制
+- 未検証点の可視化
+- 監査時に「何が弱点か」を追いやすくすること
 
-ただし、暗黙には「次に読むべきものが file として明確に離散化されている」状況を想定しています。これは多くのコードベースで妥当ですが、実際には以下のケースではやや不自然です。
-- 主要論点が設定・生成コード・外部 API 契約・型定義に跨る場合
-- 1 ファイルより「call path 上の観測点」や「test oracle」が重要な場合
-- notebook / REPL / multi-snippet / config-driven な環境
+ただし改善の主戦場は「結論の監査しやすさ」であり、compare の本体である
+- relevant tests の同定
+- per-test tracing
+- structural triage
+- concrete counterexample
+を変えていない。
 
-つまり、露骨な overfitting ではないものの、探索対象を「次の file」に定型化しすぎており、汎化性は満点ではありません。
+そのため、推論品質改善の中心が decision quality そのものより、監査 rubric に刺さる説明強化へ寄ってしまう危険がある。
 
-## 6. 全体の推論品質がどう向上すると期待できるか
+## 停滞診断（必須）
+- 懸念 1 点:
+  - ある。今回の変更は compare のテスト単位の比較や counterexample 探索の質そのものではなく、最後の `CONFIDENCE` 記述を監査しやすくする方向が中心で、意思決定境界より説明の見え方を改善している比率が高い。
 
-期待できる改善は限定的です。
+- failed-approaches 該当性:
+  - 探索経路の半固定: NO
+  - 必須ゲート増: YES
+    - 原因文言: `names exactly one decision-flip uncertainty`。行追加はなくても、結論時の必須メタ判断を実質追加している。
+  - 証拠種類の事前固定: NO
 
-### 改善しうる点
+## 修正指示（2〜3点）
+1. `exactly one decision-flip uncertainty` の mandatory 化は削ること。
+   - 置換先候補: 既存の `States what remains uncertain or unverified` を少し精緻化するだけに留める。
+   - つまり「新しい必須要素を足す」のではなく、既存の uncertainty 記述の質を上げる方向へ戻す。
 
-- 低確信のまま結論へショートカットする癖を少し抑える。
-- Step 3 の探索ログに「どこが弱いか」が残るため、人間監査や自己継続の足場にはなる。
-- 名前推測や浅い差分観測からの premature conclusion を、追加読解へ押し戻す可能性がある。
+2. compare に効かせたいなら、Step 6 ではなく compare セクション内の既存 `NO COUNTEREXAMPLE EXISTS` 記述へ統合すること。
+   - 追加ではなく統合で支払うこと。
+   - 例: `no counterexample exists because ...` の部分に、未検証点が残る場合はそれが counterexample 候補たりうるかだけ簡潔に触れる。
+   - これなら EQUIV 判定の飛躍へより直接に効き、NOT_EQUIV 側への無用なノイズも減る。
 
-### 期待しにくい点
+3. confidence 改善を残すなら、必須ルールではなく LOW/MEDIUM の場合だけの optional guidance に弱めること。
+   - `HIGH/MEDIUM/LOW` 自体は維持しつつ、全結論に一律適用しない。
+   - その代わり、Step 6 の他の bullet を増やさず、既存 bullet の説明内に吸収して複雑性を増やさないこと。
 
-- 実際に探索行動が増える保証はない。書くだけで終わる可能性がある。
-- どのファイルが解決するかを早めに固定すると、探索順序のアンカリングを生む可能性がある。
-- medium/low にのみ追加負荷をかけるため、収束が難しい EQUIVALENT 側へ偏ってコスト増となる恐れがある。
+## 結論
+最大のブロッカーは 1 つ:
+- `failed-approaches.md` の「結論直前の自己監査に新しい必須のメタ判断を増やしすぎない」「最弱点を特定して確信度へ結びつける」の本質的再演になっている点。
 
-### 総合評価
-
-推論品質への期待改善は「小〜中」です。しかも純改善ではなく、
-- 一部の premature conclusion は減るかもしれない
-- その代わり探索負荷・収束遅延・EQUIVALENT 側の回帰リスクがある
-
-というトレードオフ型です。Objective が求める「全体精度を安定して 100% に近づける汎用改善」としては、根拠がまだ弱いです [Objective.md:5-25]。
-
-## 最終判定
-
-承認: NO（理由: 原則 #8 と #9 の再演リスクが高く、文面上の対称性に対して実効差分は EQUIVALENT 側へ偏りやすい。さらに proposal 文中に行番号・コード断片が含まれており、今回の監査指示では汎化性ルール違反を含むため。）
+承認: NO（理由: failed-approaches.md の本質的な再演）
