@@ -1,116 +1,98 @@
-# Iteration 8 — Proposal
+1) Target misclassification: 偽 NOT_EQUIV
+2) Current failure story (抽象): compare で「構造差（片側だけが触るファイル）= 即 NOT_EQUIV」と過剰反応し、テスト境界で観測されない差でも早期に不一致判定してしまう
+3) Mechanism (抽象): 差異を「テストのパス/フェイルを左右する観測可能な差」へ優先的に写像し、import/ファイル非対称だけで結論を確定しにくくする
+4) Non-goal boundary: 読解順序の半固定・証拠種類の事前固定・必須ゲート総量の増加はしない（既存の S2 の判定基準だけを精緻化する）
 
-## Exploration Framework カテゴリ: C（強制指定）
+Exploration Framework のカテゴリ: C（比較の枠組みを変える）
+- メカニズム選択理由: 現状の compare は D1（テスト結果の同一性）で等価性を定義している一方、STRUCTURAL TRIAGE の S2 が「import されたファイルの非対称」だけで NOT EQUIVALENT を結論できる書き方になっており、比較粒度（ファイル構造）と比較基準（テスト境界の観測結果）がズレている。このズレを、差異重要度（観測可能性）で再接続するのがカテゴリCに合致する。
 
-### カテゴリ内のメカニズム選択理由
+改善仮説（1つ）
+- 「構造差」は NOT_EQUIV の十分条件ではなく“反例候補”であり、NOT_EQUIV の早期結論はテスト境界（PASS/FAIL を決める assertion/例外/戻り値）に結び付いたときだけ許す、という比較枠組みにすると、偽 NOT_EQUIV が減りつつ偽 EQUIV も増やしにくい。
 
-カテゴリ C には 3 つのメカニズムが定義されている:
+現状ボトルネックの診断（SKILL.md から短く引用 + 誘発する失敗メカニズム）
+- 引用（Compare > STRUCTURAL TRIAGE S2）:
+  “modifies and a test imports that file, the changes are NOT EQUIVALENT regardless of the detailed semantics.”
+- 誘発する失敗メカニズム: 「import = 影響あり」と短絡し、D1（テスト結果）に到達する前に NOT_EQUIV を確定しやすい。結果として、観測不能/無関係な差（リファクタ、到達不能分岐、冗長ガード等）でも不一致判定が出る。
 
-1. テスト単位ではなく関数単位・モジュール単位での比較
-2. 差異の重要度を段階的に評価する
-3. 変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う
+Decision-point delta（IF/THEN の2行、行動が変わる条件を明示）
+- Before: IF 片側だけが触るファイルがあり、関連テストがそれを import している THEN 「NOT EQUIVALENT」を結論する because 構造差（import）を十分条件として扱う
+- After:  IF 片側だけが触るファイルがある THEN 「追加で探す（テスト境界に結び付く反例の有無を確認）」 because 観測可能な差（PASS/FAIL を左右する根拠）に写像できるまで結論を保留する
+- 対応する SKILL.md の文言（見出し名）: Compare > STRUCTURAL TRIAGE (S2) / Compare > Compare checklist（Structural triage first）
 
-今回は **メカニズム 2「差異の重要度を段階的に評価する」** を選択する。
+変更タイプ（1つ）
+- 定義の精緻化: 「構造差→不一致」の判定を、“テスト境界で観測される差→不一致”へ置き換え、比較基準（D1）と整合させる。
 
-理由:
+SKILL.md のどこをどう変えるか（具体）
+- Compare > STRUCTURAL TRIAGE の S2 の「import されたら即 NOT EQUIVALENT」を、
+  「関連テストの PASS/FAIL がそのファイルの挙動に依存すると言えるなら NOT EQUIVALENT」に置換する。
+- Compare > Compare checklist の先頭 bullet も同趣旨に合わせて 1 行だけ更新し、構造差を“リスク旗（反例探索の優先対象）”として扱う。
+- （追加の必須ゲートは増やさない。既存の COUNTEREXAMPLE/NO COUNTEREXAMPLE の枠組み内で、S2 の十分条件を絞るだけ。）
 
-現在の compare チェックリストには次の指示がある:
+変更差分の最小プレビュー（Before/After、同じ範囲を自己引用）
 
-  "When a semantic difference is found, trace at least one relevant test through
-   the differing code path before concluding it has no impact"
+[Excerpt A: Compare > STRUCTURAL TRIAGE (S2) — 4 lines]
+Before:
+```
+  S2: Completeness — does each change cover all the modules that the
+      failing tests exercise? If Change B omits a file that Change A
+      modifies and a test imports that file, the changes are NOT EQUIVALENT
+      regardless of the detailed semantics.
+```
+After:
+```
+  S2: Completeness — does each change cover all the modules that the
+      failing tests exercise? If Change B omits a file that Change A
+      modifies and a relevant test's PASS/FAIL depends on that file's behavior,
+      the changes are NOT EQUIVALENT (tie it to a concrete assertion boundary).
+```
+- 意思決定ポイントの変化（1行）: 「import を見た時点で NOT_EQUIV」→「PASS/FAIL 依存（反例）に結び付くまで追加探索し、結論を保留しやすい」
 
-この指示はトレースの義務付けとして有効だが、「見つけた差異がどの種類か」を
-問わずすべてに同等のコストを課す。結果として 2 つの失敗パターンが起きやすい:
+[Excerpt B: Compare > Compare checklist — 3 lines]
+Before:
+```
+### Compare checklist
+- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+- For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+```
+After:
+```
+### Compare checklist
+- **Structural triage first**: compare modified file lists; treat asymmetry as a counterexample lead unless tied to a PASS/FAIL boundary
+- For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+```
 
-- 軽微な差異（構造的・順序的であり意味が等価なもの）を同等に深追いして、
-  より重大な差異のトレースに割く注意力が減る。
-- 逆に「この差異は自明に無影響」と早合点して、フルトレースを省略する
-  （Guardrail #4 の失敗パターン）。
+期待される "挙動差"（compare に効く形）
+- 変更前に起きがちな誤り（一般形）: 片側だけのファイル変更があると、それが実際には観測不能でも「構造差があるから NOT_EQUIV」と早期確定してしまう（偽 NOT_EQUIV）。
+- 変更後に減るメカニズム: S2 が「テスト境界で観測される差」に結び付いた場合のみ NOT_EQUIV を許すため、構造差は“反例探索の手掛かり”として扱われ、根拠が PASS/FAIL に到達しない限り結論を出しにくくなる。
+- どの誤判定が減る見込みか（片方向最適化にしない形で）: 主に偽 NOT_EQUIV を減らす。一方で偽 EQUIV を増やさないため、構造差は「NO COUNTEREXAMPLE EXISTS」の探索対象（反例像）として残り、反例があるならそこで拾いやすい。
 
-重要度分類を先に行う枠組みを追加すると、エージェントは差異を目にした瞬間に
-「これは制御フロー・値生成系か、構造的同一意味系か、装飾的変更か」を明示的に
-ラベリングしてから次の行動を決める。このラベルが「フルトレース必須 / 意味的
-中立性の明示的正当化が必要 / スキップ可」の判断をガイドする。
+最小インパクト検証（思考実験）
+- ミニケースA（変更前は揺れる/誤るが変更後は安定）:
+  2つの変更の差が“到達しない分岐・無影響な補助コード・内部のリネーム/整理”に留まり、関連テストの assertion までの観測結果が同じ状況。
+  変更前: import という構造シグナルだけで NOT_EQUIV に倒れやすい。
+  変更後: PASS/FAIL 依存に結び付かない限り保留→反例探索→同一観測結果なら EQUIV（modulo tests）へ収束しやすい。
+- ミニケースB（逆方向の誤判定を誘発しうる状況 + 悪化しない理由/回避策）:
+  片側だけが触るファイルに“実際にテストの観測結果を変える差”があるが、最初はそれが見えにくい状況。
+  悪化しうる経路: 「import だけでは NOT_EQUIV できない」→探索が甘いと偽 EQUIV に落ちる。
+  回避策（新しい必須手順を増やさずに）: 構造差を checklist 上で “counterexample lead” として明示し、既存の COUNTEREXAMPLE / NO COUNTEREXAMPLE の枠内で反例像に組み込む（＝追加探索の優先度を上げるが、証拠種類や読解順序は固定しない）。
 
-メカニズム 1（比較粒度）はすでに STRUCTURAL TRIAGE で部分的にカバーされている。
-メカニズム 3（変更カテゴリ分類）は STRUCTURAL TRIAGE の S1–S3 で扱える範囲と
-重複が大きく、compare モードの判定精度向上への寄与が相対的に小さい。
-そのためメカニズム 2 を選択する。
+focus_domain が equiv / not_eq の場合のトレードオフ（今回は overall だが、悪化経路を1つ想定して回避）
+- 想定する悪化経路: 構造差の自動 NOT_EQUIV を外すことで、観測可能差の発見が遅れ、偽 EQUIV が増える。
+- 回避（必須ゲート増なし）: “構造差=反例のリード” として既存の反例探索欄（NO COUNTEREXAMPLE の「counterexample would look like」）に自然に吸収される表現へ調整する（今回の checklist 1 行の置換）。
 
+failed-approaches.md との整合（1〜2点、具体）
+- 「証拠種類の事前固定を避ける」（箇条書き1）: 本変更は「何を探すか」を固定しない。あくまで“結論条件”をテスト境界へ寄せるだけで、探索で使う証拠の種類（テスト/型/ドキュメント等）をテンプレで事前固定しない。
+- 「読解順序の半固定を避ける」（箇条書き2）: STRUCTURAL TRIAGE の存在自体は維持するが、S2 を“即結論”ではなく“反例探索のリード”に寄せるため、読み始めや境界確定を早期に狭める方向へは進めない。
 
-## 改善仮説
+変更規模の宣言
+- SKILL.md 変更は 4 行以内（hard limit 5 行以内を遵守）。追加の MUST/必須 ゲートは増やさず、既存文言の置換で支払う。
 
-「意味的差異を見つけた時点で重要度カテゴリを明示的に分類させることで、
- エージェントが制御フロー・値生成系の差異を見落とすリスクと、
- 意味的に中立な差異に対して不要なフルトレースを行うコストの両方を削減できる。」
+停滞対策の自己チェック（proposal 内で明記）
+- 監査で褒められやすい説明強化だけに留まっていないか？: 留まっていない。S2 の「NOT_EQUIV へ倒れるトリガ条件」を変更し、結論/保留/追加探索の分岐が実際に変わる。
+- compare の誤判定を減らす意思決定ポイントが実際に変わるか？: 変わる。import だけで NOT_EQUIV を確定する経路を塞ぎ、PASS/FAIL 境界への接続を要求するため、追加探索が起動する。
+- Decision-point delta が「条件も行動も同じで理由だけ言い換え」になっていないか？: なっていない。条件（import）→（PASS/FAIL 依存）へ変わり、行動（即結論）→（追加探索/保留）へ変わる。
+- 必須ゲート総量を増やしていないか？: 増やしていない。S2 の判定基準の置換と checklist 1 行の置換のみ。
 
-
-## SKILL.md のどこをどう変えるか
-
-### 変更対象
-
-SKILL.md の Compare checklist 内の以下の 1 行:
-
-  変更前 (line 258):
-    - When a semantic difference is found, trace at least one relevant test
-      through the differing code path before concluding it has no impact
-
-  変更後 (2 行に精緻化):
-    - When a semantic difference is found, first classify it as:
-      (a) control-flow or value-producing change, (b) structural/ordering change
-      with identical semantics, or (c) cosmetic change.
-      Category (a) requires tracing at least one relevant test through the
-      differing path. Categories (b)/(c) require explicit written justification
-      of semantic neutrality before skipping the trace.
-
-### 変更規模の宣言
-
-- 削除行: 1 行
-- 追加・変更行: 4 行（hard limit 5 行以内、適合）
-- 新規ステップ・新規フィールド・新規セクション: なし
-- 既存行への精緻化のみ: yes
-
-
-## 一般的な推論品質への期待効果
-
-### 減少が期待される失敗パターン
-
-1. **Guardrail #4 型: 微細差異の軽率な棄却**
-   差異を見つけた後「影響なし」と素早く判断してトレースを省略するケースに対し、
-   category (a) の差異には明示的トレースを義務化することで抑制できる。
-
-2. **過剰トレースによる注意力散漫**
-   category (b)/(c) の差異を「意味的中立性の正当化」だけで処理できるようにすることで、
-   真に重要な差異へのトレースコストを節約し、全体的な推論精度が上がりやすくなる。
-
-3. **全体的な推論品質 (overall) の向上**
-   EQUIVALENT / NOT_EQUIVALENT 判定のどちらにも、差異の重要度評価精度が直接影響する。
-   分類ステップの追加は両方向の判定精度を底上げする汎用効果がある。
-
-
-## failed-approaches.md の汎用原則との照合
-
-### 原則 1: 「探索を特定シグナルの捜索へ寄せすぎる変更は避ける」
-
-今回の変更は「差異が見つかった後の処理手順」を精緻化するものであり、
-探索フェーズ（何をどの順で読むか）を制約するものではない。
-分類ステップは差異という観測済みの事実に対する後処理であり、
-確認バイアスを強めたり代替経路の探索を妨げたりする性質を持たない。
--> 抵触しない。
-
-### 原則 2: 「探索の自由度を削りすぎない」
-
-追加する分類は category (a)/(b)/(c) という 3 つの開いたラベルであり、
-特定のコードパターンや言語構造に縛られていない。
-category (b)/(c) の処理も「スキップ禁止」ではなく
-「意味的中立性の正当化を書く」という軽量な要件に留めている。
-探索の自由度は実質的に削られない。
--> 抵触しない。
-
-
-## 変更規模の宣言（再掲）
-
-削除: 1 行
-追加: 4 行
-合計変更: 4 行 (hard limit 5 行以内)
-新規セクション・ステップ・フィールド: なし
+参照状況
+- 参照した: SKILL.md（Compare 節中心）, failed-approaches.md, Objective.md（Exploration Framework のカテゴリ定義確認）
+- 今回未参照: README.md / docs/design.md / docs/reference/agentic-code-reasoning.pdf（理由: 今回の変更は compare 内の比較基準整合（D1 と S2 の齟齬解消）で正当化でき、研究追加参照なしで提案の根拠が足りるため。トークン節約を優先）

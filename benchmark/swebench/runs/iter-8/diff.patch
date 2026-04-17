@@ -1,34 +1,24 @@
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..01b0374 100644
+index d8962e92..05606aa6 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -168,16 +168,23 @@ ANALYSIS OF TEST BEHAVIOR:
+@@ -183,8 +183,8 @@ Before tracing individual functions, compare the two changes structurally:
+       modified in one change but absent from the other.
+   S2: Completeness — does each change cover all the modules that the
+       failing tests exercise? If Change B omits a file that Change A
+-      modifies and a test imports that file, the changes are NOT EQUIVALENT
+-      regardless of the detailed semantics.
++      modifies and a relevant test's PASS/FAIL depends on that file's behavior,
++      the changes are NOT EQUIVALENT (tie it to a concrete assertion boundary).
+   S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+       prioritize structural differences (S1, S2) and high-level semantic
+       comparison over exhaustive line-by-line tracing. Exhaustive tracing
+@@ -249,7 +249,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ ```
  
- For each relevant test:
-   Test: [name]
--  Claim C[N].1: With Change A, this test will [PASS/FAIL]
--                because [trace through code — cite file:line]
--  Claim C[N].2: With Change B, this test will [PASS/FAIL]
--                because [trace through code — cite file:line]
-+  Divergence: Identify the first point in this test's code path where
-+              Change A and Change B produce different values or behavior.
-+    A at [file:line]: [specific value or behavior — VERIFIED by reading source]
-+    B at [file:line]: [specific value or behavior — VERIFIED by reading source]
-+    (If values are identical at every traced point through the test assertion:
-+     Comparison is SAME — omit Claim below)
-+  Claim C[N]: Test will [PASS with A / FAIL with B] or [FAIL with A / PASS with B]
-+              because [trace from divergence point to test assertion — cite file:line]
-   Comparison: SAME / DIFFERENT outcome
- 
- For pass-to-pass tests (if changes could affect them differently):
-   Test: [name]
--  Claim C[N].1: With Change A, behavior is [description]
--  Claim C[N].2: With Change B, behavior is [description]
-+  Divergence: Where in this test's code path do A and B produce different values?
-+    A at [file:line]: [value or behavior — VERIFIED]
-+    B at [file:line]: [value or behavior — VERIFIED]
-+    (If identical at every traced point: Comparison is SAME — omit Claim below)
-+  Claim C[N]: behavior differs because [trace from divergence to assertion — cite file:line]
-   Comparison: SAME / DIFFERENT outcome
- 
- EDGE CASES RELEVANT TO EXISTING TESTS:
+ ### Compare checklist
+-- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
++- **Structural triage first**: compare modified file lists; treat asymmetry as a counterexample lead unless tied to a PASS/FAIL boundary
+ - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
