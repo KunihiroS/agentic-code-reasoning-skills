@@ -1,183 +1,97 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/11/26 21:19:00] INFO     Processing request of type            server.py:727
+[04/17/26 09:20:28] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-まず関連ファイルを読み込みます。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
   ┊ 📖 read      SKILL.md  0.8s
   ┊ 📖 read      Objective.md  0.8s
-  ┊ 📖 preparing read_file…
   ┊ 📖 read      failed-approaches.md  0.8s
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-必要なファイルが揃いました。SKILL.md を精査し、カテゴリ E（表現・フォーマット改善）で最も効果的な変更箇所を特定します。
-
----
-
-対象を絞る観点として、compare モード（overall 精度向上）で推論者が迷いやすい文言を探します。
-
-SKILL.md の Step 5.5「Pre-conclusion self-check」を見ると、4 つのチェック項目がありますが、最初の項目：
-
-```
-- [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
-```
-
-この「not inferred from function names」という注記は Guardrail #1 の内容と重複しており、かつ「function names」だけを例示しているため、関数名以外の名前推論（変数名、クラス名、モジュール名からの推論）が暗黙に除外されているかのような誤読を招きえます。
-
-一方、Step 4 の Rules の末尾にある条件付き反証ラインを見ます：
-
-```
-- For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
-```
-
-この文は「exception handling inside loops or multi-branch control flows」という非常に限定的な条件に発火要件を絞り込んでいます。しかし、「もしトレースが誤りなら」という反証的問いかけは、ループや例外に限らず、任意の非自明なコントロールフローに有効です。条件が狭すぎるため、適用されるべき場面で適用されないリスクがあります。
-
-ここを「non-trivial control flows (loops, conditionals, exception handlers, dispatch tables)」と具体例を列挙して例示することで、条件の適用範囲を適切に広げます。
-
-これは:
-- 新規ステップ・セクション追加なし
-- 既存行への文言精緻化のみ
-- 変更は1行（1行修正）
-- failed-approaches のどの原則にも抵触しない（探索を増やす方向かつラベル生成ではない）
-- compare/overall で non-trivial な分岐を正しくトレースさせる効果がある
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 💻 preparing terminal…
-  ┊ 💻 $         mkdir -p benchmark/swebench/runs/iter-4  0.2s
-  ┊ ✍️ preparing write_file…
+  ┊ 📖 read      SKILL.md  0.8s
   ┊ ✍️  write     benchmark/swebench/runs/iter-4/proposal.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-4/proposal.md → b/benchmark/swebench/runs/iter-4/proposal.md
-@@ -0,0 +1,110 @@
-+# Iter-4 Proposal
-+
-+## Exploration Framework カテゴリ: E（表現・フォーマットの改善）
-+
-+### カテゴリ E 内でのメカニズム選択理由
-+
-+カテゴリ E には「曖昧文言の具体化」「簡潔化」「例示の追加・改善」の 3 つのメカニズムがある。
-+今回は **「例示を追加して適用範囲の曖昧さを解消する」** メカニズムを選択した。
-+
-+対象箇所は Step 4（Interprocedural tracing）の Rules の最終行である。
-+現行文言は発火条件を「exception handling inside loops or multi-branch control flows」と
-+限定列挙しており、この列挙に含まれないコントロールフロー（単独の条件分岐、ディスパッチ
-+テーブル等）で反証的問いかけが省略される誤読を招きうる。
-+条件を「non-trivial control flows」と上位概念で表現したうえで、旧来の例示と
-+それ以外のパターンを括弧内に列挙することで、意図する適用範囲を明示する。
-+
-+これは新規ステップでも新規セクションでもなく、既存1行の文言精緻化のみである。
-+
-+
-+## 改善仮説
-+
-+「反証的トレース指示の発火条件が限定的な例示に固定されているとき、
-+その例示に合致しない非自明なコントロールフローでは反証ステップが省略され、
-+誤ったトレース結論が Step 5 に流れ込む。発火条件を上位概念で再定義し
-+例示を充実させることで、反証的問いかけの適用範囲が正しく広がり、
-+全体的なトレース精度が向上する。」
-+
-+
-+## 変更箇所と変更内容
-+
-+### 変更対象
-+
-+SKILL.md > Step 4: Interprocedural tracing > Rules（最終行）
-+
-+### 変更前（1行）
-+
-+```
-+- For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
-+```
-+
-+### 変更後（1行）
-+
-+```
-+- For non-trivial control flows (loops, conditionals, exception handlers, dispatch tables): after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
-+```
-+
-+### 変更の要点
-+
-+- 「exception handling inside loops or multi-branch control flows」
-+  → 「non-trivial control flows (loops, conditionals, exception handlers, dispatch tables)」
-+- 上位概念（non-trivial control flows）で意図を包括的に定義した上で、
-+  代表的なパターンを括弧内に例示した。
-+- 旧来の例示（exception handling, multi-branch）は括弧内に吸収されている。
-+- 既存1行の文言を置き換えるのみ。追加行・削除行ゼロ。
-+
-+
-+## 一般的な推論品質への期待効果
-+
-+### 減少が期待される失敗パターン
-+
-+1. **単純条件分岐での反証省略**
-+   ループや例外処理を含まない、単独の if/else や switch/match で
-+   条件ごとに返り値が異なるケースで、反証的問いかけが適用されていなかった。
-+   変更後は「conditionals」が明示されるため発火する。
-+
-+2. **ディスパッチテーブル・マッピング構造での見落とし**
-+   設定ディクショナリや関数ポインタテーブルを経由するディスパッチを
-+   「exception handling / multi-branch」と認識しにくかった。
-+   変更後は「dispatch tables」が明示されるため発火する。
-+
-+3. **compare モードでの EQUIVALENT 過判定**
-+   2 つの実装の差異が単純な条件分岐の中にある場合、トレースが楽観的に
-+   完了してしまい、Step 5 の counterexample 探索に悪い前提が渡されることがあった。
-+   発火条件の拡大により、中間ノードのトレース精度が上がり、
-+   overall 精度（EQUIV/NOT_EQ 両方）の改善が期待できる。
-+
-+### 影響しない（悪化させない）パターン
-+
-… omitted 32 diff line(s) across 1 additional file(s)/section(s)
+@@ -1,110 +1,94 @@
+-# Iter-4 Proposal
++# Iter-4 Proposal (focus_domain: overall)
+ 
+-## Exploration Framework カテゴリ: E（表現・フォーマットの改善）
++## Exploration Framework
++- カテゴリ: E. 表現・フォーマットを改善する（強制）
++- このカテゴリ内で選ぶメカニズム: 「曖昧文言の具体化（意思決定条件の精緻化）」
++  - 理由: compare で最も致命的なのは「どの根拠で結論を出してよいか」が曖昧なまま結論へショートカットすること。手順や必須ゲートの追加ではなく、“結論へ進んでよい条件”の言い回しを具体化して、同じ手順のまま誤判定を減らす。
+ 
+-### カテゴリ E 内でのメカニズム選択理由
++## 改善仮説（1つ）
++「早期に NOT EQUIVALENT を確定してよい条件」を ‘関連テストのスコープ（D1/D2）と結びつけて明確化すると、構造差（ファイル差）を過大評価した premature 結論が減り、EQUIV/NOT_EQUIV の両方向の誤判定が減る。
+ 
+-カテゴリ E には「曖昧文言の具体化」「簡潔化」「例示の追加・改善」の 3 つのメカニズムがある。
+-今回は **「例示を追加して適用範囲の曖昧さを解消する」** メカニズムを選択した。
++## 現状ボトルネック診断（SKILL.md から短く引用 + 失敗メカニズム1つ）
++該当箇所（compare の STRUCTURAL TRIAGE の早期結論条件）:
+ 
+-対象箇所は Step 4（Interprocedural tracing）の Rules の最終行である。
+-現行文言は発火条件を「exception handling inside loops or multi-branch control flows」と
+-限定列挙しており、この列挙に含まれないコントロールフロー（単独の条件分岐、ディスパッチ
+-テーブル等）で反証的問いかけが省略される誤読を招きうる。
+-条件を「non-trivial control flows」と上位概念で表現したうえで、旧来の例示と
+-それ以外のパターンを括弧内に列挙することで、意図する適用範囲を明示する。
++> If S1 or S2 reveals a clear structural gap (missing file, missing module
++> update, missing test data), you may proceed directly to FORMAL CONCLUSION
++> with NOT EQUIVALENT without completing the full ANALYSIS section.
+ 
+-これは新規ステップでも新規セクションでもなく、既存1行の文言精緻化のみである。
++誘発する失敗メカニズム（1つ）:
++- 「clear structural gap」が曖昧で、‘差がある’ という事実だけで ‘テスト結果（D1）に影響する差’ だと誤って短絡しやすい。その結果、実際には D2 の relevant tests に無関係な構造差でも NOT_EQUIV を宣言する（偽 NOT_EQUIV）経路が生まれる。
+ 
++## 変更タイプ
++- 変更タイプ: 定義の精緻化（曖昧条件の具体化）
++- なぜ効くか: 追加の調査手順を増やさず、同じ STRUCTURAL TRIAGE を行う前提のまま「結論へ進む条件」を “D1/D2 のスコープに必ず関係する” へ寄せることで、意思決定ポイント（ショートカットの可否）が安定する。
+ 
+-## 改善仮説
++## SKILL.md のどこをどう変えるか（具体）
++- Compare → Certificate template → STRUCTURAL TRIAGE 直後の「早期に NOT EQUIVALENT へ進める」条件文を、
++  - 現状の「clear structural gap」
++  - 変更後の「D1/D2 の relevant tests スコープに対して、影響が必然/証明可能な structural gap（例: relevant test が import/load/execute するファイル/モジュール/テストデータの欠落）」
++  へ言い換える。
++- 目的: “構造差” それ自体ではなく “テスト結果（D1）へ必ず効く構造差” のときだけ早期に NOT_EQUIV を確定できる、と読めるようにする。
+ 
+-「反証的トレース指示の発火条件が限定的な例示に固定されているとき、
+-その例示に合致しない非自明なコントロールフローでは反証ステップが省略され、
+-誤ったトレース結論が Step 5 に流れ込む。発火条件を上位概念で再定義し
+-例示を充実させることで、反証的問いかけの適用範囲が正しく広がり、
+-全体的なトレース精度が向上する。」
++## 変更差分の最小プレビュー（必須: 同一範囲を3〜10行で Before/After）
++対象範囲（同じ3行）:
+ 
+-
+-## 変更箇所と変更内容
+-
+-### 変更対象
+-
+-SKILL.md > Step 4: Interprocedural tracing > Rules（最終行）
+-
+-### 変更前（1行）
+-
+-```
+-- For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
++Before:
++```text
++If S1 or S2 reveals a clear structural gap (missing file, missing module
++update, missing test data), you may proceed directly to FORMAL CONCLUSION
++with NOT EQUIVALENT without completing the full ANALYSIS section.
+ ```
+ 
+-### 変更後（1行）
+-
+-```
+-- For non-trivial control flows (loops, conditionals, exception handlers, dispatch tables): after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
++After:
++```text
++If S1 or S2 reveals a clear structural gap that necessarily affects D1 under
++D2’s relevant-test scope (e.g., omitted file/module/test data that a relevant
+… omitted 105 diff line(s) across 1 additional file(s)/section(s)
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-出力しました。内容を確認します。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      benchmark/swebench/runs/iter-4/proposal.md  0.8s
+benchmark/swebench/runs/iter-4/proposal.md に提案を書き出しました（カテゴリ E、改善仮説 1 つ、差分プレビュー Before/After、誤判定メカニズム、ミニケース A/B、failed-approaches.md との整合、変更規模宣言、停滞対策チェックを含む）。
 
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-proposal.md を `benchmark/swebench/runs/iter-4/proposal.md` に出力しました。内容のサマリは以下の通りです。
-
----
-
-カテゴリ: E — 例示を追加して適用範囲の曖昧さを解消する
-
-改善仮説:
-Step 4 の反証的問いかけの発火条件が「exception handling inside loops or multi-branch control flows」という限定的な列挙になっているため、単純な if/else 条件分岐やディスパッチテーブルでは反証ステップが省略されうる。発火条件を上位概念「non-trivial control flows」で定義し直し、括弧内に代表的なパターン（loops, conditionals, exception handlers, dispatch tables）を例示することで、適用範囲を正しく広げる。
-
-変更内容（1行の文言置き換え）:
-
-変更前:
-  - For exception handling inside loops or multi-branch control flows: after recording ...
-
-変更後:
-  - For non-trivial control flows (loops, conditionals, exception handlers, dispatch tables): after recording ...
-
-変更規模: 1行（既存行の文言精緻化のみ）。ハードリミット5行以内に適合。
-
-proposal.md を `benchmark/swebench/runs/iter-4/proposal.md` に出力しました。内容のサマリは以下の通りです。
-
----
-
-カテゴリ: E — 例示を追加して適用範囲の曖昧さを解消する
-
-改善仮説:
-Step 4 の反証的問いかけの発火条件が「exception handling inside loops or multi-branch control flows」という限定的な列挙になっているため、単純な if/else 条件分岐やディスパッチテーブルでは反証ステップが省略されうる。発火条件を上位概念「non-trivial control flows」で定義し直し、括弧内に代表的なパターン（loops, conditionals, exception handlers, dispatch tables）を例示することで、適用範囲を正しく広げる。
-
-変更内容（1行の文言置き換え）:
-
-変更前:
-  - For exception handling inside loops or multi-branch control flows: after recording ...
-
-変更後:
-  - For non-trivial control flows (loops, conditionals, exception handlers, dispatch tables): after recording ...
-
-変更規模: 1行（既存行の文言精緻化のみ）。ハードリミット5行以内に適合。
-
-failed-approaches.md 全27原則: 直接抵触なし。最接近する原則 #22（例示の過剰適応）については、括弧内が抽象的なコントロールフロー類型の列挙であり特定コード要素の指定でないため抵触しないと判断。
-
-session_id: 20260411_211900_760013
+session_id: 20260417_092028_b05e14
