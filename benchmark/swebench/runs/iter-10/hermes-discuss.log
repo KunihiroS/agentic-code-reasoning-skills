@@ -1,226 +1,111 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/12/26 08:30:15] INFO     Processing request of type            server.py:727
+[04/18/26 02:52:06] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-  ┊ 📖 read      benchmark/swebench/runs/iter-10/proposal.md  0.9s
-  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      benchmark/swebench/runs/iter-10/proposal.md  0.8s
+  ┊ 📖 read      SKILL.md  0.9s
   ┊ 📖 read      failed-approaches.md  0.9s
   ┊ 📖 read      Objective.md  0.9s
-  ┊ 📖 read      README.md  0.9s
+  ┊ 📖 read      README.md  0.8s
   ┊ 📖 read      docs/design.md  0.9s
-[04/12/26 08:30:28] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s code comprehension control flow summary improves understanding study  0.4s
-[04/12/26 08:30:29] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s negative instructions less effective than positive instructions cognitive psychology study  0.3s
-[04/12/26 08:30:30] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:30:31] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s self explanation improves program comprehension study  0.3s
-[04/12/26 08:30:36] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s program comprehension control flow study  0.3s
-[04/12/26 08:30:37] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:30:38] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s self explanation programming comprehension paper  0.3s
-[04/12/26 08:30:39] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s positive vs negative instructions psychology paper  0.3s
-[04/12/26 08:30:45] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s site:arxiv.org code comprehension program slicing control flow  0.3s
-[04/12/26 08:30:46] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:30:47] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s site:scholar.google.com self explanation code comprehension  0.3s
-[04/12/26 08:30:48] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s site:nngroup.com error prevention recognition recall instructions  0.3s
-[04/12/26 08:30:56] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s OpenAI  0.6s
-[04/12/26 08:31:02] INFO     Processing request of type            server.py:727
-                             ListPromptsRequest                                 
-  ┊ ⚡ mcp_ddg_s   0.0s
-[04/12/26 08:31:03] INFO     Processing request of type            server.py:727
-                             ListResourcesRequest                               
-  ┊ ⚡ mcp_ddg_s   0.0s
-[04/12/26 08:31:31] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://arxiv.org/abs/2603.01896                   
-                             "HTTP/1.1 200 OK"                                  
-  ┊ ⚡ mcp_ddg_s   0.1s
-[04/12/26 08:31:32] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:31:33] INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Self-                
-                             explanation "HTTP/1.1 404 Not                      
-                             Found"                                             
-  ┊ ⚡ mcp_ddg_s   0.7s
-[04/12/26 08:31:34] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:31:36] INFO     HTTP Request: GET                   _client.py:1740
-                             https://www.nngroup.com/articles/re                
-                             cognition-and-recall/ "HTTP/1.1 200                
-                             OK"                                                
-  ┊ ⚡ mcp_ddg_s   1.7s
-  ┊ 🌐 navigate  duckduckgo.com  0.9s [error]
-[04/12/26 08:31:50] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:31:51] INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Recog                
-                             nition_memory "HTTP/1.1 200 OK"                    
-  ┊ ⚡ mcp_ddg_s   0.4s
-[04/12/26 08:31:52] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Cogni                
-                             tive_load "HTTP/1.1 200 OK"                        
-  ┊ ⚡ mcp_ddg_s   0.5s
-  ┊ 📋 plan      3 task(s)  0.0s
   ┊ ✍️  write     benchmark/swebench/runs/iter-10/discussion.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-10/discussion.md → b/benchmark/swebench/runs/iter-10/discussion.md
-@@ -0,0 +1,181 @@
-+# Iteration 10 — 監査コメント
-+
-+## 総評
-+
-+提案の狙い自体は理解できる。Step 4 の Rules にある
-+
-+- Read the actual definition. Do not infer behavior from the name.
-+
-+は重要だが、禁止形だけだと「では Behavior 列に何を書くべきか」が弱く、運用上のばらつきが出やすい。したがって「読んだ結果を列にどう反映するか」を補う方向性は、研究コアにも整合し、変更規模も小さい。
-+
-+ただし、今回の具体案は "summarize its control flow" という表現がやや狭すぎる。Step 4 の Behavior 列は本来「actual behavior after reading the definition」を書く欄であり、制御フローだけでなく、データ変換・返り値条件・例外条件・副作用・設定依存なども含みうる。ここを control flow に寄せると、名前依存推論は減っても、意味論の要約が「分岐の説明」に偏る副作用がある。
-+
-+そのため、方向性は良いが、提案文言はそのままでは承認しにくい。
-+
-+---
-+
-+## 1. 既存研究との整合性
-+
-+注: DuckDuckGo MCP の search エンドポイントは本セッションでは複数回 "No results were found" を返したため、同じ DuckDuckGo MCP の fetch_content で既知の関連資料を直接確認した。
-+
-+### 参照 1
-+- URL: https://arxiv.org/abs/2603.01896
-+- 要点:
-+  - semi-formal reasoning は explicit premises, execution-path tracing, formal conclusion を要求する「certificate」として働き、ケースの取りこぼしや unsupported claim を減らす。
-+  - この提案は、Step 4 の VERIFIED behavior 記録をより具体化しようとするものであり、研究の中核である tracing/certification を弱める方向ではない。
-+  - 特に README.md と docs/design.md が強調する「read actual definitions」「verified behavior records」の思想とは整合的。
-+
-+### 参照 2
-+- URL: https://www.nngroup.com/articles/recognition-and-recall/
-+- 要点:
-+  - 人は recall より recognition のほうが容易であり、追加の文脈があると正しい情報を取り出しやすい。
-+  - 今回の提案を好意的に解釈すると、「何をしてはいけないか」だけでなく「Behavior 列をどう埋めるか」を明示することで、実行時の想起負荷を下げる効果が見込める。
-+  - その意味で、曖昧な禁止文より具体的な記録指示を与える設計は一般原則として妥当。
-+
-+### 参照 3
-+- URL: https://en.wikipedia.org/wiki/Cognitive_load
-+- 要点:
-+  - working memory には制約があり、タスク提示の仕方は extraneous cognitive load を増減させる。
-+  - Step 4 は探索中リアルタイムで表を埋める設計なので、Behavior 列の期待値が明示されること自体は認知負荷の削減に寄与しうる。
-+  - ただし、instruction が狭すぎると「本来見るべき意味論」を捨てて別の過剰単純化を生む。今回の "control flow" 指定にはこの懸念がある。
-+
-+結論:
-+- 「曖昧な禁止を、具体的な記録行動に寄せる」という発想は研究・認知原則の両方と整合する。
-+- しかし「control flow に限定する」点は、SKILL.md と論文が意図する verified behavior の広さより狭く、完全整合とは言いにくい。
-+
-+---
-+
-+## 2. Exploration Framework のカテゴリ選定は適切か
-+
-+判定: 半分妥当だが、主分類としては E より B に近い。
-+
-+理由:
-+- 実装者は「曖昧な指示を具体化する」ので E と説明している。これは表面的には正しい。
-+- ただし実効的には、この変更は単なる wording polish ではなく、「コードを読んだ後に何を抽出して記録するか」という情報取得・記録プロトコルの変更である。
-+- Objective.md の B には「コードの読み方の指示を具体化する」「何を探すかではなく、どう探すかを改善する」とある。今回の効果はまさにそこにある。
-+
-+したがって、監査上は以下の整理が適切:
-+- 表現上の見た目: E
-+- 実際のメカニズム: B/E 境界だが、より本質的には B
-+
-+この点は分類ミスそのものが即否決理由ではないが、提案の作用点を見誤ると failed-approaches との照合や回帰リスク評価を甘くするので、記録上は修正したほうがよい。
-+
-+---
-+
-+## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方への作用
-+
-+### 変更前との実効的差分
-+変更前:
-+- 「名前から推測するな」という禁止が中心
-+- ただし、Behavior 列に何を書くべきかの最小粒度が弱い
-+- 結果として、定義を読んでも要約が粗くなり、VERIFIED の質にムラが出うる
-+
-+変更後案:
-+- 「定義を読み、その control flow を Behavior 列に要約せよ」が追加される
-+- これにより、少なくとも「読んだ結果を列に転写する」という具体行動が強化される
-+
-+### EQUIVALENT への作用
-+正方向の効果:
-… omitted 103 diff line(s) across 1 additional file(s)/section(s)
-  ┊ 📋 plan      update 1 task(s)  0.0s
+@@ -1,181 +1,103 @@
+-# Iteration 10 — 監査コメント
++# Iteration 10 Discussion
+ 
+ ## 総評
++提案は「import されているだけで早期に NOT EQUIVALENT へ飛ぶ」ショートカットを狭め、保留して ANALYSIS に回す条件を明確化しようとしています。compare の意思決定点に触れており、単なる監査向けの美文化だけではありません。
+ 
+-提案の狙い自体は理解できる。Step 4 の Rules にある
+-
+-- Read the actual definition. Do not infer behavior from the name.
+-
+-は重要だが、禁止形だけだと「では Behavior 列に何を書くべきか」が弱く、運用上のばらつきが出やすい。したがって「読んだ結果を列にどう反映するか」を補う方向性は、研究コアにも整合し、変更規模も小さい。
+-
+-ただし、今回の具体案は "summarize its control flow" という表現がやや狭すぎる。Step 4 の Behavior 列は本来「actual behavior after reading the definition」を書く欄であり、制御フローだけでなく、データ変換・返り値条件・例外条件・副作用・設定依存なども含みうる。ここを control flow に寄せると、名前依存推論は減っても、意味論の要約が「分岐の説明」に偏る副作用がある。
+-
+-そのため、方向性は良いが、提案文言はそのままでは承認しにくい。
+-
+----
++ただし、今回の具体化は failed-approaches.md の禁止原則にかなり近く、特に「既存の判定基準を特定の観測境界だけに過度に還元しすぎない」の再演懸念が強いです。最大の問題は、構造差の有効条件を `call path` / `import-time side effects` という特定の観測境界へ狭めている点です。これは偽 NOT_EQUIV を減らしうる一方で、構造差から得られる他の有力な反例シグナルを取りこぼす方向にも働きます。
+ 
+ ## 1. 既存研究との整合性
++検索なし（理由: 一般原則の範囲で自己完結）。
+ 
+-注: DuckDuckGo MCP の search エンドポイントは本セッションでは複数回 "No results were found" を返したため、同じ DuckDuckGo MCP の fetch_content で既知の関連資料を直接確認した。
++README.md と docs/design.md が示す研究コアは、番号付き前提・仮説駆動探索・手続き間トレース・必須反証です。今回の提案はそのコア自体を壊してはいませんが、研究コアが重視する「反例を拾う探索の自由度」を狭める危険があります。
+ 
+-### 参照 1
+-- URL: https://arxiv.org/abs/2603.01896
+-- 要点:
+-  - semi-formal reasoning は explicit premises, execution-path tracing, formal conclusion を要求する「certificate」として働き、ケースの取りこぼしや unsupported claim を減らす。
+-  - この提案は、Step 4 の VERIFIED behavior 記録をより具体化しようとするものであり、研究の中核である tracing/certification を弱める方向ではない。
+-  - 特に README.md と docs/design.md が強調する「read actual definitions」「verified behavior records」の思想とは整合的。
++## 2. Exploration Framework のカテゴリ選定
++カテゴリ E（表現・フォーマット改善）は一応成立します。実際の変更は新手順追加ではなく、STRUCTURAL TRIAGE の文言の十分条件を絞るものだからです。
+ 
+-### 参照 2
+-- URL: https://www.nngroup.com/articles/recognition-and-recall/
+-- 要点:
+-  - 人は recall より recognition のほうが容易であり、追加の文脈があると正しい情報を取り出しやすい。
+-  - 今回の提案を好意的に解釈すると、「何をしてはいけないか」だけでなく「Behavior 列をどう埋めるか」を明示することで、実行時の想起負荷を下げる効果が見込める。
+-  - その意味で、曖昧な禁止文より具体的な記録指示を与える設計は一般原則として妥当。
++ただし実効としては「表現改善」に留まらず compare の分岐条件を書き換える提案です。したがって監査上は E として受理可能でも、中身は軽い wording change ではなく「判定基準の再定義」として扱うべきです。
+ 
+-### 参照 3
+-- URL: https://en.wikipedia.org/wiki/Cognitive_load
+-- 要点:
+-  - working memory には制約があり、タスク提示の仕方は extraneous cognitive load を増減させる。
+-  - Step 4 は探索中リアルタイムで表を埋める設計なので、Behavior 列の期待値が明示されること自体は認知負荷の削減に寄与しうる。
+-  - ただし、instruction が狭すぎると「本来見るべき意味論」を捨てて別の過剰単純化を生む。今回の "control flow" 指定にはこの懸念がある。
++## 3. EQUIVALENT / NOT_EQUIVALENT への作用
++- NOT_EQUIVALENT 側:
++  - 早期 NOT_EQUIV の発火条件を狭めるため、偽 NOT_EQUIV は減りうる。
++  - 特に「import はあるがテスト結果に効いていない」ケースでは保留して ANALYSIS に進みやすくなる。
++- EQUIVALENT 側:
++  - 提案文の主張通り、早期 EQUIV 条件は増えていないので直ちに偽 EQUIV を増やす変更ではない。
++  - ただし、既存の有力な structural signal を `call path` / `import-time side effects` に限定すると、早期 NOT_EQUIV できたケースが ANALYSIS 依存になり、その ANALYSIS が弱いと偽 EQUIV 側へ漏れる回帰リスクはある。
+ 
+-結論:
+-- 「曖昧な禁止を、具体的な記録行動に寄せる」という発想は研究・認知原則の両方と整合する。
+-- しかし「control flow に限定する」点は、SKILL.md と論文が意図する verified behavior の広さより狭く、完全整合とは言いにくい。
++結論として、片方向にしか作用しない設計ではないです。主目的は偽 NOT_EQUIV の削減ですが、逆方向の回帰リスクはゼロではありません。
+ 
+----
++## 4. failed-approaches.md との照合
++最重要の懸念は failed-approaches.md 11-12 行目の原則です。
+ 
+-## 2. Exploration Framework のカテゴリ選定は適切か
++- 該当原則:
++  - 「既存の判定基準を、特定の観測境界だけに過度に還元しすぎない」
++- 今回の提案で危ない文言:
++  - `call path で依存` または `import-time side effects に依存`
++  - `not mere import`
++  - `test-visible structural gap`
+ 
+-判定: 半分妥当だが、主分類としては E より B に近い。
++問題は、構造差の効力を「どの証拠で可視化されたか」の特定様式へ寄せていることです。これにより、そこに綺麗に写像できない構造差シグナルを弱く扱う実質的な探索固定が起こりえます。
+ 
+-理由:
+-- 実装者は「曖昧な指示を具体化する」ので E と説明している。これは表面的には正しい。
+… omitted 177 diff line(s) across 1 additional file(s)/section(s)
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-監査結果を benchmark/swebench/runs/iter-10/discussion.md に書きました。
+discussion を作成しました。
+出力先:
+benchmark/swebench/runs/iter-10/discussion.md
 
-要点:
-- 方向性自体は妥当
-- ただし “summarize its control flow” は “actual behavior” より狭く、control-flow 偏重の回帰リスクあり
-- カテゴリ分類は E 単独より B/E 境界、実質は B 寄り
-- EQUIVALENT / NOT_EQUIVALENT の両方に作用するが、現文言だとやや NOT_EQUIVALENT 側にバイアスしうる
-- failed-approaches の本質再演ではないが、探索幅を少し狭める懸念あり
-- 明示的な overfitting 違反は見当たらない
+結論:
+承認: NO
+discussion を作成しました。
+出力先:
+benchmark/swebench/runs/iter-10/discussion.md
 
-最終判定:
-- 承認: NO
+結論:
+承認: NO
+主因: failed-approaches.md の「既存の判定基準を特定の観測境界だけに過度に還元しすぎない」の本質的再演と判断しました。
 
-監査結果を benchmark/swebench/runs/iter-10/discussion.md に書きました。
-
-要点:
-- 方向性自体は妥当
-- ただし “summarize its control flow” は “actual behavior” より狭く、control-flow 偏重の回帰リスクあり
-- カテゴリ分類は E 単独より B/E 境界、実質は B 寄り
-- EQUIVALENT / NOT_EQUIVALENT の両方に作用するが、現文言だとやや NOT_EQUIVALENT 側にバイアスしうる
-- failed-approaches の本質再演ではないが、探索幅を少し狭める懸念あり
-- 明示的な overfitting 違反は見当たらない
-
-最終判定:
-- 承認: NO
-
-必要なら次に、承認しやすい代替文言案までこちらで詰めます。
-
-session_id: 20260412_083015_4070b2
+session_id: 20260418_025206_667aa1
