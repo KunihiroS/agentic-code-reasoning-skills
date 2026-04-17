@@ -40,9 +40,15 @@ ${DISCUSSION_PATH}
   次の 3 点を短く埋める（箇条書きで可）。ここが空・曖昧なら、proposal は「監査に通りやすいが compare に効きにくい」可能性が高い。
   1) Decision-point delta: 提案が変える意思決定ポイントは何か（結論を出す/保留する/追加で探す のどれが、どの条件で変わるか）
      - **IF/THEN 形式で 2 行（Before/After）**になっているか？（YES/NO）
+     - YES の場合でも、Before/After が「条件も行動も同じで理由だけ言い換え」なら compare 影響は薄い。
+       → その場合は承認せず、Decision-point delta を“分岐として”変えるよう修正指示する。
      - NO の場合: 監査コメントはまずここを具体化させる（他の指摘は増やしすぎない）
   2) Failure-mode target: 減らしたい誤判定（偽 EQUIV / 偽 NOT_EQUIV / 両方）と、そのメカニズム
   3) Non-goal: 変えないこと（探索経路の半固定・必須ゲート増・証拠種類の事前固定を避けるための境界条件）
+
+  追加チェック（短く 1 点だけ）:
+  - Discriminative probe: 抽象的な 1 ケースを作り、変更前は EQUIV/NOT_EQUIV の誤判定が起きがちだが、変更後は避けられることを 2〜3 行で説明。
+    ※ 新しい必須ゲートの増設ではなく、既存文言の置換・再配置・必須↔optional の入替（総量不変）で説明されていること。
 
   補助ルール:
   - 「承認: YES」の場合でも、Decision-point delta が具体でないなら YES にしない（compare 停滞の主因になりやすい）。
