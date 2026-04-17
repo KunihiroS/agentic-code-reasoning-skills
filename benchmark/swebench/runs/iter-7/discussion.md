@@ -1,197 +1,137 @@
-# Iter-7 監査ディスカッション
+# iter-7 discussion
 
 ## 総評
+提案の狙い自体は理解できる。とくに「何か検索した」だけで EQUIV を確定する儀式化を避け、意思決定を変えうる探索へ寄せたい、という問題設定は妥当である。Decision-point delta も proposal 内で比較的具体化されており、「監査 rubic に刺さる説明強化」だけで終わらせない意図も見える。
 
-提案は、Step 3 の `NEXT ACTION RATIONALE` を「次に何を読むかの正当化」から、
-「どの仮説を、どの具体的シグナルで確認/反証しに行くかの宣言」へ少しだけ強化するものです。
-変更量は 1 行で小さく、研究コア（前提・仮説駆動探索・手続き間トレース・反証）を壊さず、
-探索ドリフトを減らす方向の改善としては筋が良いです。
-
-ただし、効果は主として Step 3 の探索規律の改善であり、Compare テンプレートそのものの
-構造的不足を埋める変更ではありません。したがって改善幅は中程度と見るのが妥当です。
+ただし、今回の差分案は実効部分が Step 5.5 の required self-check の厳格化に強く依存しており、これは failed-approaches.md が明示的に警戒している「結論直前の自己監査に特定の検証経路を半必須化する」方向にかなり近い。結果として、compare の意思決定を改善するというより、「EQUIV を出す前の必須通過条件」を狭める片方向バイアスとして働く懸念が強い。
 
 ## 1. 既存研究との整合性
+DuckDuckGo MCP で確認した範囲では、提案の核である「一般的な探索」より「結論を覆しうる反例・診断的証拠」に探索を寄せる発想自体は、広い研究潮流とは整合する。
 
-DuckDuckGo MCP で取得した関連情報:
+- URL: https://eikmeier.sites.grinnell.edu/csc-151-s221/readings/hypothesis-driven-debugging.html
+  - 要点: hypothesis-driven debugging は、ad-hoc な探索ではなく、予測を立て、それを verify/refute する証拠収集へ進めるべきだとする。提案の「結論反転しうる探索へ寄せる」はこの方向性と整合。
+  - 含意: どのファイルを読むかを固定するのではなく、「どの観測が仮説を覆すか」を先に意識すること自体は汎用原則として自然。
 
-1) Agentic Code Reasoning
-- URL: https://arxiv.org/abs/2603.01896
-- 要点:
-  - semi-formal reasoning は「explicit premises」「execution-path tracing」「formal conclusions」を要求し、
-    unsupported claims や case skip を防ぐ certificate として働く。
-  - 提案はこの方向性と整合的。特に「次の探索で何を確認するか」を明示させるのは、
-    仮説駆動探索をより falsifiable にする補強であり、研究のコアを強める側であって逸脱ではない。
+- URL: https://www.emergentmind.com/topics/counterexample-guided-abstraction-refinement-cegar
+  - 要点: CEGAR は counterexample analysis を使って refinement を局所化し、generic search ではなく diagnostic precision の高い refinement を進める枠組み。
+  - 含意: 「反例像が探索を導く」という抽象原理は一般的で、探索の情報量より decision-relevance を重視する考え方には先行例がある。
 
-2) Information Foraging
-- URL: https://en.wikipedia.org/wiki/Information_foraging
-- 要点:
-  - 情報探索では、人は「information scent」に基づいて次の探索先を選び、期待される有用情報が弱くなると探索先を変える。
-  - 本提案の「specific signal を明示する」は、探索先選択の根拠を information scent のレベルまで具体化することに相当する。
-    つまり、単に「次はこのファイルを見る」ではなく、「この仮説を確かめるシグナルが最もありそうだからこのファイルを見る」とするため、
-    探索の優先順位付け改善として理にかなう。
+- URL: https://arxiv.org/html/2603.14823v1
+  - 要点: verification failure から得られる spurious counterexample を用いて、blind refinement を targeted refinement に置き換えると search tree size と verification time を削減できる、と論じている。
+  - 含意: blind search よりも「失敗を生む/結論を覆す証拠」を狙う探索が有効、という一般論は支持される。
 
-3) Scientific method
-- URL: https://en.wikipedia.org/wiki/Scientific_method
-- 要点:
-  - 仮説は、そこから導かれる予測と反証可能性を伴って初めて意味ある形で検証できる。
-  - 本提案は `NEXT ACTION RATIONALE` に「何を見つければ確認/反証になるか」を埋め込むため、
-    仮説を単なる期待ではなく、観察可能な予測へ近づける。これは一般的な仮説検証の原則と整合する。
+結論として、研究との整合性はある。ただし、これらの先行例が支持しているのは「反例が探索を導く」原理であって、「結論直前 self-check に特定の探索型を required として埋め込む」設計まで直接支持しているわけではない。
 
-結論:
-- 研究的にはかなり自然な改善であり、「探索先の選択を証拠ベースに寄せる」という意味で整合性は高いです。
-- 特に README / docs/design.md が強調する「structured templates as certificates」と矛盾せず、むしろ探索フェーズの証拠要件を少しだけ明確化しています。
+## 2. Exploration Framework のカテゴリ選定
+判定: 部分的に適切だが、主作用点の説明としては不十分。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
+- proposal はカテゴリ B（情報の取得方法を改善する）としている。
+- Step 3 optional 欄の INFO GAIN → DECISION-FLIP TARGET 置換だけを見るなら B でよい。
+- しかし compare の実効差分は主に Step 5.5 の required self-check の意味変更で生まれており、これは B だけでなく D（メタ認知・自己チェック）にもまたがる。
+- しかも問題はこの D 側の変更であり、ここが回帰リスクの主因。
 
-判定: 概ね適切。主分類は B でよい。
+したがって、「主作用は B」と言い切るより、「B を狙ったが実効差分は D に乗っている」と認識したほうがよい。カテゴリ整理が甘いままだと、failed-approaches.md にある self-check 系の失敗原則を見落としやすい。
 
-理由:
-- 変更対象は Step 3 の探索ジャーナルであり、結論の出し方ではなく「次にどう探すか」を変えている。
-- 追加される文言は、探索対象の選定に「具体的シグナル」を要求するため、
-  実質的には探索の優先順位付けと情報取得戦略の改善である。
-- 見方によっては E（表現の明確化）にも接しているが、これは単なる言い換えではなく、
-  agent に要求する探索行動そのものを変えるので、主分類を B と置くのが妥当。
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+### 変更前との実効的差分
+- 変更前: 「実際に検索/inspection した」という最低条件を満たせば self-check を通過できる。
+- 変更後: 「counterexample-shaped な検索/inspection」を実施しないと self-check を通過しにくくなる。
 
-補足:
-- もし単に「より具体的に書け」とだけ言っていたなら E 寄りでした。
-- 今回は「presence/absence of a call, a value, a branch」など観察対象を明示しており、
-  行動レベルの探索制約になっているため B 判定を支持します。
+### EQUIVALENT 側への作用
+- 明確に強く作用する。
+- EQUIV を出す前に、より decision-relevant な探索を要求するため、偽 EQUIV の抑制には効きうる。
 
-## 3. EQUIVALENT / NOT_EQUIVALENT の両判定への作用
+### NOT_EQUIVALENT 側への作用
+- 作用は弱く、対称ではない。
+- proposal は「根拠薄い NOT_EQUIV への飛躍も抑える」と書くが、提示差分そのものは NOT_EQUIV の要件を直接改善していない。
+- 実際には、「反例形を明快に言語化できない」ケースで EQUIV を出しにくくなる一方、agent が保留を嫌う場合は NOT_EQUIV へ逃げる圧力すら生じうる。
 
-### 変更前との差分
+### 片方向最適化か
+判定: かなり片方向寄り。
 
-変更前:
-- `NEXT ACTION RATIONALE` は「なぜ次のファイル/ステップが正当か」だけを求めていた。
-- そのため、次の探索先の正当化はできても、到着先で何を確認すべきかが曖昧なまま進みうる。
-- 結果として、仮説が REFINED のまま横滑りし、探索ドリフトや観察漏れが起きやすい。
+この提案は主として「EQUIV を出すハードルを上げる」変更であり、NOT_EQUIV 判定の誤りを減らす機構は proposal 本文上の説明ほど実装差分に埋め込まれていない。したがって、両方向改善というより「偽 EQUIV 抑制に寄った調整」とみるべき。
 
-変更後:
-- 次の探索先だけでなく、「確認/反証すべき specific signal」まで先に宣言する。
-- これにより、次の読解が仮説検証タスクとして明確化される。
-- 読了後に「見つかった」「見つからなかった」を仮説更新へ戻しやすくなる。
+## 4. failed-approaches.md との照合
+最重要懸念はここ。
 
-### EQUIVALENT への作用
+- 「証拠の種類をテンプレートで事前固定しすぎる変更は避ける」
+  - proposal は証拠内容ではなく探索の型だと説明するが、required 項目として「counterexample-shaped search/inspection」を求める時点で、実質的には証拠収集の型を事前固定している。
 
-主な期待効果はややこちらが大きいです。
+- 「結論直前の自己監査に、新しい必須のメタ判断を増やしすぎない」
+  - proposal は“追加”ではなく“置換”と主張するが、failed-approaches.md は「既存チェック項目への補足に見える形でも、結論前に特定の検証経路を半必須化すると、実質的に新しい判定ゲートとして働きやすい」と明示している。
+  - 今回はまさにこれに近い。
 
-- EQUIVALENT 判定で難しいのは、「差異がない」ではなく「差異はあるがテスト結果を変えない」または
-  「差異がありそうに見えるが relevant path では効かない」をきちんと詰めることです。
-- その際、次に探す証拠が曖昧だと、関係の薄い差異を追い続けたり、逆に必要な absence check を飛ばしたりしやすい。
-- specific signal を先に書かせると、例えば「この仮説が正しいなら relevant path 上に X がある/ないはず」という形になり、
-  no-counterexample の根拠を作りやすくなる。
-- 特に SKILL.md 既存の Guardrail #4, #5（微妙な差異の見落とし、不完全な推論チェーン）と相性が良い。
+- 「暫定的な反例像や結論形式を冒頭で先に置かせる変更も同類」
+  - Step 3 の decision-flip target は optional なので直接の違反度は低いが、Step 5.5 required と組み合わさると、探索の終盤で「まず反例像を置けること」が通過条件化し、探索全体をその型へ寄せる圧力になる。
 
-### NOT_EQUIVALENT への作用
-
-こちらにも有効です。
-
-- NOT_EQUIVALENT 判定では、最終的に concrete counterexample か diverging assertion まで落とす必要がある。
-- specific signal を伴う探索は、「分岐条件の値が変わる」「呼び出しが存在/不在」「戻り値が別になる」といった
-  反例の芽を早めに特定しやすい。
-- したがって、単なる差分発見で止まらず、実際のテスト結果差へつながるシグナル探索に収束しやすくなる。
-
-### 片方向にしか作用しないか
-
-判定: 片方向専用ではない。
-
-理由:
-- 提案文が「confirm or refute the active hypothesis」と両方向を明記している。
-- さらに signal 例も presence/absence の両側を含んでおり、差異を見つける方向にも、差異が relevant でないことを確かめる方向にも使える。
-- ただし実効上は、既存 README が示す persistent failures が EQUIVALENT 側に残っていることから、
-  改善の体感は EQUIVALENT 側で大きく出る可能性が高い。
-- それでも NOT_EQUIVALENT を弱める設計ではなく、探索の粒度をそろえる変更なので、片効きの危険は低い。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-結論: 現在見えるブラックリストとの衝突はありません。
-
-確認結果:
-- `failed-approaches.md` には現時点で具体的な失敗原則は載っていません。リセット済みで、
-  「共通失敗原則集」であることだけが記されています。
-- したがって文書上は直接照合できる禁止原則は存在しません。
-
-加えて本質面でも、過去失敗の再演らしさは低いです。
-
-- 提案は新規ステップ追加や大規模テンプレート拡張ではなく、既存フィールドの精密化です。
-- 結論を直接誘導するものではなく、探索プロセスを少し厳密にする変更です。
-- 反証を削らず、むしろ「次の探索で何を見れば反証になるか」を明示させる方向です。
-
-注意点:
-- もし将来これがさらに拡張され、「各仮説ごとに signal taxonomy を詳細記入」などに進むと、
-  複雑性増大による逆効果の可能性はあります。
-- しかし今回の 1 行追加という範囲では、その懸念はまだ小さいです。
+結論: wording は新しく見えるが、本質的には failed-approaches.md が警戒する「証拠種類/検証経路の半固定」と「結論前ゲートの実質増設」の再演リスクが高い。
 
 ## 5. 汎化性チェック
+### 明示的なルール違反の有無
+- 具体的な数値 ID: なし
+- 特定リポジトリ名: なし
+- 特定テスト名: なし
+- ベンチマーク実コード断片: なし
 
-判定: 大きな問題は見当たらない。ルール違反とは言えない。
+この点は良い。SKILL.md 自身の引用のみで、Objective.md の許容範囲に収まっている。
 
-### 明示的な固有要素の有無
+### 暗黙のドメイン前提
+- 提案は「テスト × 観測差分」「オラクル可視差分」という compare 文脈に強く寄っている。
+- ただし SKILL.md の compare モード自体が test outcome ベースなので、compare 改善案としては許容範囲。
+- 一方で、「counterexample-shaped」を強く押しすぎると、テストオラクルが明示的でない言語/環境や、同値性の判断材料が分散しているケースでは言語化コストが上がる。
 
-提案文に含まれるもの:
-- `SKILL.md` 内の対象行への言及（現行 93 行目付近）
-- `Guardrail #4`
-- `docs/design.md §4.3`
-- `presence/absence of a call, a value, a branch` という抽象例
-
-評価:
-- これらはベンチマーク対象リポジトリ固有の ID, リポジトリ名, テスト名, 実コード断片ではありません。
-- `SKILL.md` 自身の引用とその行位置の説明は、Objective の R1「減点対象外」に照らして許容範囲です。
-- したがって、提案を即座に overfitting 違反と判定する材料はありません。
-
-### 暗黙のドメイン依存性
-
-良い点:
-- 「call / value / branch」はプログラム解析一般で現れる抽象シグナルであり、
-  特定言語や特定フレームワークに閉じていません。
-- compare だけでなく explain / diagnose 的な探索にも自然に適用できます。
-
-軽微な懸念:
-- 例示が制御フロー中心で、やや命令的・静的コード読解寄りです。
-- 宣言的設定、データ駆動ディスパッチ、スキーマ変換、テンプレート展開、依存性注入などでは、
-  「call / value / branch」だけだと signal の型が狭く感じる可能性があります。
-
-ただし総合すると:
-- 本文は `what specific signal` と広く書いており、例は例示にとどまる。
-- よって特定ドメインを暗黙固定しているとは言いにくいです。
+よって、明白な overfitting 違反ではないが、運用設計としては compare の一部スタイルに寄りやすい。
 
 ## 6. 全体の推論品質への期待効果
+期待できる改善はある。
 
-期待できる改善:
+- 「検索した事実」ではなく「決定境界を動かしうる探索」を意識させる点は、儀式的な探索の抑制に効く。
+- とくに偽 EQUIV の主要因が「既知経路だけ追って安心する」タイプなら、追加探索を促す力はある。
 
-1. 探索ドリフトの抑制
-- 仮説が未確定のまま次へ進むとき、目的のない読解を減らせる。
-- 結果として文脈膨張と irrelevant な観察の混入が減る。
+ただし、今回の書き込み位置が悪い。
 
-2. 観察と仮説更新の結び付き強化
-- 次の探索前に signal を宣言することで、読後の `OBSERVATIONS` が
-  「何を見たか」だけでなく「仮説にどう効くか」に接続しやすくなる。
+- optional な探索誘導として置くなら、探索の質を上げる可能性がある。
+- required self-check に埋め込むと、推論品質の改善というより、終盤での形式的な通過条件化が起きやすい。
+- その結果、比較判断の質を上げるより「counterexample-shaped と書けるか」の報告能力を測るリスクがある。
 
-3. 反証可能性の局所強化
-- Step 5 の refutation check 以前に、Step 3 段階から小さな反証可能性を持ち込める。
-- これは最終結論だけでなく中間探索にも falsifiability を持たせるという意味で価値がある。
+## 停滞診断
+- 懸念 1 点: proposal は「EQUIV を出す前提が変わる」と説明しており compare 影響を語れてはいるが、実際の変更位置が Step 5.5 self-check なので、意思決定そのものの改善より“監査 rubric に見えやすい形式的な厳格化”へ寄っている懸念がある。
 
-4. compare モードでの relevant difference の見極め改善
-- 差異の発見そのものではなく、テスト結果を分ける差異かどうかの探索に寄せやすい。
-- そのため、単なる lexical difference に引っ張られる誤判定を少し減らせる可能性がある。
+### failed-approaches 該当性
+- 探索経路の半固定: YES
+  - 原因文言: 「OPTIONAL — DECISION-FLIP TARGET」「counterexample-shaped search/inspection」を required 側でも要求しており、探索を特定の反例像中心へ寄せる圧力がある。
+- 必須ゲート増: YES
+  - 原因文言: Step 5.5 の required 項目を「何か検索した」から「counterexample-shaped search/inspection」に置換しており、項目数は同じでも実質的な通過条件は強化されている。
+- 証拠種類の事前固定: YES
+  - 原因文言: 「a concrete 'would flip the conclusion' pattern」を必須化しており、証拠の収集型を事前指定している。
 
-期待しすぎない方がよい点:
-- この変更だけで Compare の構造的難しさが大きく解消するわけではない。
-- 反例構成、relevant test 同定、call path tracing の質は依然として主要因であり、
-  今回の変更はそれらを支える探索規律の改善に留まる。
-- したがって「高確率で改善するが、劇的改善を保証するタイプではない」と見るのが妥当。
+## compare 影響の実効性チェック
+- 1) Decision-point delta:
+  - Before: IF 「最低1回の検索/inspection をした」かつ「手元の追跡で同じに見える」 THEN EQUIV に進みやすい
+  - After: IF 「結論を反転させ得る反例形を狙った検索/inspection が未実施」 THEN 保留して追加探索へ進む
+  - IF/THEN 形式で 2 行（Before/After）になっているか: YES
+  - ただし評価: 条件と行動は一応変わっているので proposal 要件は満たすが、変化の主座が self-check gate であり、探索戦略そのものの分岐変更より「EQUIV の通過基準厳格化」に寄っている。
 
-## 監査結論
+- 2) Failure-mode target:
+  - 主対象: 偽 EQUIV
+  - メカニズム: 既知経路の整合 + 形式的検索 1 回で終えるのを防ぎ、結論を覆す観測差分を狙った探索が済むまで EQUIV を出しにくくする。
+  - 副作用候補: 偽 NOT_EQUIV というより、保留増加または EQUIV 回避バイアス。
 
-提案は以下を満たしています。
-- 研究コアを維持しつつ強化している
-- Exploration Framework の B に主として適合している
-- EQUIVALENT / NOT_EQUIVALENT の両方に作用し、片方向専用ではない
-- failed-approaches.md の現行内容と衝突しない
-- 汎化性違反と断定できる固有識別子やケース依存要素は見当たらない
-- 変更量が 1 行で、複雑性と回帰リスクが低い
+- 3) Non-goal:
+  - 変えないべきことは、探索順序の固定、証拠種類の固定、結論前ゲートの増設。
+  - しかし現提案はこの境界条件を文章上では宣言しつつ、Step 5.5 required 変更で実質的に踏み越えている。
 
-残る留保は、効果が中程度であり、compare の難所を直接解く変更ではないことです。
-しかし「小さく安全で、探索品質を底上げする」タイプの改善としては十分に合理的です。
+- Discriminative probe:
+  - 抽象ケース: 2 変更が主要経路では同じだが、別の既存テストだけが副作用差分を観測しうるケース。
+  - 変更前は「一度検索したし同じに見える」で偽 EQUIV が起きうる。変更後は副作用差分を反例形として置ければ追加探索に進めるので、この誤りは減りうる。
+  - ただし、その改善は optional な探索誘導だけでもある程度得られ、Step 5.5 required 化まで要るとはまだ示せていない。
 
-承認: YES
+## 修正指示
+1. Step 5.5 の required 置換は戻すこと。代わりに、Step 3 の optional 欄だけを強化するか、compare テンプレートの「NO COUNTEREXAMPLE EXISTS」節の文言を少し具体化する形へ移すこと。
+2. 「counterexample-shaped」を必須語にするのではなく、「current leading conclusion を最も動かしうる観測差分」程度に弱め、反例像の事前固定を避けること。
+3. NOT_EQUIV 側にも対称な効き方を持つよう、EQUIV だけを止める gate ではなく、「追加探索する/結論する」の分岐条件を compare 本文側で置換すること。その場合は別の required 文言を増やさず、既存文の統合で支払うこと。
+
+## 結論
+提案の問題意識と最小差分志向は良いが、現形では failed-approaches.md の本質的な再演リスクが高い。とくに Step 5.5 の required self-check に特定の探索型を埋め込む点が最大のブロッカー。
+
+承認: NO（理由: failed-approaches.md が禁じる「結論直前 self-check で特定の検証経路を半必須化する」変更の再演に近く、compare 改善より EQUIV 側の通過基準厳格化へ偏っているため）
