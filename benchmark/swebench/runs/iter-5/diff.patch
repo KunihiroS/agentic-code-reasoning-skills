@@ -1,17 +1,13 @@
 diff --git a/SKILL.md b/SKILL.md
-index 7a8ed11..d37b212 100644
+index d6ba4a6a..89f29f70 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -99,9 +99,9 @@ Update this table **in real time during Step 3** — add each row the moment you
+@@ -235,7 +235,7 @@ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+   If NOT EQUIVALENT were true, a counterexample would look like:
+     [describe concretely: what test, what input, what diverging behavior]
+   I searched for exactly that pattern:
+-    Searched for: [specific pattern — test name, code path, or input type]
++    Searched for: [specific pattern — test name, code path, input type, OR resolved definition/binding of any relied-upon identifier (imports/shadowing)]
+     Found: [result — cite file:line, or NONE FOUND with search details]
+   Conclusion: no counterexample exists because [brief reason]
  
- For every function or method encountered on a relevant code path, record:
- 
--| Function/Method | File:Line | Behavior (VERIFIED) |
--|-----------------|-----------|---------------------|
--| [name] | [file:N] | [actual behavior after reading the definition] |
-+| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to test |
-+|-----------------|-----------|---------------------|-------------------|
-+| [name] | [file:N] | [actual behavior after reading the definition] | [which test(s) and why this function is on the relevant path] |
- 
- **Rules:**
- - Read the actual definition. Do not infer behavior from the name.

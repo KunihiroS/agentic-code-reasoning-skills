@@ -1,190 +1,152 @@
-# Iter-5 監査ディスカッション
+# Iter-5 Discussion
 
 ## 総評
-提案は、`compare` モードの Step 4 に `Relevance to test` 列を追加し、各トレース対象の関数が「どの relevant test の判定経路に、なぜ関係するか」を明示させるものです。
+提案の核は妥当です。原論文と SKILL.md 既存ガードレールが強調する「名前から意味を推測しない」を、compare における EQUIVALENT 判定直前の証明書欄へ接続し直そうとしており、方向性は研究整合的です。
 
-結論から言うと、この提案は概ね妥当です。変更規模が非常に小さく、研究コアを壊さず、既存の `localize/diagnose` 系テンプレートに存在する「各メソッドがどの前提・判定に効くかを明示する」という仕組みを `compare` に移植する形になっています。とくに `compare` モードでは、関数を読んだ事実と「その関数差分が本当に relevant test の結果差につながるか」の間にギャップが残りやすく、この列追加はそのギャップを埋める方向です。
+一方で、現行 proposal のままだと効き方はかなり **EQUIVALENT 側に偏る** ため、「両方向の誤判定を減らす」という表現はやや強すぎます。また、required 行の中に「識別子の束縛解決」を明示的に埋め込む案は、failed-approaches.md が警戒する「証拠種類の事前固定」に部分的に触れています。
 
-一方で、効果は主として「差分発見後の接続確認」の強化であり、テスト列挙漏れや pass-to-pass 範囲判定ミスを単独で解消するものではありません。したがって万能薬ではありませんが、既存構造との整合性が高い改善です。
+結論としては、compare の意思決定点を実際に少し動かす提案ではあり、汎化性違反も見当たらないため、過度に保守的に落とす必要はありません。ただし、実装時は「特定証拠の半必須化」に見えないよう文言を一般化したほうがよいです。
 
 ## 1. 既存研究との整合性
 
-注: DuckDuckGo MCP の search エンドポイントは今回 no results だったため、同じ DuckDuckGo MCP 名前空間の `fetch_content` を用いて既知の公開 URL を取得し、整合性確認を行いました。
+### Web 根拠
+1. https://arxiv.org/abs/2603.01896
+   - 要点: Agentic Code Reasoning は、明示的 premises・trace・formal conclusion を強制する semi-formal reasoning により patch equivalence verification を含む複数課題で精度改善を報告している。
+   - 監査上の含意: compare の結論直前で「どの前提を確認したか」を明示化する方向は、論文の certificate 発想と整合する。
 
-### 参照 1
-- URL: https://arxiv.org/abs/2603.01896
-- 要点:
-  - 論文の中心主張は、semi-formal reasoning により「explicit premises, trace execution paths, derive formal conclusions」を強制することです。
-  - つまり、単に関数を読むだけでなく、推論対象と結論をつなぐ証拠の鎖を明示することが精度改善の本体です。
-  - 今回の `Relevance to test` 列は、Step 4 の関数トレースを最終判定対象である test outcome に結びつける補助なので、論文の「certificate 的に飛躍を防ぐ」方向と整合します。
+2. https://en.wikipedia.org/wiki/Name_resolution_(programming_languages)
+   - 要点: name resolution は識別子を実際のプログラム要素へ束縛する過程であり、shadowing や scope により同名でも意味が変わる。
+   - 監査上の含意: 名前ベース推論を避け、束縛先の確認を要求する発想自体は PL の一般原則に沿う。
 
-### 参照 2
-- URL: https://en.wikipedia.org/wiki/Program_slicing
-- 要点:
-  - program slicing は「ある観測点の値に影響しうる文の集合」を特定する考え方です。
-  - 今回の列追加は、厳密な slicing そのものではないものの、「この関数が test assertion / outcome に影響する経路上にあるか」を明示させるため、発想として slicing 的です。
-  - したがって、無関係な差分を重要視する誤りを減らす一般原則と整合的です。
+3. https://craftinginterpreters.com/resolving-and-binding.html
+   - 要点: 静的意味論では、変数使用は「同じ名前の、もっとも内側の、先行する宣言」に解決される。shadowing や束縛規則を誤ると意味理解を誤る。
+   - 監査上の含意: 「識別子の実際の束縛先を確認する」は、特定ベンチマーク依存でなく一般的なコード理解原則として正当化できる。
 
-### 参照 3
-- URL: https://en.wikipedia.org/wiki/Call_graph
-- 要点:
-  - call graph は手続き間の呼び出し関係を表しますが、単に呼び出し関係があるだけでは十分ではなく、どの経路が実際の関心対象に関係するかの精度が重要です。
-  - 今回の提案は、既存の interprocedural tracing を call relationship の記録で終わらせず、test relevance まで押し込むものです。
-  - これは「呼び出し関係の列挙」と「判定に効く経路の特定」を区別する、より精密な静的推論の方向です。
+### 評価
+- 研究コアとの整合性: 高い
+- 新規性の位置づけ: compare 専用の新原理というより、既存 guardrail の compare 決定点への再配置・再明文化
+- 留意点: SKILL.md には既に
+  - Step 4 の「Read the actual definition. Do not infer behavior from the name.」
+  - Guardrails の「Do not assume behavior from names.」
+  があるため、proposal の価値は「新しい知識を追加すること」より「compare でその原則を結論条件に接続すること」にある
 
-### 研究整合性の監査結論
-提案は既存研究に反していません。むしろ、
-- 論文の certificate 的構造
-- program slicing 的な関連性絞り込み
-- call graph を test outcome に接続する精度向上
-を、軽量なテンプレート変更で取り込む案と評価できます。
-
-## 2. Exploration Framework のカテゴリ選定は適切か
-
+## 2. Exploration Framework のカテゴリ選定
 ### 判定
-カテゴリ F の選定は妥当です。
+カテゴリ F「原論文の未活用アイデアを導入する」は、概ね適切です。
 
-### 根拠
-提案の本質は、`diagnose` の Phase 2 テーブルにある `RELEVANT` という発想を `compare` の Step 4 に持ち込むことです。これは Objective.md の F カテゴリにある
-- 「論文の他のタスクモード（localize, explain）の手法を compare に応用する」
-にかなり直接的に一致しています。
+### 理由
+- proposal は、原論文/既存 SKILL の error analysis 系 guardrail を compare 証明書へ移植する提案であり、単なる言い換えよりは「未活用の適用先追加」に近いです。
+- ただし性質としては E「表現・フォーマット改善」も少し混ざっています。つまり、完全に新しい reasoning mechanism 追加ではなく、既存原則を compare の decision point に届く位置へ移す提案です。
 
-### 他カテゴリとの境界
-副次的には D（メタ認知・自己チェック強化）や E（表現・フォーマット改善）の面もあります。しかし今回の変更の中核は、単なる wording 改善ではなく、論文由来の別モードの証拠記述形式を compare に移植する点です。したがって最も本質的なカテゴリは F です。
+### 監査コメント
+- F としては通るが、価値の本体は「論文知見そのもの」より「compare での適用位置の改善」です。そこを明確にしたほうが説明は正確です。
 
-## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方への作用
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+### 実効的差分
+この変更が直接作用するのは、テンプレート上は `NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT)` です。したがって、**直接の効果対象は EQUIVALENT 判定側** です。
 
-### 変更前との差分の本質
-変更前の Step 4 は、各関数の verified behavior は記録しますが、その関数が「relevant test の outcome に接続する経路上にあるのか」を明示しません。
+### EQUIVALENT への作用
+- もっとも自然な効果です。
+- 名前ベースで「同じ API のはず」と飛ばしてしまう誤りに対し、結論直前で「その前提に使った識別子の束縛確認」を促すので、偽 EQUIV を下げる方向に働きます。
 
-そのため、以下の2種類の誤りが残ります。
-1. 関数差分を見つけた時に、それが test outcome に効くか未確認のまま重く扱う。
-2. 関数を読んだことで十分追跡した気になり、実際には test assertion への接続確認が不十分なまま結論する。
+### NOT_EQUIVALENT への作用
+- 直接効果は弱いです。
+- 現行 proposal の説明どおり、「未解決なら即 NOT_EQUIVALENT ではなく保留して追加探索」に倒すなら、**偽 NOT_EQUIV を増やしにくい** という守りの効果はあります。
+- ただし、NOT_EQUIVALENT を正しく出しやすくする直接メカニズムではありません。したがって「両方向の誤判定を抑える」は、現状の文面だとやや言い過ぎです。
 
-今回の変更は、この接続確認を Step 4 の各行で要求するものです。
+### 片方向最適化か
+- 判定: 部分的に YES
+- 理由: decision point の明示的変更先が EQUIV 分岐にだけ存在するため
+- ただし、逆方向の悪化が明白とは言えません。proposal 自身が「未解決なら保留」と置いているため、片方向強化だが逆方向破壊までは示されていません。
 
-### EQUIVALENT 側への作用
-EQUIVALENT ペアでは、主に「見つけた差分が relevant test に効かない」ことを適切に示せるかが重要です。
+## 4. failed-approaches.md との照合
+### 総評
+本質的再演とまでは言いませんが、**軽度の接触** があります。最大の論点は「証拠種類の事前固定」です。
 
-この列追加により、モデルは各関数差分について
-- どの test に関係するか
-- なぜその関係があると言えるか
-を都度書かされるため、無関係な差分を根拠に NOT_EQUIVALENT と言う誤りを減らす方向に作用します。
+### 該当性チェック
+- 探索経路の半固定: NO
+- 必須ゲート増: NO
+- 証拠種類の事前固定: YES
+  - 原因となる文言: `resolved definition/binding of any relied-upon identifier (imports/shadowing)`
 
-さらに、README.md にある persistent failure が EQUIVALENT 側に偏っていることとも整合します。EQUIVALENT 判定では「差分が存在する」こと自体ではなく、「差分が test outcome を変えるか」が本丸なので、relevance 明示はとくに有効です。
+### 詳細
+1. 探索経路の半固定
+- NO。
+- どこから読むか、どの境界を先に確定するか、という順序までは固定していません。
 
-### NOT_EQUIVALENT 側への作用
-NOT_EQUIVALENT ペアでも効果はあります。ここでは逆に、見つけた差分が本当に relevant test の outcome divergence を生むことを早い段階で接続できます。
+2. 必須ゲート増
+- 形式上は NO。
+- 新セクション追加ではなく既存 1 行の置換です。
+- ただし実質的には EQUIV 主張時の required 行を重くするので、「隠れた追加ゲート」に見えないよう表現は要注意です。
 
-つまりこの変更は、
-- 単なる semantic difference
-から
-- test-relevant semantic difference
-への昇格条件を明示するため、NOT_EQUIVALENT の主張の証拠密度を上げます。
-
-もし本当に relevant path 上の差分なら、`Relevance to test` 列はその差分を弱めるのではなく、むしろ counterexample 記述の前段を補強します。
-
-### 片方向にしか作用しないか
-片方向だけには作用しません。両方向に作用します。
-
-- EQUIVALENT には: irrelevant difference を過大評価しない方向で効く
-- NOT_EQUIVALENT には: relevant difference を test outcome divergence へ接続する方向で効く
-
-ただし、実効差分の強さは非対称です。README.md の現状分析から見て、期待される改善幅は EQUIVALENT 側のほうが大きい可能性があります。これは提案が片方向専用だからではなく、現状の主要ボトルネックが EQUIVALENT 側に偏っているためです。
-
-### 残る限界
-この変更だけでは、
-- relevant tests の抽出自体が漏れる場合
-- pass-to-pass tests の call path 判断が早い段階で誤る場合
-- Step 4 を埋めても Step 5/結論でその情報を使わない場合
-までは自動では防げません。
-
-したがって、「差分の relevance 明示」という中間層の強化であり、compare 全工程の完全な保険ではありません。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 判定
-明示的な抵触はありません。
-
-### 根拠
-`failed-approaches.md` には現時点で具体的な共通失敗原則が未登録です。したがって、文書上のブラックリスト違反はありません。
-
-ただし監査上は「未登録だから何でも良い」ではなく、本質的な過去失敗の再演でないかを見る必要があります。その観点では、今回の提案は
-- 特定ケース向けルール追加
-- 直接的な判定ショートカット
-- ベンチマーク依存の if-then
-ではなく、証拠表の粒度を一段上げるだけです。
-
-よって、過去失敗の表現替えをしているようには見えません。
+3. 証拠種類の事前固定
+- YES。
+- failed-approaches.md が警戒しているのは、「次に探すべき証拠の種類」をテンプレートで固定しすぎることです。
+- 今回は required の `Searched for:` に特定の証拠種別（binding / imports / shadowing）を明示しており、軽度ながらその方向に踏み込んでいます。
+- ただし、「binding だけを探せ」とは言っていないため、過去失敗の全面再演とはまだ言い切れません。
 
 ## 5. 汎化性チェック
+### 明示的な違反有無
+- 具体的な数値 ID: なし
+- リポジトリ名: なし
+- テスト名: なし
+- ベンチマーク対象コード断片: なし
 
-### 明示的な固有識別子・具体例の混入チェック
-提案文には以下のような違反は見当たりません。
-- ベンチマークの具体的ケース ID
-- 対象リポジトリ名
-- 特定テスト名
-- 特定コードベース固有の関数名やクラス名
-- 実コード断片の引用
+### 判定
+汎化性違反は見当たりません。
 
-含まれている具体物は `SKILL.md` 自身の既存表ヘッダ引用と、一般概念としての `test(s)`・`Function/Method`・`file:N` などだけです。これは Objective.md の R1 の減点対象外に該当し、監査上は問題ありません。
+### 補足
+- `format` / `parse` のような一般名は、特定ベンチマーク識別子ではなく一般例として許容範囲です。
+- `imports/shadowing` も特定言語専用というより、多言語で現れる一般概念です。
+- ただし proposal の効き方は「名前解決・束縛が意味論上重要な言語やコードベース」でより強く、DSL や設定駆動中心のケースでは寄与が薄い可能性があります。これは汎化性違反ではなく、効果の濃淡です。
 
-### 数値 ID の扱い
-`T[N]` のような記法は、論文テンプレートの抽象的な premise/test 番号表記であり、ベンチマーク固有 ID ではありません。よって違反ではありません。
+## 6. 全体の推論品質への期待効果
+### 期待できる改善
+- compare の EQUIV 結論が、単なる「反例未発見」から「反例未発見 + 依存前提の一部検証」へ寄る
+- 名前からの早合点を少し減らせる
+- Step 4 / Guardrails の一般原則を、実際の compare 末端意思決定に接続できる
 
-### 暗黙のドメイン依存性
-提案は test outcome と call path の関係を問う一般原則であり、特定言語・フレームワーク依存ではありません。関数名ベースでなく「relevant path かどうか」を問うので、
-- Python
-- Java
-- JavaScript/TypeScript
-- C/C++
-のような異なる言語でも適用可能です。
+### 限界
+- すでに SKILL.md に同趣旨の guardrail があるため、改善幅は大きくない可能性があります
+- 結論を変える力が強いのは EQUIV 側のみ
+- binding を required 行で具体例化しすぎると、template 充足が目的化するリスクがある
 
-ただし、前提として「test という観測単位がある compare タスク」に強く最適化されています。これは `compare` モードの定義そのものに沿った制約であって、過剰適合とは言えません。
+## 停滞診断（必須）
+- 懸念点 1つ: 既存の Guardrails/Step 4 にある「名前から推測しない」を compare の証明書に再記述するだけだと、監査 rubric には刺さっても compare の実際の分岐をあまり変えず、「説明強化」に留まる恐れがある。
 
-### 監査結論
-汎化性は十分高いです。ベンチマーク狙い撃ちの匂いは弱いです。
+### failed-approaches 該当性の明示
+- 探索経路の半固定: NO
+- 必須ゲート増: NO
+- 証拠種類の事前固定: YES
+  - 該当文言: `resolved definition/binding of any relied-upon identifier (imports/shadowing)`
 
-## 6. 全体の推論品質がどう向上すると期待できるか
+## compare 影響の実効性チェック（必須）
+1. Decision-point delta
+- Before: IF 反例パターン（主にテスト名・経路・入力型）で差が見つからない THEN EQUIVALENT を出しやすい
+- After: IF 反例不在に加えて、結論が依存する識別子の束縛前提にも未解決がない THEN EQUIVALENT、未解決があれば保留して追加探索
+- IF/THEN 形式で 2 行（Before/After）になっているか: YES
 
-### 改善が期待できる点
-1. 関数理解と test 結論の間の飛躍を減らす
-   - 既存 Step 4 は「関数を読んだ」ことの証明にはなるが、「その関数が test outcome に効く」ことの証明にはなりきれていません。
-   - 提案はここを埋めます。
+2. Failure-mode target
+- 主対象: 偽 EQUIV
+- 副次効果: 偽 NOT_EQUIV を直接減らすより、未解決を即差分扱いしないことで悪化を避ける
+- メカニズム: 名前ベース推論を、束縛確認つきの前提検証へ置き換える
 
-2. compare モードでの scope judgment を改善する
-   - `compare` では差分の存在ではなく relevance が本質です。
-   - relevance 列により、差分の重要度評価が test-grounded になります。
+3. Non-goal
+- 変えないこと: 読む順序の固定、binding 証拠の専用セクション追加、未解決時の即 NOT_EQUIVALENT 化
+- 境界条件: binding は「結論が依存する識別子」に限り relevant な場合のみ確認対象とする
 
-3. Step 5 の反証をやりやすくする
-   - relevance が各行にあると、「本当にこの差分は relevant path 上か？」という反証対象が明瞭になります。
-   - 結果として counterexample / no-counterexample の記述が具体化しやすくなります。
+## 修正指示（2〜3点）
+1. `imports/shadowing` を required 行の中で列挙する形は削り、より一般的な文言に置換してください。
+   - 例: `the verified source/binding of any identifier whose semantics the equivalence claim relies on`
+   - これなら「証拠種類の事前固定」を弱めつつ、狙いは維持できます。
 
-4. diagnose と compare の様式を寄せ、skill 全体の一貫性を上げる
-   - mode 間で「各 traced unit が何に効くかを説明する」という共通規律が強くなります。
-   - これは skill 学習・再利用の観点でも自然です。
+2. 「両方向の誤判定を抑える」という説明は縮め、直接ターゲットを `偽 EQUIV` に寄せてください。
+   - 代わりに NOT_EQUIV 側は「悪化防止として、未解決なら保留・追加探索に留める」と書くのが正確です。
 
-### 限界と注意点
-1. テーブル記入の負荷は少し増える
-   - ただし1列追加のみで、複雑性増加は小さいです。
+3. compare に効くことを強めたいなら、新規義務を足すのではなく、既存 Step 4 / Guardrails 参照へ統合してください。
+   - つまり「binding 確認を独立した必須観点として増やす」のではなく、「結論が依存する名前解釈は既存 VERIFIED 原則で裏を取る」と表現したほうが、支払いなしで実効性を残せます。
 
-2. 形だけ埋めるリスクはある
-   - モデルが `relevant because used by test` のような空疎な文で済ませると効果が薄いです。
-   - ただし今回の提案は最小変更を守っており、まずはこのレベルの導入として妥当です。
-
-3. Step 4 と compare certificate 本文の接続はまだ弱い
-   - もし将来さらに改善するなら、`ANALYSIS OF TEST BEHAVIOR` または `NO COUNTEREXAMPLE EXISTS` に Step 4 の relevance 行を参照させる強化余地があります。
-   - ただし今回は 1 イテレーション 1 仮説の原則上、そこまで同時に入れない方がよいです。
-
-## 最終判断
-提案は、
-- 研究コアを維持し
-- compare モードの弱点に対して直接効き
-- EQUIVALENT / NOT_EQUIVALENT の両方に理屈上作用し
-- 汎化性も高く
-- 変更規模も最小
-であり、監査上は前向きに評価できます。
-
-懸念があるとすれば、「効果の中心は relevance 明示であり、relevant test の発見漏れそのものは解決しない」点ですが、これはこの提案の欠陥というより射程の明確さです。
-
+## 最終判定
 承認: YES
+
+理由: 汎化性違反や明白な逆方向悪化はなく、compare の decision point に一応具体的な差分があります。failed-approaches.md との軽い摩擦はあるものの、本質的再演とまでは言えません。実装時に「binding 証拠の半必須化」に見える表現だけ弱めれば、監査 PASS の下限は満たせます。
