@@ -1,217 +1,125 @@
-# Iteration 9 — Proposal Audit Discussion
+# iter-9 discussion
 
 ## 総評
+方向性は概ね妥当です。既存の Step 5.5 にある曖昧な「does not alter the conclusion」を、UNVERIFIED が結論を左右しうるかどうかで分岐する判定文に置き換える、という中身自体は compare の偽 EQUIV を減らす実効差があります。しかも新規チェック項目の追加ではなく 1 行置換として設計されており、failed-approaches.md が禁じる「必須ゲート増設」に踏み込みにくい点もよいです。
 
-提案は、SKILL.md の Step 5.5 に「推論チェーンの最も弱い環を特定し、その弱さが Step 6 の confidence と整合するか確認する」という 1 行を追加するもの。
-
-監査結論を先に述べると、これは
-- 研究コア（premises / hypothesis-driven exploration / interprocedural tracing / mandatory refutation）を壊さない
-- failed-approaches.md の禁止方向に直接は抵触しない
-- EQUIVALENT 側で出やすい「証拠はあるが weakest claim を見逃したまま過信する」失敗を抑える方向に働く
-- NOT_EQUIVALENT 側でも、差分のインパクト主張が weakest link になっていないかを点検させるため、片方向専用の誘導にはなっていない
-
-という点で、全体として妥当性は高い。
-
-一方で、文言中の "lowest evidence density" はやや擬似定量的で、厳密な測定手続きがないため、実装時には「least-supported claim」程度の表現の方が解釈ぶれを減らせる懸念がある。とはいえ、この懸念は否決理由というより wording 改善のレベル。
+一方で、提案文のままでは「relevant test outcome」という compare 専用の言い方を Core Method の共通 Step 5.5 に入れようとしており、compare 以外の mode への適用境界が少し粗いです。最大の懸念はここで、改善の核はよいので、reject ではなくこの 1 点を中心に表現調整して通すのがよいと考えます。
 
 ## 1. 既存研究との整合性
+検索なし（理由: 一般原則の範囲で自己完結）。
 
-### 参照した外部情報
+判断根拠:
+- README.md と docs/design.md のコアは「明示的前提」「仮説駆動探索」「手続き間トレース」「必須反証」による semi-formal reasoning の証明書化です。
+- 今回の提案はそのコアを崩さず、既存の自己監査文言を「弱い環が結論を支配するなら追加探索または結論縮小へ分岐」と精密化するものです。
+- これは新しい理論の導入というより、既存 certificate の判定境界を明確化する小修正なので、追加の外部調査は不要です。
 
-1) A Chain-of-Thought Is as Strong as Its Weakest Link: A Benchmark for Verifiers of Reasoning Chains
-URL: https://arxiv.org/abs/2402.00559
-URL: https://aclanthology.org/2024.acl-long.254/
-要点:
-- reasoning chain 全体の品質は局所ステップの弱さに制約される、という発想を前提にしている。
-- REVEAL は reasoning step ごとの relevance / evidence attribution / logical correctness を評価対象にしており、単に最終答えだけでなく「どのステップが弱いか」を検査する方向性を支持している。
-- 論文要約では、既存の verifier は logical correctness や contradiction 検出に苦戦するとされており、結論直前に weakest link を洗い出すチェック追加はこの問題意識と整合的。
-
-2) Large Language Models lack essential metacognition for reliable medical reasoning
-URL: https://www.nature.com/articles/s41467-024-55628-6
-要点:
-- 高い正答率があっても、モデルの metacognitive ability は不十分で、knowledge limitation を認識できず confident に誤答する傾向があると要約されている。
-- そのため、信頼できる評価フレームワークには confidence と reasoning quality の対応づけが必要だという問題意識が示されている。
-- 本提案の「最も弱いクレームを特定し、その弱さが confidence level を支えられるか確認する」は、まさに confidence-calibration を軽量な self-check として導入するもので、研究的方向性と一致する。
-
-### 既存リポジトリ内資料との整合
-
-- README.md では、この skill の中核は「explicit premises, concrete code tracing, formal conclusion によって unsupported claims を防ぐこと」とされている。
-- docs/design.md では failure pattern として "Incomplete reasoning chains" と "Subtle difference dismissal" が明示されている。
-- 提案は新しい別系統の手法を足すのではなく、既に設計文書で問題視されている失敗パターンに対して Step 5.5 の self-check を 1 項目補うもの。
-
-よって、既存研究・既存設計の両方と整合している。
-
-## 2. Exploration Framework のカテゴリ選定は適切か
-
-提案者はカテゴリ D「メタ認知・自己チェックを強化する」を選んでいる。これは適切。
+## 2. Exploration Framework のカテゴリ選定
+判定: 適切
 
 理由:
-- 変更箇所が Step 3 の探索戦略ではなく Step 5.5 の pre-conclusion self-check である。
-- 何を検索するか、どのファイルから読むか、どのシグナルを優先するかを事前固定していない。
-- compare / diagnose / explain / audit-improve のいずれにも横断的に効く「結論前の自己監査」の追加であり、探索手順そのものの再設計ではない。
+- Objective.md の D は「思い込み検査」「弱い環の特定」「確信度と根拠の対応」です。
+- 提案の本体はまさに「UNVERIFIED 仮定が outcome を左右しうるなら、そのまま確定結論に行かない」という自己チェック強化であり、探索順序や証拠種類の固定ではありません。
+- E や B にも少し跨りますが、主要メカニズムは D と見るのが自然です。
 
-カテゴリ C（比較の枠組み変更）ではない理由:
-- compare に効く側面はあるが、文言は compare 専用ではなく reasoning chain 一般に対する点検である。
+## 3. compare 影響の実効性チェック
+- Decision-point delta:
+  - Before: IF UNVERIFIED が残っていても「結論に影響しない」と自己申告できる THEN EQUIV に進みやすい
+  - After: IF UNVERIFIED が関連結果を変えうる THEN 追加で探す / それでも残るなら条件付き結論 + LOW に縮める
+  - IF/THEN 形式で 2 行になっているか: YES
+  - 評価: 条件も行動も変わっており、理由の言い換えではないので compare 影響は実効的です。
 
-カテゴリ F（原論文の未活用アイデア導入）でも一部説明可能ではあるが、今回の主作用は論文新規要素の導入よりも metacognitive checkpoint の強化であり、D が第一分類として自然。
+- Failure-mode target:
+  - 主対象は偽 EQUIV の削減です。
+  - メカニズムは「反証未発見」を「同一挙動の証拠」と誤読する経路を止め、UNVERIFIED を outcome 支配の弱い環として扱う点にあります。
+  - 副次的には、些細な未検証に対しては「影響しない根拠」を書けば先へ進めるため、偽 NOT_EQ や過剰保留への寄りもある程度抑えます。
 
-## 3. EQUIVALENT / NOT_EQUIVALENT の両判定への作用
+- Non-goal:
+  - 読解順序の半固定はしない。
+  - 新しい必須ゲートは増やさない。
+  - 検証手段や証拠種類は事前固定しない。
 
-### 変更前との差分
+- Discriminative probe:
+  - 抽象ケース: 両案の差は間接呼び出し先にあり、直接のテスト assertion には現れていないが、その未検証関数しだいで分岐条件が変わりうる。
+  - 変更前は「反証なし」で EQUIV に寄りやすい。変更後は UNVERIFIED が outcome を変えうるため、追加探索か条件付き結論に分岐し、偽 EQUIV を避けやすい。
+  - これは新しい必須ゲートの増設ではなく、既存 Step 5.5 の 1 行を分岐文に置換することで説明できています。
 
-変更前 Step 5.5 は以下を確認している:
-- file:line にトレースされているか
-- trace table の VERIFIED / UNVERIFIED が整理されているか
-- Step 5 の refutation が実際の search / inspection を伴うか
-- conclusion が evidence を超えていないか
+- 支払い（必須ゲート総量不変）:
+  - proposal 内で A/B 対応付けは明示されています。既存 1 行の置換で、項目追加なしという説明は十分です。
 
-これらは「証拠の存在」「反証プロセスの実施」「主張の逸脱禁止」は見るが、推論チェーン内で相対的に最も脆い主張がどれか、という優先度付けは問わない。
+## 4. EQUIVALENT 判定と NOT_EQUIVALENT 判定への作用
+- EQUIVALENT 側:
+  - 明確に効きます。特に「NO COUNTEREXAMPLE FOUND」から早すぎる EQUIV に飛ぶ経路を鈍らせます。
+  - 以前は UNVERIFIED を自己申告で無害化しやすかったのに対し、変更後は outcome 影響可能性が残る限り、追加探索または条件付き・低確信度へ押し戻されます。
 
-提案後は、結論の weakest link を 1 つ明示させ、その弱さで HIGH / MEDIUM / LOW の confidence が正当化できるかを確認する。
+- NOT_EQUIVALENT 側:
+  - 直接「NOT_EQ を出しやすくする」変更ではありません。
+  - ただし、些細な未検証を理由に過剰に NOT_EQ へ倒れるのではなく、「影響しない根拠があれば通常どおり進める」「残るなら conditional + LOW」という逃がし方なので、片方向最適化にはなっていません。
+  - したがって、主効果は偽 EQUIV の削減、逆方向への悪化は限定的という評価です。
 
-つまり実効的差分は、
-- binary な checklist から一段進んで
-- reasoning chain 内の「最小支持点」を自己特定させる
-- confidence を strongest evidence ではなく weakest justified claim に合わせて下げる圧力をかける
+## 5. failed-approaches.md との照合
+- 探索経路の半固定: NO
+  - 次に何を読むか、どこから読むか、どの境界を先に確定するかは固定していません。
 
-という点にある。
+- 必須ゲート増: NO
+  - 新しいチェック項目を増やさず、既存 Step 5.5 の 1 行を置換する提案です。
+  - 実質ゲート化の懸念は少しありますが、項目追加ではなく既存項目の意味の精密化に留まっています。
 
-### EQUIVALENT 判定への作用
+- 証拠種類の事前固定: NO
+  - 「検証 or 影響しない根拠を作る」としており、特定の証拠様式に固定していません。
 
-最も効くのは EQUIVALENT 側。
+補足懸念:
+- failed-approaches.md には「既存の判定基準を特定の観測境界だけに還元しすぎない」とあります。
+- proposal の文言がそのまま Core Method に入ると、「relevant test outcome」という compare の観測境界へ寄りすぎ、explain / audit-improve では不自然です。これは失敗原則の再演そのものではないですが、放置すると近づきます。
 
-EQUIVALENT 誤判定は、しばしば
-- 一通り追ったが pass-to-pass 影響範囲の確認が薄い
-- subtle difference を見つけたが「たぶん影響なし」と処理する
-- no counterexample exists の主張が weakest claim なのに HIGH confidence で締める
-という形で起きる。
+## 6. 汎化性チェック
+判定: 概ね問題なし
 
-この提案は、その weakest claim を結論前に露出させるため、
-- EQUIVALENT のままでも confidence を下げる
-- あるいは counterexample search を追加させる
-- 場合によっては NOT_EQUIVALENT に反転させる
-可能性がある。
+- 具体的な数値 ID, リポジトリ名, テスト名, 実コード断片: なし
+- SKILL.md 自身の引用 diff は許容範囲
+- 特定言語・特定フレームワーク前提: なし
+- 暗黙のドメイン偏り: 小
+  - ただし「relevant test outcome」は compare には自然でも、全 mode 共通文としてはやや compare 偏重です。
+  - 汎化性を保つには、「relevant claimed outcome」や「relevant downstream conclusion」など mode 非依存の言い方へ丸めるのが安全です。
 
-特に SKILL.md compare テンプレートの "NO COUNTEREXAMPLE EXISTS" 節との相性がよく、「反証不在」の根拠が薄いまま等価とする過信を抑えやすい。
+## 7. 推論品質の改善見込み
+期待値はあります。
 
-### NOT_EQUIVALENT 判定への作用
+改善が見込める点:
+- 「未検証リンクが残っているのに結論だけ強い」という典型的な過信を減らせる
+- Step 5 の refutation と Step 6 の conclusion の間に、証拠強度に応じた分岐を明確化できる
+- 1 行置換なので複雑性増加やテンプレート肥大化が小さい
 
-NOT_EQUIVALENT 側にも作用する。
+改善が限定される点:
+- 実効差の中心は偽 EQUIV の抑制で、偽 NOT_EQ 改善は副次的です
+- 自己チェック文なので、表現だけが強まり compare の行動差が弱い、という停滞リスクは少し残ります
 
-よくある誤りは、差分を見つけた時点で
-- その差分が relevant tests に実際に波及するか
-- diverging assertion まで到達するか
-- structural gap があるとしても test outcome difference が確実か
-の詰めが甘いまま NOT_EQUIVALENT とするケース。
+## 停滞診断（必須）
+- 懸念 1 点:
+  - 「監査 rubic に刺さる説明強化」に寄り、実際の compare 行動差が agent の自己申告に吸収される恐れはあります。つまり、実装後も agent が安易に「cannot change outcome」と書いて通すなら、見た目ほど decision は変わりません。
 
-提案された weakest-link チェックにより、NOT_EQUIVALENT の場合も
-- 「この差異は test outcome を変える」が weakest claim ならそこを再点検する
-- 具体的に divergence claim の証拠密度が confidence と見合うか確認する
-必要が出る。
+- failed-approaches 該当性:
+  - 探索経路の半固定: NO
+  - 必須ゲート増: NO
+  - 証拠種類の事前固定: NO
 
-したがって、この変更は EQUIVALENT 側だけに働くものではない。主作用は EQUIVALENT の過信抑制に寄るが、NOT_EQUIVALENT に対しても「差分発見 = 判定確定」という短絡を抑える。
+## 修正指示（2〜3 点）
+1. Core Method の共通文に入れるなら「relevant test outcome」を mode 非依存表現へ置換してください。
+   - 例: 「cannot change any relevant claimed outcome」または「cannot change the conclusion about the relevant observed behavior」
+   - compare 専用にしたいなら Compare 節へ移し、Core Method には置かないでください。
 
-### 片方向バイアスの有無
+2. 「追加で探す」の支払いは不要ですが、条件分岐の出口をもう一段だけ明確にしてください。
+   - 具体的には「verify / justify invariance / narrow conclusion + LOW」の 3 択で十分です。
+   - それ以上の報告様式追加はしないでください。
 
-片方向専用の誘導には見えない。
+3. NOT_EQ 側への副作用回避を 1 文だけ短く補ってください。
+   - 例: 「mere presence of UNVERIFIED is not itself grounds for NOT_EQUIVALENT when outcome-invariance is evidenced」
+   - これも追加項目ではなく、同一行の言い換えか compare 節の短い補足に留めるのがよいです。
 
-ただし、実務上は EQUIVALENT の HIGH confidence を削る方向により強く働くはず。理由は、NOT_EQUIVALENT は元々 counterexample / diverging assertion によって比較的局所的な証拠が立ちやすい一方、EQUIVALENT は「差が効かない」ことの立証負荷が高く、weakest link が出やすいから。
-
-この非対称性はあるが、それは判定バイアスというより、両ラベルの立証難易度の差に対応した自然な作用。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-failed-approaches.md の原則は大きく 2 つ:
-1. 探索で探すべき証拠の種類をテンプレートで事前固定しすぎない
-2. ドリフト抑制で探索の自由度を削りすぎない
-
-本提案は原則 1 と本質的に異なる。
-- 追加されるのは探索前テンプレートではなく、結論直前の self-check。
-- 「何を探せ」と事前指定していない。
-- 特定シグナルの探索を強制せず、既に構築した reasoning chain を再評価させるだけ。
-
-本提案は原則 2 にも直接は抵触しない。
-- 探索の入り口・経路・優先順位を狭めない。
-- 再探索を必須化しているわけでもない。
-- ただし、弱い環を見つけたときに追加探索へ向かう可能性はあるが、それは結論の適正化であり、探索の自由度を先に狭めるものではない。
-
-よって、表現を変えただけの過去失敗の再演とは評価しない。
-
-## 5. 汎化性チェック
-
-### 明示的なルール違反の有無
-
-proposal.md を確認した限り、以下の禁止寄り要素は含まれていない。
-- ベンチマークケース ID: なし
-- 特定リポジトリ名: なし
-- 特定テスト名: なし
-- ベンチマーク対象コード断片の引用: なし
-
-含まれている具体語は、SKILL.md 自身の構造参照（Step 5.5, Step 6, HIGH/MEDIUM/LOW, compare モード等）と docs/design.md 上の一般的失敗パターン名であり、Objective.md の R1 減点対象外に概ね当たる。
-
-### 暗黙のドメイン依存性
-
-強いドメイン依存は見えない。
-- weakest link の発想は任意の言語・フレームワーク・タスクモードに適用可能。
-- compare だけでなく explain / diagnose / audit-improve にも通る。
-- テスト駆動の差分判定で特に有効だが、それは SKILL 全体の主要ユースケースと整合している。
-
-### 軽微な懸念
-
-"claim with the lowest evidence density" という表現は、汎用ではあるが定義が少し曖昧。
-- density をどう数えるのか不明
-- file:line 数なのか、独立根拠の数なのか、反証済み度合いなのかが未定義
-
-このため、モデルによっては表面的に「一番弱そうな文」を選ぶだけで終わる可能性がある。ここは
-- "least-supported claim"
-- "the claim whose failure would most weaken the conclusion"
-のような表現の方が、言語・タスク横断で安定する可能性がある。
-
-ただし、これは汎化性違反ではなく、語の精度の問題。
-
-## 6. 全体の推論品質への期待効果
-
-期待できる改善は 3 つある。
-
-1. 過信の抑制
-- strongest evidence に引っ張られて結論を出すのではなく、chain 全体のボトルネックに attention を戻す。
-- とくに HIGH confidence の濫用を減らしやすい。
-
-2. 反証プロセスの実効性向上
-- Step 5 自体は既に mandatory だが、Step 5.5 で weakest link を再点検させることで、refutation が形式的に終わるのを防ぎやすい。
-- 「一応 search した」だけで終わるのではなく、どの claim の裏付けが最も薄いかを意識させる。
-
-3. incomplete reasoning chains の捕捉率向上
-- docs/design.md で言う downstream handling の見落としや subtle difference dismissal は、しばしば chain の一箇所だけ支持が薄いまま残る形で起きる。
-- その局所点検を最後に追加するのは、低コストで全体品質を上げる筋の良い変更。
-
-加えて、変更規模が 1 行で非常に小さいため、複雑性増加やテンプレート肥大の副作用は限定的。
-
-## 留保・改善提案
-
-承認寄りだが、実装文言には次の改善余地がある。
-
-現行提案文:
-- Identified the weakest link in the reasoning chain (the claim with the lowest evidence density) and verified it is sufficient to support the confidence level I will assign in Step 6.
-
-懸念:
-- "lowest evidence density" がやや曖昧で、擬似定量化された印象を与える。
-
-より安定しそうな代替案:
-- Identified the weakest link in the reasoning chain (the least-supported claim) and verified it is sufficient to support the confidence level I will assign in Step 6.
-
-または
-- Identified the claim whose failure would most weaken the conclusion, and verified the available evidence is sufficient for the confidence level I will assign in Step 6.
-
-ただし、監査対象は提案の方向性そのものなので、この wording 懸念だけで否決する必要はない。
-
-## 最終判定
-
+## 最終判断
 承認: YES
 
 理由:
-- 研究・設計文書と整合する
-- failed-approaches.md の禁止方向を再演していない
-- EQUIVALENT / NOT_EQUIVALENT の両方に作用し、片方向専用の誘導ではない
-- 汎化性違反となる具体的 ID / repo 名 / test 名 / 実コード断片を含まない
-- 1 行追加という小変更で、過信抑制と weakest-claim の自己監査を導入できるため、費用対効果が高い
+- Decision-point delta が具体で、compare の偽 EQUIV を減らす方向に実効差がある
+- failed-approaches.md の本質的再演ではない
+- 変更量が小さく、必須ゲート総量不変という条件も満たしている
+- 最大懸念は共通 Step 5.5 に compare 専用語を入れる表現境界であり、これは修正可能な粒度です

@@ -1,257 +1,121 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/12/26 08:24:21] INFO     Processing request of type            server.py:727
+[04/17/26 22:10:04] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-  ┊ 📖 read      benchmark/swebench/runs/iter-9/proposal.md  0.9s
-  ┊ 📖 read      SKILL.md  0.8s
-  ┊ 📖 read      failed-approaches.md  0.8s
+  ┊ 📖 read      benchmark/swebench/runs/iter-9/proposal.md  0.8s
+  ┊ 📖 read      SKILL.md  0.9s
+  ┊ 📖 read      failed-approaches.md  0.9s
   ┊ 📖 read      Objective.md  0.8s
   ┊ 📖 read      README.md  0.9s
   ┊ 📖 read      docs/design.md  0.9s
-[04/12/26 08:24:35] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:24:37] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 200 OK"                                  
-  ┊ ⚡ mcp_ddg_s metacognition weakest link reasoning chain confidence evidence checklist AI reasoning calibration research  1.2s
-[04/12/26 08:24:38] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:24:39] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 200 OK"                                  
-  ┊ ⚡ mcp_ddg_s code reasoning self-check confidence evidence support chain of thought verification research  1.4s
-[04/12/26 08:24:40] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s incomplete reasoning chains downstream handling code reasoning paper error analysis  0.3s
-[04/12/26 08:24:46] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:24:47] INFO     HTTP Request: GET                   _client.py:1740
-                             https://arxiv.org/abs/2402.00559                   
-                             "HTTP/1.1 200 OK"                                  
-  ┊ ⚡ mcp_ddg_s   0.2s
-[04/12/26 08:24:48] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://openreview.net/forum?id=pTH                
-                             fApDakA "HTTP/1.1 403 Forbidden"                   
-  ┊ ⚡ mcp_ddg_s   0.5s
-[04/12/26 08:24:49] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s Chain of Verification paper arxiv self verification questions hallucinations  0.3s
-[04/12/26 08:24:55] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s chain of verification arxiv 2309 large language models  0.4s
-[04/12/26 08:24:56] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:24:57] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s self verification large language models reasoning confidence calibration arxiv  0.3s
-[04/12/26 08:24:58] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s metacognitive prompting confidence evidence reasoning paper arxiv  0.3s
-[04/12/26 08:25:03] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s "Chain-of-Verification" LLMs reduce hallucinations  0.3s
-[04/12/26 08:25:04] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s "Large Language Models lack essential metacognition" reasoning confidence calibration  0.3s
-[04/12/26 08:25:05] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s "verification" "reasoning chains" ACL 2024 weakest link  0.3s
-[04/12/26 08:25:12] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s "SelfCheck: Using LLMs to Zero-Shot Check Their Own Step-by-Step" arxiv  0.4s
-[04/12/26 08:25:13] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s "A Chain-of-Thought Is as Strong as Its Weakest Link" ACL 2024 reasoning verifiers  0.3s
-[04/12/26 08:25:15] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s site:arxiv.org weakest link reasoning chain evidence density confidence  0.3s
-[04/12/26 08:25:21] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s LLM metacognition confidence monitoring paper  0.3s
-[04/12/26 08:25:22] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s reasoning verification benchmark chain of thought weakest link  0.4s
-[04/12/26 08:25:23] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/12/26 08:25:24] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s self-check reasoning chain paper llm  0.3s
-[04/12/26 08:25:29] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://www.nature.com/articles/s41                
-                             467-024-55628-6 "HTTP/1.1 303 See                  
-                             Other"                                             
-[04/12/26 08:25:30] INFO     HTTP Request: GET                   _client.py:1740
-                             https://idp.nature.com/authorize?re                
-                             sponse_type=cookie&client_id=grover                
-                             &redirect_uri=https%3A%2F%2Fwww.nat                
-                             ure.com%2Farticles%2Fs41467-024-556                
-                             28-6 "HTTP/1.1 302 Found"                          
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://idp.nature.com/transit?redi                
-                             rect_uri=https%3A%2F%2Fwww.nature.c                
-                             om%2Farticles%2Fs41467-024-55628-6&                
-                             code=7aadedd3-e4b7-4dab-8ec8-ed6503                
-                             405fb6 "HTTP/1.1 302 Found"                        
-[04/12/26 08:25:31] INFO     HTTP Request: GET                   _client.py:1740
-                             https://www.nature.com/articles/s41                
-                             467-024-55628-6 "HTTP/1.1 200 OK"                  
-  ┊ ⚡ mcp_ddg_s   1.7s
-[04/12/26 08:25:32] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://aclanthology.org/2024.acl-l                
-                             ong.254/ "HTTP/1.1 200 OK"                         
-  ┊ ⚡ mcp_ddg_s   0.6s
   ┊ ✍️  write     benchmark/swebench/runs/iter-9/discussion.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-9/discussion.md → b/benchmark/swebench/runs/iter-9/discussion.md
-@@ -1,155 +1,217 @@
--# Iteration 9 — Discussion（監査役レビュー）
+@@ -1,217 +1,125 @@
+-# Iteration 9 — Proposal Audit Discussion
++# iter-9 discussion
+ 
+ ## 総評
++方向性は概ね妥当です。既存の Step 5.5 にある曖昧な「does not alter the conclusion」を、UNVERIFIED が結論を左右しうるかどうかで分岐する判定文に置き換える、という中身自体は compare の偽 EQUIV を減らす実効差があります。しかも新規チェック項目の追加ではなく 1 行置換として設計されており、failed-approaches.md が禁じる「必須ゲート増設」に踏み込みにくい点もよいです。
+ 
+-提案は、SKILL.md の Step 5.5 に「推論チェーンの最も弱い環を特定し、その弱さが Step 6 の confidence と整合するか確認する」という 1 行を追加するもの。
 -
--## 1. 学術的・実務的観点からの妥当性評価
+-監査結論を先に述べると、これは
+-- 研究コア（premises / hypothesis-driven exploration / interprocedural tracing / mandatory refutation）を壊さない
+-- failed-approaches.md の禁止方向に直接は抵触しない
+-- EQUIVALENT 側で出やすい「証拠はあるが weakest claim を見逃したまま過信する」失敗を抑える方向に働く
+-- NOT_EQUIVALENT 側でも、差分のインパクト主張が weakest link になっていないかを点検させるため、片方向専用の誘導にはなっていない
 -
--提案の核心である「コード乖離がテストアサーションまで伝播するか確認する」は、ソフトウェアテスト理論における **PIE フレームワーク（Execution, Infection, Propagation）** に直接対応する。
+-という点で、全体として妥当性は高い。
 -
--### 関連研究
+-一方で、文言中の "lowest evidence density" はやや擬似定量的で、厳密な測定手続きがないため、実装時には「least-supported claim」程度の表現の方が解釈ぶれを減らせる懸念がある。とはいえ、この懸念は否決理由というより wording 改善のレベル。
++一方で、提案文のままでは「relevant test outcome」という compare 専用の言い方を Core Method の共通 Step 5.5 に入れようとしており、compare 以外の mode への適用境界が少し粗いです。最大の懸念はここで、改善の核はよいので、reject ではなくこの 1 点を中心に表現調整して通すのがよいと考えます。
+ 
+ ## 1. 既存研究との整合性
++検索なし（理由: 一般原則の範囲で自己完結）。
+ 
+-### 参照した外部情報
++判断根拠:
++- README.md と docs/design.md のコアは「明示的前提」「仮説駆動探索」「手続き間トレース」「必須反証」による semi-formal reasoning の証明書化です。
++- 今回の提案はそのコアを崩さず、既存の自己監査文言を「弱い環が結論を支配するなら追加探索または結論縮小へ分岐」と精密化するものです。
++- これは新しい理論の導入というより、既存 certificate の判定境界を明確化する小修正なので、追加の外部調査は不要です。
+ 
+-1) A Chain-of-Thought Is as Strong as Its Weakest Link: A Benchmark for Verifiers of Reasoning Chains
+-URL: https://arxiv.org/abs/2402.00559
+-URL: https://aclanthology.org/2024.acl-long.254/
+-要点:
+-- reasoning chain 全体の品質は局所ステップの弱さに制約される、という発想を前提にしている。
+-- REVEAL は reasoning step ごとの relevance / evidence attribution / logical correctness を評価対象にしており、単に最終答えだけでなく「どのステップが弱いか」を検査する方向性を支持している。
+-- 論文要約では、既存の verifier は logical correctness や contradiction 検出に苦戦するとされており、結論直前に weakest link を洗い出すチェック追加はこの問題意識と整合的。
 -
--| 出典 | URL | 要点 |
--|------|-----|------|
--| Voas & Miller (1992), PIE framework | https://dl.acm.org/doi/abs/10.1109/32.153381 | 故障がテスト失敗として観測されるには3条件が必要: (1) 故障コードが実行される (Execution), (2) プログラム状態が汚染される (Infection), (3) 汚染が出力まで伝播する (Propagation)。提案の Propagation check は条件(3)に正確に対応する |
--| Just et al. (ISSTA 2014), Efficient Mutation Analysis | https://homes.cs.washington.edu/~rjust/publ/state_infection_issta_2014.pdf | Infection した状態が伝播せずに消滅するケースが mutation testing の精度を歪める主因であることを実証。これは EQUIV 偽陽性の構造と同型 |
--| Palikareva et al., Shadow Symbolic Execution | https://www.researchgate.net/publication/291354179_Shadow_of_a_Doubt_Testing_for_Divergences_Between_Software_Versions | ソフトウェアバージョン間の乖離を記号実行で追跡。乖離の「発見」と「観測可能な出力差異」を区別する手法 |
--| Ugare & Chandra (arXiv:2603.01896) | https://arxiv.org/abs/2603.01896 | 原論文の localize モード PHASE 3 は CLAIM が PREMISE と接続する形式を要求するが、compare モードには同等の明示的ステップがない。提案はこのギャップを埋める |
--| Assertion-Aware Test Summarization | https://arxiv.org/pdf/2511.06227 | LLM によるテスト推論ではアサーションレベルのコンテキストが精度に重要であることを示す |
+-2) Large Language Models lack essential metacognition for reliable medical reasoning
+-URL: https://www.nature.com/articles/s41467-024-55628-6
+-要点:
+-- 高い正答率があっても、モデルの metacognitive ability は不十分で、knowledge limitation を認識できず confident に誤答する傾向があると要約されている。
+-- そのため、信頼できる評価フレームワークには confidence と reasoning quality の対応づけが必要だという問題意識が示されている。
+-- 本提案の「最も弱いクレームを特定し、その弱さが confidence level を支えられるか確認する」は、まさに confidence-calibration を軽量な self-check として導入するもので、研究的方向性と一致する。
 -
--**評価**: PIE フレームワークの Propagation 条件は、提案の理論的基盤として十分に確立されている。「コード差異の存在」と「テスト結果の差異」を区別する必要性は mutation testing 研究で広く認識されており、提案の方向性は学術的に妥当である。
+-### 既存リポジトリ内資料との整合
 -
-----
+-- README.md では、この skill の中核は「explicit premises, concrete code tracing, formal conclusion によって unsupported claims を防ぐこと」とされている。
+-- docs/design.md では failure pattern として "Incomplete reasoning chains" と "Subtle difference dismissal" が明示されている。
+-- 提案は新しい別系統の手法を足すのではなく、既に設計文書で問題視されている失敗パターンに対して Step 5.5 の self-check を 1 項目補うもの。
 -
--## 2. Exploration Framework カテゴリ選択の適切性
+-よって、既存研究・既存設計の両方と整合している。
 -
--**選択: カテゴリ F（原論文の未活用アイデアを導入する）**
+-## 2. Exploration Framework のカテゴリ選定は適切か
 -
--### 過去のカテゴリ使用履歴（iter-6 以降）
--
--| Iter | カテゴリ | 結果 |
--|------|----------|------|
--| 6 | D（メタ認知・自己チェック）| 85%→75% |
--| 7 | A（推論の順序・構造を変える）| 75%→70% |
--| 8 | **F（原論文の未活用アイデア）** | 70%→70% |
--| 9 | **F（原論文の未活用アイデア）** | — |
--
--**懸念**: iter-8 と iter-9 が連続してカテゴリ F を選択している。ただし：
--- iter-8 は「localize の Divergence Analysis 構造を compare に移植」（構造レベルの変更）
--- iter-9 は「localize PHASE 3 の CLAIM-PREMISE 接続を compare の Divergence ブロックに補完」（iter-8 で導入した構造内のサブステップ追加）
--
--iter-8 が導入した Divergence 構造の「未完成部分を補完する」という位置づけは論理的に一貫しており、同一カテゴリの連続使用にも合理性がある。ただし、iter-8 が横ばい（70%→70%）だった点を踏まえると、同じカテゴリ内での追加投資がどこまで有効かは不確実である。
--
--**判定: 許容範囲内**。ただし iter-9 でも改善が見られなければ、カテゴリ F からは離れるべき。
--
-----
--
--## 3. EQUIV / NOT_EQ 両方向への影響分析
--
--### 既存テンプレートとの実効的差分
--
--**重要な観察**: 現在の Claim 行は既に以下を要求している：
--
--```
--Claim C[N]: ... because [trace from divergence point to test assertion — cite file:line]
--```
--
--つまり「乖離点からアサーションまでのトレース」は既に Claim の中で要求されている。では Propagation check の追加は何が違うのか？
--
--**差分の本質**: 現在のテンプレートでは、Divergence で乖離を発見した後、即座に Claim（結論的主張）に進む。Propagation check はその間に「乖離がアサーションに到達するか？」という **判断分岐点** を挿入する。これにより：
--
--1. **SAME への明示的オフランプ**: 現在の SAME 条件は「values are identical at every traced point」（全点で値が同一）だが、EQUIV 偽陽性の実態は「ある点で値は異なるが、アサーション到達前に収束する」ケース。Propagation check は後者を明示的にカバーする。
--2. **Claim 前の強制的な中間確認**: 乖離発見 → Claim という直結を断ち切り、伝播確認という中間ステップを挟む。
--
--### EQUIV 方向（現状 80%）への影響
--
--- **正の影響（高確度）**: 15368, 15382 はまさに「中間的な値の乖離がアサーション境界に到達しない」ケース。Propagation check の「If the assertion receives identical inputs despite the divergence: Comparison is SAME」が直接的に機能する。
--- **回帰リスク（低）**: 正答 8 件は乖離なし（SAME）または乖離がアサーションに到達しているケースであり、Propagation check は追加確認に過ぎない。
--
--### NOT_EQ 方向（現状 60%）への影響
--
--- **正の影響（中程度）**: ゴール明確化（「アサーションに到達するかを確認せよ」）により探索が収束しやすくなる可能性。
--- **負の影響（要警戒）**: **ここが最大のリスク**。UNKNOWN 4 件（14787, 11433, 14122, 12663）は既に 31 ターン枯渇。Propagation check は「Trace from divergence to assertion — cite file:line at each step」を要求し、複雑なコードパスでは数ターンの追加消費が発生する。ターン枯渇問題を悪化させる可能性がある。
--- **BL-2 類似性の検討**: Propagation check は NOT_EQ 結論に到達する前の追加検証ステップであり、実効的に NOT_EQ の立証負担を増やす。ただし BL-2（閾値の引き上げ）とは質的に異なる：BL-2 は「どれだけの証拠が必要か」を変えたが、Propagation check は「何を確認すべきか」を明確化する。失敗モードの弁別力がある変更（BL-10 の教訓に合致）ではある。
--
--### 差分の方向性判定
--
--Propagation check の実効差分は **両方向に作用するが、非対称** である：
--- EQUIV 方向: 新しいオフランプ（SAME 判定の構造的サポート）→ **強い正の効果**
--- NOT_EQ 方向: 追加検証ステップ → **弱い正の効果 + ターン消費の負の効果**
--
--NOT_EQ 方向への負の効果（ターン消費増）は、EQUIV 方向への正の効果とトレードオフの関係にある。ただし、BL-6 のような「片方向にのみ作用する対称的文言」とは異なり、Propagation check は EQUIV 方向に新しいメカニズム（収束判定のオフランプ）を提供しており、単なる立証責任の移動ではない。
-… omitted 294 diff line(s) across 1 additional file(s)/section(s)
+-提案者はカテゴリ D「メタ認知・自己チェックを強化する」を選んでいる。これは適切。
++## 2. Exploration Framework のカテゴリ選定
++判定: 適切
+ 
+ 理由:
+-- 変更箇所が Step 3 の探索戦略ではなく Step 5.5 の pre-conclusion self-check である。
+-- 何を検索するか、どのファイルから読むか、どのシグナルを優先するかを事前固定していない。
+-- compare / diagnose / explain / audit-improve のいずれにも横断的に効く「結論前の自己監査」の追加であり、探索手順そのものの再設計ではない。
++- Objective.md の D は「思い込み検査」「弱い環の特定」「確信度と根拠の対応」です。
++- 提案の本体はまさに「UNVERIFIED 仮定が outcome を左右しうるなら、そのまま確定結論に行かない」という自己チェック強化であり、探索順序や証拠種類の固定ではありません。
++- E や B にも少し跨りますが、主要メカニズムは D と見るのが自然です。
+ 
+-カテゴリ C（比較の枠組み変更）ではない理由:
+-- compare に効く側面はあるが、文言は compare 専用ではなく reasoning chain 一般に対する点検である。
++## 3. compare 影響の実効性チェック
++- Decision-point delta:
++  - Before: IF UNVERIFIED が残っていても「結論に影響しない」と自己申告できる THEN EQUIV に進みやすい
++  - After: IF UNVERIFIED が関連結果を変えうる THEN 追加で探す / それでも残るなら条件付き結論 + LOW に縮める
++  - IF/THEN 形式で 2 行になっているか: YES
++  - 評価: 条件も行動も変わっており、理由の言い換えではないので compare 影響は実効的です。
+ 
+-カテゴリ F（原論文の未活用アイデア導入）でも一部説明可能ではあるが、今回の主作用は論文新規要素の導入よりも metacognitive checkpoint の強化であり、D が第一分類として自然。
++- Failure-mode target:
++  - 主対象は偽 EQUIV の削減です。
++  - メカニズムは「反証未発見」を「同一挙動の証拠」と誤読する経路を止め、UNVERIFIED を outcome 支配の弱い環として扱う点にあります。
+… omitted 230 diff line(s) across 1 additional file(s)/section(s)
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
 監査結果を benchmark/swebench/runs/iter-9/discussion.md に書き出しました。
 
-要旨:
-- 提案は全体として妥当
-- 研究整合性あり
-- failed-approaches の再演ではない
-- EQUIVALENT 側により強く効くが、NOT_EQUIVALENT 側にも作用し、片方向専用ではない
-- 汎化性違反となる具体 ID / repo 名 / テスト名 / 実コード断片は proposal.md に見当たらない
-- 軽微な懸念は "lowest evidence density" という語の曖昧さのみ
+要点だけ言うと:
+- 承認: YES
+- 主な評価理由:
+  - Decision-point delta が具体で、compare の偽 EQUIV を減らす実効差がある
+  - failed-approaches.md の本質的再演ではない
+  - 1行置換で必須ゲート総量不変という設計がよい
+- 最大の懸念:
+  - 「relevant test outcome」を Core Method 共通文に入れると compare 偏重になるため、mode 非依存表現に直すか Compare 節へ寄せるべき
 
-最終判定:
 監査結果を benchmark/swebench/runs/iter-9/discussion.md に書き出しました。
 
-要旨:
-- 提案は全体として妥当
-- 研究整合性あり
-- failed-approaches の再演ではない
-- EQUIVALENT 側により強く効くが、NOT_EQUIVALENT 側にも作用し、片方向専用ではない
-- 汎化性違反となる具体 ID / repo 名 / テスト名 / 実コード断片は proposal.md に見当たらない
-- 軽微な懸念は "lowest evidence density" という語の曖昧さのみ
+要点だけ言うと:
+- 承認: YES
+- 主な評価理由:
+  - Decision-point delta が具体で、compare の偽 EQUIV を減らす実効差がある
+  - failed-approaches.md の本質的再演ではない
+  - 1行置換で必須ゲート総量不変という設計がよい
+- 最大の懸念:
+  - 「relevant test outcome」を Core Method 共通文に入れると compare 偏重になるため、mode 非依存表現に直すか Compare 節へ寄せるべき
 
-最終判定:
-承認: YES
+必要なら次に、discussion.md の内容をさらに短くして「実装者向けの修正指示 3 点だけ版」に圧縮できます。
 
-session_id: 20260412_082421_8eabc2
+session_id: 20260417_221004_934b90
