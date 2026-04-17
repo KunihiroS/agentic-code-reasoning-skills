@@ -1,0 +1,46 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/17/26 17:46:46] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 read      benchmark/swebench/runs/iter-6/proposal.md  0.8s
+  ┊ 📖 read      benchmark/swebench/runs/iter-6/rationale.md  0.9s
+  ┊ 📖 read      benchmark/swebench/runs/iter-6/diff.patch  0.8s
+  ┊ 📖 read      failed-approaches.md  0.8s
+  ┊ 🔧 patch     failed-approaches.md  0.6s
+  ┊ review diff
+a/failed-approaches.md → b/failed-approaches.md
+@@ -11,6 +11,7 @@
+ - 探索ドリフト対策を追加する際は、探索の自由度を削りすぎない。
+   ドリフト抑制のための局所的な具体化は、一見よさそうでも探索の幅を狭め、比較・監査のような複数観点の照合が必要な場面で全体性能を落としうる。
+   とくに「どこから読み始めるか」「どの境界を先に確定するか」のような読解順序の半固定は、証拠種類を増やしていなくても探索経路を早期に細らせ、構造差分や別粒度の手掛かりを拾う余地を減らしやすい。
++  暫定的な反例像や結論形式を冒頭で先に置かせる変更も同類で、仮置きのつもりでも探索の入口を狭め、後段の照合をその枠に過剰適応させやすい。
+ 
+ - 探索中の局所的な仮説更新を、即座の前提修正義務に直結させすぎない。
+   仮説が崩れたり揺らいだりしたたびに、その根拠前提の再点検・訂正を半必須化すると、中間証拠に対する過剰反応で探索の状態が不安定になりやすい。局所的な更新とグローバルな前提管理を強く結びすぎると、探索の流れを分断し、上の「探索の自由度を削りすぎない」にも接続して悪化しうる。
+  ┊ 📖 read      failed-approaches.md  0.8s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+failed-approaches.md に追記しました。
+
+内容:
+- 既存の「探索の自由度を削りすぎない」に統合
+- 「暫定的な反例像や結論形式を冒頭で先に置かせる変更も同類」として一般化
+- 失敗メカニズムは「探索の入口を狭め、後段の照合をその枠に過剰適応させやすい」と簡潔化
+
+追加箇所:
+- failed-approaches.md:14
+
+failed-approaches.md に追記しました。
+
+内容:
+- 既存の「探索の自由度を削りすぎない」に統合
+- 「暫定的な反例像や結論形式を冒頭で先に置かせる変更も同類」として一般化
+- 失敗メカニズムは「探索の入口を狭め、後段の照合をその枠に過剰適応させやすい」と簡潔化
+
+追加箇所:
+- failed-approaches.md:14
+
+今回の追記は、既存原則の変種として統合し、新しい固有原則は増やしていません。
+
+session_id: 20260417_174646_5cbaee

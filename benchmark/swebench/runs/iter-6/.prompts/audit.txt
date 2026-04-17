@@ -1,74 +1,91 @@
 あなたは SKILL.md の変更に対する監査役です。
 
-以下のファイルを参照してください:
-- Objective.md の Audit Rubric セクション
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
 - README.md
 - docs/design.md
 - docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
 
-以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
-Objective.md に定義された audit.md フォーマットに従って
-benchmark/swebench/runs/iter-6/audit.md を作成してください。
+この 6 ファイル以外を read / search / list してはいけません。
 
-合格基準: 全項目 2 以上、かつ合計 14/21 以上
+【出力先】
+benchmark/swebench/runs/iter-6/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
 
 diff:
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..86483c3 100644
+index 22b30cfc..5c743904 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -173,12 +173,18 @@ For each relevant test:
-   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                 because [trace through code — cite file:line]
-   Comparison: SAME / DIFFERENT outcome
-+  Trace check: [TRACED / INFERRED] — Did I trace a concrete test input
-+               through the differing code path, or infer from code structure alone?
-+               If INFERRED, trace before proceeding.
+@@ -162,7 +162,7 @@ Goal: determine whether two changes produce the same relevant behavior.
  
- For pass-to-pass tests (if changes could affect them differently):
-   Test: [name]
-   Claim C[N].1: With Change A, behavior is [description]
-   Claim C[N].2: With Change B, behavior is [description]
-   Comparison: SAME / DIFFERENT outcome
-+  Trace check: [TRACED / INFERRED] — Did I trace a concrete test input
-+               through the differing code path, or infer from code structure alone?
-+               If INFERRED, trace before proceeding.
+ ### Certificate template
  
- EDGE CASES RELEVANT TO EXISTING TESTS:
- (Only analyze edge cases that the ACTUAL tests exercise)
+-Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
++Complete every section; first sketch the minimal counterexample shape (reverse from D1), then use ANALYSIS to try to produce/refute it.
+ 
+ ```
+ DEFINITIONS:
+@@ -190,8 +190,8 @@ Before tracing individual functions, compare the two changes structurally:
+       comparison over exhaustive line-by-line tracing. Exhaustive tracing
+       is infeasible for large patches and produces unreliable conclusions.
+ 
+-If S1 or S2 reveals a clear structural gap (missing file, missing module
+-update, missing test data), you may proceed directly to FORMAL CONCLUSION
++If S2 establishes a structural gap on a relevant test path (a file/module/test-data
++that relevant tests import/exercise is missing), you may proceed directly to FORMAL CONCLUSION
+ with NOT EQUIVALENT without completing the full ANALYSIS section.
+ 
+ PREMISES:
 
 rationale:
 # Iteration 6 — 変更理由
 
 ## 前イテレーションの分析
 
-- 前回スコア: 85% (17/20)
-- 失敗ケース: 15368, 13821, 15382
-- 失敗原因の分析:
-  - **15368**: テスト削除という差異を発見した後、削除されたテストは実行されないという具体的なトレースをせずに NOT_EQ と結論した。
-  - **13821**: pass-to-pass テストのコードパス差異を発見した後、具体的なテスト入力をそのコードパスに通したトレースをせずに NOT_EQ と結論した。
-  - **15382**: ループ内例外フローについてコード構造から推論したが、具体的な入力を通したトレースを行わずに NOT_EQ と結論した。
-  - **共通パターン**: 3 件とも「コード差異を発見した後、テストを通じた具体的なトレースなしに NOT_EQ と結論する」パターンであり、問題の本質はトレースの欠如である。
+- 前回スコア: N/A
+- 失敗ケース: N/A
+- 失敗原因の分析: compare において、構造差分だけを根拠に早期 NOT EQUIVALENT へ短絡しやすく、また EQUIVALENT 側でも反例探索の起点が曖昧になりやすい。
 
 ## 改善仮説
 
-Compare テンプレートの `ANALYSIS OF TEST BEHAVIOR` 内、各テストの `Comparison:` 行の直後に 1 行の自己チェック（`Trace check:`）を追加することで、AI が「実際にトレースしたか、それともコード構造から推論しただけか」をメタ認知的に確認させる。INFERRED と自己評価したケースで「trace before proceeding」という明示的な行動指示が作用し、トレースなしの NOT_EQ 結論を防ぐ。
+compare の意思決定を「反例の最小形（counterexample shape）を先に仮置きして反証可能性を中心に進める」方向へ前倒しし、早期 NOT EQUIVALENT は“関連テスト経路上の欠落”が確立できた場合に限定すれば、偽 NOT_EQUIV と偽 EQUIV の両方が減る。
 
 ## 変更内容
 
-`Compare` セクションの Certificate template、`ANALYSIS OF TEST BEHAVIOR` 内の **fail-to-pass テストブロックと pass-to-pass テストブロックの両方**で、`Comparison: SAME / DIFFERENT outcome` の直後に `Trace check:` 行を追加した（既存内容は一切変更しない純粋追加）。
-
-**追加した行（各ブロックに同一の 3 行を追加）:**
-```
-  Trace check: [TRACED / INFERRED] — Did I trace a concrete test input
-               through the differing code path, or infer from code structure alone?
-               If INFERRED, trace before proceeding.
-```
-
-変更規模: 追加 3 行 × 2 箇所 = 計 6 行、削除・変更 0 行。影響範囲は Compare モードの certificate template のみ。他のモード（localize, explain, audit-improve）、Step 3〜5.5、Guardrails への影響なし。
+- Compare / Certificate template 冒頭の指示を、ANALYSIS 前に最小反例形をスケッチする順序へ置換。
+- 早期 NOT EQUIVALENT の許可条件を、S2 による「関連テストが import/exercise する経路上」の構造欠落の確立に束縛。
 
 ## 期待効果
 
-- **EQUIV 正答率（現 70%）**: +5〜10pp 改善。INFERRED と自己評価した場合に追加トレースが促されることで、コード差異からの推論ジャンプによる NOT_EQ 誤判定が減少する。持続的失敗 3 件（15368, 13821, 15382）はいずれもトレース不足の NOT_EQ 誤判定であり、この Trace check が直接作用する。
-- **NOT_EQ 正答率（現 100%）**: ±0〜+3pp。真の NOT_EQ ケースでは差異のあるコードパスをトレースすれば TRACED と自己評価でき、追加コストは発生しない。
-- **判定方向の対称性**: Trace check は EQUIV / NOT_EQ いずれの方向の分析にも同様に適用されるため、判定の非対称操作には該当しない。
+- 見た目の構造差分のみで結論を急ぐ分岐が弱まり、テスト関連性に基づく判定が増える。
+- ANALYSIS が反例探索/反証として運用されやすくなり、早計な EQUIVALENT を抑制できる。

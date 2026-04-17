@@ -1,150 +1,170 @@
-# Iter-6 監査ディスカッション
+# Iter-6 Discussion
 
 ## 総評
-提案の狙いは理解できる。STRUCTURAL TRIAGE と ANALYSIS の間に「何が一致していれば EQUIVALENT と言えるのか」という観点を先に置くことで、前向きトレースを漫然と行わず、差異に敏感な追跡へ寄せたいという発想である。
+提案の核は、「構造差分を見たら早期 NOT EQUIVALENT に倒せる」という現行 compare の近道を、そのまま残すのではなく、(1) 先に最小反例形を仮置きする、(2) 早期 NOT EQUIVALENT は relevant test path 上の欠落に限定する、の 2 点で decision point を差し替えることにあります。これは単なる監査向けの説明補強ではなく、compare の分岐条件そのものを変える提案になっています。
 
-ただし、現行案の文言のままでは「テスト等価性の判定」に必要な条件ではなく、「意味的に同じであるための一般条件」を先に書かせる方向へモデルを誘導しやすい。SKILL.md の compare モードは D1 で明示的に "EQUIVALENT MODULO TESTS" を定義しており、判定対象はあくまで既存テストに対する観測的等価性である。ここを外すと、等価だが実装上は少し異なる変更を NOT EQUIVALENT に倒す回帰リスクがある。
-
-結論として、発想自体は妥当だが、現提案の文言はまだ片方向で、しかも D1 の test-scoped な定義より強い条件を書かせる危険があるため、そのままの承認は見送りたい。
+現時点の判断は「条件付きで承認寄り」です。最大の懸念は、逆方向推論の書き方次第では failed-approaches.md が警戒している「読解順序の半固定」に寄りうることです。ただし今回の文案は、固定された証拠種類の追加や必須ゲート増設ではなく、既存の Compare / Certificate template のごく小さな置換として収まっており、修正余地も明確です。
 
 ## 1. 既存研究との整合性
-DuckDuckGo MCP で確認できた範囲では、提案の方向性そのものには研究的な整合性がある。
+Web で確認できた関連研究・概念との整合は概ねあります。
 
 1) Agentic Code Reasoning
 - URL: https://arxiv.org/abs/2603.01896
-- 要点: 構造化テンプレートにより、明示的 premises、execution path tracing、formal conclusion を要求すると精度が改善するという主張。提案の S4 は「結論に必要な証拠を先に意識させる」という意味で、この semi-formal reasoning の補強としては自然。
-- 監査上の解釈: 既存研究のコアである「証拠先行・未根拠主張の抑制」とは整合する。
+- 要点: semi-formal reasoning は「explicit premises」「execution path tracing」「formal conclusions」を強制することで、unsupported claim や case skipping を減らすという立場。今回の提案はこのコアを壊しておらず、compare における反証義務を「先に仮置きした counterexample shape を produce/refute する」という形で前倒しするものなので、研究コアとは整合的。
+- 監査コメント: 直接の根拠として最も強い。compare の判断を「反例があるか」に寄せる方向は、この論文の certificate 発想と相性がよい。
 
-2) Hypothesizer: A Hypothesis-Based Debugger to Find and Test Debugging Hypotheses
-- URL: https://dl.acm.org/doi/fullHtml/10.1145/3586183.3606781
-- DuckDuckGo 要約: 開発者は仮説を立て、その仮説がどの証拠収集を導くかによって調査を進める、という仮説駆動デバッグを扱う。
-- 監査上の解釈: 提案の S4 は「EQUIVALENT 仮説が真なら必要な証拠は何か」を先に言語化させるので、証拠収集の方向付けという点ではこの系譜に乗っている。
+2) Counterexample-Guided Abstraction Refinement (CEGAR)
+- URL: https://en.wikipedia.org/wiki/Counterexample-guided_abstraction_refinement
+- 要点: まず counterexample を作り、それが本物か spurious かで探索を refine する枠組み。提案の「最小反例形を先に仮置きし、ANALYSIS を produce/refute として使う」は、厳密には同一手法ではないが、counterexample を探索の駆動力にするという一般原理と整合。
+- 監査コメント: これは LLM の compare にそのまま移植できる証明ではないが、「反例先行で探索を引っ張る」こと自体は汎用的に理にかなう。
 
-3) Counterfactual Reasoning for Retrieval-Augmented Generation
-- URL: https://openreview.net/forum?id=9U51rOnGko
-- DuckDuckGo 要約: counterfactual query を生成・評価して、因果的に重要な差異を切り出す枠組み。
-- 監査上の解釈: 本提案の「成立条件を先に置き、そこから外れる差異を探す」という構図は、一般的な counterfactual / backward-style reasoning と整合する。
+3) Predicate Transformer / Weakest Preconditions
+- URL: https://en.wikipedia.org/wiki/Predicate_transformer_semantics
+- 要点: postcondition から backward に必要条件を辿るという、古典的な backward reasoning の定式化。提案の reverse from D1 は、実装詳細より先に「何が観測されれば非同値か」を置くため、この backward reasoning と概念的に整合する。
+- 監査コメント: これも直接エージェント用プロンプト研究ではないが、「後件から必要条件へ戻る」こと自体は一般理論として十分に自然。
 
-以上より、研究との整合性はある。ただし、研究が支持しているのは「証拠探索を構造化すること」であって、「EQUIVALENT 側に有利な前提を先に固定すること」までは直接支持していない。したがって、整合性はあるが、現在の文言には慎重さが必要である。
+結論:
+- 研究整合性は YES。
+- ただし強い言い方をすると「反例形を固定する」方向に見えると、論文の core である hypothesis-driven exploration より、探索経路固定の色が強くなる。したがって文言は「仮置きして更新する」に留めるのが重要。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
-結論: 主カテゴリ A は概ね妥当。ただし D の要素も混ざっている。
+## 2. Exploration Framework のカテゴリ選定
+判定: 適切
 
-理由:
-- 提案の本体は、ANALYSIS 前に「EQUIVALENT が成立するための必要条件」を書かせることで、探索順序を前向きトレース一辺倒から、結論先行の backward reasoning に少し寄せることにある。これは Objective.md の A「推論の順序・構造を変える」に合う。
-- 一方で、実際に追加される内容は「事前チェックポイント」の性格も強く、D「メタ認知・自己チェック」にも接している。
+- 提案は Objective.md の A「推論の順序・構造を変える」に素直に入ります。
+- 実際に変えようとしているのは、compare の中で
+  - いつ早期結論してよいか
+  - ANALYSIS を何のために走らせるか
+ という順序と分岐構造です。
+- B「情報取得方法」や D「メタ認知」ではなく A に置いたのは妥当です。なぜなら、追加で新しい情報源を読む話でも、新しい自己監査項目を増やす話でもなく、既存証拠の使い始める順番と早期打ち切り条件を差し替える話だからです。
 
-したがって、カテゴリ A とすること自体は不自然ではない。ただし説明としては、
-- 主: A（結論から必要証拠を逆算する）
-- 副: D（事前に見るべき観点を固定して思い込みを減らす）
-という整理のほうが正確。
+補足:
+- ただし「反例形を先に書く」が強くなりすぎると、A の中でも failed-approaches.md が禁じる「読解順序の半固定」に接近します。カテゴリ自体は正しいが、文言運用は慎重にすべきです。
 
-## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方への作用
-ここが最重要の懸念点である。
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+### 実効的差分
+現行 SKILL.md の compare では、STRUCTURAL TRIAGE のあとに
+- S1/S2 で clear structural gap が見えれば
+- full ANALYSIS を飛ばして NOT EQUIVALENT に進める
+という強いショートカットがあります。
 
-### 3-1. 提案が直接狙っているのは EQUIVALENT 側
-proposal.md 自身が、"等価と誤判定する（EQUIV 方向の誤り）を減らす" と明言している。つまり一次効果は、証拠不足のまま EQUIVALENT と言ってしまう誤りの抑制である。
+今回の提案はこれを次のように変えます。
+- 早期 NOT EQUIVALENT の条件を「relevant test path 上の gap」に限定する
+- それ以外では、先に minimal counterexample shape を仮置きして ANALYSIS を継続する
 
-この点は README.md にある現状分析とも整合している。現行 skill は NOT_EQUIVALENT 側はすでに強く、残課題は EQUIVALENT 側に寄っている。
+この差分は理由の言い換えではなく、実際に「いつ止めるか」「いつ継続するか」の条件を変えています。
 
-### 3-2. ただし、実効的には NOT_EQUIVALENT 側へ倒れやすくなる
-S4 の文言は次のようになっている。
-- "state what behavioral properties both changes must share for EQUIVALENT to hold"
-- "focus tracing on the properties most likely to diverge"
+### EQUIVALENT 側への作用
+- 改善見込み: 反例形を先に置くことで、「何を見つければ非同値になるか」が先に明確になるため、偽 EQUIV を減らす方向に働く。
+- メカニズム: EQUIVALENT を出す前に、counterexample が成立する具体形を一度立て、その不成立を trace/search で潰す運用になるため、反証探索が弱いままの EQUIV を出しにくくなる。
+- リスク: 反例形の初期仮置きが狭すぎると、別種の反例を見落とす可能性はある。したがって「single best counterexample only」ではなく「minimal shape, updateable」でなければならない。
 
-この書き方だと、モデルは ANALYSIS 前に「等価であるための必要条件」を自分で定義する。ここで条件を強く置きすぎると、実際には D1 の意味で等価なのに、途中の意味差・内部差・非観測差を見つけて NOT EQUIVALENT に倒す危険がある。
+### NOT_EQUIVALENT 側への作用
+- 改善見込み: 関係ない構造差分での早計な偽 NOT_EQUIV を減らす方向に働く。
+- メカニズム: structural gap を relevant test path に結びつけられない限り、早期 NOT EQUIVALENT に倒せなくなる。
+- リスク: 関連テスト経路の立証要求を重くしすぎると、明らかな非同値でも判断が遅くなる可能性はある。ただし提案は full gate 追加ではなく、既存 S2 の言い換えなので、運用次第で抑制可能。
 
-言い換えると、変更は見かけ上 "EQUIVALENT を安易に出さないための安全策" だが、判定境界を test-observable equivalence から semantic sameness に広げるなら、false negative な NOT_EQUIVALENT を増やしうる。
+### 片方向最適化か
+判定: 片方向だけではない
 
-### 3-3. 片方向にしか作用しないか
-厳密には、片方向だけではない。
+- 主効果は偽 NOT_EQUIV の削減に見えます。
+- しかし minimal counterexample shape の前倒しは、EQUIV 側の「反例探索不足」も改善しうるので、両方向作用の説明は成立しています。
+- ただし proposal 文面の現状では、NOT_EQUIVALENT 側の改善がより具体で、EQUIVALENT 側の改善は一段抽象的です。compare への効き目を強めるなら、EQUIV 時にも「どの種類の counterexample を refute したか」を 1 行で明示する方がよいです。
 
-- 正方向の主作用: false EQUIVALENT を減らす
-- 副作用の方向: false NOT_EQUIVALENT を増やす可能性がある
+## 4. failed-approaches.md との照合
+総評: 本質的な再演ではないが、境界が近い箇所が 1 つある
 
-つまり、片方向改善ではなく、実質的には判定閾値を保守的側へ動かす変更になりうる。
+- 「証拠種類の事前固定」
+  - 判定: NO
+  - 理由: 新しい証拠カテゴリを増やしていない。relevant test path と counterexample は、既存 compare の D1/S2/COUNTEREXAMPLE の枠内での再配置。
 
-### 3-4. なぜ現行文言が危険か
-compare モードの D1 は「関連テストの pass/fail outcome が identical なら EQUIVALENT」である。ところが S4 の "behavioral properties" は test-scoped であることが明示されていない。
+- 「探索経路の半固定」
+  - 判定: やや近いが、現状は NO 寄り
+  - 理由: 問題になるのは proposal の「first sketch the minimal counterexample shape」という表現。これが実装で強い先行義務として書かれると、failed-approaches.md が警戒する「どこから読み始めるか」「どの境界を先に確定するか」の半固定に近づく。
+  - ただし proposal 本文では「仮置きして更新する」「探索の開始点であって拘束条件ではない」と補足しており、この補足込みなら本質的再演とはまでは言えない。
 
-このズレにより、モデルが例えば以下のように過剰一般化する恐れがある。
-- 内部状態遷移が同じでなければならない
-- 補助関数レベルの挙動が同一でなければならない
-- 例外処理の局所的差異があるなら等価ではない
+- 「必須ゲート増」
+  - 判定: NO
+  - 理由: 既存 Compare / Certificate template 内の置換で、必須の節や自己監査項目を増設していない。総量不変の方針とも整合する。
 
-しかし compare の定義では、これらは「既存テストの outcome が変わらないなら」直接の非等価根拠ではない。
-
-### 3-5. 監査上の結論
-提案は EQUIVALENT と NOT_EQUIVALENT の両方に作用する。しかも対称ではなく、主作用は EQUIVALENT 抑制、副作用は NOT_EQUIVALENT への過剰シフトである。よって「EQUIV 側だけの改善」と見なして安全視することはできない。
-
-## 4. failed-approaches.md の汎用原則との照合
-failed-approaches.md には現時点で具体的ブラックリストはない。そのため、文書上は直接抵触なし。
-
-ただし、そこに書かれている唯一の強い原則は「具体 benchmark 依存の失敗談ではなく、汎用原則だけを書く」という編集方針である。Objective.md でも overfitting 禁止が明記されている。
-
-この観点から見ると、本提案は以下の点でグレー寄りの注意が必要:
-- README.md の現状分析にある「残課題は EQUIVALENT 側」という実験結果に強く引っ張られている
-- 提案文も EQUIV 方向の誤り削減を主目的としている
-
-ただし、提案文そのものは特定ケースの構文・特定テスト・特定リポジトリの癖には触れておらず、発想自体は benchmark 固有ではない。よって「過去失敗の再演」とまでは言えないが、「現在残っている失敗傾向に最適化された片寄り」はある。
+結論:
+- 本質的な blacklist 再演とまでは判定しません。
+- ただし実装文言が強すぎると、「新しい証拠欄を足していないだけの順序固定」に見えうるので、その一点だけは修正必須です。
 
 ## 5. 汎化性チェック
-結論: 明白なルール違反は見当たらない。ただし軽微な注意点はある。
+判定: 概ね良好
 
-### 5-1. 禁止される具体性の有無
-proposal.md を確認した範囲では、以下は含まれていない。
-- ベンチマーク対象リポジトリ名
-- 特定テスト名
-- 特定関数名・クラス名
-- ベンチマークケース ID
-- 対象コードベースの実コード断片
+明示的違反の有無:
+- 具体的な数値 ID: なし
+- 特定リポジトリ名: なし
+- 特定テスト名: なし
+- ベンチマーク実コード断片: なし
 
-したがって、Objective.md / Audit Rubric の R1 で明確に禁止される種類の overfitting 表現には該当しない。
+補足:
+- proposal には SKILL.md の自己引用があるが、Objective.md の R1 減点対象外に明記されている範囲。
+- file/module/test-data/import/exercise という語彙はややモジュール型言語やテストフレームワークを想起させるが、一般概念として読める範囲で、特定ドメイン前提までは行っていない。
+- ただし「relevant tests import/exercise a path」という書き方は、実行経路の可視性が低い設定や、明示 import を持たない環境では若干表現が偏る。実装時には「import/exercise」より「reach/cover/execute relevant code path」の方が汎用です。
 
-### 5-2. 数値 ID について
-文中には iter-6, Step 1-6, S1-S4, ~200 lines, Guardrail #4 といった番号が出てくるが、これは SKILL.md や提案自体の内部構造の参照であり、ベンチマークケース ID やテスト ID ではない。よって直ちに違反とは言えない。
+## 6. 全体の推論品質への期待効果
+期待できる改善は 3 点あります。
 
-### 5-3. 暗黙のドメイン依存性
-提案の言葉遣いは比較的一般的で、特定言語・特定フレームワーク前提は薄い。ただし "behavioral properties" が抽象的すぎるため、言語によりモデルが想起する典型がぶれやすい。
+1) 早期結論の質が上がる
+- 現行は structural gap が見えると、意味差分の立証がやや甘いまま NOT EQUIVALENT に流れやすい。
+- relevant test path に結びつけることで、「見た目の差」ではなく「テスト結果に効く差」で止まるようになる。
 
-例えば:
-- 動的言語では API レベル挙動
-- 静的言語では型・例外・内部契約
-- テスト駆動の強いプロジェクトでは observable behavior
+2) ANALYSIS の目的が明確になる
+- ただトレースを積むのではなく、「仮置きした反例形を作れるか / 潰せるか」を見にいくので、trace の焦点が上がる。
 
-のように、モデルが何を「等価性前提」と読むかが揺れる。これは汎化性違反というより、汎化のための定義不足である。
+3) EQUIVALENT 結論の反証可能性が上がる
+- 先に反例形を明示するため、EQUIVALENT を出すときの no-counterexample claim が空文化しにくい。
 
-## 6. 全体の推論品質がどう向上すると期待できるか
-良い効果は確かにある。
+一方で、品質改善の上限は文言次第です。反例形を「更新可能な仮説」として書けばよい改善になりやすく、逆に「まずこれを書け」と強く固定すると探索の柔軟性を落とす恐れがあります。
 
-1. STRUCTURAL TRIAGE と per-test ANALYSIS の橋渡しになる
-- 現行 compare テンプレートは構造差の確認とテスト単位の精密トレースの間に、何を重点観察するかの中間層が薄い。
-- S4 により、観察すべき差異軸を先に言語化できれば、トレースの焦点が改善する。
+## 停滞診断（必須）
+- 懸念 1 点: proposal は compare の decision point を実際に動かしているが、EQUIVALENT 側の効き方はまだ抽象度が高く、実装次第では「監査 rubic で説明しやすい反証言語の補強」に留まり、compare の意思決定変化が主に NOT_EQUIVALENT 側だけになる危険はある。
 
-2. Guardrail #4 を実務上守りやすくする
-- subtle difference を見たとき、"これは自分が先に置いた等価条件を破るか" と確認できるため、差異の見落としは減る可能性がある。
+failed-approaches 該当性:
+- 探索経路の半固定: NO（ただし「first sketch the minimal counterexample shape」が強すぎると境界に近い）
+- 必須ゲート増: NO
+- 証拠種類の事前固定: NO
 
-3. large patch での探索効率を上げうる
-- S3 の scale assessment の直後に置くため、大規模差分で全部を追えないときも、「少なくともどの性質が一致していればよいのか」を先に定めることで、探索の優先順位が立つ。
+## compare 影響の実効性チェック（必須）
+1) Decision-point delta
+- Before: IF S1/S2 で structural gap が見える THEN early NOT EQUIVALENT に進みうる
+- After: IF S2 で relevant test path 上の structural gap が立証できる THEN early NOT EQUIVALENT、ELSE minimal counterexample shape を仮置きして ANALYSIS 継続
+- IF/THEN 形式で 2 行（Before/After）になっているか？: YES
+- 評価: 条件と行動の両方が変わっているので、理由の言い換えだけではない
 
-ただし、これらの利点は S4 が D1 と整合している場合に限る。つまり、列挙すべきなのは一般的な behavioral properties ではなく、テスト等価性に直接関係する "test-relevant observational properties" であるべきである。
+2) Failure-mode target
+- 主対象: 偽 NOT_EQUIV
+- 副対象: 偽 EQUIV
+- メカニズム: structural shortcut を relevant-test-path 条件に縛って偽 NOT_EQUIV を減らし、counterexample shape の先行仮置きで反証探索不足の偽 EQUIV を減らす
 
-## 追加コメント: 修正すれば有望な点
-監査としては、発想を否定するというより、文言のスコープを修正すべきだと考える。
+3) Non-goal
+- 変えないこと: 新しい必須ゲートは増やさない、証拠カテゴリは追加固定しない、反例形は探索拘束ではなく更新可能な仮説に留める
 
-現案:
-- "state what behavioral properties both changes must share for EQUIVALENT to hold"
+追加チェック:
+- Discriminative probe:
+  - 抽象ケース: 片方の変更だけが追加ファイルを触っているが、そのファイルは relevant tests の到達経路外にある。変更前は structural gap を見て NOT EQUIVALENT に倒しやすい。
+  - 変更後は、「relevant test path 上か」を先に見るので早期 NOT EQUIVALENT を保留し、counterexample shape が立たなければ EQUIVALENT 側の精査へ進める。
+  - これは新ゲート追加ではなく、既存 structural shortcut の発火条件を狭め、空いた分だけ ANALYSIS の反例探索を前に出す置換になっている。
 
-このままだと広すぎる。少なくとも以下の方向に狭める必要がある。
-- 既存テストで観測される性質に限定する
-- EQUIVALENT だけでなく、NOT_EQUIVALENT の反証探索にもつながる形にする
-- 先に書いた preconditions が D1 を上書きしないことを明示する
+## 修正指示（2〜3 点）
+1) 「first sketch the minimal counterexample shape」は固定感が強いので、実装では「briefly sketch an initial counterexample shape and update it during analysis」へ弱めてください。
+- 支払い: 新しい説明文を足すのでなく、既存の「Do not skip...」文の置換に留めること。
 
-例えば意図としては、
-- "before ANALYSIS, state which test-relevant observational properties must match for D1 equivalence to hold"
-のような限定が必要である。
+2) early NOT EQUIVALENT 条件の文言は「import/exercise」より「reach / execute the relevant code path」に寄せてください。
+- 支払い: 具体例（file/module/test-data）は残してもよいが、言い換え追加ではなく既存語の置換で行うこと。
 
-これなら backward reasoning の利点を残しつつ、semantic sameness への逸脱を抑えられる。
+3) EQUIVALENT 側の効き目を compare に明示するため、NO COUNTEREXAMPLE EXISTS 節に新行追加ではなく、既存文の「what test, what input, what diverging behavior」を「initial counterexample shape, updated as analysis proceeds」と統合してください。
+- 支払い: 新規必須欄を増やさないこと。
 
 ## 最終判断
-承認: NO（理由: 現行文言の S4 は compare モードの D1 が定義する "EQUIVALENT MODULO TESTS" より強い条件をモデルに自作させやすく、false EQUIVALENT を減らす一方で false NOT_EQUIVALENT を増やす回帰リスクがあるため。発想自体は有望だが、"behavioral properties" を test-relevant observational properties に限定し、EQUIVALENT 側だけに偏らない表現へ修正してから再提案すべき。）
+承認: YES
+
+理由:
+- Decision-point delta が具体で、compare の分岐を実際に変えている
+- failed-approaches.md の本質的再演ではない
+- 主効果は偽 NOT_EQUIV 削減だが、偽 EQUIV 側にも作用する説明が成立している
+- 汎化性違反は見当たらない
+
+ただし、実装文言は「反例形の仮置き」を探索拘束に見せないよう弱めることが前提です。
