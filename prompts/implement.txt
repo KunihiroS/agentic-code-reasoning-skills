@@ -3,6 +3,11 @@ ${PROPOSAL_PATH} の改善案に従い、以下を順番に実行してくださ
 1. SKILL.md を編集する (proposal.md に記載した変更のみ)
 2. ${RATIONALE_PATH} を Objective.md の rationale.md フォーマットに従い作成する
 
+実装メモ（重要）:
+- 追加よりも置換/統合/削除を優先し、${MAX_ADDED_LINES} の範囲内で compare に効く意思決定点を変える。
+- 「必須ゲート」を増やす変更を proposal が含む場合、同時に別の必須要素の optional 化/統合/削除が入っているか確認し、
+  結論前の判定手順の総量が増えていない形にする。
+
 【参照してよいファイルの完全なリスト】
 - ${PROPOSAL_PATH}
 - SKILL.md
