@@ -68,6 +68,7 @@ P3: ...
 Do not treat guesses as premises. Every later claim must reference a premise by number.
 
 ### Step 3: Hypothesis-driven exploration
+Exploration priority is not a fixed reading order; choose the next action by discriminative power — what unresolved uncertainty it resolves.
 Before opening any file, write:
 
 ```
@@ -90,6 +91,7 @@ UNRESOLVED:
   - [remaining questions]
 
 NEXT ACTION RATIONALE: [why the next file or step is justified]
+OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
 ```
 
 Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
@@ -106,7 +108,7 @@ For every function or method encountered on a relevant code path, record:
 **Rules:**
 - Read the actual definition. Do not infer behavior from the name.
 - Mark the Behavior column VERIFIED only after reading the source.
-- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
+- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
 - Trace through conditionals, mapping tables, and configuration — not just the happy path.
 - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
 
@@ -183,8 +185,8 @@ Before tracing individual functions, compare the two changes structurally:
       modified in one change but absent from the other.
   S2: Completeness — does each change cover all the modules that the
       failing tests exercise? If Change B omits a file that Change A
-      modifies and a relevant test's PASS/FAIL depends on that file's behavior,
-      the changes are NOT EQUIVALENT (tie it to a concrete assertion boundary).
+      modifies and a test imports that file, the changes are NOT EQUIVALENT
+      regardless of the detailed semantics.
   S3: Scale assessment — if either patch exceeds ~200 lines of diff,
       prioritize structural differences (S1, S2) and high-level semantic
       comparison over exhaustive line-by-line tracing. Exhaustive tracing
@@ -249,7 +251,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 ```
 
 ### Compare checklist
-- **Structural triage first**: compare modified file lists; treat asymmetry as a counterexample lead unless tied to a PASS/FAIL boundary
+- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
 - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
 - Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
@@ -454,7 +456,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified — e.g., via exception handlers, default values, or guard clauses. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
 
 ### General
