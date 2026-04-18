@@ -1,83 +1,102 @@
-# iter-24 proposal 監査コメント
+# Iteration 24 — discussion
 
-## 既存研究との整合性
-- 検索なし（理由: 一般原則の範囲で自己完結）。
-- 「反証を必須にする」「対立仮説も見る」という大枠は README.md / docs/design.md の研究コアと整合する。
-- ただし今回の提案は研究コアの追加活用というより、既存 Step 5 の優先順位ルールを別の優先順位ルールへ置換する案であり、研究コアの強化というより運用ヒューリスティックの差し替えに近い。
+## 総評
+提案の芯は明確です。compare テンプレート冒頭の「minimal counterexample shape を先に置く」指示が、実質的に探索入口のアンカーとして働きうるため、既に compare 本文内で required とされている DEFINITIONS + STRUCTURAL TRIAGE を先に出し、その後に triage-scoped な反例候補生成へ移す、というものです。
 
-## Exploration Framework のカテゴリ選定
-- 実装者の分類した A「推論の順序・構造を変える」は表面的には合っている。
-- ただし Objective.md のカテゴリ A は未探索余地の発見用の粗い分類であり、承認条件ではない。今回の本質は「Step 5 の反証優先順位を片側 pivot 優先から交互化へ置換する」こと。
-- failed-approaches.md では、探索順序や反証優先順位の具体化が探索経路の半固定になりうると明示されているため、カテゴリ A に入ること自体は問題ではないが、「A だから安全」とは言えない。
+これは「何の証拠を探すか」を固定する変更ではなく、「同じ要素をいつやるか」の置換なので、Objective.md の Exploration Framework では A. 推論の順序・構造を変える に入れるのが妥当です。しかも SKILL.md 内の既存要件（STRUCTURAL TRIAGE required before detailed tracing）と certificate 冒頭文の軽い不整合を解消する方向なので、単なる説明強化ではなく compare の入口分岐を実際に触っています。
 
-## compare 影響の実効性チェック
+## 1. 既存研究との整合性
+検索なし（理由: 一般原則の範囲で自己完結）。
+
+README.md / docs/design.md の研究コアは「番号付き前提、仮説駆動探索、手続き間トレース、必須反証」であり、本提案はそのコアを削らず、compare の入口順序だけを調整するものです。特に docs/design.md が強調する「structured templates are certificates」「per-item iteration as anti-skip mechanism」と矛盾せず、反例義務自体も維持されています。
+
+## 2. Exploration Framework のカテゴリ選定
+判定: 適切。
+
+理由:
+- 提案の本体は compare 冒頭の順序置換であり、A. 推論の順序・構造変更に素直に対応している。
+- B（取得方法）や D（自己チェック追加）ではない。新しい探索対象や新しい監査ゲートを増やしていないため。
+- F（原論文未活用）を副次的に主張する余地はあるが、主成分はあくまで順序変更。
+
+## 3. EQUIVALENT / NOT_EQUIVALENT 両方向への作用
+この提案は片方向最適化ではなく、両方向に作用しうる。
+
+- EQUIVALENT 側:
+  先に反例像を雑に決めると、たまたま思いついた差分像に探索が寄り、triage で見るべき比較スコープより先に「差がありそう」という局所像に引っ張られる。提案後は scope 先行になるので、偽 NOT_EQUIV を減らしやすい。
+- NOT_EQUIVALENT 側:
+  逆に、先に置いた反例像が不適切すぎると「見つからなかったので差がない」に寄り、構造ギャップや relevant path 上の欠落を過小評価して偽 EQUIV へ倒れる。提案後は triage-scoped な反例候補になるので、偽 EQUIV も減らしやすい。
+
+実効差分として重要なのは、反例生成の削除ではなく「後置」です。反例チェック義務は残るため、NOT_EQUIVALENT 判定だけを弱める変更ではありません。
+
+## 4. failed-approaches.md との照合
+### 本質的な再演か
+結論: 直撃の再演ではないが、近接領域なので実装文言は慎重に絞るべき。
+
+整合する点:
+- failed-approaches.md は「暫定的な反例像を冒頭で先に置かせる変更」を探索入口の狭窄として警戒しており、本提案はそこを後置するので方向としては整合的。
+- 証拠種類の事前固定、観測境界への過度還元、新しい必須メタ判断の純増はしていない。
+
+注意点:
+- 同ファイルは「どこから読み始めるか」「どの境界を先に確定するか」の半固定も警戒している。したがって実装時に triage-first を“新しい強い探索哲学”として膨らませると、別形の半固定に見えうる。
+- ただし今回の proposal は、既に SKILL.md に存在する required triage を certificate 冒頭文へ整合させるレベルであり、新たな経路固定を追加しているわけではない。この範囲なら許容可能。
+
+## 5. 汎化性チェック
+判定: 概ね良好。
+
+- proposal 内にベンチマークケース ID、特定リポジトリ名、テスト名、コード断片の持ち込みはない。
+- 引用されているのは SKILL.md 自身の文言であり、Objective.md の R1 減点対象外に収まる。
+- 特定言語・ドメイン・テストパターンへの暗黙の依存も薄い。structural scope → relevant tests → counterexample sketch という流れは言語非依存。
+
+軽微な留意:
+- “reverse from D1” は test-outcome 基準中心の compare モードに依存するので、compare 以外へ横展開する話に広げないほうがよい。
+
+## 6. 期待される推論品質の向上
+- compare 冒頭の自己アンカリングを弱め、先に relevant scope を定めることで探索の初手が安定する。
+- SKILL.md 内の「counterexample first」と「STRUCTURAL TRIAGE required before detailed tracing」のねじれが減り、テンプレート指示の一貫性が上がる。
+- 変更量が小さいため、研究コアや既存の反証可能性を崩さずに compare の判断入口だけ改善できる。
+
+## 停滞診断（必須）
+- 懸念 1 点: この提案は「冒頭文の言い換え」に留まると audit rubric には刺さるが compare の意思決定は変わらない。したがって、certificate 冒頭の実指示順序が本当に Before/After で置換されることが必要。
+
+### failed-approaches 該当性チェック
+- 探索経路の半固定: NO
+  - 理由: 新しい固定化ではなく、既存の required triage と冒頭文の不整合解消が主眼。反例生成自体は削らず後置するだけ。
+- 必須ゲート増: NO
+  - 理由: proposal 自身が「MUST/required の追加なし」「1–2行の置換」と明記している。
+- 証拠種類の事前固定: NO
+  - 理由: 何を探すかのテンプレ固定ではなく、反例生成のタイミング変更。
+
+## compare 影響の実効性チェック（必須）
 - 1) Decision-point delta:
-  - IF/THEN 形式で 2 行（Before/After）になっているか？ YES
-  - Trigger line（発火する文言の自己引用）が差分プレビュー内にあるか？ YES
-  - 実効差分: 「暫定結論に達した後、最初にどの反証対象を潰すか」という分岐は実際に変わっている。理由の言い換えだけではない。
-  - ただし、変わる分岐がまさに failed-approaches.md が危険視する「反証優先順位の差し替え」に当たる。
+  - Before: IF compare certificate に入ったら THEN minimal counterexample shape を先に置いてから分析に入る。
+  - After: IF compare certificate に入ったら THEN DEFINITIONS + STRUCTURAL TRIAGE で比較スコープを確定し、その後に triage-scoped な counterexample shape を置く。
+  - IF/THEN 形式で 2 行になっているか: YES
+  - Trigger line（発火する文言の自己引用）が差分プレビューにあるか: YES
+  - 評価: 条件も行動も変わっており、理由の言い換えだけではない。
+
 - 2) Failure-mode target:
-  - 狙いは両方（偽 EQUIV / 偽 NOT_EQUIV）。
-  - メカニズムは「暫定結論側への確認バイアスを減らし、反対側の有力主張も早めに潰す」こと。
-  - ただし pivot 優先を外すことで、結論反転に直結する高情報量の反証を後ろ倒しにし、逆に本来早く拾える決定的差分を遅らせるリスクがある。
+  - 対象: 両方（偽 EQUIV / 偽 NOT_EQUIV）
+  - メカニズム: 反例像の早期アンカリングを弱め、先に relevant scope を確定することで、狭すぎる反例像による見落としと、雑な差分像への過剰適応を同時に減らす。
+
 - 3) Non-goal:
-  - 証拠種類や観測境界を固定しない、必須ゲートを増やさない、という境界は明記されている。
-  - しかし「順序だけの変更だから安全」という主張は弱い。failed-approaches.md では順序の半固定そのものが失敗要因になりうるとされている。
+  - STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件（S2→直行）自体はいじらない。
+  - 新しい必須欄や新しい証拠タイプは増やさない。
+  - 探索経路を別の局所観点に差し替える提案にはしない。
+
 - Discriminative probe:
-  - 抽象ケース: A/B の差は一箇所の load-bearing な分岐条件にのみあり、そこを見れば即 NOT_EQUIVALENT と分かる一方、反対側仮説の strongest claim は周辺的で、先に潰しても結論がほぼ動かない。
-  - 変更前は pivot を先に潰すので決定的差分へ直行しやすい。変更後は「交互化」のため反対側の claim にも一手使い、証拠の情報利得が下がる可能性がある。
-  - これは新ゲート追加ではないが、既存の高情報量優先を低情報量混在へ置換しており、compare の改善が自明ではない。
-- 支払い（必須ゲート総量不変）:
-  - YES。既存 1 箇条書きの置換として明示されている。
+  - 抽象ケース: 2 変更は一見異なる実装だが、relevant tests が触るのは一部の共有スコープだけで、差分は非relevant path にある。
+  - 変更前は、先に描いた反例像がその非relevant 差分に寄ると偽 NOT_EQUIV に倒れやすい。変更後は triage で relevant scope を先に押さえるため、その差分を counterexample 候補から外しやすい。
+  - これは新ゲート追加ではなく、既存の triage と counterexample の順序置換だけで説明できる。
 
-## EQUIVALENT / NOT_EQUIVALENT への作用
-- EQUIVALENT 側への期待効果:
-  - 暫定的に EQUIVALENT と見たとき、NOT_EQUIVALENT 側の strongest claim も早めに潰すため、見逃し由来の偽 EQUIVALENT は減る可能性がある。
-- NOT_EQUIVALENT 側への期待効果:
-  - 暫定的に NOT_EQUIVALENT と見たとき、EQUIVALENT 側の strongest claim も見るため、些末差分への過剰反応による偽 NOT_EQUIVALENT は減る可能性がある。
-- ただし実効差分は両方向対称というより、「pivot 優先をやめる」方向に一律作用する。これにより、どちらの結論であっても“結論反転に最も効く一点”への集中が弱まる。
-- したがって、表向きは両方向対称でも、情報利得の高い反証を先に当てる既存ルールを外す副作用は両方向に出うる。特に decisive counterexample がある NOT_EQUIVALENT 判定では悪化しうる。
+- 支払い（必須ゲート総量不変）の明示:
+  - 本件は新しい必須ゲートの追加提案ではなく、既存必須要素の再配置なので、A/B 対応付けの支払いは追加では不要。
 
-## failed-approaches.md との照合
-- 結論: 本質的にかなり近い再演懸念がある。
-- 該当箇所:
-  - 「どこから読み始めるか」「どの境界を先に確定するか」のような読解順序の半固定は避けるべき（failed-approaches.md:14-18）
-  - 「既存の反証優先順位を、あるモードに限って別の局所観点へ差し替える変更」は避けるべき（failed-approaches.md:22-25）
-- 今回の提案はまさに Step 5 の「何を refute first とするか」の置換であり、順序だけと言っても failed-approaches.md が警戒している対象そのものに近い。
-- 特に proposal の「両仮説を交互に圧力テストする順序に置換」「次は反対結論側の最有力主張も潰す（交互に進める）」は、探索経路の半固定・反証優先順位の差し替えとして読める。
+## 修正指示（2〜3点）
+1. 実装は certificate 冒頭 1 行の置換に厳密に留め、triage-first の説明文を別の必須文として増やさないこと。
+2. After 文言では「scope what must be compared」を残しつつ、triage が探索経路そのものを固定するかのような強い表現は避けること。既存 required triage への整合、というトーンに抑えること。
+3. 可能なら “using what triage reveals” を “using the scoped relevant tests/paths identified above” のように少し具体化し、counterexample 後置が compare 判断のどこに効くかを明確にすること。
 
-## 停滞診断
-- 監査 rubric に刺さる説明強化へ偏り、compare の意思決定を変えていない懸念がないか:
-  - ないとは言えない。Decision-point delta 自体はあるが、実質は「バランスよく見よう」という説明の改善に寄りやすく、どの条件で結論を出す/保留する/追加探索するかの改善より、反証姿勢の印象改善に寄っている。
-- failed-approaches 該当性:
-  - 探索経路の半固定: YES
-    - 原因文言: 「両仮説を交互に圧力テストする順序」「次は反対結論側の最有力主張も潰す（交互に進める）」
-  - 必須ゲート増: NO
-  - 証拠種類の事前固定: NO
+## 結論
+承認: YES
 
-## 汎化性チェック
-- 具体的な数値 ID, リポジトリ名, テスト名, コード断片:
-  - ベンチマーク対象の固有識別子や特定テスト名・リポジトリ名は含まれていない。
-  - SKILL.md 自身の文言引用は Objective.md の減点対象外に該当し、問題ない。
-- 暗黙のドメイン依存:
-  - 特定言語・特定フレームワーク前提は薄い。
-  - ただし「current tentative conclusion / opposite conclusion の strongest claim を交互に潰す」という運用は、比較タスク一般には適用可能でも、常に情報利得最大になるとは限らず、汎用最適化としては弱い。
-
-## 全体の推論品質への期待
-- 良い点:
-  - 暫定結論へのロックイン抑制という狙い自体は妥当。
-  - 追加ゲートではなく既存 1 行の置換に留めようとしている点は複雑性の観点で良い。
-- 懸念点:
-  - 既存 pivot 優先は「結論を反転させうる最重要仮定」を先に潰す高情報量ヒューリスティックであり、これを外すと compare の意思決定速度と鋭さを落とす可能性がある。
-  - 提案は「片側集中の副作用」を避ける代わりに、「高情報量優先」の利点も同時に捨てている。ここが trade-off として未整理。
-
-## 総合判断
-最大のブロッカーは 1 つです。
-- failed-approaches.md の本質的再演: 既存の反証優先順位を「交互化」という別の固定順序へ差し替えており、探索経路の半固定を再導入している点。
-
-## 修正指示
-1. 「pivot 優先」を全面置換しないこと。削るべきは現行文ではなく、片側コミットを強める解釈だけに留め、既存の高情報量優先は残すこと。
-2. 「交互に進める」という固定順序文言を削除し、必要なら optional な補助ヒューリスティックとして統合すること。必須ルール化しないこと。
-3. compare に効く差分を出したいなら、順序の固定ではなく「pivot を潰しても不確実性が残る条件でのみ反対側の strongest claim を追加確認する」といった条件付き分岐へ再設計すること。
-
-承認: NO（理由: failed-approaches.md が禁じる『反証優先順位の差し替えによる探索経路の半固定』の本質的再演）
+理由: Trigger line と Before/After の decision-point delta が具体で、compare の入口分岐を実際に変えている。failed-approaches.md の禁止方向にも原則抵触せず、しかも新ゲート追加なしの小差分なので、PASS の下限を満たしたまま compare 改善に結びつく提案として妥当。
