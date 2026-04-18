@@ -1,254 +1,98 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/14/26 10:22:44] INFO     Processing request of type            server.py:727
+[04/18/26 16:06:20] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-まず参照してよいファイルを読み込みます。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      SKILL.md  0.8s
-  ┊ 📖 read      Objective.md  0.8s
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
   ┊ 📖 read      failed-approaches.md  0.8s
+  ┊ 📖 read      Objective.md  0.9s
+  ┊ 📖 read      SKILL.md  0.8s
   ┊ 📖 read      README.md  0.8s
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-次に残り 2 ファイルを読みます。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      docs/design.md  0.8s
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-これですべての参照ファイルを確認しました。分析を行い、proposal.md を作成します。
-
----
-
-**分析メモ（内部）**
-
-カテゴリ C「比較の枠組みを変える」の 3 つのメカニズム:
-1. テスト単位 → 関数単位・モジュール単位で比較
-2. 差異の重要度を段階的に評価
-3. 変更のカテゴリ分類を先に行う
-
-SKILL.md の `compare` モードの現状を確認:
-
-- STRUCTURAL TRIAGE (S1, S2, S3) はすでに「ファイル差分」「完全性」「規模」を比較している
-- しかし、STRUCTURAL TRIAGE が「NOT EQUIVALENT の早期ショートカット」に特化しており、EQUIVALENT 方向の判断には活用されていない
-- EDGE CASES RELEVANT TO EXISTING TESTS のセクションは「実際のテストが行使するものだけ」と限定しているが、差異の重要度を段階的に評価する枠組みはない
-
-**候補となる変更箇所:**
-
-現在の `Compare checklist` の末尾:
-```
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
-- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
-```
-
-STRUCTURAL TRIAGE セクションに「変更カテゴリの事前分類」を加える、または EDGE CASES のセクションに「差異重要度の段階的評価」を加えるアプローチが考えられる。
-
-**failed-approaches との照合:**
-- 「探索で探すべき証拠の種類をテンプレートで事前固定しすぎる」→ 変更カテゴリ分類を過度に規定すると抵触する可能性あり
-- 「ドリフト抑制のための局所的な具体化は探索の幅を狭める」→ 読解順序の半固定は避ける
-- 「局所的な仮説更新を前提修正義務に直結させすぎない」→ 関係薄
-- 「結論直前の自己監査に新しい必須のメタ判断を増やしすぎない」→ Step 5.5 への追加は避ける
-
-**最良の変更候補:**
-
-STRUCTURAL TRIAGE の S3 は現状「大規模パッチのスケール評価」のみ。ここに「変更カテゴリの事前分類（リファクタリング vs バグ修正 vs 機能追加）」の視点を追加すると：
-- カテゴリ C のメカニズム「変更のカテゴリ分類を先に行う」に完全一致
-- STRUCTURAL TRIAGE はすでに「詳細トレース前に先に行う」構造なので、failed-approaches の「探索の自由度を削りすぎない」にも抵触しない
-- 新規ステップではなく既存行への文言追加
-
-S3 の現在の文言:
-```
-  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-      prioritize structural differences (S1, S2) and high-level semantic
-      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-      is infeasible for large patches and produces unreliable conclusions.
-```
-
-提案: S3 の後または S2 の後に「変更の意図カテゴリ（S3 として改称または新 S3 として追加）」を追記する。
-
-ただし「新規フィールド」は「原則不可」とのルールがある。S3 の文言を精緻化する形で行う。
-
-**別の候補: EDGE CASES の差異重要度**
-
-`EDGE CASES RELEVANT TO EXISTING TESTS` セクションに:
-```
-  E[N]: [edge case]
-    - Change A behavior: [specific output/behavior]
-    - Change B behavior: [specific output/behavior]
-    - Test outcome same: YES / NO
-```
-
-ここに `- Behavioral impact: CRITICAL / MARGINAL / NEUTRAL` のような差異重要度フィールドを追加することが考えられるが、「新規フィールド追加は原則不可」なのでアウト。
-
-**最終決定: STRUCTURAL TRIAGE の S2 か S3 の文言精緻化**
-
-S3 に「変更カテゴリ（リファクタリング/バグ修正/機能追加）の識別」の観点を追記する形が最もクリーン。具体的には：
-
-S3 の末尾に「変更の意図（リファクタリング・バグ修正・機能追加）を識別すること。同じ機能を異なる実装で達成するリファクタリング的変更は EQUIVALENT の先行仮説をより強く支持する」という旨の文言を追加。
-
-変更行数: S3 は現在 3 行。文言追加で 1〜2 行増 → 合計で 5 行以内に収まる。
-
-実際の変更は既存の S3 行への追記のみなので制限内。
-
-ではproposal.mdを作成します。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 💻 preparing terminal…
-  ┊ 💻 $         mkdir -p benchmark/swebench/runs/iter-26  0.2s
-  ┊ ✍️ preparing write_file…
+  ┊ 📖 read      SKILL.md  0.8s
   ┊ ✍️  write     benchmark/swebench/runs/iter-26/proposal.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-26/proposal.md → b/benchmark/swebench/runs/iter-26/proposal.md
-@@ -1,104 +1,115 @@
--# Iter-26 改善提案
-+# Iteration 26 — Proposal
+@@ -1,115 +1,40 @@
+-# Iteration 26 — Proposal
++過去提案との差異: 「反証優先順位の差し替え」や「特定観測境界へ判定条件を還元して探索経路を半固定化」ではなく、差異の“重要度分類”を導入して比較の粒度を調整する提案。
++Target: 両方（偽 EQUIV と偽 NOT_EQUIV）
++Mechanism (抽象): 差異を“同じ差異”として扱わず、影響カテゴリ（契約/制御/内部）に分類して比較の判断単位を切り替える。
++Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件や Step 5 の反証手順（やり方）を狭めたり置換したりしない。
  
--## 1. 選択した Exploration Framework カテゴリとその理由
-+## Exploration Framework Category: C (強制指定)
+-## Exploration Framework Category: C (強制指定)
++カテゴリC（比較の枠組み）内での具体メカニズム選択理由
++- 既存の compare は「差異を見つけたらテストへトレースして影響判定」という一本鎖が強く、差異の種類（外部契約に触れる差異 vs 内部表現の差異）による“比較の単位/重要度”の切替が明示されていない。
++- その結果、(a) 内部リファクタ相当の差異を過大評価して NOT_EQUIV に倒す、(b) 見た目が小さいが外部契約（戻り値/例外/境界条件/入力解釈）に触れる差異を過小評価して EQUIV に倒す、の両側が起きうる。
++- そこで「差異の重要度を段階的に評価する」（Objective.md のカテゴリC例: “差異の重要度を段階的に評価する”）を最小差分で compare の意思決定点に埋め込む。
  
--**カテゴリ C: 比較の枠組みを変える（差異の重要度を段階的に評価する）**
-+カテゴリ C「比較の枠組みを変える」の 3 つのメカニズムのうち、
-+今回は「変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う」を選択する。
+-カテゴリ C「比較の枠組みを変える」の 3 つのメカニズムのうち、
+-今回は「変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う」を選択する。
++改善仮説（1つ・汎用）
++- 仮説: “差異を発見した”という事実だけで同一の比較行動を取らず、差異を (1) 契約差（観測可能な出力/例外/入力受理/副作用）、(2) 制御差（分岐条件・境界判定・到達性）、(3) 内部差（命名/配置/キャッシュ/表現変更）に分類してから比較単位を選ぶことで、偽 NOT_EQUIV（差異過大視）と偽 EQUIV（差異過小視）を同時に減らせる。
  
--### 選択理由
-+### メカニズム選択理由
+-### メカニズム選択理由
++SKILL.md の該当箇所（短い引用）と変更案
++引用（Compare checklist）:
++- "When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact"
  
--- **未試行のメカニズム**: これまでの BL エントリが対象としてきたのは「ANALYSIS OF TEST BEHAVIOR テンプレートへのフィールド追加（BL-8, 11, 12, 13）」「出力制約（BL-2, 3）」「自己チェック（BL-9）」「探索ゲート（BL-10）」「探索順序の固定（BL-12）」「変更性質の自由記述（BL-7）」である。一方、**Compare checklist の項目に対称的な検証義務を追加するアプローチは一度も試みられていない**。
--- **対称性の欠如が問題の根本**: 現在の Compare checklist には、SAME 方向（コード差異を見つけたときに「影響なし」と結論する前にトレースせよ）の義務があるが、DIFFERENT 方向（異なるテスト結果を主張する前にアサーション到達まで確認せよ）の義務がない。この非対称性が、エージェントがコード差異を発見した時点で DIFFERENT と主張するショートカットを許容している。
--- **カテゴリ F との接点**: 論文のエラー分析「incomplete reasoning chains（推論チェーンが不完全）」の知見——関数を複数トレースしても下流コードの処理を見落とす——の逆方向適用。エージェントはコード差異を発見しても、その差異がテストのアサーション条件まで到達するかを確認しないまま DIFFERENT と結論している。これは完全な因果チェーンを要求する原則と一致するカテゴリ F の知見でもある。
-+SKILL.md の compare モードはすでに STRUCTURAL TRIAGE (S1, S2, S3) という
-+「詳細トレース前の先行評価」構造を持つ。この構造は NOT EQUIVALENT の早期検出に
-+最適化されており、EQUIVALENT 方向の判断を支援するメカニズムが手薄である。
-+
-+変更のカテゴリ（リファクタリング的か、バグ修正的か、機能追加的か）を
-+STRUCTURAL TRIAGE 段階で識別することで、2 つの変更が「同じ目的を別実装で達成して
-+いるかどうか」という観点を比較の出発点に据えられる。これは EQUIVALENT 判定を
-+強化する方向に直接作用し、かつ既存の構造（STRUCTURAL TRIAGE の S3 行）への
-+文言精緻化として実現できるため、新規ステップ追加なしで達成できる。
-+
-+他の 2 メカニズム（テスト単位→関数単位への粒度変更、差異重要度の段階的評価）は
-+いずれも既存のテンプレート構造を大きく変形するか、新規フィールドの追加を要するため
-+今回の変更規模制約に適合しない。
+-SKILL.md の compare モードはすでに STRUCTURAL TRIAGE (S1, S2, S3) という
+-「詳細トレース前の先行評価」構造を持つ。この構造は NOT EQUIVALENT の早期検出に
+-最適化されており、EQUIVALENT 方向の判断を支援するメカニズムが手薄である。
++変更: 上の1行を「差異分類→分類に応じた比較単位の選択」に置換し、差異重要度（契約/制御/内部）を明示する。
  
- ---
+-変更のカテゴリ（リファクタリング的か、バグ修正的か、機能追加的か）を
+-STRUCTURAL TRIAGE 段階で識別することで、2 つの変更が「同じ目的を別実装で達成して
+-いるかどうか」という観点を比較の出発点に据えられる。これは EQUIVALENT 判定を
+-強化する方向に直接作用し、かつ既存の構造（STRUCTURAL TRIAGE の S3 行）への
+-文言精緻化として実現できるため、新規ステップ追加なしで達成できる。
++Decision-point delta（IF/THEN 2行）
++Before: IF semantic difference is found THEN trace at least one relevant test through the differing path because test-outcome divergence is the decision criterion.
++After:  IF semantic difference is found THEN classify it as CONTRACT / CONTROL-FLOW / INTERNAL and only require test-tracing for CONTRACT or CONTROL-FLOW because those categories map directly to observable outcomes.
  
--## 2. 改善仮説（1つ）
-+## 改善仮説
+-他の 2 メカニズム（テスト単位→関数単位への粒度変更、差異重要度の段階的評価）は
+-いずれも既存のテンプレート構造を大きく変形するか、新規フィールドの追加を要するため
+-今回の変更規模制約に適合しない。
++変更差分プレビュー（Before/After, 3–10行）
++Before (Compare checklist excerpt):
++- Trace each test through both changes separately before comparing
++- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
  
--**仮説**: Compare checklist の既存項目「コード差異を見つけたとき、その影響を見落とさないようにテストをトレースせよ」は SAME 方向の保護のみを与えているが、DIFFERENT 方向の保護がない。DIFFERENT を主張する前に「テストのアサーション値（コールパスではなく最終的な assert 条件）まで差異が到達しているかを確認せよ」という対称的な義務を checklist に 1 項目追加することで、コードレベルの差異を発見した段階でアサーション到達を確認せずに NOT_EQUIVALENT と結論するショートカット（EQUIV 偽陽性の主因）を削減できる。
-+STRUCTURAL TRIAGE の S3（スケール評価）に変更の意図カテゴリの識別を加えることで、
-+モデルが詳細トレース前に「この 2 変更はリファクタリング的に等価な別実装か、
-+それとも異なる機能的意図を持つか」という軸を先に定めるようになる。
-+これにより、EQUIVALENT 判定において過小評価されていた意図的同一性の証拠が
-+早期に考慮され、全体的な比較品質が向上すると予想する。
+----
++After (Compare checklist excerpt):
++- Trace each test through both changes separately before comparing
++- When a semantic difference is found, classify it (CONTRACT / CONTROL-FLOW / INTERNAL); test-trace the differing path for CONTRACT or CONTROL-FLOW before concluding “no impact”
++- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
  
- ---
+-## 改善仮説
++failed-approaches.md との照合（整合 1–2点）
++- 「次に探すべき証拠種類をテンプレで事前固定しすぎる」回避: 本提案は“証拠型の固定”ではなく、差異の種類という比較フレームを導入するだけで、具体的に何を検索せよ（特定シグナル捜索）を規定しない。
++- 「既存の判定基準を特定の観測境界へ還元しない」整合: NOT_EQUIV/EQUIV の判定基準（D1: テスト結果）や反証ステップは置換せず、差異重要度の分類で“比較の粒度”を切り替えるだけで観測境界の狭窄を起こさない。
  
--## 3. SKILL.md のどこをどう変えるか
-+## SKILL.md への具体的な変更
- 
--### 変更箇所: `## Compare` セクションの `Compare checklist`
-+### 変更箇所
- 
--#### 変更前（末尾 2 項目）
-+compare モード、STRUCTURAL TRIAGE の S3 の文言を精緻化する。
-+
-+### 変更前
- 
- ```
--- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
--- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
-+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-+      prioritize structural differences (S1, S2) and high-level semantic
-+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-+      is infeasible for large patches and produces unreliable conclusions.
- ```
- 
--#### 変更後（末尾 3 項目）
-+### 変更後
- 
- ```
--- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
--- When claiming different test outcomes, verify the behavioral divergence reaches the test assertion condition — intermediate value differences that cancel out before the assertion do not produce DIFFERENT outcomes
--- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
-+  S3: Scale and intent assessment — if either patch exceeds ~200 lines of diff,
-+      prioritize structural differences (S1, S2) and high-level semantic
-+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-+      is infeasible for large patches and produces unreliable conclusions.
-+      Also identify the change category for each patch (refactoring /
-+      bug-fix / feature-addition): two patches that share the same category
-+      and target the same defect or abstraction boundary provide stronger
-… omitted 103 diff line(s) across 1 additional file(s)/section(s)
+-STRUCTURAL TRIAGE の S3（スケール評価）に変更の意図カテゴリの識別を加えることで、
+-モデルが詳細トレース前に「この 2 変更はリファクタリング的に等価な別実装か、
+-それとも異なる機能的意図を持つか」という軸を先に定めるようになる。
+-これにより、EQUIVALENT 判定において過小評価されていた意図的同一性の証拠が
+-早期に考慮され、全体的な比較品質が向上すると予想する。
+-
+----
+-
+-## SKILL.md への具体的な変更
+-
+-### 変更箇所
+-
+-compare モード、STRUCTURAL TRIAGE の S3 の文言を精緻化する。
+-
+-### 変更前
+-
+-```
+-  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+-      prioritize structural differences (S1, S2) and high-level semantic
+-      comparison over exhaustive line-by-line tracing. Exhaustive tracing
+-      is infeasible for large patches and produces unreliable conclusions.
+-```
+… omitted 68 diff line(s) across 1 additional file(s)/section(s)
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-proposal.md を作成しました。内容を確認します。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      benchmark/swebench/runs/iter-26/proposal.md  0.8s
+benchmark/swebench/runs/iter-26/proposal.md に提案を書き込みました。
 
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-`benchmark/swebench/runs/iter-26/proposal.md` を作成しました。内容の要約です。
-
----
-
-**提案の骨子**
-
-カテゴリ C のメカニズム: 「変更のカテゴリ分類を先に行う」
-
-改善仮説:
-STRUCTURAL TRIAGE の S3（スケール評価）に「変更の意図カテゴリ（リファクタリング / バグ修正 / 機能追加）の識別」を加える。詳細トレース前に 2 つの変更が「同じ目的を別実装で達成しているかどうか」という軸を先に確定させることで、EQUIVALENT 判定を支援する先行仮説が生まれ、比較全体の目的意識が明確になる。
-
-SKILL.md の変更箇所:
-S3 のタイトルを "Scale assessment" から "Scale and intent assessment" に改め、末尾に 2 行追加:
-
-```
-      Also identify the change category for each patch (refactoring /
-      bug-fix / feature-addition): two patches that share the same category
-      and target the same defect or abstraction boundary provide stronger
-      prior evidence for EQUIVALENT before detailed tracing begins.
-```
-
-変更規模: 3 行（hard limit 5 行以内）
-
-期待効果:
-- EQUIVALENT の過小判定（NOT EQUIVALENT バイアス）の低減
-- 詳細トレース段階での比較粒度選択の適正化
-- overall スコアの向上
-
-`benchmark/swebench/runs/iter-26/proposal.md` を作成しました。内容の要約です。
-
----
-
-**提案の骨子**
-
-カテゴリ C のメカニズム: 「変更のカテゴリ分類を先に行う」
-
-改善仮説:
-STRUCTURAL TRIAGE の S3（スケール評価）に「変更の意図カテゴリ（リファクタリング / バグ修正 / 機能追加）の識別」を加える。詳細トレース前に 2 つの変更が「同じ目的を別実装で達成しているかどうか」という軸を先に確定させることで、EQUIVALENT 判定を支援する先行仮説が生まれ、比較全体の目的意識が明確になる。
-
-SKILL.md の変更箇所:
-S3 のタイトルを "Scale assessment" から "Scale and intent assessment" に改め、末尾に 2 行追加:
-
-```
-      Also identify the change category for each patch (refactoring /
-      bug-fix / feature-addition): two patches that share the same category
-      and target the same defect or abstraction boundary provide stronger
-      prior evidence for EQUIVALENT before detailed tracing begins.
-```
-
-変更規模: 3 行（hard limit 5 行以内）
-
-期待効果:
-- EQUIVALENT の過小判定（NOT EQUIVALENT バイアス）の低減
-- 詳細トレース段階での比較粒度選択の適正化
-- overall スコアの向上
-
-failed-approaches 全 4 原則との照合: すべて抵触なし
-
-session_id: 20260414_102244_eb3eb4
+session_id: 20260418_160620_d0879c
