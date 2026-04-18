@@ -162,7 +162,7 @@ Goal: determine whether two changes produce the same relevant behavior.
 
 ### Certificate template
 
-Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
+Complete every section; first sketch the minimal counterexample shape (reverse from D1), then use ANALYSIS to try to produce/refute it.
 
 ```
 DEFINITIONS:
@@ -190,8 +190,8 @@ Before tracing individual functions, compare the two changes structurally:
       comparison over exhaustive line-by-line tracing. Exhaustive tracing
       is infeasible for large patches and produces unreliable conclusions.
 
-If S1 or S2 reveals a clear structural gap (missing file, missing module
-update, missing test data), you may proceed directly to FORMAL CONCLUSION
+If S2 establishes a structural gap on a relevant test path (a file/module/test-data
+that relevant tests import/exercise is missing), you may proceed directly to FORMAL CONCLUSION
 with NOT EQUIVALENT without completing the full ANALYSIS section.
 
 PREMISES:
@@ -454,7 +454,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis — verify both upstream (where the value was set or the state was created) and downstream (where it is consumed or checked).
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
 
 ### General

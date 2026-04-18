@@ -15,10 +15,9 @@ benchmark/swebench/runs/iter-26/proposal.md
 
 【直近の却下履歴 — 以下と同じ方向の提案は絶対に禁止】
 iter-20: failed-approaches.md にある「反証優先順位の局所観点への差し替え」という本質的失敗の再演であり、highest-tier-first が探索経路の半固定として働くため
-iter-22: failed-approaches.md にある「既存の反証優先順位を局所観点へ差し替える失敗」の本質的再演
-iter-23: failed-approaches.md が禁じる「既存の汎用ガードレールを、特定の追跡方向・証拠型へ置換して探索経路を半固定化する」再演に近い
-iter-24: failed-approaches.md が禁じる『反証優先順位の差し替えによる探索経路の半固定』の本質的再演
-iter-25: failed-approaches.md の「特定シグナルの捜索」「探索経路の半固定」の本質的再演になっているため
+iter-22: compare 影響の実効性を担保する Trigger line が差分プレビューに欠けている
+iter-23: compare の根拠を asserted key value の data-flow に実質固定しており、failed-approaches.md の「証拠種類の事前固定」と「探索経路の半固定」の本質的再演になっているため
+iter-25: proposal 内に具体的な数値 ID「iter-19/20」「iter-23」が含まれており、今回の汎化性ルールに抵触するため
 
 上記は直近のイテレーションで却下された提案の理由です。
 これらと本質的に同じメカニズムの提案を繰り返してはいけません。
