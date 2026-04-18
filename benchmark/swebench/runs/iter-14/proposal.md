@@ -1,131 +1,102 @@
-# Iteration 14 — Improvement Proposal
+1) Target misclassification: 偽 NOT_EQUIV を減らす
+2) Current failure story (抽象): 構造差（欠落/追加ファイル等）を見つけた時点で「観測可能な差」への写像が弱いまま NOT_EQUIV を早期確定し、後段のテストオラクル照合を省いて誤判定しやすい
+3) Mechanism (抽象): 構造差を「オラクル可視/不可視」の重要度に分類し、オラクル可視だと示せない構造差では結論を保留して ANALYSIS 側へ送るため、過剰反応（早期 NOT_EQUIV）を減らす
+4) Non-goal boundary: 読解順序の半固定・証拠種類の事前固定・新しい必須ゲート増設（MUST/required の純増）は行わない
 
-## Exploration Framework カテゴリ: C (強制指定)
+Exploration Framework カテゴリ: C（比較の枠組みを変える）
+- 選ぶメカニズム: 「差異の重要度を段階的に評価する」（Objective.md: “差異の重要度を段階的に評価する”）
+- 理由: compare の誤判定は「差があるか」より「差が D1（テストオラクル）に写像できる重要差か」を取り違えることで起きやすく、重要度の分類が結論トリガ（EQUIV / NOT_EQUIV）に直結するため。
 
-カテゴリ C「比較の枠組みを変える」のうち、今回選択する具体的メカニズムは:
+改善仮説（1つ）
+- 構造差による早期 NOT_EQUIV のショートカットを「オラクル可視な構造差」に限定すると、観測可能性が薄い差への過剰反応が減り、全体として比較の誤判定（特に偽 NOT_EQUIV）が減る。
 
-> **変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う**
+現状ボトルネック診断（SKILL.md 短い引用 + 失敗メカニズム）
+- 現行の早期結論トリガが、重要度（オラクル可視性）を満たさない構造差でも発火しうる:
+  - 引用（SKILL.md / compare / STRUCTURAL TRIAGE）:
+    “If S1 or S2 reveals a clear structural gap (missing file, missing module update, missing test data), you may proceed directly to FORMAL CONCLUSION with NOT EQUIVALENT ...”
+- 誘発される失敗メカニズム: 「構造差 = 直ちに NOT_EQUIV」という分類が先に立ち、D1（テストオラクル一致/不一致）への写像確認が弱いまま結論が確定する（比較枠組みの粒度/重要度の取り違え）。
 
-### このメカニズムを選んだ理由
+Decision-point delta（IF/THEN 2行、観測できる条件で分岐）
+- Before: IF S1/S2 で structural gap が見える THEN 追加で探さず NOT_EQUIV を結論してよい because “missing file/module/test data” を構造根拠として扱える
+- After:  IF S1/S2 で structural gap が見える AND それが ORACLE-VISIBLE（関連テストの assert/例外/外部状態に写像できる） THEN NOT_EQUIV を結論してよい ELSE 結論を保留して ANALYSIS へ進む because 「テストオラクルに写像できた差」だけを結論根拠として扱う
+- 対応する SKILL.md セクション名:
+  - “STRUCTURAL TRIAGE (required before detailed tracing)”
+  - “### Compare checklist”
 
-現行 SKILL.md の STRUCTURAL TRIAGE は S1（修正ファイル差分）・S2（カバレッジ完全性）・
-S3（規模評価）の 3 軸を持つが、「この変更はどういう種類の変更か」という
-セマンティック・カテゴリの宣言がない。その結果、エージェントは変更の性質を
-暗黙のうちに判断しながらトレースを進めることになり、
+Trigger line:
+- “only shortcut to NOT EQUIVALENT on gaps that are ORACLE-VISIBLE to a relevant test oracle.”
 
-- リファクタリング的な変更（同じ結果を異なる経路で達成する）を追うときに
-  「経路が違う＝異なる振る舞い」という表層的な差異に引きずられて
-  NOT_EQUIVALENT と誤判定するリスク（EQUIV 方向の失敗）、
-- 微妙なバグ修正（実質的な振る舞い変化）を追うときに
-  「構造は似ている」という印象から EQUIVALENT と誤判定するリスク
-  （NOT_EQ 方向の失敗）
+変更タイプ（1つ）
+- 定義の精緻化（比較枠組み: 構造差の「重要度（オラクル可視性）」を、結論トリガに接続して精緻化）
 
-の両方が生じうる。変更カテゴリを S2 完了直後に明示宣言させることで、
-その後の ANALYSIS の焦点と必要な証拠の種類が絞られ、
-不要な方向への推論ドリフトを構造的に抑制できる。
+SKILL.md のどこをどう変えるか（具体）
+- compare モードの “STRUCTURAL TRIAGE” にある早期 NOT_EQUIV 条件を、S4 の概念（ORACLE-VISIBLE/INVISIBLE）でゲートする。
+- compare checklist の先頭項目に、同じ条件（オラクル可視なギャップのみショートカット）を明示して、行動差をチェックリストとして発火させる。
 
-カテゴリ C の他の 2 つのメカニズム（テスト単位→関数/モジュール単位比較、
-差異の重要度の段階的評価）は、それぞれ別途検討できる独立したメカニズムであり、
-今回は「変更分類を先行させる」という単一仮説のみに絞る。
+支払い（必須ゲート総量不変の証明）
+- 今回は MUST/required の追加・強化を行わず、既存の “may proceed directly” の適用条件を狭めるだけなので、必須ゲート総量は増えない（支払い不要）。
 
----
+変更差分の最小プレビュー（同一範囲 3〜10行、Before/After）
+Before（SKILL.md / compare / STRUCTURAL TRIAGE + checklist 抜粋）:
+```text
+STRUCTURAL TRIAGE (required before detailed tracing):
+...
+  OPTIONAL — S4: Difference importance — label each discovered difference as ORACLE-VISIBLE
+      (can change an asserted output/exception/externally visible state) vs ORACLE-INVISIBLE,
+      and prioritize tracing ORACLE-VISIBLE differences to a concrete test oracle first.
 
-## 改善仮説
+If S1 or S2 reveals a clear structural gap (missing file, missing module
+update, missing test data), you may proceed directly to FORMAL CONCLUSION
+with NOT EQUIVALENT without completing the full ANALYSIS section.
 
-**比較対象の変更を ANALYSIS 前に変更カテゴリ（リファクタリング・バグ修正・
-機能追加）として分類させることで、その分類がその後の証拠探索と
-等価性判断の基準を適切に絞り込み、表層的な経路差異への過剰反応と
-実質的な意味差への過小反応の両方を減らせる。**
-
----
-
-## SKILL.md の変更内容
-
-### 変更箇所
-
-STRUCTURAL TRIAGE ブロック内の S2 行（現行）:
-
-```
-  S2: Completeness — does each change cover all the modules that the
-      failing tests exercise? If Change B omits a file that Change A
-      modifies and a test imports that file, the changes are NOT EQUIVALENT
-      regardless of the detailed semantics.
-```
-
-### 変更後
-
-```
-  S2: Completeness — does each change cover all the modules that the
-      failing tests exercise? If Change B omits a file that Change A
-      modifies and a test imports that file, the changes are NOT EQUIVALENT
-      regardless of the detailed semantics. Also classify the change type:
-      REFACTOR (same outcome, different path), BUG-FIX (corrects wrong
-      behavior), or FEATURE (new behavior). Use this classification to
-      calibrate the depth of semantic tracing required in ANALYSIS.
+### Compare checklist
+- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
 ```
 
-### diff（追加行のみ、削除行なし）
+After（同じ範囲；変更は5行以内）:
+```text
+STRUCTURAL TRIAGE (required before detailed tracing):
+...
+  OPTIONAL — S4: Difference importance — label each discovered difference as ORACLE-VISIBLE
+      (can change an asserted output/exception/externally visible state) vs ORACLE-INVISIBLE,
+      and prioritize tracing ORACLE-VISIBLE differences to a concrete test oracle first.
 
-```diff
--      regardless of the detailed semantics.
-+      regardless of the detailed semantics. Also classify the change type:
-+      REFACTOR (same outcome, different path), BUG-FIX (corrects wrong
-+      behavior), or FEATURE (new behavior). Use this classification to
-+      calibrate the depth of semantic tracing required in ANALYSIS.
+If S1 or S2 reveals a clear structural gap that is ORACLE-VISIBLE to a relevant test oracle,
+you may proceed directly to FORMAL CONCLUSION with NOT EQUIVALENT without completing the full ANALYSIS section.
+
+### Compare checklist
+- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing; only shortcut to NOT EQUIVALENT on gaps that are ORACLE-VISIBLE to a relevant test oracle
 ```
 
-### 変更規模の宣言
+意思決定ポイントがどう変わるか（1行）
+- 早期 NOT_EQUIV の結論は「構造差がある」だけでは発火せず、「テストオラクルに写像できる（ORACLE-VISIBLE）構造差がある」場合に限定され、そうでなければ結論を保留して ANALYSIS 側で比較を続ける。
 
-追加行: 3 行（hard limit 5 行以内 — 適合）
-削除行: 1 行（制限にカウントしない）
-新規ステップ・新規フィールド・新規セクション: なし
+期待される“挙動差”（compare に効く形）
+- 変更前に起きがちな誤り（一般形）: 片側にだけ存在する差分（ファイル/モジュール/データ等）を見つけると、その差が実際にテストの assert/例外/外部状態へ影響するか未確定でも NOT_EQUIV を確定してしまう（偽 NOT_EQUIV）。
+- 変更後に減るメカニズム: 「ORACLE-VISIBLE へ写像できるか」をショートカットの条件にすることで、観測可能性が薄い構造差では ANALYSIS に送られ、テストオラクル基準（D1）に沿った比較へ戻る。
+- 誤判定方向: 主に偽 NOT_EQUIV を減らす。偽 EQUIV を増やしにくい理由は、ORACLE-VISIBLE だと示せる差（＝D1 に影響する差）では従来通り NOT_EQUIV を早期確定でき、また ORACLE-VISIBLE でない場合も「EQUIV を早期確定」するのではなく「保留して分析継続」へ倒すため。
 
----
+最小インパクト検証（思考実験）
+- ミニケースA（改善が効く状況）:
+  - 観測: S1/S2 で片側にだけ存在する artifact が見えるが、それが関連テストの assert/例外/外部状態と結びつく証拠が薄い（ORACLE-VISIBLE と言えない）。
+  - Before: structural gap だけで NOT_EQUIV を早期結論しがち。
+  - After: ORACLE-VISIBLE でないため結論を保留し、ANALYSIS（テスト単位のオラクル照合）へ進む。
+- ミニケースB（逆方向の誤判定を誘発しうる状況）:
+  - 観測: structural gap が実は決定的で、短い照合で ORACLE-VISIBLE と示せるが、分析者が「ORACLE-VISIBLE の主張」を書き落とす。
+  - 悪化しない理由/回避策（新しい必須手順を増やさずに）: チェックリストの trigger line が “only shortcut ... ORACLE-VISIBLE ...” を明示するため、「ショートカットを使うなら ORACLE-VISIBLE を書く」方向に自然に誘導される。一方で書き落とした場合はショートカット不能となり、誤った EQUIV ではなく「保留→ANALYSIS 継続」に倒れる（逆方向の誤判定より、追加探索に寄るだけ）。
 
-## 一般的な推論品質への期待効果
+failed-approaches.md との照合（1〜2点、具体）
+- “証拠の種類をテンプレートで事前固定しすぎる変更は避ける” に整合: 本提案は「どの証拠を探すか」を固定せず、結論ショートカットの根拠型を「テストオラクルへ写像できる差」に揃えるだけで、探索の入口や証拠種類を強制しない。
+- “探索の自由度を削りすぎない / 読解順序の半固定は避ける” に整合: S1/S2 の実施順序や探索経路はそのまま維持し、ショートカット条件だけを精緻化する（早期確定の過剰適応を抑えるが、探索経路の固定はしない）。
 
-### 減少が期待される失敗パターン
+未参照（理由）
+- README.md / docs/design.md / docs/reference/agentic-code-reasoning.pdf は今回は未参照（理由: 本提案は compare テンプレート内の結論トリガ条件の精緻化で完結し、根拠となる失敗原則（failed-approaches）とカテゴリ定義（Objective）の参照で十分なため）。
 
-1. **EQUIV 方向の誤判定（偽陰性）**
-   変更が REFACTOR に分類されたとき、エージェントは「経路の違いはあっても
-   出力が同じであることを確認すればよい」という焦点を持てる。
-   これにより、実装経路の表層的差異に反応して NOT_EQUIVALENT と誤判定する
-   リスクが下がる。
+変更規模の宣言
+- 変更規模: 2行変更（いずれも既存 compare セクション内の置換/追記で、MUST/required の純増なし）。5行以内を満たす。
 
-2. **NOT_EQ 方向の誤判定（偽陽性）**
-   変更が BUG-FIX に分類されたとき、エージェントは「どこかで振る舞いが
-   変わっているはず」という適切な疑いを持ち、ANALYSIS での証拠探索を
-   より入念に行える。
-
-3. **推論ドリフトの抑制**
-   S2 での分類宣言は、エージェントが ANALYSIS に入る前に自分の仮説を
-   明示的にコミットさせるため、Guardrail #4「微妙な差異を見逃すな」と
-   補完的に機能し、ANALYSIS 中の焦点の散漫を防ぐ。
-
-### 維持されるもの
-
-- COUNTEREXAMPLE / NO COUNTEREXAMPLE の反証義務は変わらない。
-- Step 3 の仮説駆動探索、Step 4 の手続き間トレース表は変わらない。
-- 番号付き前提・必須反証というコア構造は変わらない。
-
----
-
-## failed-approaches.md の汎用原則との照合
-
-| 原則 | 照合結果 |
-|------|----------|
-| 探索を「特定シグナルの捜索」へ寄せすぎる変更は避ける | 本提案は「どのシグナルを探すか」を固定しない。BUG-FIX/REFACTOR/FEATURE という分類は探索範囲を強制的に絞るのではなく、**探索の焦点の深度を調整する手がかり** として機能する。探索の自由度は維持されている。 |
-| ドリフト抑制のための局所的な具体化が探索の幅を狭める | 変更カテゴリの宣言は S2 の出力であり、ANALYSIS に入る前のメタ情報にとどまる。ANALYSIS 内の具体的な探索手順は変えない。狭めるのは「必要な証拠の深さの判断基準」のみであり、「探索対象ファイルや関数の列挙」は絞らない。 |
-| 結論直前の自己監査に新しい必須メタ判断を増やしすぎない | 本提案は結論直前（Step 5.5）ではなく、STRUCTURAL TRIAGE（探索前半）に分類を置く。役割が重複する既存チェックはなく、最終判断の萎縮リスクはない。 |
-
-3 原則すべてに抵触なし。
-
----
-
-## 変更規模の宣言（再確認）
-
-- 変更対象: SKILL.md の STRUCTURAL TRIAGE ブロック S2 の末尾
-- 追加行数: 3
-- 削除行数: 1（ピリオドで終わっていた行を分割統合）
-- 新規セクション/ステップ/フィールド: なし
-- hard limit (5 行) との対比: 3 ≤ 5 → **適合**
+停滞対策の自己チェック
+- 監査で褒められやすいだけの美文化に留まっていないか？: 留まっていない。早期結論の発火条件（行動）が変わり、保留→ANALYSIS へ送る分岐が増える。
+- compare の誤判定を減らす意思決定ポイントが実際に変わるか？: 変わる（structural gap のみでは NOT_EQUIV を確定できず、ORACLE-VISIBLE の観測条件が必要になる）。
+- Decision-point delta が理由の言い換えだけになっていないか？: なっていない（IF 条件が “structural gap” → “structural gap AND ORACLE-VISIBLE” に変わり、行動も “結論” vs “保留して分析継続” に分岐）。
+- 必須ゲート総量を増やしていないか？: MUST/required の追加なし。既存の “may proceed directly” をより限定するだけで、必須ゲートは増やしていない。

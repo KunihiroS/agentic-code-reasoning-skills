@@ -143,7 +143,7 @@ If the opposite answer were true, what evidence would exist?
 Before writing the formal conclusion, check each item below. If any answer is **NO**, fix it before Step 6.
 
 - [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
-- [ ] Every function in the trace table is **VERIFIED**, or (if **UNVERIFIED**) you either justify why it cannot change any relevant test outcome OR you narrow the conclusion to be conditional on that assumption and set CONFIDENCE=LOW.
+- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
 - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
 - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
 
@@ -191,6 +191,9 @@ Before tracing individual functions, compare the two changes structurally:
       prioritize structural differences (S1, S2) and high-level semantic
       comparison over exhaustive line-by-line tracing. Exhaustive tracing
       is infeasible for large patches and produces unreliable conclusions.
+  OPTIONAL — S4: Difference importance — label each discovered difference as ORACLE-VISIBLE
+      (can change an asserted output/exception/externally visible state) vs ORACLE-INVISIBLE,
+      and prioritize tracing ORACLE-VISIBLE differences to a concrete test oracle first.
 
 If S1 or S2 reveals a clear structural gap (missing file, missing module
 update, missing test data), you may proceed directly to FORMAL CONCLUSION
@@ -259,6 +262,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+- Optional: classify differences by oracle-visibility to prioritize which ones must be traced to a concrete assertion
 
 ---
 
