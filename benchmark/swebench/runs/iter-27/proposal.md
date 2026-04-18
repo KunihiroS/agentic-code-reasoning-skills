@@ -1,105 +1,52 @@
-# Iter-27 改善提案
-
-## Exploration Framework カテゴリ: D（強制指定）
-
-### 選択カテゴリと具体的なメカニズム
-
-カテゴリ D「メタ認知・自己チェックを強化する」から、以下のメカニズムを選択する:
-
-  「確信度と根拠の対応を明示させる」
-
-具体的には、探索中（Step 3）の仮説更新ログ内にある既存の CONFIDENCE フィールドに対して、
-「その確信度を支える最も弱い証拠リンクを1行で付記せよ」という指示を精緻化として追加する。
-
-このメカニズムを選んだ理由:
-- カテゴリ D の3軸（思い込み検査 / 弱い環の特定 / 確信度と根拠の対応）のうち、
-  現行 SKILL.md が最も薄いのは「確信度と根拠の対応」である。
-  現状 CONFIDENCE は "high / medium / low" の3択ラベルのみで、
-  その確信度を下方修正すべき「最弱点」が明示されない。
-- Step 5.5（結論前自己チェック）ではなく Step 3（探索中の仮説更新）への介入であるため、
-  failed-approaches.md の「結論直前の自己監査に新しい必須のメタ判断を増やしすぎない」
-  原則に抵触しない。
-- 既存フィールドへの文言追加（精緻化）のみで実装でき、新規ステップ・新規フィールドは不要。
+1) 過去提案との差異: 直近却下の「観測境界の固定／compare の片方向最適化／探索経路の半固定」ではなく、既存の必須自己チェック内で“反対側の最有力シナリオ”を明示して両方向対称にバイアス検査する。
+2) Target: 両方（偽 EQUIV と 偽 NOT_EQUIV を同時に下げる）
+3) Mechanism (抽象): 反証 (Step 5) の対象選びを「自分の結論の否定」から一段具体化し、“最ももっともらしい反対ケース→その観測痕跡”へ置換して検索・点検の焦点を安定化する。
+4) Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を狭めたり、特定の観測境界（テスト可視・オラクル等）に還元する変更は行わない。
 
 ---
 
-## 改善仮説（1つ）
+カテゴリ D（メタ認知・自己チェック）内でのメカニズム選択理由
+- 既存 SKILL.md は Step 5（反証）と Step 5.5（自己チェック）が必須だが、反証の“問い”が抽象的なままだと「都合のよい反証（弱い反例像）を立てて満足する」形の確認バイアスが残りやすい。
+- そこで、証拠種類や探索経路を事前固定せずに、反証の“対象の選び方”だけを強化する：最有力の反対ケースを 1 行で書き、そのケースが真なら見えるはずの痕跡をそのまま検索対象に落とす。これなら EQUIV/NOT_EQUIV のどちらにも同じ型で効く（片方向寄りになりにくい）。
 
-仮説:
-  仮説更新時に確信度ラベル（high/medium/low）だけでなく「その判断を崩しうる最弱の証拠
-  リンク」を1行で明示させると、エージェントは自分の推論チェーン上の脆弱点を探索段階で
-  自覚し、後続ステップで当該箇所を補強する証拠を能動的に探しにいく。
-  結果として、推論チェーンの見落としに起因する誤判定（とりわけ EQUIVALENT 誤判定）が
-  減少し、全体的な推論品質が向上する。
+改善仮説（1つ）
+- 反証チェックで「最ももっともらしい反対ケース」を先に明文化すると、探索が“反対側に都合のよい観測痕跡”へ向くため、偽 EQUIV（反例の見落とし）と偽 NOT_EQUIV（差分の過大評価）の両方が減る。
 
----
+SKILL.md 該当箇所（短い引用）と変更
+- Step 5 テンプレート（compare/audit-improve）
+  現状: 「If my conclusion were false, what evidence should exist?」
+  変更: 反対ケースを 1 行で明示し、その“期待される痕跡”を検索対象に直結させる。
+- Step 5 テンプレート（explain/diagnose）
+  現状: 「If the opposite answer were true, what evidence would exist?」
+  変更: 同様に“最有力の反対答え”と“期待痕跡”を 1 行化する。
+- Step 5.5 checklist（必須項目数は維持）
+  既存の「file:line に結びつく」+「証拠以上を主張しない」を 1 行に統合し、空いた 1 行を「反対側の最有力ケースを言えているか」に差し替える。
 
-## SKILL.md の変更内容
+Decision-point delta（IF/THEN 2行）
+Before: IF Step 5 で反証を行う THEN 「結論が偽なら必要な証拠」を一般形で問う because counterfactual placeholder
+After:  IF Step 5 で反証を行う THEN 「最有力の反対ケース→期待痕跡」を 1 行で特定し、その痕跡を検索・点検する because adversarial self-check
 
-### 変更箇所
+変更差分プレビュー（Before/After, 3–10行）
+Before:
+- If my conclusion were false, what evidence should exist?
+After:
+- OPPOSITE-CASE → EXPECTED EVIDENCE: [most plausible way the conclusion is false] → [what should be observable]
 
-Step 3（Hypothesis-driven exploration）内の HYPOTHESIS ブロックにある CONFIDENCE 行。
+Before:
+- If the opposite answer were true, what evidence would exist?
+After:
+- OPPOSITE-CASE → EXPECTED EVIDENCE: [most plausible opposite answer] → [what should be observable]
 
-### 変更前（SKILL.md line 76 相当）
+Before:
+- [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
+- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+After:
+- [ ] Every key claim is tied to specific `file:line`, and I assert nothing beyond what that traced evidence supports.
+- [ ] I can state the strongest plausible case for the opposite verdict/answer and why the recorded evidence rules it out.
 
-```
-CONFIDENCE: high / medium / low
-```
+failed-approaches.md との照合（整合 1–2点）
+- 「証拠種類の事前固定を避ける」(failed-approaches.md の趣旨) に整合: 本変更は“どの証拠を必ず集めるか”を固定せず、反対ケースから導かれる痕跡をその場で選ぶだけ。
+- 「観測境界への過度な還元を避ける」(同) に整合: テスト／オラクル等の特定境界に条件を狭めず、反対ケースに応じた任意の観測痕跡へ開いたままにする。
 
-### 変更後
-
-```
-CONFIDENCE: high / medium / low — [the weakest link: one assumption or unread path that, if wrong, would reverse this conclusion]
-```
-
-### 変更の性質
-
-既存行への文言追加（精緻化）のみ。新規ステップ・新規フィールド・新規セクションなし。
-
----
-
-## 一般的な推論品質への期待効果
-
-### 減少が期待される失敗パターン
-
-1. 推論チェーンの「途中省略」による誤判定
-   現状: CONFIDENCE: high とだけ書くと、その確信がどの証拠の上に成り立つかが
-   エージェント自身にも曖昧になる。弱い環が未記録のまま結論に進む。
-   改善後: 最弱リンクを書く作業が、エージェントに「まだ確認していない箇所」を
-   強制的に言語化させる。それが補強探索のトリガーになる。
-
-2. 確信過剰（overconfidence）による反証スキップ
-   現状: high と書いた後、Step 5 の反証チェックを形式的に通過する傾向がある。
-   改善後: 最弱リンクが明示されることで、Step 5 の反証ターゲットが明確になり、
-   形式的ではなく実質的な反証探索が行われやすくなる。
-
-3. compare モードでの EQUIVALENT 誤判定（overall スコアの主要な失因）
-   README.md によれば、持続的失敗の大半は EQUIVALENT 誤判定であり、
-   「コードトレースまたはスコープ判断の誤り」が原因とされている。
-   Step 3 の仮説更新段階で最弱リンクを明示させることは、
-   トレース漏れやスコープ境界の曖昧さをそのまま弱い環として浮上させるため、
-   このカテゴリの失敗を早期に自己検出できる。
-
----
-
-## failed-approaches.md との照合
-
-| 汎用原則 | 本提案との関係 | 抵触の有無 |
-|----------|---------------|-----------|
-| 探索証拠の種類を事前固定しすぎない | 変更は「どこを見るか」を固定しない。弱い環の内容は毎回異なる | 抵触なし |
-| 探索の自由度を削りすぎない | 探索経路の制約なし。仮説更新ログへの1行付記のみ | 抵触なし |
-| 局所仮説更新を前提修正義務に直結させすぎない | 前提の再点検を義務化しない。仮説の弱点明示のみ | 抵触なし |
-| 結論直前の自己監査に新しい必須メタ判断を増やしすぎない | Step 5.5 や Step 6 ではなく Step 3 内の変更。結論前の判定ゲートではない | 抵触なし |
-
-全4原則に抵触しないことを確認。
-
----
-
-## 変更規模の宣言
-
-- 変更行数: 1行（既存行への文言追加）
-- 削除行数: 0行
-- 新規ステップ: なし
-- 新規フィールド: なし
-- 新規セクション: なし
-- 5行制限: 1行 ≦ 5行 → 適合
+変更規模の宣言
+- SKILL.md 変更は最大 4 行の置換（必須ゲートの純増なし：Step 5.5 のチェック項目数を維持し、2項目を統合して1項目を差し替える）。
