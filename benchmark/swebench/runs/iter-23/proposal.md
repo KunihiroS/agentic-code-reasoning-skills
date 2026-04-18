@@ -1,34 +1,44 @@
-過去提案との差異: 早期NOT_EQUIV条件や反証優先順位(“pivot claims”/highest-tier-first)の再設計ではなく、原論文の explain(コードQA)由来のデータフロー手法を compare の「差分影響判定」に移植する提案。
+過去提案との差異: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件や反証優先順位（pivot/highest-tier-first）の具体化ではなく、原論文の explain（data-flow）手法を compare の「各テストの因果トレース」に移植する提案。
 Target: 両方（偽 EQUIV と 偽 NOT_EQUIV を同時に減らす）
-Mechanism (抽象): 「差分を見つけたらテストを1本トレース」ではなく「テストの assert へ流れ込む値を起点に最小データフロー(スライス)を両側で確認」へ切り替える。
-Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件をどう制限するか／観測境界へ還元する方針の追加はしない。
+Mechanism (抽象): compare の per-test tracing を「呼び出し列」中心から「アサーションに到達する変数の data-flow slice」中心へ寄せ、結論の根拠を到達性で安定化する。
+Non-goal: 構造差→NOT_EQUIV の早期判定条件の狭窄、証拠種類のテンプレ固定、新しい必須ゲートの純増はしない。
 
-カテゴリF内での具体的メカニズム選択理由
-- docs/design.md は原論文 Appendix D (Code Question Answering) のテンプレ要素として「Function trace table (VERIFIED)」「data flow tracking」「alternative hypothesis check」を抽出している。
-- SKILL.md の explain には DATA FLOW ANALYSIS がある一方、compare で「差分がテスト outcome に影響するか」の判定は、現状は“少なくとも1本トレース”という粗い指示に寄っており、差分の重要度判断が過剰(偽NOT_EQ)にも過小(偽EQUIV)にも振れやすい。
-- そこで、原論文由来だが compare には未活用な「データフローで結論に寄与する値へ局所化する」手法を、差分影響判定のガードレールに最小限で導入する。
+---
+
+カテゴリ F 内での具体的メカニズム選択理由
+- 原論文は task ごとにテンプレが異なるが、explain（コードQA）では「DATA FLOW ANALYSIS（変数の Created/Modified/Used）」が、推論鎖の欠落（incomplete chains）や“見た目の差”への過剰反応を抑える役割を持つ。
+- SKILL.md には explain 側の data-flow が明示されている一方、compare 側は「assertion outcome まで trace」と書かれていても、実際の作業単位が call-chain になりやすく、(a) 差分がアサーションに到達しないのに NOT_EQ を出す／(b) 到達しているのに途中で握りつぶして EQUIV を出す、の両方が起きうる。
+- そこで compare の「各テストの Claim C[N].1/.2 の書き方」だけを、explain の data-flow 概念で補強し、探索経路の半固定や新規ゲート追加を避けつつ、根拠の粒度を“到達性”に揃える。
 
 改善仮説（1つ）
-- 仮説: 「差分を見つけたとき、assert に到達する値（入力→中間→出力）のデータフローを明示して両側比較する」ことを既定の行動にすると、(a) 差分が assert に届かない場合の過剰な NOT_EQUIV を減らし、(b) 差分が assert に届く場合の見落としを減らして、EQUIV/NOT_EQ の両方向の誤判定を同時に抑える。
+- compare で PASS/FAIL を主張する直前に「そのテストのアサーションが読んでいるキー変数（または出力）を1つ特定し、Created/Modified/Used を両パッチで追う」よう促すと、差分の影響判定がアサーション到達性に収束し、偽 EQUIV（影響の見落とし）と偽 NOT_EQ（影響の過大視）が同時に減る。
 
-SKILL.md の該当箇所（短い引用）と変更方針
-- 現状（Guardrails #4）:
-  “If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.”
-- 変更: 上記の「trace a test」を、explain の DATA FLOW ANALYSIS 発想で「assert へ流れ込む値を起点に、差分→assert の到達可否を最小スライスで両側確認」へ置換する（行動が変わる）。
+SKILL.md の該当箇所（短い引用）
+1) compare（現状）
+- "Claim C[N].1: With Change A, this test will [PASS/FAIL] because [trace from changed code to test assertion outcome — cite file:line]"
+- "Claim C[N].2: With Change B, this test will [PASS/FAIL] because [trace from changed code to test assertion outcome — cite file:line]"
+2) explain（既にあるが compare に未移植）
+- "DATA FLOW ANALYSIS: Variable: [key variable name] - Created at / Modified at / Used at"
 
 Decision-point delta（IF/THEN 2行）
-Before: IF semantic difference is found THEN trace at least one relevant test through the differing code path because call-path evidence
-After:  IF semantic difference is found THEN trace the assert-dependent data flow slice (difference → asserted value) on both sides before judging impact because data-flow-to-assert evidence
+Before: IF 書いているのが compare の Claim C[N].1/.2（テストの PASS/FAIL 根拠） THEN 変更コード→アサーション outcome までを call-chain 中心にトレースする because file:line の逐次トレース。
+After:  IF 書いているのが compare の Claim C[N].1/.2（テストの PASS/FAIL 根拠） THEN アサーションが読むキー変数/値を1つ明示し、その data-flow（Created/Modified/Used）で両パッチの到達性をトレースする because data-flow slice + file:line。
 
-変更差分プレビュー（Before/After）
+変更差分プレビュー（Trigger line を含む）
 Before:
-- 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
+  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                because [trace from changed code to test assertion outcome — cite file:line]
+  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+                because [trace from changed code to test assertion outcome — cite file:line]
 After:
-- 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, identify the assert-dependent value(s) and trace the minimal data flow slice (difference → asserted value) on both sides before concluding the difference has no impact.
+  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+                because [trace to the test assertion outcome via data-flow of the asserted key value (created/modified/used) — cite file:line]
+  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+                because [trace to the test assertion outcome via data-flow of the asserted key value (created/modified/used) — cite file:line]
 
-failed-approaches.md との照合（整合点）
-- 「証拠種類の事前固定を避ける」: 追加で“探すべき証拠タイプ”を固定せず、既に compare で必須の「テスト/assert」という同一根拠に対して、到達経路の切り出し方（データフロー）だけを提示する。
-- 「探索経路の半固定を避ける」: 読解順序や観測境界を固定しない。差分が見つかった“局所の瞬間”にのみ適用され、次アクションは「assert に寄与する値」という不確実性の解消（情報利得）で決まる。
+failed-approaches.md との照合（整合 1–2 点）
+- 「証拠種類の事前固定を避ける」: 追う対象は“各テストのアサーションが実際に読むキー変数/値”であり、固定の証拠カテゴリをテンプレで列挙しない（テストごとに変わる）。
+- 「観測境界への過度な還元を避ける」: 構造差→NOT_EQUIV の条件を特定の観測境界に狭めるのではなく、既存の per-test tracing を“到達性の表現”として強化するだけで、探索の自由度を削らない。
 
 変更規模の宣言
-- SKILL.md 変更は 1 行置換（実質 1 行増分なし、必須ゲート純増なし）。
+- SKILL.md の compare テンプレ内の 2 行置換（合計 5 行以内、必須ゲートの純増なし）。

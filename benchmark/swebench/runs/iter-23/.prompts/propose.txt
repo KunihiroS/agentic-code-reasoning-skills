@@ -17,7 +17,7 @@ benchmark/swebench/runs/iter-23/proposal.md
 iter-18: failed-approaches.md の本質的再演。とくに探索経路の半固定と証拠種類の事前固定の懸念が強い
 iter-19: 最大のブロッカーは、Step 5 の `pivot claims` 優先が強い表現のままだと、failed-approaches.md の禁止原則に近づき、compare での両方向改善より反証経路の細りを招くリスクがあるため
 iter-20: failed-approaches.md にある「反証優先順位の局所観点への差し替え」という本質的失敗の再演であり、highest-tier-first が探索経路の半固定として働くため
-iter-22: failed-approaches.md にある「既存の反証優先順位を局所観点へ差し替える失敗」の本質的再演
+iter-22: compare 影響の実効性を担保する Trigger line が差分プレビューに欠けている
 
 上記は直近のイテレーションで却下された提案の理由です。
 これらと本質的に同じメカニズムの提案を繰り返してはいけません。
