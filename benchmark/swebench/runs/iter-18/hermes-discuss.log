@@ -10,3 +10,106 @@ DuckDuckGo MCP Server initialized:
   ┊ 📖 read      Objective.md  0.9s
   ┊ 📖 read      README.md  0.9s
   ┊ 📖 read      docs/design.md  0.9s
+  ┊ ✍️  write     benchmark/swebench/runs/iter-18/discussion.md  0.6s
+  ┊ review diff
+a/benchmark/swebench/runs/iter-18/discussion.md → b/benchmark/swebench/runs/iter-18/discussion.md
+@@ -1,269 +1,89 @@
+-# Iteration 18 — Discussion
++# iter-18 proposal 監査コメント
++
++## Web 検索
++- 検索なし（理由: 提案は既存の SKILL.md / README / design / failed-approaches の一般原則だけで十分に監査可能。外部知識がなくても妥当性判断が自己完結する。）
+ 
+ ## 総評
+-
+-結論から言うと、この提案は発想自体は理解でき、既存研究の「反証を先に意識させる」という流れとも一定の整合はあります。しかし、現在の文言のままでは「探索の方向付け」を超えて「探索対象の事前固定」に近づいており、`failed-approaches.md` の原則 1・2 と本質的に衝突する懸念が強いです。
+-
+-特に問題なのは、追加文が単に「反証可能性を意識せよ」と言っているのではなく、
+-
+-- `minimal behavioral difference`
+-- `This defines the target of the per-test search below`
+-
+-という形で、以後の per-test 探索の主ターゲットを先に 1 本立てさせている点です。これは compare モードの探索を広げるより、むしろ先入観で狭める方向に働く可能性があります。
+-
+-そのため、現状案には承認を出しません。
+-
+----
++- 提案の狙い自体は理解できる。Step 5 の反証順序にだけ軽く原理を足し、必須ゲート純増なしで compare の誤判定を減らそうとしている点は、過度に大改造ではない。
++- ただし今回の中核概念である「hinge-claim（否定されると結論が反転する最小集合）」への優先付けは、failed-approaches.md が明示的に警戒している「反証や監査の優先順位を特定観点へ寄せる変更」「読解順序の半固定」にかなり近い。そこが最大のブロッカー。
+ 
+ ## 1. 既存研究との整合性
++- README.md / docs/design.md / SKILL.md が共有している研究コアは、番号付き前提、仮説駆動探索、手続き間トレース、必須反証、そして per-item iteration による anti-skip である。
++- 提案はこれらのコア構造を直接は壊していない。Step 5 内の順序原理の追加なので、研究コアの外形には整合する。
++- ただし design.md の「per-item iteration as the anti-skip mechanism」は、複数の具体項目を回して premature conclusion を防ぐ設計である。hinge-claim 優先は、反証対象を最初から少数の“結論反転点”へ寄せるため、anti-skip を補強するというより、探索入口を細くする方向に働く懸念がある。
+ 
+-DuckDuckGo MCP の search は今回クエリで安定した結果を返せなかったため、MCP の fetch_content で既知の関連文献ページを直接参照した。
++## 2. Exploration Framework のカテゴリ選定
++- カテゴリA（推論の順序・構造）は表面的には適切。提案の本体は Step 5 の「どこから反証するか」の順序変更だから。
++- ただし実質は「探索の優先順位付け」を変える案でもあり、カテゴリB の性質も強い。ここ自体は致命傷ではないが、A だから安全という整理にはならない。
+ 
+-### 1-1. Agentic Code Reasoning 論文
+-- URL: https://arxiv.org/abs/2603.01896
+-- 要点:
+-  - 論文の核は、明示的な premises、execution path tracing、formal conclusion、counterexample/counterfactual 的な確認を含む semi-formal reasoning を「certificate」として機能させることにある。
+-  - したがって、「EQUIVALENT 判定の前に反証可能な差異を意識させる」という方向性そのものは、研究コアとは整合的。
+-- ただし:
+-  - 論文の強みは「探索の証拠化・逐次化」であって、「分析開始前に単一の差異ターゲットを固定すること」までは直接支持していない。
+-  - よって、本提案は研究コアの延長線上にはあるが、文言次第では研究コアを強化するというより、探索の柔軟性を削る逸脱に転びうる。
++## 3. EQUIVALENT / NOT_EQUIVALENT への作用
++- 偽EQUIV への期待効果:
++  - 結論を支える最重要主張から先に崩しに行くので、重大差分の見落としを早く拾える可能性はある。
++- 偽NOT_EQUIV への期待効果:
++  - 重要でない差分への過剰反応を減らし、結論反転に効く差分かどうかを先に見極める、という理屈は通る。
++- ただし実効差分は両方向対称とは言い切れない。
++  - NOT_EQUIVALENT 側では「1つの強い差分主張」を hinge と見なして早く固める誘因が生まれやすい。
++  - EQUIVALENT 側では本来、複数の中程度の主張を広く潰して「反例がない」ことを積み上げる必要があり、hinge-first はこの広がりを削る方向に働きやすい。
++- つまり理論上は両方向を狙っているが、運用上は「少数の決定的主張を探す」モードに寄り、比較的 NOT_EQUIVALENT 側の早期確信を強めやすい。片方向最適化のリスクは残る。
+ 
+-### 1-2. Counterfactual thinking
+-- URL: https://en.wikipedia.org/wiki/Counterfactual_thinking
+-- 要点:
+-  - 実際と異なる代替結果を先に考えることは、改善・計画・原因理解に資することがある。
+-  - 提案の「NOT EQUIVALENT なら何が起きるはずかを先に言語化する」は、この一般的な counterfactual thinking と整合する。
+-- ただし:
+-  - 代替結果を先に置くことは、同時に「どの代替結果を思い浮かべたか」へのアンカリングも生みうる。
+-  - したがって、counterfactual を early-stage に導入すること自体は合理的でも、「1 つの minimal difference を探索ターゲットとして固定する」設計まで正当化するものではない。
+-
+-### 1-3. Counterexample-Guided Abstraction Refinement (CEGAR)
+-- URL: https://en.wikipedia.org/wiki/Counterexample-guided_abstraction_refinement
+-- 要点:
+-  - 検証系では、まず反例候補を考え、それが本物かスプリアスかを確かめながら精密化していく、という counterexample-driven な考え方が一般に有効。
+-  - 本提案も「反例になる振る舞いを先に考える」という意味で、検証一般の発想とは整合する。
+-- ただし:
+-  - CEGAR は反例が外れたら抽象を洗い直して refinement するループが本体である。
+-  - 今回の提案には refinement の仕組みがなく、最初に思いついた差異候補が外れた時に別の差異候補へ柔軟に切り替える保証がない。
+-  - そのため、counterexample-driven の「良い部分」だけでなく、「最初の仮説への固定化」という悪い副作用も出うる。
+-
+-### 小結
+-
+-研究との整合性は「部分的にはある」が、「現行文言のままで強く支持される」とまでは言えない。特に、既存研究が支持するのは
+-
+-- 反証を重視すること
+-- 反例を具体化すること
+-- 結論前に counterexample を探すこと
+-
+… omitted 266 diff line(s) across 1 additional file(s)/section(s)
+  ┊ 📋 plan      update 3 task(s)  0.0s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+discussion.md を作成しました。
+
+出力先:
+benchmark/swebench/runs/iter-18/discussion.md
+
+結論:
+承認: NO
+discussion.md を作成しました。
+
+出力先:
+benchmark/swebench/runs/iter-18/discussion.md
+
+結論:
+承認: NO
+主因: failed-approaches.md が禁じる「反証優先順位の特定観点への寄せ」と「探索経路の半固定」の本質的再演に近い、という一点に絞って監査しています。
+
+session_id: 20260418_153815_0f34f1
