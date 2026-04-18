@@ -1,221 +1,89 @@
-# Iter-12 Discussion
+# Iteration 12 — discussion
+
+## Web search
+- 検索なし（理由: 今回の論点は SKILL.md 内の compare 分岐条件の置換が、Objective の Exploration Framework と failed-approaches の汎用失敗原則に整合するかどうかであり、一般原則の範囲で自己完結しているため）
 
 ## 総評
-
-提案の狙い自体は妥当です。既存の `compare` モードは、`SKILL.md` 上でもすでに
-- 構造比較
-- per-test tracing
-- counterexample obligation
-- no-counterexample obligation
-
-を中核にしており、提案はその新設ではなく、「反証的な問いを前倒しする」調整です。このため研究コア（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を壊してはいません。
-
-ただし、今回の具体文言
-
-`Before detailed tracing, state: "If NOT EQUIVALENT, which test and which assertion would diverge, and why?" — then trace that path first.`
-
-のうち、特に `trace that path first` は、探索の初動を一つの想定 counterexample に強く固定します。これは「反証を前倒しする」という良い発想と、「探索を特定シグナル探索へ寄せすぎない」という失敗原則の境界にあります。したがって、コンセプトは支持する一方、現提案のままの文言には慎重です。
-
-## 1. 既存研究との整合性
-
-### 研究的に整合する点
-
-1. `README.md` と `docs/design.md` が示す本スキルのコアは、semi-formal reasoning により
-   - 明示的 premises
-   - concrete tracing
-   - mandatory refutation
-   を強制することです。今回の提案はこのうち refutation を早めるもので、コア構造とは整合します。
-
-2. `README.md` では、このリポジトリ自身の既存知見として「counterfactual reasoning を final gate から continuous obligation に拡張したことが有効だった」と説明されています。今回の案は、その方向性をさらに `compare` の初動に寄せるもので、方向としては一貫しています。
-
-### DuckDuckGo MCP で確認した関連研究・資料
-
-1. https://link.springer.com/chapter/10.1007/978-3-032-15981-6_1
-   - タイトル: Interpretable Configuration Optimization for Static Program Verification via Rule-Based and Counterfactual Reasoning
-   - 要点: 静的検証で counterfactual reasoning を使い、「望ましくない結果を避ける設定」を系統的に探索して探索空間を狭める、という発想を採っています。
-   - 本提案との関係: 「うまく行かなかった場合に存在するはずの反例側条件を先に言語化して探索を導く」という意味で整合的です。
-
-2. https://arxiv.org/html/2604.07679v1
-   - タイトル: Towards Counterfactual Explanation and Assertion Inference for CPS Debugging
-   - 要点: failing test input から、passing に変わる最小 counterfactual change を作り、失敗条件を解釈可能な形で説明する枠組みです。
-   - 本提案との関係: 失敗/非等価の説明を「どの条件が変われば結果が分かれるか」という形で先に捉える考え方は、提案の backward reasoning と相性が良いです。
-
-3. https://cadp.inrialpes.fr/ftp/publications/others/Barbon-Leroy-Salaun-17.pdf
-   - タイトル: Debugging of Concurrent Systems using Counterexample Analysis
-   - DuckDuckGo 検索要約: 性質違反時に返る counterexample を debugging に使うが、その理解自体が難しいため、counterexample analysis が重要であると位置付けています。
-   - 本提案との関係: counterexample を中心に据えたデバッグは既存研究と整合的です。
-   - 備考: 本 URL は本文 fetch 時に SSL 証明書エラーが出たため、ここでは DuckDuckGo 検索要約ベースで扱っています。
-
-### 研究整合性の結論
-
-「反証・counterexample を使って探索を導く」こと自体は研究的に十分妥当です。ただし、研究整合性があることと、テンプレート文言として最適であることは別です。今回の懸念は後者です。
-
-## 2. Exploration Framework のカテゴリ選定は適切か
-
-結論: カテゴリ A は適切です。
-
-理由:
-- 提案の本質は「何を探すか」よりも「どの順序で問うか」の変更です。
-- 既存 Step 5 の counterexample/no-counterexample obligation を、新規ステップとして増やすのでなく、`STRUCTURAL TRIAGE` 後に前置する発想だからです。
-- したがって、B（取得方法）や D（自己チェック追加）より、A（推論の順序・構造を変える）が主分類として自然です。
-
-補足:
-- 二次的には F（原論文・既存知見の未活用アイデア活用）にも接しています。`README.md` 上の「counterfactual reasoning の継続的義務化」と親和的だからです。
-- ただし主作用は順序変更なので、A の選定で問題ありません。
-
-## 3. EQUIVALENT 判定 / NOT_EQUIVALENT 判定への作用
-
-### 変更前との実効的差分
-
-変更前:
-- まず structural triage
-- その後、test ごとの tracing
-- 最後に counterexample/no-counterexample check
-
-変更後案:
-- structural triage の直後に
-  「もし NOT EQUIVALENT なら、どの test / assertion が分岐するか」を先に言語化
-- その候補 path を先に追う
-- その後に通常 tracing と formal conclusion
-
-つまり本質的差分は、「反証の問いを結論直前から探索初動へ移す」ことです。
-
-### EQUIVALENT への作用
-
-正の効果:
-- premature EQUIVALENT を抑える方向に強く働きます。
-- 特に `proposal.md` が狙っている「順方向に追って差が見えないので EQUIVALENT としてしまう」バイアスには効きます。
-- 真に EQUIVALENT なケースでも、「想定される counterexample 候補が立たず、立っても検証で崩れる」ことを先に確認するため、EQUIVALENT の根拠を厚くできます。
-
-負の効果 / リスク:
-- 実際には差がないケースで、無理に divergence 候補を先に作らせることで、存在しない差分へのアンカリングが起こりえます。
-- その結果、探索が「その仮説を崩す/守る」方向に偏り、通常の per-test coverage が弱くなる可能性があります。
-
-### NOT_EQUIVALENT への作用
-
-正の効果:
-- 真に NOT_EQUIVALENT なケースでは、早い段階で「どの assertion が割れるか」を具体化できれば、証拠の取り方が明確になります。
-- semantic difference を見つけた後に「でも影響ないかも」と流す Guardrail #4 型のミスには一定の抑止力があります。
-
-限定的な点:
-- 既に `STRUCTURAL TRIAGE` には S1/S2 による early NOT EQUIVALENT ルートがあります。したがって構造差分で決まる NOT_EQ には追加効果はほぼありません。
-- この提案の主な改善対象は、構造差分ではなく「微妙な semantic difference を見逃して EQUIVALENT に倒れる」領域です。
-
-### 片方向にしか作用しないか
-
-厳密には「片方向だけ」ではありません。しかし実効的には EQUIVALENT 側への作用が強いです。
-
-- 強く効く方向: false-positive EQUIVALENT の削減
-- 中程度に効く方向: semantic NOT_EQ の根拠明確化
-- ほぼ効かない方向: structural-gap 型 NOT_EQ
-
-したがって、「両方向に作用はするが、主作用は EQUIVALENT 側のバイアス補正」と評価するのが妥当です。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 原則1: 探索すべき証拠の種類をテンプレートで事前固定しすぎない
-
-ここが最大の懸念点です。
-
-提案者は「証拠の種類ではなく問いの方向を変えるだけ」と述べていますが、文言は実際にはかなり具体的です。
-
-- `which test`
-- `which assertion`
-- `trace that path first`
-
-まで指定しているため、探索の出発点を「想定される発散 assertion」の探索へ強く寄せます。`compare` モードでは test/assertion が重要なのはその通りですが、「最初にそれを一つ仮定してその path を先に追う」という運用は、証拠タイプの半固定に近いです。
-
-評価:
-- 本質的に同じ失敗の再演とまでは言えない
-- ただし、失敗原則1にはかなり接近している
-- 特に `trace that path first` が危ない
-
-### 原則2: 探索の自由度を削りすぎない
-
-これにも軽度に抵触リスクがあります。
-
-- 良い面: 追加は 2 行で、テンプレート全体を大きく変えない
-- 悪い面: 初動の優先順序を一つの仮説 path に固定するため、自由探索の幅を狭める
-
-`trace that path first` がなければ「初手で counterexample 候補を一度明示する」程度で済みますが、現案は「まずそこを追え」としているので、自由度の削減が実際に発生します。
-
-### 原則3: 結論直前の自己監査に新しい必須メタ判断を増やしすぎない
-
-これは抵触しません。
-
-- 追加位置は結論直前ではなく structural triage の直後です。
-- Step 5.5 の自己監査を増やす案ではありません。
-
-### failed-approaches との総合評価
-
-「完全に同一の失敗方向」ではないが、原則1・2に対する near miss です。コンセプト単位では許容できても、現行の具体文言は一歩強すぎます。
-
-## 5. 汎化性チェック
-
-### 明示的なルール違反の有無
-
-提案文を確認した限り、以下は見当たりません。
-- ベンチマーク対象リポジトリ名
-- 特定テスト名
-- 特定ケース ID
-- ベンチマーク対象コード断片
-
-したがって、この意味での明白な overfitting ルール違反はありません。
-
-### 含まれている具体表現の扱い
-
-提案文には以下の具体表現があります。
-- `SKILL.md line 190-196`
-- `Guardrail #4`
-- `変更前 / 変更後` の `SKILL.md` 自己引用
-
-これらは benchmark 固有識別子ではなく、`Objective.md` の R1 にある減点対象外の
-- `SKILL.md` 自身の文言引用
-- 一般概念名
-
-に該当するため、違反とは見なしません。
-
-### 暗黙のドメイン依存性
-
-大きな問題はありません。理由は:
-- compare モード自体が「tests の pass/fail outcome」を定義の中心にしており、提案の test/assertion 言及はその範囲内だからです。
-- 特定言語、特定フレームワーク、特定テストランナーに依存した用語は入っていません。
-
-ただし弱い懸念として、assertion-centric すぎる書き方は、差異の現れ方が
-- exception type
-- fixture/setup path
-- import/dispatch reachability
-- generated data / config / metadata
-
-のように assertion 手前の層で決まるケースに対して、初動をやや狭める可能性があります。compare モードの定義上は最終的に test outcome に還元されるとしても、探索初手の wording としては少し狭いです。
-
-## 6. 全体の推論品質への期待効果
-
-期待できる改善:
-- false-positive EQUIVALENT の削減
-- semantic difference 発見後の「影響なし」短絡の抑制
-- EQUIVALENT 結論時の no-counterexample justification の質向上
-
-期待しにくい改善:
-- structural gap 型 NOT_EQ の改善（既存 S1/S2 でほぼ足りているため）
-- 非比較モード全般への波及（今回の提案は compare に局所的）
-
-主要リスク:
-- 想定 counterexample へのアンカリング
-- 初手の探索が 1 本の仮説 path に寄りすぎることによる coverage 低下
-- failed-approaches が警戒する「特定シグナル探索」への傾斜
-
-総合すると、推論品質を上げるポテンシャルはありますが、現案の wording だと「バイアス是正」と「探索拘束」の両方を同時に起こしうるため、純粋改善とは言い切れません。
+提案は compare の意思決定点を実際に動かそうとしており、監査向けの言い換えだけではありません。Decision-point delta と Trigger line も入っており、その点は今回の運用ルールに適合しています。
+
+ただし、中核の変更内容が failed-approaches.md の「既存の判定基準を、特定の観測境界だけに過度に還元しすぎない」にかなり近く、clear structural gap を "VERIFIED relevance link to relevant tests" という単一境界へ狭く再定義しているのが最大の問題です。これは偽 NOT_EQUIV を減らす方向には効きうる一方、構造差そのものが強い反例である場面の初動を鈍らせ、compare の自由な探索・判定を別の意味で細らせる懸念があります。
+
+## 1) 既存研究との整合性
+- 研究コア（番号付き前提、仮説駆動探索、手続き間トレース、反証必須）を壊す変更ではありません。README.md と docs/design.md の主眼である「証拠に基づく半形式推論」の範囲内です。
+- ただし本提案は、研究コアの追加強化というより compare テンプレート内のローカルなショートカット条件の再定義です。研究のコアを踏襲してはいるが、改善の良し悪しは failed-approaches との距離でほぼ決まります。
+
+## 2) Exploration Framework のカテゴリ選定
+- 判定: 概ね妥当
+- 理由: 提案の本体は「NOT_EQUIV 直行の発火条件と、その前後の分岐順序を変える」ことなので、Objective.md の A. 推論の順序・構造を変える に入れるのは自然です。
+- ただし実態としては、順序変更だけでなく「何を決定打と見なすか」の再定義も含みます。ここが failed-approaches 上の危険点です。
+
+## 3) EQUIVALENT / NOT_EQUIVALENT 両方向への作用
+- NOT_EQUIVALENT 側:
+  - 改善見込み: 関連テストとの接続未検証の構造差で即断しにくくなるため、偽 NOT_EQUIV は減りうる。
+  - 悪化懸念: 構造差自体が強い非同値シグナルであるケースでも、VERIFIED relevance link が明示できない間は直行できず、判断が鈍る。
+- EQUIVALENT 側:
+  - 提案文は「UNVERIFIED のまま EQUIV を言い切る経路も抑制」と書くが、実効差はやや間接的です。After で直接変わるのは "NOT_EQUIV に直行するか" の条件であり、EQUIV 判定の積極条件は変わっていません。
+  - そのため、両方向に効くという主張は完全に空ではないが、主作用は偽 NOT_EQUIV 抑制で、偽 EQUIV 改善は副次的です。
+- 結論: 片方向専用ではないが、実効差は非対称です。両方向改善を言うなら、EQUIV 側で何が分岐として変わるかをもう一段具体化すべきです。
+
+## 4) failed-approaches.md との照合
+- もっとも強い抵触候補は failed-approaches.md 11-12 行目の原則です。
+  - そこでは、既存の判定基準を「特定の観測境界に写像できたときだけ有効」と狭く定義し直す失敗を明示的に避けています。
+  - 今回の提案は、まさに structural gap を "relevant tests への VERIFIED relevance link" があるときだけショートカット可、という単一境界へ再定義しています。
+- failed-approaches.md 29 行目の「未検証要素の有無を見張る専用トリガへ置き換える変更も同類」にも近いです。
+  - Trigger line の "If relevance is UNVERIFIED, do not short-circuit" は、未検証状態を専用トリガにして結論を保留させる形になっています。
+- よって、表現を変えた別案というより、本質的にはブラックリストの再演寄りです。
+
+## 5) 汎化性チェック
+- 具体的な数値 ID / リポジトリ名 / テスト名 / 実コード断片:
+  - 問題なし。proposal 内の引用は SKILL.md 自身の文言であり、Objective.md の R1 減点対象外に当たります。
+- 暗黙のドメイン前提:
+  - ややあり。"relevant test imports/calls the missing file/module" という説明は一般化可能ではあるものの、import/call path を中心に relevance を捉える傾向が強く、設定駆動・データ駆動・生成物依存・非直接参照のテスト関連性をやや過小評価しうる。
+- 判定: 汎化性違反まではいかないが、relevance の観測境界が少し狭い。
+
+## 6) 全体の推論品質向上の期待
+- 良い点:
+  - 曖昧な "clear structural gap" を、そのまま即断の免罪符にしない方向は、compare の雑なショートカット抑制として筋が良いです。
+  - Trigger line と差分プレビューがあり、実装ズレも起きにくいです。
+- 限界:
+  - 改善の核が「構造差を有効と認める境界の狭化」なので、推論品質全体の改善というより、特定の誤判定型に対する局所補正に寄りすぎています。
+  - その局所補正の仕方が failed-approaches の禁止方向に近いため、そのまま通すのは危険です。
+
+## 停滞診断
+- 懸念 1 点: compare の意思決定は確かに変わるが、変えているのは主に "NOT_EQUIV 直行の許可条件" だけで、ANALYSIS の中でどんな追加情報が得られれば EQUIV/NOT_EQUIV のどちらへ収束しやすくなるのかまでは再設計していません。結果として、監査 rubric には刺さるが、実運用では "直行しないまま低信頼で悩む" 停滞に寄る可能性があります。
+- 「探索経路の半固定」に該当するか: NO
+- 「必須ゲート増」に該当するか: NO
+- 「証拠種類の事前固定」に該当するか: YES
+  - 原因文言: "If S2 yields a VERIFIED relevance link to relevant tests ..." と、それを唯一のショートカット発火条件へ格上げしている部分。構造差の有効性を、事実上この証拠タイプへ寄せています。
+
+## compare 影響の実効性チェック
+- 1) Decision-point delta:
+  - IF/THEN 形式で 2 行（Before/After）になっているか？: YES
+  - Trigger line が差分プレビュー内に含まれているか？: YES
+  - 実効性評価: 条件も行動も一応変わっています。ただし変化の軸が "構造差 -> relevance link" という単一境界への置換なので、compare 影響はあるが危ういです。
+- 2) Failure-mode target:
+  - 主対象: 偽 NOT_EQUIV
+  - 副対象: 偽 EQUIV
+  - メカニズム: 接続未検証の構造差で即断しないようにすることで過剰反応を減らす。だが偽 EQUIV 改善は indirect で、積極的に EQUIV 判定を変える分岐は弱い。
+- 3) Non-goal:
+  - 読解順序の固定や MUST 追加は避けている点は良い。
+  - ただし "構造差の効力を relevance link へ集約しない" という境界条件が proposal に欠けているため、自由度維持の線引きが足りません。
+- Discriminative probe:
+  - 抽象ケース: 片側だけに補助モジュール更新があり、そのモジュールはテストから直接 import されないが、実行時設定や登録機構を通じて観測結果に影響する。
+  - 変更前は structural gap を手掛かりに NOT_EQUIV 疑いを強く持てる。変更後は VERIFIED relevance link がないため直行を止められ、ANALYSIS に進むが、提案自体はこの種の非直接 relevance をどう拾うかを強化していない。よって誤判定回避が保証されません。
+- 支払い（必須ゲート総量不変）:
+  - この提案は新しい MUST を増やしていないため、A/B の支払い対応は必須ではありません。
+
+## 修正指示
+1. "VERIFIED relevance link のときだけ structural shortcut 可" という単独条件への置換はやめ、clear structural gap の例示として "relevant tests への verified connection がある場合は特に強い" へ弱めてください。
+   - 追加ではなく置換で対応すること。
+   - structural gap の有効性そのものを単一境界へ還元しないでください。
+
+2. Trigger line は維持しつつ、"UNVERIFIED なら ANALYSIS 継続" を専用トリガとして固定するのでなく、"UNVERIFIED alone is insufficient for shortcut" 程度に弱めてください。
+   - これなら未検証専用ゲート化を避けつつ、雑な即断だけ抑えられます。
+
+3. 両方向への効きを本当に主張するなら、EQUIVALENT 側の分岐も 1 行で明示してください。
+   - 追加セクションを増やすのではなく、既存の Failure-mode target か 期待される挙動差 の記述を統合・置換して、"After では何が見つからなければ EQUIV 側の確信がどう変わるか" を短く具体化してください。
 
 ## 結論
-
-監査判断としては、アイデアの方向性自体は支持します。しかし、現提案の具体文言はやや強すぎます。
-
-より安全な方向は、例えば
-- counterexample 候補を 1 つ以上先に言語化する
-- ただしそれを exploration seed として使い、唯一の優先 path に固定しない
-- assertion だけでなく import path / exception / output shape などの発散形も許す
-
-という形です。要するに、「反証を前倒しする」は良いが、「その想定 path を first priority で固定する」は強すぎます。
-
-承認: NO（理由: backward reasoning の方向性は妥当だが、提案文の `trace that path first` が探索を単一の想定 counterexample に過度に固定し、failed-approaches.md の「証拠種類の事前固定」「探索自由度の削りすぎ」に近づくため。現状のままでは回帰リスクを十分に抑えた提案とは言いにくい。）
+承認: NO（理由: failed-approaches.md の「既存の判定基準を特定の観測境界だけに過度に還元しすぎない」の本質的再演になっているため）
