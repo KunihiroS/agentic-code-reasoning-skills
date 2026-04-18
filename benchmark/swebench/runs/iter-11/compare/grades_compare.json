@@ -1,0 +1,20 @@
+[
+  {
+    "instance_id": "instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 57
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 131
+  }
+]

@@ -1,27 +1,62 @@
 あなたは SKILL.md の変更に対する監査役です。
 
-以下のファイルを参照してください:
-- Objective.md の Audit Rubric セクション
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
 - README.md
 - docs/design.md
 - docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
 
-以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
-Objective.md に定義された audit.md フォーマットに従って
-benchmark/swebench/runs/iter-11/audit.md を作成してください。
+この 6 ファイル以外を read / search / list してはいけません。
 
-合格基準: 全項目 2 以上、かつ合計 14/21 以上
+【出力先】
+benchmark/swebench/runs/iter-11/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
 
 diff:
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..e196197 100644
+index 16750ae4..4d38da01 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -218,6 +218,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+@@ -253,12 +253,11 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ ### Compare checklist
+ - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+ - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+-- Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
  - Trace each test through both changes separately before comparing
  - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
- - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
-+- UNKNOWN is not a valid answer — if evidence is genuinely ambiguous after full exploration, commit to the best-supported conclusion (YES or NO) and set CONFIDENCE to LOW
+-- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
++- Trigger: if the verdict hinges on any UNVERIFIED step (or a semantic diff not linked to a diverging assertion), HOLD conclusion and continue exploring until the hinge is VERIFIED.
  
  ---
  
@@ -31,36 +66,24 @@ rationale:
 
 ## 前イテレーションの分析
 
-- 前回スコア: 80% (16/20)
-- 失敗ケース: django__django-15368, django__django-11179, django__django-15382, django__django-11433
-- 失敗原因の分析:
-  - **15368（持続的失敗）**: EQUIVALENT なのに NOT_EQUIVALENT と誤判定（12 ターン）。Patch B がテストメソッドを削除するケース。iter-10 の D2 注記（削除されたテストには結果がない）を経ても改善されず。
-  - **11179（新規失敗）**: EQUIVALENT なのに NOT_EQUIVALENT と誤判定（10 ターン）。差分はあるが試験結果には影響しないケースを、エージェントが過剰に保守的に NOT_EQUIVALENT と結論づけた可能性がある。
-  - **15382（持続的失敗）**: EQUIVALENT なのに NOT_EQUIVALENT と誤判定（29 ターン）。ループ制御フローのトレース誤りによる過剰コスト。
-  - **11433（新規失敗）**: NOT_EQUIVALENT なのに **UNKNOWN** と回答（31 ターン）。エージェントが大量のターンを費やしたにもかかわらず二値の結論にコミットできず、UNKNOWN という無効な回答を返した。これは4つの失敗ケースの中で唯一の「判断放棄」パターンであり、明確に異なる失敗モードである。
+- 前回スコア: （未記載）
+- 失敗ケース: （この文書では固有識別子を扱わないため省略）
+- 失敗原因の分析: 「反証が見つからない」ことを根拠に結論へ急ぎ、結論を左右する最小の決定点（hinge）が UNVERIFIED のままでも EQUIV/NOT_EQUIV を断定しうる。
 
 ## 改善仮説
 
-**SKILL.md の Compare チェックリストに「UNKNOWN は有効な回答ではない」という明示的な指示を追加することで、11433 のような「判断放棄」型の失敗を汎用的に排除できる。**
-
-根拠:
-- 現在の SKILL.md の `compare` モードテンプレートには、ANSWER のプレースホルダーとして `[YES equivalent / NO not equivalent]` と書かれており、二値の答えのみが想定されている。しかし、エージェントが長大な探索の末に確信を持てない場合、テンプレートに縛られずに UNKNOWN を返す逸脱が起きた（11433: 31 ターン）。
-- 11433 は NOT_EQUIVALENT の正解ケースであるため、エージェントは差分の証拠を何らかの形で見つけていたはずだが、確信が持てずにコミットを回避した可能性が高い。
-- チェックリストに「UNKNOWN は無効。証拠が曖昧な場合は最も支持される答えにコミットし、CONFIDENCE を LOW にすること」と明記することで、エージェントはコミット回避ではなく低信頼度での結論表明に誘導される。
-- この変更は特定のケースに依存しない汎用的な推論規律の強化であり、あらゆる compare タスクで「判断放棄」を防ぐ。UNKNOWN は本来 Step 6 の「Assigns a confidence level: HIGH / MEDIUM / LOW」という既存構造と矛盾しており、その矛盾を明示的に解消するものである。
+compare で結論（EQUIV/NOT_EQUIV）を出す直前に、判定を反転させうる hinge が UNVERIFIED なら結論を保留して追加探索へ分岐させることで、推測混入による偽 EQUIV と、assertion へ未接続の差分に対する過剰反応（偽 NOT_EQUIV）の両方を減らせる。
 
 ## 変更内容
 
-`compare` モードの Compare checklist に 1 行追加:
+- Compare checklist から冗長な 1 行（changed files の同定）を削除し、結論直前の意思決定点を 1 行で置換した。
+- これにより「必須ゲートの総量」は増やさず、既存の結論項目を“UNVERIFIED hinge 検知時は保留→追加探索”へ置き換える形で意思決定だけを変えた。
 
-```
-- UNKNOWN is not a valid answer — if evidence is genuinely ambiguous after full exploration, commit to the best-supported conclusion (YES or NO) and set CONFIDENCE to LOW
-```
+Trigger line (final): "- Trigger: if the verdict hinges on any UNVERIFIED step (or a semantic diff not linked to a diverging assertion), HOLD conclusion and continue exploring until the hinge is VERIFIED."
 
-変更規模: 1 行追加（≤ 20 行の制約内）。
+上の Trigger line は proposal の差分プレビューにあった Trigger line と一致しており、意図した一般化として同等である。
 
 ## 期待効果
 
-- **11433**: チェックリストの指示により、エージェントが UNKNOWN を返す代わりに、見つけた差分の証拠に基づいて NO（NOT_EQUIVALENT）にコミットすることを期待する。これにより 1 件が incorrect → correct となり、スコアが 16/20 → 17/20（85%）になることを期待する。
-- **15368, 11179, 15382**: 本イテレーションの主仮説ではなく、これらは「過保守的な NOT_EQUIVALENT 判定」という別の失敗モードであるため、今回の変更では改善を期待しない。
-- **回帰リスク**: チェックリストへの追加は compare モードの探索プロセス・反証プロセスに影響しない。正常に判定できている 16 件は YES/NO のいずれかを明確に返しており、UNKNOWN 禁止の制約は影響しない。回帰リスクは極めて低い。
+- 偽 EQUIV の抑制: 「反証が見つからない」型の根拠で断定する前に、結論 hinge が UNVERIFIED なら探索を継続するため、潜在反例の見落としを減らす。
+- 偽 NOT_EQUIV の抑制: 差分が見つかっても diverging assertion に接続できない（= hinge が未成立）場合は断定を保留し、重要度の過大評価を減らす。

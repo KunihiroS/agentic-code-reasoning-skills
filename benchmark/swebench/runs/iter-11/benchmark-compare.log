@@ -1,0 +1,11 @@
+Generated 20 prompt files in /tmp/tmp.Tc7Oniw0O2
+
+--- [1] instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 (flipt-io/flipt) ---
+[START] instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 / without_skill  11:16:02
+[DONE]  instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 / without_skill  57s
+[START] instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 / with_skill  11:16:59
+[DONE]  instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 / with_skill  131s
+
+--- [2] instance_gravitational__teleport-3587cca7840f636489449113969a5066025dd5bf (gravitational/teleport) ---
+fatal: '/home/kunihiros/bench_workspace/worktrees_compare/instance_gravitational__teleport-3587cca7840f636489449113969a5066025dd5bf' is a missing but already registered worktree;
+use 'add -f' to override, or 'prune' or 'remove' to clear
