@@ -1,175 +1,122 @@
-# Iter-13 Discussion
+# iter-13 proposal 監査コメント
 
 ## 総評
+提案の狙い自体は妥当です。pass-to-pass の関連性を「名前参照が見つからない」だけで空集合扱いすると、間接到達テストを落として偽 EQUIV を出しやすい、という問題設定は compare の実務上もっともらしいです。加えて、提案文は固有のケース ID・リポジトリ名・テスト名・実コード断片に依存しておらず、汎化性の面でも大きな違反は見当たりません。
 
-提案は、`SKILL.md` のコア構造を変えずに、`UNVERIFIED` な第三者ライブラリの挙動推定で使う二次証拠の探索順を明示化するものです。変更対象は `SKILL.md` Step 4 の 1 行のみであり、`Objective.md` が求める「1イテレーション1仮説」「最小限の diff」に整合しています（`proposal.md` 22-45, `Objective.md` 31-35）。
+ただし、この proposal の中心トリガ
 
-監査結論としては、これは Exploration Framework の B「情報の取得方法を改善する」に概ね適合し、研究コアも維持しています。ただし、`failed-approaches.md` の「探索シグナルの事前固定」への近接リスクはゼロではありません。したがって、承認は可能ですが、効果は限定的かつ条件付きです。
+- "If reachability is UNVERIFIED, do not treat pass-to-pass as empty; keep exploring or narrow the conclusion and set CONFIDENCE=LOW."
 
-## 1. 既存研究との整合性
+は、failed-approaches.md が警戒している「未検証要素の有無を見張る専用トリガ」にかなり近いです。探索経路を直接固定していない点は良いのですが、compare の結論直前に局所的な未検証状態を専用監視して保留/縮小へ倒す構造になっており、偽 EQUIV を減らす代わりに、EQUIV 側の決め切りを系統的に弱める回帰リスクがあります。このため現状のままでは承認しません。
 
-注: DuckDuckGo MCP の search エンドポイントはこの実行環境では複数回 `No results were found` を返したため、同じ DuckDuckGo MCP の `fetch_content` で直接公開資料を取得して確認した。
+## 1) 既存研究との整合性
+検索なし（理由: 一般原則の範囲で自己完結）
 
-### 参照URLと要点
+この提案は、新規理論の導入というより、既存の semi-formal reasoning の中で「負の証拠の扱い」と「未検証状態の結論反映」を compare にどう埋め込むかの調整です。README.md / docs/design.md / SKILL.md だけで十分評価できます。
 
-1. https://arxiv.org/abs/2603.01896
-   - 要点: Agentic Code Reasoning 論文は、明示的 premises、execution-path tracing、formal conclusion からなる semi-formal reasoning が精度を改善すると述べている。
-   - 本提案との関係: 提案はこのコアを壊さず、Step 4 の「unavailable source をどう扱うか」という補助規則を精緻化するだけである。`README.md` と `docs/design.md` が要約する研究コア（premises / iterative evidence / interprocedural tracing / refutation）とも矛盾しない。
+## 2) Exploration Framework カテゴリ選定
+判定: 概ね適切
 
-2. https://docs.python.org/3/library/doctest.html
-   - 要点: doctest は interactive examples を実行して、文書内の例が「実際にその通り動く」ことを検証する仕組みであり、公式に「executable documentation」「regression testing」と位置づけられている。
-   - 本提案との関係: 仕様文や型だけでなく、実例ベースの証拠が実挙動に近い、という考え方を支持する。test usage を優先する方針は、「実際の呼び出し例は静的な説明より挙動に近い証拠である」という一般原則と整合する。
+- proposal は「何を探すか」の固定ではなく、「見つからない」をどう解釈するかという取得・判定の仕方を変えようとしている。
+- したがって主分類は B. 情報の取得方法を改善する でよい。
+- ただし実際の差分プレビューは D2 の取得説明だけでなく Step 5.5 の自己チェック側にも効かせており、実装の効き方は B 単独より「B 寄りだが D にもまたがる」。
 
-3. https://go.dev/blog/examples
-   - 要点: Go の examples は documentation と tests を兼ね、API 変更で陳腐化しにくい「testable examples」として扱われる。実行・検証される例は API の実使用形を強く表す。
-   - 本提案との関係: test/example usage を優先することは、単なる説明文よりも「観測された利用形」に基づいて挙動を推定するという点で妥当。
+## 3) EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+### EQUIVALENT 側
+- 明確に効きます。従来の「参照が見つからない → pass-to-pass 無関係 → EQUIV に進む」を弱めるため、偽 EQUIV は減りうる。
+- 一方で、到達性 UNVERIFIED が残りやすいケースでは、正しい EQUIVALENT まで LOW/条件付き/保留に寄せやすい。
 
-4. https://documentation.divio.com/
-   - 要点: Divio の documentation framework は technical reference と tutorials/how-to/explanation を区別する。reference は網羅性に強いが、利用文脈や実例の意味づけは別の文書種別が担う。
-   - 本提案との関係: type signatures / reference docs は有用だが、それだけでは実際の使用文脈が薄い。test usage を先に見るという提案は、reference 偏重を少し是正する方向として理解できる。
+### NOT_EQUIVALENT 側
+- proposal 文面上は、UNVERIFIED を理由に直ちに NOT_EQUIVALENT へ倒すわけではないため、片方向最適化は露骨ではない。
+- ただし「追加探索 or 条件付き結論」への偏りが強いので、NOT_EQUIVALENT を出すための反例構築そのものを改善する変更ではない。主作用は偽 EQUIV 抑制で、NOT_EQUIVALENT 側は間接効果に留まる。
 
-### 研究整合性の評価
+### 実効差分の評価
+- 変更前: 負の参照検索が pass-to-pass 非関連の近似根拠として機能しやすい。
+- 変更後: reachability=UNVERIFIED を独立の観測状態として扱い、空集合扱いを止める。
+- よって実効差分はある。
+- ただしその差分が「より良い反例探索」ではなく「未検証なら結論縮小」に寄っているため、compare 改善としては守り寄りです。
 
-- `docs/design.md` 5-7, 33-55 は、研究の本質を「証拠を先に集め、definition を読み、skip を防ぐ構造」に置いている。
-- `SKILL.md` 106-111, 450-459 でも、名前からの推測禁止・source unavailable の明示・二次証拠の探索が既に要求されている。
-- よって今回の提案は、研究コアの置換ではなく、既存補助規則の優先順位づけであり、整合的。
+## 4) failed-approaches.md との照合
+### 本質的再演か
+判定: かなり近い
 
-一方で、既存研究から直接「test usage を docs/type signatures より必ず先にせよ」という強い優先順位までは読み取れません。したがって、研究に「強く支持される」よりは、「研究コアに反しない実務的精緻化」と評価するのが正確です。
+特に近いのは次の原則です。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
+- 「結論直前の自己監査に、新しい必須のメタ判断を増やしすぎない」
+- 「既存の結論基準を、未検証要素の有無を見張る専用トリガへ置き換える変更も同類」
+- 「証拠の種類をテンプレで事前固定しすぎる変更は避ける」
 
-結論: カテゴリ B で妥当です。
+今回の提案は証拠種類を reference/import/call-path の3種に固定“必須化”してはいません。この点はセーフです。
 
-理由:
-- `Objective.md` 148-152 によれば B は「コードの読み方の指示を具体化する」「どう探すかを改善する」「探索の優先順位付けを変える」カテゴリ。
-- 提案は新しい判定軸を増やしていない。
-- compare の定義や formal conclusion の枠組みも変えていない。
-- Step 4 の unavailable-source 時における二次証拠の探索順だけを変更している。
+しかし中核は「reachability が UNVERIFIED なら空集合扱い禁止・結論縮小」という専用トリガです。これは failed-approaches.md が警戒する「未検証要素監視による保留方向への過剰適応」にかなり重なります。D2 定義の局所修正に見えても、compare 実行時には事実上の新しい結論ゲートとして作用しうるのが懸念です。
 
-したがって、A（推論順序・構造変更）や C（比較枠組み変更）ではなく、B と見るのが最も自然です。
+## 5) 汎化性チェック
+判定: 合格
 
-## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定への作用
+- 具体的な数値 ID: なし
+- ベンチマーク対象リポジトリ名: なし
+- テスト名: なし
+- ベンチマーク実コード断片: なし
+- 特定言語/特定フレームワーク前提: なし
 
-### 変更前との実効的差分
+注意点として、"reference, import, traced call path" という例示は静的言語/動的言語をまたいで概ね一般化可能ですが、import を前面に出しすぎると「import があれば reach」と短絡される危険はあります。ここは例示の粒度をさらに抽象化した方が無難です。
 
-変更前の `SKILL.md` は、source unavailable の場合に `type signatures, documentation, or test usage` を並列列挙していました（`proposal.md` 28-32, `SKILL.md` 109, 458）。
-変更案は、それを `test usage first, then type signatures, then documentation` という優先順に変えます（`proposal.md` 34-38）。
+## 6) 期待される推論品質の向上
+見込みはあります。
 
-つまり実効差分は次の 1 点です。
-- 「二次証拠の集合」は不変
-- 「最初に見る証拠」が変わる
+- 負の探索結果を過信しない、という compare の弱点補正になる。
+- pass-to-pass の見落としによる早期 EQUIV を減らす可能性がある。
+- 「関連テストがない」という強い主張のハードルを少し上げる点は、反証可能性の維持にも整合する。
 
-### EQUIVALENT への作用
+ただし改善の主成分が「保留/縮小」なので、推論の識別性能を上げるというより、結論を慎重化する方向に寄っています。compare の精度改善として通すなら、未検証時の扱いを増やすより、「負の参照検索だけでは D2 を満たしたとみなさない」という定義精緻化に留めた方が安全です。
 
-改善しうる点:
-- EQUIVALENT 誤判定の典型には、名前・型・一般的 API イメージから差異を過大視して false NOT_EQUIVALENT に寄るケースがある。
-- 実際の test usage を先に見ると、「少なくとも既存 tests が通る文脈では同様に使われている」ことを掴みやすく、差異の過大視を抑えやすい。
-- `README.md` 90-94 では persistent failures が EQUIVALENT 側に残っていると要約されており、方向感としては EQUIVALENT 改善にやや寄与しやすい。
+## 停滞診断（必須）
+- 懸念点 1つ: 提案は compare の意思決定点を変えてはいるが、その主作用が「よりよく区別する」より「未検証なら縮小する」に寄っており、監査 rubric には刺さる一方で compare の識別力改善が弱く、説明強化に寄って停滞する恐れがある。
 
-悪化しうる点:
-- test usage が sparse だったり代表性を欠くと、観測された usage に引きずられて「そのテスト文脈では同じ」を「一般に同じ」と過度に見なし、false EQUIVALENT のリスクもある。
-- ただし compare 定義そのものは `modulo the existing tests` なので、既存 tests ベースの判断に限ればこのリスクはある程度制限される（`SKILL.md` 169-178）。
+### failed-approaches 該当性
+- 探索経路の半固定: NO
+- 必須ゲート増: YES
+  - 原因文言: "If reachability is UNVERIFIED, do not treat pass-to-pass as empty; keep exploring or narrow the conclusion and set CONFIDENCE=LOW."
+  - 理由: MUST/required の語を増やしていなくても、compare 結論前に専用トリガを追加しており、実質ゲート化している。
+- 証拠種類の事前固定: NO
 
-### NOT_EQUIVALENT への作用
+## compare 影響の実効性チェック（必須）
+- 1) Decision-point delta
+  - Before/After が IF/THEN 2行形式になっているか: YES
+  - Trigger line が差分プレビュー内に自己引用されているか: YES
+  - 評価: 条件も行動も変わっており、理由の言い換えだけではない。ただし行動変化の中身が「追加探索/縮小」で、識別能力向上より慎重化に寄る。
 
-改善しうる点:
-- docs や type signatures では見えない実使用上の前提条件や例外的振る舞いが tests に現れていれば、diverging path を早く見つけられる。
-- その場合、counterexample をより具体的に立てやすくなり、NOT_EQUIVALENT の根拠は強くなる。
+- 2) Failure-mode target
+  - 主対象: 偽 EQUIV
+  - メカニズム: 「負の参照検索」を「到達不能」の証拠と見なす短絡を止め、pass-to-pass の取りこぼしを防ぐ。
+  - 副作用懸念: 正しい EQUIVALENT でも UNVERIFIED を理由に決め切れず、偽 NOT_EQUIV というより低確信・条件付き結論の増加を招く。
 
-限界:
-- test usage を優先する変更は、存在しない使用例を発明してくれるわけではない。relevant tests が薄いケースでは、結局 type signatures / documentation へ降りるだけで、改善は小さい。
-- したがって NOT_EQUIVALENT 側での利益は「実際に relevant usage が test に露出している」ケースに依存する。
+- 3) Non-goal
+  - 読解順序は固定しない。
+  - 特定証拠タイプを必須化しない。
+  - 必須ゲート総量は増やさない、という境界を守るべき。
+  - ただし現文面は最後の境界を実質的に破りかけている。
 
-### 片方向にしか作用しないか
+### Discriminative probe
+抽象ケース: テストが変更シンボルを直接参照しないが、間接呼び出しで変更箇所に到達する。変更前は direct reference 不在だけで pass-to-pass を外し、EQUIV に誤寄りしやすい。変更後は「負の参照検索だけでは外せない」という D2 の定義精緻化なら誤りを減らせる。だが現 proposal のように UNVERIFIED 専用トリガで保留/縮小まで義務づけると、正しい EQUIV まで決めにくくする恐れがある。
 
-結論: 片方向専用の変更ではないが、対称でもありません。
+### 支払い（必須ゲート総量不変）確認
+- proposal では「支払い不要」と主張しているが、実質上は新しい結論トリガを入れているため、この説明では不十分。
+- A/B の対応付けが不要な純置換にするなら、Step 5.5 への波及をやめ、D2 の定義文だけを置換する形に狭めるべき。
 
-- 理論上は EQUIVALENT / NOT_EQUIVALENT の双方に作用します。
-- ただし実効的には、「既存 tests 上で観測可能な usage を先に掴む」変更なので、compare の定義上、EQUIVALENT 側の calibration 改善にやや効きやすい可能性があります。
-- 一方で relevant tests に差分が現れている NOT_EQUIVALENT では、counterexample 発見の早さにも寄与しうるため、片側専用ではありません。
+## 最大のブロッカー
+failed-approaches.md の「未検証要素の有無を見張る専用トリガ」型の失敗を、reachability=UNVERIFIED という局所版で再演していること。
 
-監査上の判断としては、「両側に作用するが、均等な改善を約束するほどではない」が妥当です。
+## 修正指示（2〜3点）
+1. Step 5.5 連動を削り、D2 の定義精緻化だけに縮めてください。
+   - 追加するなら「負の reference 検索のみで pass-to-pass を空集合扱いしない」まで。
+   - 削る対象は "keep exploring or narrow the conclusion and set CONFIDENCE=LOW" の後半。
 
-## 4. failed-approaches.md の汎用原則との照合
+2. Trigger line を「未検証なら縮小」ではなく「negative reference search alone is insufficient to rule out pass-to-pass relevance」という定義文へ置換してください。
+   - これなら compare の分岐点は保てる一方、新しい結論ゲート化を避けやすいです。
 
-### 原則1: 探索シグナルの事前固定を避ける
+3. もし LOW/confidence 連動を残したいなら、どの既存文言を optional 化/統合して総量不変にするかを proposal 内で明示してください。
+   - 現状の「支払い不要」は通りません。
 
-最も重要な論点はここです。
-
-`failed-approaches.md` 8-10 は、探索すべき証拠の種類をテンプレートで事前固定しすぎると、確認バイアスを強めると警告しています。
-今回の提案は新しい証拠種を追加していないため、実装者の主張どおり「固定対象の追加」ではありません。しかし、優先順位を明示すること自体が探索の初期アンカーを作るのも事実です。
-
-評価:
-- セーフ寄りの理由: 既存の 3 種類を残したまま順序だけをつける小変更であり、排他的ルールではない。
-- リスク要因: `test usage first` が強く解釈されると、「まず tests に都合のよい usage を探し、docs/types の反証確認が後回しになる」運用を誘発しうる。
-
-結論:
-- 本質的に同じ失敗の再演とまでは言えない。
-- ただし失敗原則1に“近い方向”ではあるため、無警戒には承認できない。
-
-### 原則2: 探索自由度を削りすぎない
-
-- 今回は 3 種類すべての証拠を引き続き許容しており、禁止規則ではない。
-- そのため自由度の削減は限定的。
-- ただし unavailable-source の場面で毎回 test usage を最優先させると、言語・プロジェクトによっては最初の探索コストが増える可能性はある。
-
-総合すると、この原則には概ね抵触しません。
-
-### 原則3: 結論直前のメタ判断を増やしすぎない
-
-- 提案は Step 5/5.5 や conclusion に新しい必須メタ判断を足していない。
-- よってこの原則には抵触しません。
-
-## 5. 汎化性チェック
-
-### 明示的ルール違反の有無
-
-提案文には以下は含まれていません。
-- ベンチマーク対象リポジトリ名
-- 特定テスト名
-- 特定ケース ID
-- ベンチマーク対象コードの断片
-
-含まれている具体物は以下です。
-- `Iter-13` という今回の作業番号
-- `Step 4`, `行 109`, `Guardrail #5` のような SKILL/文書内参照
-- SKILL.md の変更前後 1 行の自己引用
-
-これらは benchmark 対象固有識別子ではなく、`Objective.md` の R1 の減点対象外に近い自己参照です（`Objective.md` 202-213）。したがって、監査観点 5 の意味でのルール違反は見当たりません。
-
-### 暗黙のドメイン依存性
-
-- 提案は「third-party library source unavailable」という一般状況を扱っており、特定言語専用ではない。
-- `test usage` という概念も多くの言語・フレームワークで成立する。
-- ただし、テスト資産が薄いプロジェクト、生成コード中心のリポジトリ、使用例が docs に偏るエコシステムでは効果が弱い。
-
-したがって、汎化性は高いが、効果の強さはプロジェクト特性に依存します。
-
-## 6. 全体の推論品質がどう向上すると期待できるか
-
-期待できる向上:
-- unavailable-source 関数に対する「名前・型・一般知識からの推測」を減らす
-- compare において、既存 tests が実際に観測している使用文脈を先に押さえることで、推論をより test-grounded にする
-- `UNVERIFIED` 項目の根拠の質を少し上げる
-
-改善幅が限定される理由:
-- 作用範囲は Step 4 の unavailable-source ケースに限られる
-- relevant test usage が存在しない案件では、すぐ type signatures / documentation にフォールバックするため差分が小さい
-- 研究コアの主要ボトルネックである premises, trace completeness, refutation を直接強化する変更ではない
-
-総合すると、これは「高インパクトな構造改革」ではなく、「誤推測を少し減らす低リスクの探索順序調整」です。期待改善は小〜中程度で、主に calibration 改善として現れるはずです。
-
-## 最終判断
-
-判断:
-- 研究コアとの整合: 良好
-- カテゴリ選定: 妥当（B）
-- EQUIVALENT / NOT_EQUIVALENT への作用: 双方向だが非対称、EQUIVALENT 側にやや効きやすい
-- failed-approaches との関係: 原則1に近接する注意点はあるが、同一失敗の再演とまでは言えない
-- 汎化性: 概ね良好、明示的な過剰適合の兆候なし
-- 期待効果: 限定的だが合理的
-
-承認: YES
-
-補足条件:
-実装時または rationale では、「test usage first」を排他的規則としてではなく、「最初に当たるが、疎・非代表的なら速やかに type signatures / documentation に広げる優先探索」と説明しておくと、`failed-approaches.md` の原則1への近接リスクをさらに下げられます。
+## 結論
+承認: NO（理由: reachability=UNVERIFIED を専用トリガにした結論縮小ルールが、failed-approaches.md の本質的再演に近く、compare を改善するというより新しい実質ゲートを増やしているため）

@@ -1,179 +1,120 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/12/26 16:27:10] INFO     Processing request of type            server.py:727
+[04/18/26 11:25:23] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-まず参照が許可されているファイルを読み込みます。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      SKILL.md  0.8s
-  ┊ 📖 read      Objective.md  0.8s
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
   ┊ 📖 read      failed-approaches.md  0.8s
-  ┊ 📖 read      README.md  0.8s
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      docs/design.md  0.8s
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-全ファイルを読み込めました。では、SKILL.md の内容、Objective.md のカテゴリ定義、failed-approaches.md の禁則事項を踏まえて分析し、proposal.md を作成します。
-
-**分析メモ:**
-
-- カテゴリ B = 「情報の取得方法を改善する（読み方の具体化、探索の優先順位）」
-- SKILL.md の Step 4 (Interprocedural tracing) の行 109 に「Search for type signatures, documentation, or test usage as secondary evidence」とある。しかしこの「secondary evidence」として何を優先的に探すかの順序が明示されていない
-- Guardrail #6 (行 458–459) にも同様の指示があるが、同じく探索優先順位が不明確
-- 「何を探すかではなく、どう探すかを改善する（カテゴリ B）」という方針に沿い、UNVERIFIED ソースに対して「test usage → type signatures → documentation」という優先順位を明示することで確認バイアスを避けつつ最も直接的な証拠（テストコード上の実際の使われ方）から先に探させる改善が可能
-- failed-approaches.md 禁則：探索シグナルの事前固定による確認バイアス強化、探索自由度の削りすぎ、メタ判断の増加 — これらに抵触しないか確認
-  - テスト使用 → 型シグネチャ → ドキュメントという順序は「何を探すか（test usage 等）」はすでに既存行に明記されており、今回は「どの順で探すか（優先順位）」を追加するだけ → 探索の自由度を削ってはいない、新しい必須チェックでもない ✓
-- 変更対象: SKILL.md 行 109 の末尾
-  - 変更前: `Search for type signatures, documentation, or test usage as secondary evidence.`
-  - 変更後: `Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation.`
-  - これは既存行への精緻化、+1行の変更 → 5行以内 ✓
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 💻 preparing terminal…
-  ┊ 💻 $         mkdir -p benchmark/swebench/runs/iter-13  0.2s
-  ┊ ✍️ preparing write_file…
+  ┊ 📖 read      Objective.md  0.8s
+  ┊ 🔎 grep      EQUIV|NOT_EQ|NOT_EQUIV|EQUIVAL|PASS|FAIL|ANSWER|CONFIDENCE|MUST|SHOULD|REQUIRED|UNVERIFIED|VERIFIED  0.6s
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 🔎 grep      compare  0.6s
   ┊ ✍️  write     benchmark/swebench/runs/iter-13/proposal.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-13/proposal.md → b/benchmark/swebench/runs/iter-13/proposal.md
-@@ -0,0 +1,73 @@
-+# Iter-13 Proposal
-+
-+## Exploration Framework カテゴリ: B
-+
-+### 今回のカテゴリ選択理由
-+
-+カテゴリ B は「情報の取得方法を改善する（読み方の具体化、探索の優先順位付けを変える）」と定義されており、今回の変更はその定義内の「探索の優先順位付けを変える」メカニズムに該当する。
-+
-+具体的には、サードパーティライブラリなどソースが取得できない関数の二次証拠として、SKILL.md が現行で「type signatures, documentation, or test usage」と列挙しているものの、探索順序が不定のままになっている点に着目した。カテゴリ A（構造の変更）でも C（比較枠組みの変更）でも D（メタ認知チェック追加）でもなく、純粋に「どの順で探すか」という情報取得の優先順位の精緻化であるため、カテゴリ B に適合する。
-+
-+---
-+
-+## 改善仮説
-+
-+ソースが入手できない（UNVERIFIED）関数について二次証拠を探す際、
-+テストコードでの実際の使われ方（test usage）を最初に探索することで、
-+関数の実際の振る舞いを最も直接的に観察できる証拠が先に得られ、
-+名前や型宣言からの推測に依存する確認バイアスを軽減できる。
-+
-+---
-+
-+## SKILL.md の変更内容
-+
-+### 変更対象
-+
-+Step 4（Interprocedural tracing）の Rules 内、行 109 の文言。
-+
-+### 変更前
-+
-+```
-+If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
-+```
-+
-+### 変更後
-+
-+```
-+If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
-+```
-+
-+### 差分の要約
-+
-+- 既存行への文言追加・精緻化のみ
-+- 変更行数: 1行（既存 1 行を書き換え）
-+- 削除行数: 0
-+- 変更規模宣言: **1行**（hard limit の 5行以内に適合）
-+
-+---
-+
-+## 期待効果
-+
-+### どのカテゴリの失敗が減るか
-+
-+- **関数名からの推測（Function name guessing）**: docs/design.md §4.1.1 が指摘する失敗パターン。ソースがない関数について、型シグネチャや名前から先に推測するのではなく、テストコードの実際の呼び出し例から振る舞いを帰納することで、名前依存の誤推測が減る。
-+- **不完全な推論チェーン（Incomplete reasoning chains）**: Guardrail #5 に対応。UNVERIFIED 関数の仮定が誤っている場合でも、テスト使用例を先に参照することで、その仮定がコードパスに与える影響を早期に検知できる。
-+- **overall 品質への影響**: UNVERIFIED 関数を持つ compare タスクで、二次証拠の質が高まることで EQUIVALENT / NOT_EQUIVALENT の誤判定が減る。equiv 方向・not_eq 方向のいずれについても、証拠の信頼性が均等に向上するため overall に寄与する。
-+
-+---
-+
-+## failed-approaches.md との照合
-+
-+| 禁則原則 | 適合性 | 理由 |
-+|----------|--------|------|
-+| 探索シグナルの事前固定による確認バイアスの強化 | 適合 | 探索対象（test usage / type signatures / documentation）はすでに既存行で定義済みであり、今回は「何を探すか」を新たに固定したのではなく、既存の三要素間の「どの順で探すか」を整理したのみ |
-+| 探索自由度の削りすぎ | 適合 | 優先順位はガイドラインであり、三要素すべての探索を禁止するものではない。自由度は維持される |
-+| メタ判断の増加 | 適合 | 結論直前の自己監査チェックへの追加ではなく、中間探索ステップの読み方の精緻化であり、新しい必須評価軸は増えていない |
-+
-+---
-+
-+## 変更規模の宣言
-+
-+- 追加・変更: **1行**
-+- 削除: 0行
-+- 合計変更規模: 1行（hard limit 5行以内に適合）
+@@ -1,73 +1,84 @@
+-# Iter-13 Proposal
++1) Target misclassification: 偽 EQUIV
++2) Current failure story (抽象): 「名前参照が見つからない」だけで pass-to-pass テストを“存在しない扱い”にし、間接到達するテストを取りこぼして EQUIV を早期に結論してしまう
++3) Mechanism (抽象): pass-to-pass の“到達性”が UNVERIFIED のときに結論を縮小/保留へ分岐させ、陰性探索（見つからない）の過信を減らす
++4) Non-goal boundary: 読解順序の半固定・証拠種類の事前固定・必須ゲート増（MUST/required の追加）は行わない
+ 
+-## Exploration Framework カテゴリ: B
++Focus domain: overall
++Exploration Frameworkカテゴリ: B. 情報の取得方法を改善する
++メカニズム選択理由: compare の誤判定は「何を読むか」ではなく「どの探索で“関連テストが本当に無い”と言えるか」の取得・判定の仕方で起きやすい。D2 の pass-to-pass 同定を“名前参照検索”に寄せすぎず、到達性の未検証（UNVERIFIED）を観測可能な状態として扱うことで、探索の自由度を保ったまま意思決定だけを改善できる。
+ 
+-### 今回のカテゴリ選択理由
++改善仮説（1つ）
++pass-to-pass テストの同定で「負の証拠（見つからない）」を過信しない分岐を入れると、間接到達するテストの取りこぼしによる早期 EQUIV が減り、全体の比較判定が安定する。
+ 
+-カテゴリ B は「情報の取得方法を改善する（読み方の具体化、探索の優先順位付けを変える）」と定義されており、今回の変更はその定義内の「探索の優先順位付けを変える」メカニズムに該当する。
++現状ボトルネックの診断（SKILL.md 自己引用 + 誘発機構）
++SKILL.md の Compare > DEFINITIONS > D2 には次がある:
++"To identify them: search for tests referencing the changed function, class, or variable."
++この文言は「参照（reference）探索」へ誘導しやすく、参照が見つからない＝到達しない、という短絡を誘発しうる。その結果、pass-to-pass の関連性が未検証のまま“空集合”扱いになり、EQUIV を早期結論しやすい（偽 EQUIV）。
+ 
+-具体的には、サードパーティライブラリなどソースが取得できない関数の二次証拠として、SKILL.md が現行で「type signatures, documentation, or test usage」と列挙しているものの、探索順序が不定のままになっている点に着目した。カテゴリ A（構造の変更）でも C（比較枠組みの変更）でも D（メタ認知チェック追加）でもなく、純粋に「どの順で探すか」という情報取得の優先順位の精緻化であるため、カテゴリ B に適合する。
++Decision-point delta（IF/THEN の2行、行動差があること）
++Before: IF pass-to-pass テストの“参照（reference）”が見つからない THEN pass-to-pass は実質無関係として結論を出す because 負の参照検索を「到達しない」の根拠にしてしまう
++After:  IF pass-to-pass の到達性が UNVERIFIED THEN 結論を保留する/条件付きに縮小する/追加で探す because 到達性の証拠（call-path / import 等）が未確定で、負の証拠だけでは空集合と言えない
++対応するSKILL.mdの見出し/セクション名: Compare > DEFINITIONS (D2) / Step 5.5: Pre-conclusion self-check (UNVERIFIED を条件付き結論と CONFIDENCE に反映)
+ 
+----
++変更タイプ: 定義の精緻化
++なぜ効くか: “関連テストが無い”という強い主張の入口を、観測可能な状態（reachability=UNVERIFIED）で分岐させる。探索経路を固定せず、結論の出し方だけを変える。
+ 
+-## 改善仮説
++具体的な変更内容（SKILL.md のどこをどう変えるか）
++Compare の DEFINITIONS D2 にある pass-to-pass テストの同定方法を、(a) 参照探索だけに還元しない、(b) 到達性が UNVERIFIED の場合に結論を縮小/保留へ分岐、の2点が明示されるように置換する。
+ 
+-ソースが入手できない（UNVERIFIED）関数について二次証拠を探す際、
+-テストコードでの実際の使われ方（test usage）を最初に探索することで、
+-関数の実際の振る舞いを最も直接的に観察できる証拠が先に得られ、
+-名前や型宣言からの推測に依存する確認バイアスを軽減できる。
++支払い（必須ゲート総量不変の証明）
++今回の変更は MUST/required の新設や必須ゲートの増設ではなく、既存の D2 の同定手段の定義精緻化（置換）であるため、支払いは不要（必須ゲート総量は不変）。
+ 
+----
++変更差分の最小プレビュー（3〜10行、同一範囲のBefore/After）
++対象範囲: Compare > Certificate template > DEFINITIONS > D2
+ 
+-## SKILL.md の変更内容
+-
+-### 変更対象
+-
+-Step 4（Interprocedural tracing）の Rules 内、行 109 の文言。
+-
+-### 変更前
+-
++Before:
+ ```
+-If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
++D2: The relevant tests are:
++    (a) Fail-to-pass tests: ...
++    (b) Pass-to-pass tests: tests that already pass before the fix — relevant
++        only if the changed code lies in their call path.
++    To identify them: search for tests referencing the changed function, class,
++    or variable.
+ ```
+ 
+-### 変更後
+-
++After:
+ ```
+-If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
++D2: The relevant tests are:
++    (a) Fail-to-pass tests: ...
++    (b) Pass-to-pass tests: tests that already pass before the fix — relevant
++        only if the changed code lies in their call path.
++    To identify them: search for tests that reach the changed code (e.g., reference, import, or traced call path).
++    If reachability is UNVERIFIED, do not treat pass-to-pass as empty; keep exploring or narrow the conclusion and set CONFIDENCE=LOW.
+ ```
+ 
+… omitted 57 diff line(s) across 1 additional file(s)/section(s)
+  ┊ 📖 read      benchmark/swebench/runs/iter-13/proposal.md  0.8s
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-`benchmark/swebench/runs/iter-13/proposal.md` を作成しました。内容の要点は以下の通りです。
+benchmark/swebench/runs/iter-13/proposal.md に、指定の制約に従って提案を書き込み済みです。
 
----
+要点（ファイル冒頭の4行と同じ主旨）:
+- 偽EQUIVの主因になりやすい「名前参照が無い＝到達しない」の短絡を、観測可能な状態（reachability=UNVERIFIED）として扱うよう Compare>D2 を2行だけ置換
+- UNVERIFIED のときは “pass-to-pass を空集合扱いしない” という分岐トリガを明示し、結論を保留/条件付き/追加探索へ変える（ただし NOT_EQ へ強制しない）
+- 読解順序の半固定・証拠種類の事前固定・必須ゲート増は行っていない（MUST/required追加なし）
 
-**カテゴリ B — 探索の優先順位付けを変える**
+参照状況:
+- failed-approaches.md と Objective.md は参照済み
+benchmark/swebench/runs/iter-13/proposal.md に、指定の制約に従って提案を書き込み済みです。
 
-対象: SKILL.md Step 4 の UNVERIFIED 関数処理ルール（行 109）
+要点（ファイル冒頭の4行と同じ主旨）:
+- 偽EQUIVの主因になりやすい「名前参照が無い＝到達しない」の短絡を、観測可能な状態（reachability=UNVERIFIED）として扱うよう Compare>D2 を2行だけ置換
+- UNVERIFIED のときは “pass-to-pass を空集合扱いしない” という分岐トリガを明示し、結論を保留/条件付き/追加探索へ変える（ただし NOT_EQ へ強制しない）
+- 読解順序の半固定・証拠種類の事前固定・必須ゲート増は行っていない（MUST/required追加なし）
 
-変更前:
-```
-Search for type signatures, documentation, or test usage as secondary evidence.
-```
+参照状況:
+- failed-approaches.md と Objective.md は参照済み
+- README.md / docs/design.md / docs/reference/agentic-code-reasoning.pdf は未参照（提案内に理由を明記済み）
 
-変更後:
-```
-Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation.
-```
-
----
-
-**選択理由**
-
-- 現行の記述は「何を探すか」は示しているが「どの順で探すか」は未定義。
-- test usage（テストコードでの実際の呼び出し例）は、関数の実際の振る舞いを最も直接的に示す証拠であるにもかかわらず、型シグネチャや名前と同等扱いになっている。
-- 名前から推測する確認バイアス（docs/design.md §4.1.1 で指摘）を抑えるには、振る舞いが直接見える証拠を先に参照させる順序付けが有効。
-
-**failed-approaches.md との整合**
-3 つの禁則原則（確認バイアス強化・探索自由度削りすぎ・メタ判断増加）いずれにも抵触しない。「何を探すか」の固定ではなく「既存の三要素を何の順で見るか」の精緻化であり、探索の自由度は維持されたまま。
-
-`benchmark/swebench/runs/iter-13/proposal.md` を作成しました。内容の要点は以下の通りです。
-
----
-
-**カテゴリ B — 探索の優先順位付けを変える**
-
-対象: SKILL.md Step 4 の UNVERIFIED 関数処理ルール（行 109）
-
-変更前:
-```
-Search for type signatures, documentation, or test usage as secondary evidence.
-```
-
-変更後:
-```
-Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation.
-```
-
----
-
-**選択理由**
-
-- 現行の記述は「何を探すか」は示しているが「どの順で探すか」は未定義。
-- test usage（テストコードでの実際の呼び出し例）は、関数の実際の振る舞いを最も直接的に示す証拠であるにもかかわらず、型シグネチャや名前と同等扱いになっている。
-- 名前から推測する確認バイアス（docs/design.md §4.1.1 で指摘）を抑えるには、振る舞いが直接見える証拠を先に参照させる順序付けが有効。
-
-**failed-approaches.md との整合**
-3 つの禁則原則（確認バイアス強化・探索自由度削りすぎ・メタ判断増加）いずれにも抵触しない。「何を探すか」の固定ではなく「既存の三要素を何の順で見るか」の精緻化であり、探索の自由度は維持されたまま。
-
-**変更規模: 1行（5行 hard limit 適合）**
-
-session_id: 20260412_162710_4d50d8
+session_id: 20260418_112523_c5173f
