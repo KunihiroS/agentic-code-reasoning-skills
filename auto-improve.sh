@@ -629,6 +629,11 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   git commit -m "iter-${current_iter}: compare=${compare_score}% audit=${audit_score}% (parent=iter-${parent_genid})" || true
   git push || true
 
+  # === 7.5. Worktree クリーンアップ ===
+  log "Worktree クリーンアップ..."
+  rm -rf "$HOME/bench_workspace/worktrees/"* "$HOME/bench_workspace/worktrees_compare/"* 2>/dev/null || true
+  log "Worktree クリーンアップ完了"
+
   # === 8. ゴール判定 ===
   if check_goal; then
     log "ゴール達成！ 直近${GOAL_WINDOW}回中${GOAL_PERFECT_COUNT}回以上 100%"
