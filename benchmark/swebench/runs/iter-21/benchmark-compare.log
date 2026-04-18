@@ -1,4 +1,4 @@
-Generated 20 prompt files in /tmp/tmp.HQo6Il81jB
+Generated 20 prompt files in /tmp/tmp.FCNf4vPq8u
 
 --- [1] instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 (flipt-io/flipt) ---
 [SKIP] instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8 / without_skill
@@ -80,4 +80,4 @@ Generated 20 prompt files in /tmp/tmp.HQo6Il81jB
 [SKIP] instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / without_skill
 [SKIP] instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / with_skill
 
-=== Compare Pro Benchmark complete: 20 instances, 1s total ===
+=== Compare Pro Benchmark complete: 20 instances, 2s total ===
