@@ -68,6 +68,7 @@ P3: ...
 Do not treat guesses as premises. Every later claim must reference a premise by number.
 
 ### Step 3: Hypothesis-driven exploration
+Exploration priority is not a fixed reading order; choose the next action by discriminative power — what unresolved uncertainty it resolves.
 Before opening any file, write:
 
 ```
@@ -90,6 +91,7 @@ UNRESOLVED:
   - [remaining questions]
 
 NEXT ACTION RATIONALE: [why the next file or step is justified]
+OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
 ```
 
 Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
@@ -106,7 +108,7 @@ For every function or method encountered on a relevant code path, record:
 **Rules:**
 - Read the actual definition. Do not infer behavior from the name.
 - Mark the Behavior column VERIFIED only after reading the source.
-- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
+- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
 - Trace through conditionals, mapping tables, and configuration — not just the happy path.
 - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
 
@@ -189,6 +191,9 @@ Before tracing individual functions, compare the two changes structurally:
       prioritize structural differences (S1, S2) and high-level semantic
       comparison over exhaustive line-by-line tracing. Exhaustive tracing
       is infeasible for large patches and produces unreliable conclusions.
+  OPTIONAL — S4: Difference importance — label each discovered difference as ORACLE-VISIBLE
+      (can change an asserted output/exception/externally visible state) vs ORACLE-INVISIBLE,
+      and prioritize tracing ORACLE-VISIBLE differences to a concrete test oracle first.
 
 If S1 or S2 reveals a clear structural gap (missing file, missing module
 update, missing test data), you may proceed directly to FORMAL CONCLUSION
@@ -257,6 +262,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+- Optional: classify differences by oracle-visibility to prioritize which ones must be traced to a concrete assertion
 
 ---
 
@@ -454,7 +460,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis — verify both upstream (where the value was set or the state was created) and downstream (where it is consumed or checked).
+5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified — e.g., via exception handlers, default values, or guard clauses. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
 
 ### General

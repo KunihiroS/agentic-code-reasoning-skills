@@ -1,97 +1,96 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/18/26 15:55:06] INFO     Processing request of type            server.py:727
+[04/18/26 21:04:03] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
   ┊ 📖 read      failed-approaches.md  0.8s
-  ┊ 📖 read      Objective.md  0.9s
-  ┊ 📖 read      SKILL.md  0.9s
   ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      Objective.md  0.8s
   ┊ ✍️  write     benchmark/swebench/runs/iter-22/proposal.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-22/proposal.md → b/benchmark/swebench/runs/iter-22/proposal.md
-@@ -1,108 +1,48 @@
--# Iteration 22 — Proposal
-+過去提案との差異: Step 5 の「pivot/flip 優先」を強めず、むしろ Step 2 と Step 5 の“優先規則の競合”を解消するための表現・決定規則の整理である。
-+Target: 両方（偽 EQUIV と 偽 NOT_EQUIV を同時に下げる）
-+Mechanism (抽象): 反証対象の選び方を「結論反転（flip）」単独から「最弱依存（ASM/UNVERIFIED）」中心へ言い換え、flip はタイブレークに格下げして探索の細りを避ける。
-+Non-goal: 構造差→NOT_EQUIV の早期条件や観測境界の制限（テスト依存・オラクル可視等）には一切触れない。
+@@ -1,48 +1,62 @@
+-過去提案との差異: Step 5 の「pivot/flip 優先」を強めず、むしろ Step 2 と Step 5 の“優先規則の競合”を解消するための表現・決定規則の整理である。
+-Target: 両方（偽 EQUIV と 偽 NOT_EQUIV を同時に下げる）
+-Mechanism (抽象): 反証対象の選び方を「結論反転（flip）」単独から「最弱依存（ASM/UNVERIFIED）」中心へ言い換え、flip はタイブレークに格下げして探索の細りを避ける。
+-Non-goal: 構造差→NOT_EQUIV の早期条件や観測境界の制限（テスト依存・オラクル可視等）には一切触れない。
++1) 過去提案との差異: Step 5（反証の優先順位や早期 NOT_EQUIV 条件）をいじらず、Step 2（前提表現）の曖昧さを最小 diff で解消する提案。
++2) Target: 両方（偽 EQUIV / 偽 NOT_EQUIV を同時に減らす）
++3) Mechanism (抽象): 「未検証の前提」を premise に紛れ込ませないために、前提を FACT と ASSUMPTION に明示分離し、後続 claim の依存関係を形式的に見える化する。
++4) Non-goal: 構造差→NOT_EQUIV の条件設計や探索順序（triage / 読解経路）の固定化は一切行わない。
  
--## Exploration Framework カテゴリ: E（表現・フォーマット改善）
-+本文
+-本文
++---
  
--### カテゴリ E を選択した理由
-+1) カテゴリ E（表現・フォーマット）内での具体的メカニズム選択理由
-+- 現状 SKILL.md には「反証対象の優先規則」が 2 箇所に分散し、かつ方向が異なる。
-+  - Step 2: ASM 依存を最優先に反証（依存の弱さ基準）
-+  - Step 5: 結論を flip する主張を最優先（結論反転基準）
-+- この競合は、compare / diagnose / explain / audit-improve の全モードで「どれを最初に疑うべきか」の判断を不安定にしやすく、結果として (a) 早い段階で一方向（flip）に寄り、(b) 反証経路が細る、という回帰リスクを持つ。
-+- そこで、表現だけで“単一の整合した選択規則”に圧縮し、認知負荷と探索ドリフトを同時に下げる（新しいゲートは増やさない）。
+-1) カテゴリ E（表現・フォーマット）内での具体的メカニズム選択理由
+-- 現状 SKILL.md には「反証対象の優先規則」が 2 箇所に分散し、かつ方向が異なる。
+-  - Step 2: ASM 依存を最優先に反証（依存の弱さ基準）
+-  - Step 5: 結論を flip する主張を最優先（結論反転基準）
+-- この競合は、compare / diagnose / explain / audit-improve の全モードで「どれを最初に疑うべきか」の判断を不安定にしやすく、結果として (a) 早い段階で一方向（flip）に寄り、(b) 反証経路が細る、という回帰リスクを持つ。
+-- そこで、表現だけで“単一の整合した選択規則”に圧縮し、認知負荷と探索ドリフトを同時に下げる（新しいゲートは増やさない）。
++ステップ 1: 禁止された方向の列挙（failed-approaches.md + 却下履歴の要約）
++- 証拠種類をテンプレで事前固定しすぎる（探索が「特定シグナル捜索」化して確認バイアス・反証経路の弱体化）。
++- 判定基準を特定の観測境界に過度還元する（構造差の扱いを“ある境界に写像できた時だけ”のように狭める等）。
++- 探索ドリフト対策として読解順序や境界確定を半固定する（どこから読み始めるか等の固定化）。
++- 局所的な仮説更新を即座の前提修正義務に結びつけすぎる（探索が不安定化）。
++- ガードレールを特定方向の追跡・優先順位に具体化しすぎる（「最小分岐候補」等への差し替え、反証経路の細り）。
++- 結論直前の必須メタ判断・報告様式を増やしすぎる（新しい実質ゲート化、結論の萎縮）。
++- 却下履歴（iter-18〜20）で明示的に NG: Step 5 の pivot claims 優先の強い表現、highest-tier-first による探索経路の半固定、構造差/早期 NOT_EQUIV 条件を観測境界に狭める方向。
  
--今回の強制カテゴリは E（表現・フォーマットを改善する: 曖昧文言の具体化、簡潔化、例示）。
--Objective.md の Exploration Framework セクションに定義されたカテゴリ E の3つのメカニズム
--のうち、本提案は「曖昧な指示をより具体的な言い回しに変える」と「冗長な部分を簡潔にして
--認知負荷を下げる」を組み合わせる。
-+2) 改善仮説（1つ）
-+反証対象の選定基準を「結論反転のしやすさ」から「推論チェーンの最弱依存（ASM/UNVERIFIED/未読定義）」へ寄せ、flip は同順位の候補が複数ある場合のタイブレークに落とすと、EQUIV/NOT_EQ の両方向で“見落としやすい脆い前提”に先に当たりやすくなり、片方向最適化による逆側の悪化を避けつつ全体精度が上がる。
+-2) 改善仮説（1つ）
+-反証対象の選定基準を「結論反転のしやすさ」から「推論チェーンの最弱依存（ASM/UNVERIFIED/未読定義）」へ寄せ、flip は同順位の候補が複数ある場合のタイブレークに落とすと、EQUIV/NOT_EQ の両方向で“見落としやすい脆い前提”に先に当たりやすくなり、片方向最適化による逆側の悪化を避けつつ全体精度が上がる。
++ステップ 2: 未探索の改善余地（SKILL.md から今回のカテゴリ E に合うものを抽出）
++- Step 2「Numbered premises」は “guesses を premise にするな” と言うだけで、実務上もっとも頻発する「必要だが未検証の仮置き（assumption）」の置き場所が曖昧。
++  - 結果として (a) 未検証が P として紛れ込み偽の確実性が生まれる、(b) 逆に premise に置けず本文に散逸して追跡不能、の両方が起きうる。
++- Step 4 では VERIFIED/UNVERIFIED を明示できるのに、Step 2 には同等の“検証状態ラベル”がない（表現レベルの非対称）。
++- これは compare/diagnose/explain/audit-improve の全モード共通の基盤（Core Method Step 2）で、かつ「表現・フォーマット改善（カテゴリ E）」として 5行以内で改善可能。
  
--具体的なメカニズム選択理由:
--Step 3 と Step 4 の境界説明に「Do not reconstruct the table from memory after the fact」
--という禁止文が存在する。この文は「in real time」という肯定形の表現と内容が重複しており、
--同じ義務を2か所で繰り返すことで文書の認知負荷を高めている。さらに「after the fact」は
--何の「事実の後」なのかが曖昧であり、「Step 3 の各読み取りの直後に行」という行動単位が
--明示されていない。カテゴリ E の「曖昧文言の具体化」と「冗長部分の簡潔化」が直接適用できる。
-+3) SKILL.md 該当箇所の短い引用と、どう変えるか
-+引用（現状）:
-+- Step 2:
-+  "If a claim depends on ASM, treat that ASM as the highest-priority refutation target."
-+- Step 5:
-+  "Prioritize the claim/assumption whose negation would flip the final answer ... when choosing what to refute first."
- 
-----
+-3) SKILL.md 該当箇所の短い引用と、どう変えるか
++ステップ 3: 選択した改善仮説（1つ）
++改善仮説: 前提（premise）を FACT と ASSUMPTION に明示分離し、各 claim が依存する ASSUMPTION を明示参照させると、
++- 偽 EQUIV: “暗黙の仮定が真なら同値” を同値と誤判定する事故を減らす
++- 偽 NOT_EQUIV: “仮定に依存した差” を確定差として扱う事故を減らす
++の両方に効き、探索経路の固定や証拠種類の固定を起こさずに全体の推論品質を底上げできる。
++
++---
++
++カテゴリ E 内での具体的メカニズム選択理由
++- 変更は「何を探すか／どの順に読むか」ではなく、「書き方（未検証をどこに置くか）」の明確化。
++- “premise として書いてよいもの” の境界を、追加ゲートではなくラベルの導入で可視化するだけなので、探索自由度を削らない。
++- Step 4 の VERIFIED/UNVERIFIED と整合するため、表現の一貫性が上がり認知負荷が下がる（同じ概念を別の言い回しで再学習しなくてよい）。
++
++改善仮説（抽象・汎用）
++- 推論の誤りは「事実と仮定の混同」によって増幅されやすい。仮定を“premise の外”に追放するのではなく、“premise の中で明示的に隔離”すると、後続の反証（Step 5）と結論（Step 6）の両方で依存関係が追跡可能になり、両方向（EQUIV/NOT_EQUIV）の判定が安定する。
++
++SKILL.md 該当箇所（短い引用）と変更方針
+ 引用（現状）:
+-- Step 2:
+-  "If a claim depends on ASM, treat that ASM as the highest-priority refutation target."
+-- Step 5:
+-  "Prioritize the claim/assumption whose negation would flip the final answer ... when choosing what to refute first."
++- "### Step 2: Numbered premises"
++- "Do not treat guesses as premises. Every later claim must reference a premise by number."
 +変更方針:
-+- “highest-priority” と “flip first” の二重ルールを、1つの短いルールに統合。
-+- flip を「常に最優先」から「最弱依存が同点で並ぶときのタイブレーク」へ表現上で格下げ。
-+- これにより、特定の証拠種類の事前固定や観測境界への還元をせずに、反証対象の選び方だけを安定化する。
++- 「guess は premise にするな」を、(P#=FACT, A#=ASSUMPTION) の2種に分ける書式へ具体化し、claim 側の参照ルールを明示する。
  
--## 改善仮説
-+4) Decision-point delta（IF/THEN 2行）
-+Before: IF 反証候補が複数ある THEN 「否定すると結論が flip する主張」を先に反証する because 結論反転（decision-impact）型
-+After:  IF 反証候補が複数ある THEN 「最弱依存（ASM/UNVERIFIED/未読定義）に支えられた主張」を先に反証する（flip は同点時のタイブレーク） because 依存強度（support-strength）型
+-変更方針:
+-- “highest-priority” と “flip first” の二重ルールを、1つの短いルールに統合。
+-- flip を「常に最優先」から「最弱依存が同点で並ぶときのタイブレーク」へ表現上で格下げ。
+-- これにより、特定の証拠種類の事前固定や観測境界への還元をせずに、反証対象の選び方だけを安定化する。
++Decision-point delta（IF/THEN 2行）
++Before: IF 前提として必要だが file:line/spec 等で直接確認できない文が出た THEN premise 化を避ける/本文に散らす because "guesses are not premises"（曖昧な禁止）
++After:  IF 前提として必要だが直接確認できない文が出た THEN A#（ASSUMPTION）として番号付けし、依存する claim から明示参照する because 検証状態（FACT vs ASSUMPTION）をトレース可能にする（依存関係の証拠型: 参照可能なラベル）
  
--Step 3 と Step 4 の境界説明において、「後から記憶で再構成するな」という禁止形の冗長文を
--「各関数定義を読んだ直後に1行追加する」という肯定形・行動単位の指示に置き換えることで、
--モデルがテーブル記入のタイミングを誤解するケースを減らし、トレーステーブルの充実度（全体
--的な推論品質）が向上する。
-+5) 変更差分プレビュー（Before/After, 3–10行）
+-4) Decision-point delta（IF/THEN 2行）
+-Before: IF 反証候補が複数ある THEN 「否定すると結論が flip する主張」を先に反証する because 結論反転（decision-impact）型
+-After:  IF 反証候補が複数ある THEN 「最弱依存（ASM/UNVERIFIED/未読定義）に支えられた主張」を先に反証する（flip は同点時のタイブレーク） because 依存強度（support-strength）型
++変更差分プレビュー（3〜10行）
 +Before:
-+- If a claim depends on ASM, treat that ASM as the highest-priority refutation target.
-+- Prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first.
- 
-----
++- Do not treat guesses as premises. Every later claim must reference a premise by number.
 +After:
-+- If a key claim depends on ASM/UNVERIFIED, prefer refuting that weakest dependency first; use “would flip the final answer” only as a tie-breaker.
-+- When choosing what to refute first, optimize for weakest support (ASM/UNVERIFIED/definition not yet read), not just flip-impact.
- 
--## SKILL.md のどこをどう変えるか
-+6) failed-approaches.md との照合（整合 1–2点）
-+- 「探索で探すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」に整合: ASM/UNVERIFIED という“依存の弱さ”を指すだけで、探す証拠種類・観測境界・検索パターンを固定しない。
-+- 「探索の自由度を削りすぎない」「読解順序の半固定を避ける」に整合: “flip 一本槍の優先”を弱め、反証経路が一方向へ細るリスクを下げる（順序固定の新規導入ではなく、競合する優先規則の整理）。
- 
--### 変更対象
--
--SKILL.md の Step 3 末尾にある次の1文（95行目付近）:
--
--```
--Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
--```
--
--### 変更後
--
--```
-… omitted 68 diff line(s) across 1 additional file(s)/section(s)
+… omitted 23 diff line(s) across 1 additional file(s)/section(s)
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
 benchmark/swebench/runs/iter-22/proposal.md に提案を書き込みました。
 
-session_id: 20260418_155506_2a332c
+session_id: 20260418_210403_804824
