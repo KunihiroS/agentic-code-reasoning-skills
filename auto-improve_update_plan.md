@@ -1491,3 +1491,55 @@ Phase 3 の設計・実装の詳細は **[docs/meta-agent_plan.md](docs/meta-age
 - `--meta` フラグで強制トリガー可能
 
 **ステータス:** 実装完了、検証ラン (Step 6) 未実施
+
+---
+
+## 16. Phase 3 検証ラン後の修正 (2026-04-18)
+
+### 16.1 検出された問題
+
+Phase 3 の検証ラン (iter-1〜14, 新ベンチマーク体制) で以下の問題が判明した。
+
+#### A. メタエージェントのパス解決バグ
+
+`append_archive_entry.py` が `prompts/.version` のパスを `archive_file` からの相対パスで解決していたため、`benchmark/prompts/.version`（存在しない）を参照していた。結果として **全エントリの `template_version` が 0 に固定**され、テンプレート変更の効果測定とロールバック判定が完全に機能していなかった。
+
+**修正:** `os.path.dirname(archive_file)` → `os.path.dirname(os.path.abspath(__file__))` に変更。
+
+#### B. 停滞検知の常時発火
+
+`detect_stagnation.py` が旧フォーマット（`template_version` フィールドなし）のアーカイブエントリを含めて判定していたため、旧ベンチの高スコア (audit 85-92%) が `best_audit_ever` に含まれ、**常に `stagnant=True`** となっていた。全 10 iter でメタエージェントが発火し、v1→v11 まで 11 回テンプレート更新が実行されたが、効果測定なしに空転していた。
+
+**修正:**
+- `template_version` フィールドを持つ新フォーマットエントリのみでフィルタ
+- compare と audit の**両方**が過去ベストを下回った場合のみ stagnant 判定
+- 現テンプレートバージョンでの scored iter が `META_STAGNATION_WINDOW`(5) 回溜まるまでメタ発火を抑制
+
+#### C. Worktree レジストリの残留
+
+`auto-improve.sh` のクリーンアップで `rm -rf` によるファイル削除は行っていたが、`git worktree prune` を実行していなかったため、git のワークツリーレジストリに stale な登録が残存。次のベンチマーク実行時に `git worktree add` が「already registered」エラーで失敗し、iter-11 では 20 ペア中 1 ペア、28 件中 0 件しか実行されなかった (Compare 100%/Audit 0% という異常値の原因)。
+
+**修正:** クリーンアップに全 repo への `git worktree prune` を追加。
+
+#### D. 提案の発想が同一パターンに固着
+
+iter-3, 7, 10, 12, 13, 14 の 6 回の却下理由が全て「構造差による早期 NOT_EQUIV の条件を特定の観測境界に狭める」方向の提案で、failed-approaches.md の再演として却下されていた。カテゴリを A〜F でローテーションしても、提案者 (gpt-5.2) が毎回同じボトルネック（STRUCTURAL TRIAGE の S2）に辿り着き、同じ解決策を出し続けていた。
+
+**根本原因:** propose テンプレートが「ボトルネック診断→改善仮説」の流れを強制しており、SKILL.md を読むと最も目立つ改善点（S2 の曖昧さ）に吸い寄せられる構造だった。
+
+**修正:** propose-normal.txt を全面改修 (148行→87行):
+- 直近の却下理由を `RECENT_REJECTIONS` 変数として渡し、同じ方向を明示的に禁止
+- 思考の流れを「ボトルネック→仮説」から「未探索の方向を列挙→そこから仮説」に反転
+- 冒頭 4 行の 1 番目を「過去提案との差異」に変更し、差分思考を強制
+- compare の STRUCTURAL TRIAGE 以外の改善方向（他モード、共通フロー、前提の立て方、反証対象の選び方等）を候補として明示
+
+### 16.2 修正コミット
+
+1. `fix: add worktree cleanup after each iteration to prevent disk bloat` — イテレーション完了後の worktree ファイル削除
+2. `fix: meta-agent path bug, stagnation detection, and firing frequency` — パス解決、停滞検知、発火頻度の 3 点修正
+3. `fix: add git worktree prune to cleanup to prevent stale registration errors` — レジストリ掃除
+4. `feat: redesign propose template to break repetitive rejection loop` — テンプレート全面改修
+
+### 16.3 ステータス
+
+修正適用後の検証ラン (iter-15〜) を実行中。
