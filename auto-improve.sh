@@ -506,6 +506,23 @@ else:
   # 出力先ファイル (Copilot がここに書く)
   export PROPOSAL_PATH="benchmark/swebench/runs/iter-${current_iter}/proposal.md"
 
+  # 直近の却下理由を収集して提案者に渡す
+  export RECENT_REJECTIONS
+  RECENT_REJECTIONS=$(python3 -c "
+import os, re
+runs_dir = '$RUNS_DIR'
+rejections = []
+for i in range(max(1, $current_iter - 6), $current_iter):
+    disc = os.path.join(runs_dir, f'iter-{i}', 'discussion.md')
+    if os.path.isfile(disc):
+        text = open(disc).read()
+        m = re.search(r'承認: NO（理由: (.+?)）', text)
+        if m:
+            rejections.append(f'iter-{i}: {m.group(1)}')
+for r in rejections[-5:]:
+    print(r)
+" 2>/dev/null)
+
   if [ "$ESCAPE_MODE" -eq 1 ]; then
     render_template "propose-escape" > "$PROMPT_DIR/propose.txt"
   else

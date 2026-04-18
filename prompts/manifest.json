@@ -8,7 +8,8 @@
         "focus_domain",
         "MAX_ADDED_LINES",
         "FORCED_CAT",
-        "FORCED_CAT_DESC"
+        "FORCED_CAT_DESC",
+        "RECENT_REJECTIONS"
       ],
       "role": "proposer"
     },
