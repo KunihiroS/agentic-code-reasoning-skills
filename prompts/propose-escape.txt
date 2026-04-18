@@ -45,6 +45,8 @@ ${PROPOSAL_PATH}
 【proposal で必ず明記（最小限でよいが、曖昧にしない）】
 - 変更で生まれる "挙動差"（どの誤判定/誤診断が減るか）
 - Decision-point delta（IF/THEN の Before/After 2 行）: どの条件で、結論を出す/保留する/追加で探す がどう変わるか
+- Trigger line (planned): 変更後に SKILL.md に入る予定の文言を 1 行だけ "..." で自己引用
+- Discriminative probe（2〜3 行）: 抽象ケース 1 つで Before/After の挙動差を示す（新しい必須ゲート増設ではなく、置換・再配置・必須↔optional の入替で）
 - 逆方向を悪化させうる経路と、その回避（新しい必須手順の追加なし）
 - failed-approaches.md のどの原則を踏まえ、どう回避しているか
 - Non-goal boundary: 読解順序の半固定・証拠種類の事前固定・必須ゲート増 をしないための境界条件（1 文）
