@@ -1,107 +1,38 @@
-# Iteration 17 — Proposal
+1) 過去提案との差異: 早期 NOT_EQUIV の条件を観測境界へ狭める/新トリガを足すのではなく、反証(Step 5)で「何を反証対象に選ぶか」を論文の divergence analysis 発想で変える。
+2) Target: 両方（偽 EQUIV と 偽 NOT_EQUIV）
+3) Mechanism (抽象): compare の反証対象を「結論を反転させる主張」から「A/B の最小の振る舞い分岐（divergence candidate）」優先へ切り替える。
+4) Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件や観測境界の定義（VERIFIED/UNVERIFIED 等）を新たに制限・ゲート化しない。
 
-## Exploration Framework カテゴリ
+本文
 
-カテゴリ: F（原論文の未活用アイデアを導入する）
+カテゴリ F 内での具体的メカニズム選択理由
+- docs/design.md が示す通り、原論文は compare とは別タスク（fault localization）で「DIVERGENCE ANALYSIS → RANKED PREDICTIONS」を中核機構としている。SKILL.md には diagnose にこの機構が入っている一方、compare の Step 5（反証）では“反証対象の選び方”が一般形（結論反転レバレッジ）に留まり、論文由来の「分岐点を局在化してから検証する」利点が compare に移植されていない。
+- 論文のエラー分析（subtle difference dismissal / incomplete chains）に対し、差分を見つけても「影響なし」と早く丸めてしまう失敗は compare で偽 EQUIV を生みやすい。一方で、差分の“場所”だけで NOT_EQUIV を言い切ると偽 NOT_EQUIV も起こる。よって「最小の分岐（どの入力・どの assert で分かれるか）」に反証対象を寄せるのが両方向に効く。
 
-### このカテゴリ内でのメカニズム選択理由
+改善仮説（1つ）
+- compare の Step 5 で、反証対象を「最終結論を反転させる主張」ではなく「A/B の最小の振る舞い分岐候補（divergence candidate）を 1–3 個に局在化し、上位から潰す」へ変えると、(a) 見つけた差分の影響を過小評価する偽 EQUIV を減らし、同時に (b) 反例（分岐する assert/入力）を示せない差分での早期 NOT_EQUIV を抑制できる。
 
-Objective.md の Exploration Framework §F に挙げられた3つのメカニズムのうち、
-「論文の他のタスクモード（localize/explain）の手法を compare に応用する」を選択する。
+SKILL.md 該当箇所（短い引用）と変更
+引用（現状）:
+- Step 5: "Prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first."
+変更方針:
+- compare に限り、反証の優先順位付けを diagnose の「DIVERGENCE ANALYSIS / RANKED PREDICTIONS」発想へ寄せ、A/B の“最小の分岐点”を反証対象の単位にする（新しい必須ゲートは増やさず、既存の優先順位付け文を差し替える）。
 
-具体的には、論文 Appendix D（Code Question Answering テンプレート）の
-DATA FLOW ANALYSIS — 「変数が作成・変更・使用されるまでの伝播経路を明示追跡する」
-という手法を、compare モードの差分評価に応用する。
+Decision-point delta（IF/THEN 2行）
+Before: IF Step 5 で最初に反証する対象を選ぶ THEN 「否定すると結論が反転する主張」を優先する because leverage（結論反転の影響が最大）。
+After:  IF `compare` で Step 5 の反証対象を選ぶ THEN 「A/B の最小の振る舞い分岐候補（divergence candidate）を 1–3 個に局在化し、上位を先に反証する」を優先する because discriminative（差分の影響を“分岐する assert/入力”に結びつけ、過小評価/過大評価の両方を減らす）。
 
-docs/design.md の以下の記述が根拠：
-> "Beyond the templates, the paper also documents recurring failure patterns...
-> Incomplete reasoning chains (§4.3 Error Analysis):
-> The agent traces multiple functions but misses downstream handling."
+変更差分プレビュー（Before/After, 3–10行）
+Before:
+- Prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first.
 
-この失敗パターンは compare モードで特に顕在化する。差異のある変数が最終的に
-テストのアサーション対象の変数に伝播するかどうかを確認しないまま「影響なし」
-と判定するケースがある。explain モードの変数追跡（DATA FLOW ANALYSIS）の
-考え方はこの盲点を補う未活用知見である。
+After:
+- In `compare`, prioritize refuting the top-ranked divergence candidate first (a minimal A↔B behavioral branch on a relevant call path; list 1–3 candidates).
+- Otherwise, prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first.
 
----
+failed-approaches.md との照合（整合 1–2点）
+- 「特定の観測境界（VERIFIED/UNVERIFIED, test-oracle 可視性 等）に判定基準を還元」して早期 NOT_EQUIV 条件を狭めない（禁止方向の回避）。
+- 証拠種類をテンプレで事前固定するのではなく、既存 Step 5 の“優先順位付け”だけを、論文由来の方向非依存な分岐局在化へ差し替えるため、探索自由度を削りすぎにくい。
 
-## 改善仮説
-
-「差分によって生じた変数の値の変化が、テストのアサーション対象まで伝播するか
-どうかを明示的に確認する義務を compare モードの差分評価に課すことで、
-下流ハンドリングの見落とし（incomplete reasoning chain）による誤判定を減らせる。」
-
----
-
-## SKILL.md のどこをどう変えるか
-
-### 変更箇所
-
-Guardrails セクション、Guardrail #4 の文末（1文追加）。
-
-### 変更前
-
-```
-4. **Do not dismiss subtle differences.** If you find a semantic difference between
-   compared items, trace at least one relevant test through the differing code path
-   before concluding the difference has no impact.
-```
-
-### 変更後
-
-```
-4. **Do not dismiss subtle differences.** If you find a semantic difference between
-   compared items, trace at least one relevant test through the differing code path
-   before concluding the difference has no impact. When tracing, follow the changed
-   variable's value from the point of divergence through to the assertion — confirm
-   whether downstream code transforms or discards it before it reaches the test oracle.
-```
-
-### 変更規模の宣言
-
-追加: 1文（1行）
-削除: 0行
-合計変更行数: 1行 ← hard limit（5行）の範囲内
-
----
-
-## 一般的な推論品質への期待効果
-
-### 減少が期待される失敗パターン
-
-1. **EQUIVALENT 誤判定（compare モード）**
-   差分のある関数が呼ばれているにもかかわらず、変数の下流伝播を確認せずに
-   「差分はテストに影響しない」と早期結論する誤りを防ぐ。
-   README.md に記載された「Two persistent failures remain — both involve EQUIVALENT
-   pairs where the AI's code trace or scope judgment is incorrect.」に対応する。
-
-2. **Incomplete reasoning chain（全モード共通）**
-   docs/design.md の §4.3 Error Analysis が指摘するパターン：
-   「エージェントが複数の関数をトレースするが、下流のハンドリングを見落とす」。
-   Guardrail #4 はすでに「差分を無視しない」を要求しているが、
-   「どこまでトレースすれば十分か」の指針がなかった。
-   追加文により「アサーション到達まで追う」という終端条件が明示される。
-
-3. **過信した EQUIVALENT 結論**
-   Guardrail #5（「downstream code does not already handle the edge case」の確認）と
-   相互補完し、差分の無害性を「変数伝播の不在」という具体的証拠で支える。
-
----
-
-## failed-approaches.md の汎用原則との照合
-
-| 原則 | 本提案の評価 | 理由 |
-|------|-------------|------|
-| 「探索すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」 | 抵触しない | 「アサーション到達まで変数を追う」は探索経路の固定ではなく、トレースの終端条件の明示。何を探すかではなく「どこまで確認すれば十分か」を与える指針であり、仮説に都合よい証拠だけを追う確認バイアスは誘発しない。 |
-| 「ドリフト抑制のための局所的具体化は探索の幅を狭める」 | 抵触しない | 変更はトレースの深度（どこまで追うか）の指針であり、探索の幅（どのファイルを読むか）を削減しない。 |
-| 「結論直前の自己監査に新しい必須のメタ判断を増やしすぎない」 | 抵触しない | Step 5.5 には手を加えない。Guardrail #4 の本文への補足であり、新しい判定ゲートや自己監査チェック項目の追加ではない。既存の「trace at least one relevant test through the differing code path」という要求の具体化にとどまる。 |
-
-全原則に抵触しないと判断する。
-
----
-
-## 変更規模の宣言
-
-- 追加行: 1行
-- 削除行: 0行
-- 合計: 1行（hard limit 5行 以内）
+変更規模の宣言
+- SKILL.md 変更は 2–3 行の置換/追記で完結（hard limit 5 行以内）。新しい必須ゲート（MUST/required の純増）は行わない。

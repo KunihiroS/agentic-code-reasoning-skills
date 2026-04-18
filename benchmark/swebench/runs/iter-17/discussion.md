@@ -1,206 +1,115 @@
-# Iteration 17 — 監査ディスカッション
+# iter-17 discussion
 
 ## 総評
+提案の狙いは明確で、compare の Step 5 における「何を最初に反証するか」という意思決定点を、結論反転レバレッジ中心から、A/B の最小の振る舞い分岐候補中心へ差し替えるものです。これは結論文の言い換えではなく、反証対象の選び方そのものを変える提案になっており、compare の実効差につながる可能性があります。
 
-提案の狙い自体は理解できる。README.md が示す未解決課題は EQUIVALENT 側の誤判定であり、docs/design.md でも "Incomplete reasoning chains" が明示的な失敗パターンとして挙がっている。そのため、compare モードにおいて「差分が本当にテスト oracle まで届くのか」を意識させたい、という問題設定は妥当である。
-
-ただし、今回の文言は「changed variable を assertion まで追う」という特定の追跡様式を半ば必須化しており、failed-approaches.md が禁じる「探索すべき証拠の種類の事前固定」と実質的にかなり近い。さらに、差分の種類を value propagation に寄せすぎており、control flow・exception・side effect・ordering・resource handling のような非変数中心の差分に対しては汎化性が弱い。
-
-結論として、問題意識は良いが、この具体的な文言のままでは承認しにくい。
-
----
+過度に新しいゲートを増やさず、既存の必須反証ステップの内部優先順位だけを置換する構造なので、今回の運用方針（監査 PASS の下限を満たしたまま compare 改善につなげる）にも比較的沿っています。
 
 ## 1. 既存研究との整合性
+検索なし（理由: 一般原則の範囲で自己完結）。
 
-### 参照した Web 情報
+docs/design.md では、原論文から fault localization 側の「Divergence Analysis → Ranked Predictions」を抽出済みであり、README.md / docs/design.md / SKILL.md の範囲だけで「未活用の論文由来アイデアを compare に移植する」という提案の妥当性は評価できます。追加の外部確認がないと成立しない固有概念依存ではありません。
 
-1. Agentic Code Reasoning (arXiv)
-   - URL: https://arxiv.org/abs/2603.01896
-   - 要点:
-     - semi-formal reasoning は「explicit premises」「trace execution paths」「formal conclusions」を要求する証明書的な枠組みとして説明されている。
-     - patch equivalence / fault localization / code QA の全てで、構造化されたトレースが精度向上に寄与するという主張。
-     - よって、「より明示的に下流まで追う」という方向性そのものは、論文のコア思想とは整合的。
+## 2. Exploration Framework のカテゴリ選定
+カテゴリ F（原論文の未活用アイデアを導入する）は適切です。
 
-2. Data Flow Testing - GeeksforGeeks
-   - URL: https://www.geeksforgeeks.org/software-testing/data-flow-testing/
-   - 要点:
-     - 変数の定義箇所と使用箇所の追跡は、値がどこで定義されどこで利用されるかを確認する一般的手法として整理されている。
-     - 「defined but not used」「used but never defined」など、値の伝播追跡がバグ検出に有効であることを説明している。
-     - 学術一次資料ではないが、「definition/use を追う」という一般原則の補助線としては妥当。
+理由:
+- 提案の中心は、diagnose にある divergence analysis の発想を compare の反証対象選定へ移す点にあります。
+- これは docs/design.md の「他タスクの手法を translate して使う」という方針と整合します。
+- 副次的には B（探索の優先順位付け変更）にも見えますが、主たる根拠が「論文由来で SKILL compare には未移植」という点にあるため、F が第一カテゴリで妥当です。
 
-3. Tracing Logic Without Execution: The Magic of Data Flow in Static Analysis
-   - URL: https://www.in-com.com/blog/tracing-logic-without-execution-the-magic-of-data-flow-in-static-analysis/
-   - 要点:
-     - data flow analysis は、コードを実行せずに「どこで定義され、どう使われ、どの変換を経るか」を追う静的解析の基礎技法として説明されている。
-     - downstream での transformation を見る考え方は一般的であり、今回の提案の意図と整合する。
-     - こちらも学術一次資料ではないため、補強資料として限定的に扱うべき。
+## 3. compare 影響の実効性チェック
+- Decision-point delta:
+  - Before: IF Step 5 で反証対象を選ぶ THEN 「否定すると最終結論が反転する主張」を優先する。
+  - After: IF compare で Step 5 の反証対象を選ぶ THEN 「A/B の最小の振る舞い分岐候補を 1–3 個に局在化し、上位から反証する」を優先する。
+- IF/THEN 形式で 2 行になっているか: YES
+- Before/After が理由の言い換えだけか: NO。条件に compare 限定が入り、行動も「claim を潰す」から「divergence candidate を潰す」へ変わっています。
+- Trigger line（発火する文言の自己引用）が差分プレビュー内にあるか: YES
+  - `In compare, prioritize refuting the top-ranked divergence candidate first ...`
 
-### 監査所見
+- Failure-mode target:
+  - 主対象は両方です。
+  - 偽 EQUIV 側: 差分を見つけても「影響なし」と丸める前に、どの入力/どの assert で分岐するかを詰めるので、 subtle difference dismissal を減らしやすいです。
+  - 偽 NOT_EQUIV 側: 差分の存在だけでなく、実際に test-relevant な分岐候補として具体化できるかを問うため、差分の場所だけを根拠に早期 NOT_EQUIV へ倒れるのを抑えやすいです。
 
-研究整合性という意味では、提案の方向性はおおむね妥当である。特に Objective.md の Exploration Framework F にある「論文の他モードの手法を compare に応用する」に直接乗っている。
+- Non-goal:
+  - STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件は変えない。
+  - 新しい必須ゲートは増やさない。
+  - 証拠種類を固定せず、既存 Step 5 の優先順位付けだけを置換する。
 
-ただし、論文・設計文書が支持しているのは「下流まで追え」という一般原則であって、「changed variable を assertion まで追う」という単一の実装様式ではない。ここは整合している部分と、提案側が過度に具体化している部分を分けて見るべきである。
+- Discriminative probe:
+  - 抽象ケースとして、A/B に小さな条件分岐差はあるが、実際に既存テストが踏む assert 条件は一部しか関係しない場合を考える。
+  - 変更前は「結論を反転しそうな主張」を先に触るため、差分の重要性を大きくも小さくも雑に扱いやすいです。
+  - 変更後は「どの入力・どの assert で分岐するか」を先に候補化するため、既存テストに刺さる差分かどうかをより早く識別できます。これは新ゲート追加ではなく、既存の反証優先順位の置換として説明されています。
 
----
+- 支払い（必須ゲート総量不変）の A/B 対応付けが明示されているか:
+  - YES。既存の Step 5 優先順位文を compare 向けの divergence candidate 優先へ差し替え、その他モードでは既存ルールを残す、という対応が proposal に書かれています。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
+## 4. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+片方向最適化には見えません。実効差分は両方向にあります。
 
-### 判定
+- EQUIVALENT 判定への作用:
+  - 「差分はあるがテスト結果は同じ」を主張する際、単に大きな主張を守るのではなく、最小分岐候補ごとに潰す方向になるため、安易な偽 EQUIV を減らす方向に働きます。
+  - しかも `NO COUNTEREXAMPLE EXISTS` と相性がよく、反例像をより具体的に作りやすくなります。
 
-概ね適切。カテゴリ F を選ぶこと自体は妥当。
+- NOT_EQUIVALENT 判定への作用:
+  - 「違いがある」ではなく「この assert / この入力で分岐する」と結びつける圧力が強くなるため、差分の存在だけで早く NOT_EQUIVALENT を出す誤りを減らせます。
+  - 既存の COUNTEREXAMPLE 節とも整合的です。
 
-### 理由
+- 変更前との実効差分:
+  - 変更前は、反証の単位が抽象 claim/assumption で、結論反転の leverage が主軸でした。
+  - 変更後は、compare に限って反証の単位が「test-relevant な最小分岐候補」へ寄るため、差分の実害/無害の判定がテスト挙動に近い粒度になります。
 
-- Objective.md の F には明示的に「論文の他のタスクモード（localize, explain）の手法を compare に応用する」が含まれている。
-- proposal.md の中核アイデアは、Appendix D の DATA FLOW ANALYSIS の発想を compare に移植することなので、F に自然に属する。
-- 一方で、実際の diff は Guardrail の 1 文追加であり、操作としては E（表現の具体化）にもまたがる。
+## 5. failed-approaches.md との照合
+本質的な再演には見えません。ただし 1 点だけ、文言次第では半固定化のリスクがあります。
 
-つまり、カテゴリの主たる発想源は F でよいが、実際に行っていることは「F 発の E 的具体化」である。
+- 探索経路の半固定: NO
+  - 理由: 提案は Step 3 の読解順序や「どこから読み始めるか」を固定していません。Step 5 の反証優先順位だけを compare で変える提案です。
 
----
+- 必須ゲート増: NO
+  - 理由: proposal 自身が「新しい必須ゲートは増やさず、既存の優先順位付け文を差し替える」と宣言しています。
 
-## 3. EQUIVALENT 判定 / NOT_EQUIVALENT 判定への作用
+- 証拠種類の事前固定: NO
+  - 理由: divergence candidate は反証対象の粒度指定であって、特定の証拠種別テンプレートの固定ではありません。
 
-### EQUIVALENT への作用
+補足懸念:
+- `list 1–3 candidates` の書き方は、軽い報告義務として働く可能性があります。現状でも致命的ではありませんが、compare に効く本体は「minimal behavioral branch を優先する」点であり、数の明示が強すぎると形式適応に寄るおそれがあります。
 
-強く作用する。しかも主に良い方向に作用する可能性が高い。
+## 6. 汎化性チェック
+汎化性違反は見当たりません。
 
-- 現行 Guardrail #4 は「差分を見つけたら relevant test を differing path に沿って trace せよ」と言うだけで、どこまで追えば「no impact」と言えるかは曖昧。
-- 追加文は「差分が test oracle に届く前に transform/discard されるか」を確認させるため、早すぎる EQUIVALENT 結論を抑制しやすい。
-- README.md の「persistent failures remain — both involve EQUIVALENT pairs」とも整合する。
+- 具体的な数値 ID: なし（Step 番号や 1–3 candidates は手順表現であり、ベンチマーク固有 ID ではない）
+- リポジトリ名: なし
+- テスト名: なし
+- ベンチマーク固有コード断片: なし
 
-### NOT_EQUIVALENT への作用
+また、提案は特定の言語・フレームワーク・テストランナーを暗黙前提にしていません。`minimal A↔B behavioral branch`、`relevant call path`、`assert/input` といった表現は、任意言語の静的コード推論へ概ね持ち運べます。
 
-直接効果は弱い。間接効果はあるが、主作用ではない。
+## 7. 全体の推論品質への期待効果
+期待効果はあります。
 
-- NOT_EQUIVALENT は compare テンプレート上、すでに「COUNTEREXAMPLE」「Diverging assertion」を要求しているため、元から test oracle までの差分証明が比較的強い。
-- 今回の追加文は「difference has no impact と結論する前に」の条件で発火するため、文面上は EQUIVALENT 側の抑制にかなり偏っている。
-- ただし間接的には、「見かけの差分が downstream で吸収される」ことを確認できれば、誤った NOT_EQUIVALENT を減らす余地はある。
+- compare で「差分を見つけた後の扱い」がよりテスト判定に近い粒度になります。
+- subtle difference dismissal と location-only な過剰 NOT_EQUIV の両方を同時に減らす筋が通っています。
+- 既存の研究コア（premises / hypothesis-driven exploration / interprocedural tracing / mandatory refutation）を壊さず、Step 5 の反証運用だけを sharpen するので、変更規模に対する改善効率も悪くありません。
 
-### 実効的差分の評価
+## 停滞診断
+懸念を 1 点だけ挙げると、「監査 rubric に刺さる説明強化」で終わる危険は低いものの、`1–3 candidates を list` の部分は compare の分岐改善そのものより“ちゃんと考えた感の報告”に寄る余地があります。効く本体は candidate を列挙することではなく、「反証対象の単位を最小分岐へ変える」ことです。
 
-この変更の実効的差分は、対称的な compare 強化ではなく、EQUIVALENT を出すための証拠要求の増加である。
+## 修正指示
+1. `list 1–3 candidates` は compare 効果の本丸ではないので、必須の列挙義務に読める文言は弱めてください。
+   - 追加するのではなく、既存の priority 文の置換に留める形で、`when identifiable, start from the smallest test-relevant divergence candidate` のように簡素化するのがよいです。
 
-要するに:
-- EQUIVALENT: かなり厳しくなる
-- NOT_EQUIVALENT: 既存テンプレートの方が主に効いており、今回の追加効果は限定的
+2. `minimal A↔B behavioral branch` だけだと抽象度がやや高いので、Trigger line の後半に「e.g. the earliest branch that could change a relevant assertion outcome or exercised input class」程度の一般化された補足を 1 フレーズだけ入れてください。
+   - 新欄追加ではなく、同一行の説明置換で十分です。
 
-したがって、この提案は実質的に片方向寄りである。README.md の失敗傾向から見ればその狙い自体は理解できるが、「両方向の推論品質改善」とまでは言いにくい。
+3. `Otherwise, prioritize ... flip the final answer` の退避先ルールは残してよいですが、compare で divergence candidate が特定できない場合だけ使うことを明記してください。
+   - これも新ゲート追加ではなく、fallback 条件の明確化です。
 
----
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 提案者の自己評価
-
-proposal.md は、「探索経路の固定ではなく終端条件の明示なので抵触しない」と主張している。
-
-### 監査評価
-
-この自己評価には同意しきれない。実質的にはかなり近い再演リスクがある。
-
-#### 原則1: 「探索すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」
-
-今回の文言は、semantic difference を見つけたときに「changed variable の value propagation」を追うことを求める。これはまさに証拠の種類を value-flow に寄せる。
-
-compare で必要な証拠は常に variable propagation とは限らない。たとえば:
-- 例外を投げる / 握りつぶす
-- 分岐条件の変化
-- 副作用の有無
-- 呼び出し順序の変化
-- resource cleanup の有無
-- 返り値ではなく mutation 対象の違い
-
-こうした差分では「changed variable を assertion まで追う」という指示は不自然、または不十分になりやすい。
-
-したがって、表現を変えていても本質は「特定シグナルの捜索」に寄りうる。
-
-#### 原則2: 「探索ドリフト対策を追加する際は、探索の自由度を削りすぎない」
-
-今回の追加は、探索の幅ではなく深さの制約だ、という提案者の主張には一理ある。しかし実際には、深さの指定が証拠様式の指定と結びついており、compare の思考を value-flow 中心へ引っ張る。結果として、他の差分型の見え方を悪くする可能性がある。
-
-よって、自由度を削りすぎないという原則にも軽微ではなく中程度の抵触リスクがある。
-
-#### 原則3: 「結論直前の自己監査に、新しい必須のメタ判断を増やしすぎない」
-
-この点については、Step 5.5 を増やしていないので proposal の主張どおり直接抵触ではない。
-
-ただし failed-approaches.md には「既存チェック項目への補足に見える形でも、結論前に特定の検証経路を半必須化すると、実質的に新しい判定ゲートとして働きやすい」とある。今回の 1 文は Guardrail 内でそれをやっている側面がある。
-
-### まとめ
-
-形式上は新しい self-check 項目ではないが、実質上は「特定の追跡経路の半必須化」に近い。failed-approaches.md と安全に両立しているとは言いづらい。
-
----
-
-## 5. 汎化性チェック
-
-### 明示的なルール違反の有無
-
-提案文中に、以下のような露骨な過剰適合シグナルは見当たらない。
-
-- 具体的な数値 ID
-- ベンチマーク対象リポジトリ名
-- 具体的なテスト名
-- 対象リポジトリ由来のコード断片
-
-その点では、Objective.md / Audit Rubric の R1 に対して即失格ではない。
-
-### 暗黙のドメイン・言語仮定
-
-ただし、文言には軽度の暗黙バイアスがある。
-
-- "changed variable's value" という表現は、命令型・変数中心のコードには自然だが、
-  - 関数型スタイル
-  - 宣言的記述
-  - 例外中心の制御
-  - state mutation よりイベントやメッセージが本質の系
-  ではやや不自然。
-- "through to the assertion" は test oracle を明示しており compare には合うが、実際の差分が assertion に値として到達する形で表現されない場合もある。
-
-つまり、露骨な benchmark overfitting ではないが、「value propagation が本質である場面」を暗黙に標準ケースとしている点は汎化性を少し下げる。
-
-### 監査所見
-
-R1 的には 1 ではないが 3 もつけにくい、という印象。問題は固有識別子ではなく、差分の型を狭めることによる潜在的なドメイン偏りである。
-
----
-
-## 6. 全体の推論品質がどう向上すると期待できるか
-
-### 期待できる向上
-
-- 「差分を見たが downstream handling を見ずに no impact と言う」失敗は減る可能性がある。
-- compare における EQUIVALENT 側の証拠水準は上がる。
-- Guardrail #5 の「downstream code already handles the edge case」を、より test-oracle 寄りに具体化する補助にはなる。
-
-### 懸念される副作用
-
-- compare の差分理解が value-flow に寄りすぎる。
-- 変数として表現しづらい差分を見落としやすくなる。
-- 既存 Guardrail #4 と #5 の間にある役割分担を曖昧にし、冗長に近い指示が増える。
-- 「どこまで追うか」を明確にしたいという意図に対し、指定した終端条件が narrow すぎる。
-
-### 総合評価
-
-推論品質の改善は「ありうる」が、「一般に improve する」とまではまだ言えない。改善するのは主に propagation-sensitive な EQUIVALENT 誤判定であり、compare 一般の差分理解を底上げするには、文言が特定メカニズムに寄りすぎている。
-
----
-
-## 補足コメント: どこを直せば承認に近づくか
-
-今回の問題は「下流まで追え」という発想ではなく、「changed variable」という証拠様式の固定にある。
-
-もしこの方向を維持したいなら、次のような一般化が必要だと思う。
-
-- 変数に限定せず、「the changed behavior / state / output / side effect」など、差分の型に応じた表現にする
-- value propagation を唯一の追跡法にせず、「reaches, is transformed, is normalized away, or is blocked before the oracle」程度の抽象度に留める
-- compare の対称性を保つため、「no impact を結論する前」のみならず、「impact を結論する前」にも oracle への到達証拠を要求する設計の方が筋がよい
-
-今のままだと、良い失敗分析を起点にしているのに、実装文言が narrow になりすぎている。
-
----
-
-## 最終判断
-
-承認: NO（理由: 方向性は妥当だが、提案文言が compare の証拠収集を "changed variable の value propagation" に寄せすぎており、failed-approaches.md の「証拠種類の事前固定」「特定追跡経路の半必須化」に実質的に近い。EQUIVALENT 側には有効でも作用が片方向寄りで、control flow・exception・side effect など非変数中心の差分への汎化性が不足しているため。）
+## 結論
+承認: YES
+
+理由:
+- Decision-point delta が具体で、Trigger line もある。
+- 両方向（偽 EQUIV / 偽 NOT_EQUIV）に作用する筋がある。
+- failed-approaches.md の本質的再演ではなく、必須ゲート純増もない。
+- compare 改善に効く中身があり、監査通過のための説明強化だけに留まっていない。
