@@ -1,107 +1,52 @@
-# Iteration 24 — Proposal
+過去提案との差異: 「構造差→早期NOT_EQUIV」や特定の証拠型/観測境界への条件狭窄ではなく、必須 Step 5 の“反証対象選定の順序”だけを両方向対称に入れ替える。
+Target: 両方（偽 EQUIV と偽 NOT_EQUIV の同時低減）
+Mechanism (抽象): 反証チェックを「結論反転(=pivot)一点集中」から「EQUIV 側と NOT_EQUIV 側を交互に圧力テストする順序」へ置換する。
+Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件や、証拠種類/観測境界の定義を狭める変更は一切しない。
 
-## Exploration Framework カテゴリ
+# 1) 禁止方向（failed-approaches.md と却下履歴からの列挙）
+- 次に探す証拠種類をテンプレで事前固定し、探索を「特定シグナル捜索」へ寄せる（確認バイアスを強める）。
+- 既存判定基準を特定の観測境界へ還元しすぎる（構造差などを“その境界に写像できたときだけ有効”にする類）。
+- 「どこから読むか／どの境界を先に確定するか」を半固定し、探索経路を早期に細らせる。
+- 既存の汎用ガードレールを、特定の追跡方向・局所観点へ置換してしまう（反証優先順位の差し替え等）。
+- 結論直前の自己監査に新しい必須メタ判断（実質ゲート）を純増させる。
 
-カテゴリ: A — 推論の順序・構造を変える
+# 2) 未探索の改善余地（SKILL.md から）と今回の選択理由
+SKILL.md の Core Method Step 5 には、反証対象の選び方として次が明示されています:
 
-### カテゴリ A 内の具体的なメカニズム選択
+> - Prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first.
 
-カテゴリ A には以下の三つのメカニズムが列挙されている:
+この「結論反転(=pivot)一点集中」は、表現が強いほど compare で片方向（いま頭にある暫定結論）へ探索が寄り、反対側の反証経路が細るリスクがあります（直近却下理由と同型）。
+一方で、ここを “証拠型” や “観測境界” に結びつけず、単に「順序（スケジューリング）」として両方向対称にするのは、failed-approaches.md が禁じる経路の半固定（特定方向・特定証拠型への具体化）とはメカニズムが異なります。
 
-1. ステップの実行順序を入れ替える
-2. 並列に行っていた分析を直列にする（またはその逆）
-3. 結論から逆算して必要な証拠を特定する（逆方向推論）
+カテゴリA（推論の順序・構造変更）としては、反証の“対象”を固定せずに、反証の“順番”を「片側集中→交互化」へ変更でき、EQUIV/NOT_EQ のどちらかだけを最適化して逆側を悪化させるリスクを下げられます。
 
-今回は **メカニズム 3「逆方向推論」** を選択する。
+# 3) 改善仮説（1つ）
+反証対象の選定を「暫定結論の pivot だけに集中」させず、EQUIV と NOT_EQUIV の両仮説を交互に圧力テストする順序にすると、暫定結論への早期コミット（確認バイアス）を減らし、偽 EQUIV と偽 NOT_EQUIV の双方が減る。
 
-理由: `compare` モードにおける現在のフローは「変更 A と変更 B を順方向にトレースし、最後に差異があれば NOT EQUIVALENT と結論づける」という構造である。この順方向アプローチでは、推論者が EQUIVALENT へ収束しそうだと感じた時点で反証探索を浅く打ち切るリスクがある。逆方向推論、すなわち「EQUIVALENT であるとしたら成立しなければならない必要条件を先に列挙し、そのうちのどれが崩れるかを見る」というアプローチは、反証すべき具体的なターゲットを先に明示することで、無意識の確証バイアスによる早期収束を構造的に防ぐ。これは Objective.md の Exploration Framework が定義する「逆算して必要な証拠を特定する」に直接対応する。
+# 4) 具体変更（SKILL.md 該当箇所の引用と変更方針）
+変更対象: Core Method / Step 5: Refutation check の最初の箇条書き（反証の“最初に何を狙うか”）
 
----
+現行（短引用）:
+- "Prioritize the claim/assumption whose negation would flip the final answer ... when choosing what to refute first."
 
-## 改善仮説
+提案: これを「両方向の交互スケジューリング」に置換（証拠種類や観測境界の指定は追加しない）。
 
-`compare` モードの STRUCTURAL TRIAGE セクションにおいて、構造的な等価性の必要条件を先に宣言させ、その後の詳細トレースをその必要条件の検証として位置づけることで、順方向トレースの終盤での反証スキップを減らし、EQUIVALENT の誤判定を抑制できる。
+# 5) Decision-point delta（IF/THEN 2行）
+Before: IF 暫定結論に到達し、反証対象を選ぶ THEN “否定したら結論が反転する” 1点を最優先で潰す because 結論反転インパクト（pivot）
+After:  IF 暫定結論に到達し、反証対象を選ぶ THEN その結論を支える最も依存度の高い主張を潰したら、次は反対結論側の最有力主張も潰す（交互に進める） because 両仮説に対する対称な反証圧（drift抑制）
 
----
+# 6) 変更差分プレビュー（Before/After, 3–10行）
+Before (Step 5 抜粋):
+- Prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first.
+- "No test exercises this difference" — before asserting this, describe what such a test would look like ...
 
-## SKILL.md の変更内容
+After (Step 5 抜粋):
+- When choosing what to refute first, alternate pressure-testing both sides: refute the most load-bearing claim for your current tentative conclusion, then refute the strongest claim for the opposite conclusion.
+- "No test exercises this difference" — before asserting this, describe what such a test would look like ...
 
-### 変更箇所
+# 7) failed-approaches.md との照合（整合 1–2点）
+- 「証拠種類の事前固定」をしない: 交互化は“順序”のみで、何を証拠として探すか（テスト/オラクル/接続など）をテンプレで固定しない。
+- 「特定方向のガードレールへの置換」を避ける: 片方向（pivot優先）への寄せを弱め、むしろ方向非依存（EQUIV/NOT_EQ 両側）にするため、探索経路の半固定化を起こしにくい。
 
-`compare` モードの `STRUCTURAL TRIAGE` ブロック（SKILL.md 180〜191 行目）に、必要条件の事前宣言を求める一文を追加する。
-
-### 変更前
-
-```
-STRUCTURAL TRIAGE (required before detailed tracing):
-Before tracing individual functions, compare the two changes structurally:
-  S1: Files modified — list files touched by each change. Flag any file
-      modified in one change but absent from the other.
-  S2: Completeness — does each change cover all the modules that the
-      failing tests exercise? If Change B omits a file that Change A
-      modifies and a test imports that file, the changes are NOT EQUIVALENT
-      regardless of the detailed semantics.
-  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-      prioritize structural differences (S1, S2) and high-level semantic
-      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-      is infeasible for large patches and produces unreliable conclusions.
-```
-
-### 変更後 (追加 1 行、変更 0 行)
-
-```
-STRUCTURAL TRIAGE (required before detailed tracing):
-Before tracing individual functions, compare the two changes structurally:
-  S0: Equivalence preconditions — before reading any code, state what must
-      be true for the two changes to be EQUIVALENT, then treat each item as
-      a falsification target during S1–S3 and the ANALYSIS that follows.
-  S1: Files modified — list files touched by each change. Flag any file
-      modified in one change but absent from the other.
-  S2: Completeness — does each change cover all the modules that the
-      failing tests exercise? If Change B omits a file that Change A
-      modifies and a test imports that file, the changes are NOT EQUIVALENT
-      regardless of the detailed semantics.
-  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-      prioritize structural differences (S1, S2) and high-level semantic
-      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-      is infeasible for large patches and produces unreliable conclusions.
-```
-
----
-
-## 期待効果
-
-### 改善が見込まれる失敗パターン
-
-EQUIVALENT の誤判定（equiv の偽陽性）は多くの場合、詳細トレースが終盤に差し掛かった段階で反証探索が表面的になることで生じる。推論者が "ほぼ同じ" という印象を早期に持つと、Step 5 の COUNTEREXAMPLE CHECK を通過させる動機が弱まる。
-
-S0 ステップでは、トレース開始前に「何が崩れたら NOT EQUIVALENT になるか」を明示的に列挙させる。これにより:
-
-- 等価性の必要条件が具体的な文言として固定され、推論中の確証バイアスに対する構造的な抑制となる
-- 後続の S1/S2/ANALYSIS は、「S0 で列挙した条件を一つひとつ検証する作業」という位置づけになり、反証探索を最後まで維持しやすくなる
-- 順方向トレースのみで EQUIVALENT と結論づける前に、S0 の全項目にチェックが入ったかを確認する自然なゲートが生まれる
-
-これは `overall` フォーカスに対しても有効であり、equiv 精度の向上を通じて全体正答率を引き上げることが期待される。
-
----
-
-## failed-approaches.md との照合
-
-| 汎用原則 | 本提案との関係 |
-|---|---|
-| 探索すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける | S0 は「証拠の種類」ではなく「等価性の必要条件」を列挙させる。何を探すかではなく、何が崩れたら結論が変わるかという論理的前提を確立するものであり、探索経路を固定する性質ではない。抵触しない。 |
-| 探索ドリフト対策として探索の自由度を削りすぎない | S0 は探索の打ち切り条件や検索パターンを強制しない。あくまで「等価性の前提条件の宣言」であり、探索ルートは引き続き推論者に委ねられる。抵触しない。 |
-| 仮説更新を即座の前提修正義務に直結させすぎない | S0 は結論前ではなくトレース開始前に一度だけ行う。仮説が揺れるたびに S0 を更新させる強制は一切含まれない。抵触しない。 |
-| 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない | S0 は結論直前ではなくトレース開始前に位置している。また「必要条件を列挙する」という単純な宣言であり、確信度の評価軸の追加ではない。抵触しない。 |
-
-すべての汎用原則に抵触しないことを確認した。
-
----
-
-## 変更規模の宣言
-
-追加行数: 3 行（S0 の項目本文 2 行 + 空行として S0 ラベル行 1 行）
-削除行数: 0 行
-合計変更行数: 3 行（hard limit 5 行以内に収まっている）
-
-既存行への追加・精緻化のみ。新規ステップ・新規フィールド・新規セクションの追加には該当しない（STRUCTURAL TRIAGE という既存ブロック内のサブ項目として S0 を追加するものである）。
+# 8) 変更規模の宣言
+SKILL.md 変更は 1 箇条書きの置換のみ（最大 3–4 行相当、5行以内）。必須ステップの純増なし。

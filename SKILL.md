@@ -60,13 +60,10 @@ Write a short task statement and list constraints (e.g., no repository execution
 Before concluding anything, write numbered premises grounded in known facts.
 
 ```
-P1 [OBS]: [observed fact about the task, inputs, or expected behavior]
-P2 [OBS]: [observed fact about relevant files, tests, or specifications]
-P3 [ASM|DEF]: ...
+P1: [fact about the task, inputs, or expected behavior]
+P2: [fact about relevant files, tests, or specifications]
+P3: ...
 ```
-
-Tag premises as OBS (observed), ASM (assumed), or DEF (definition) so downstream claims can surface their weakest dependency.
-If a claim depends on ASM, treat that ASM as the highest-priority refutation target.
 
 Do not treat guesses as premises. Every later claim must reference a premise by number.
 

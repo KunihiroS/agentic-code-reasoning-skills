@@ -1,174 +1,96 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/14/26 05:55:25] INFO     Processing request of type            server.py:727
+[04/18/26 16:00:46] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-まず参照すべきファイルを読み込みます。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
+  ┊ 📖 read      failed-approaches.md  0.8s
   ┊ 📖 read      SKILL.md  0.8s
   ┊ 📖 read      Objective.md  0.8s
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      failed-approaches.md  0.8s
-  ┊ 📖 read      README.md  0.8s
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      docs/design.md  0.8s
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-必要なファイルをすべて読み込みました。次に出力先ディレクトリを作成し、proposal.md を書きます。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 💻 preparing terminal…
-  ┊ 💻 $         mkdir -p benchmark/swebench/runs/iter-24  0.2s
-  ┊ ✍️ preparing write_file…
   ┊ ✍️  write     benchmark/swebench/runs/iter-24/proposal.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-24/proposal.md → b/benchmark/swebench/runs/iter-24/proposal.md
-@@ -1,120 +1,107 @@
--# Iteration 24 — 改善提案（改訂版）
-+# Iteration 24 — Proposal
+@@ -1,107 +1,52 @@
+-# Iteration 24 — Proposal
++過去提案との差異: 「構造差→早期NOT_EQUIV」や特定の証拠型/観測境界への条件狭窄ではなく、必須 Step 5 の“反証対象選定の順序”だけを両方向対称に入れ替える。
++Target: 両方（偽 EQUIV と偽 NOT_EQUIV の同時低減）
++Mechanism (抽象): 反証チェックを「結論反転(=pivot)一点集中」から「EQUIV 側と NOT_EQUIV 側を交互に圧力テストする順序」へ置換する。
++Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件や、証拠種類/観測境界の定義を狭める変更は一切しない。
  
--## 1. 選択した Exploration Framework カテゴリ
-+## Exploration Framework カテゴリ
+-## Exploration Framework カテゴリ
++# 1) 禁止方向（failed-approaches.md と却下履歴からの列挙）
++- 次に探す証拠種類をテンプレで事前固定し、探索を「特定シグナル捜索」へ寄せる（確認バイアスを強める）。
++- 既存判定基準を特定の観測境界へ還元しすぎる（構造差などを“その境界に写像できたときだけ有効”にする類）。
++- 「どこから読むか／どの境界を先に確定するか」を半固定し、探索経路を早期に細らせる。
++- 既存の汎用ガードレールを、特定の追跡方向・局所観点へ置換してしまう（反証優先順位の差し替え等）。
++- 結論直前の自己監査に新しい必須メタ判断（実質ゲート）を純増させる。
  
--**カテゴリ B: 情報の取得方法を改善する — テストソースを先読みして分析をグラウンドする**
-+カテゴリ: A — 推論の順序・構造を変える
+-カテゴリ: A — 推論の順序・構造を変える
++# 2) 未探索の改善余地（SKILL.md から）と今回の選択理由
++SKILL.md の Core Method Step 5 には、反証対象の選び方として次が明示されています:
  
--### 選択理由
-+### カテゴリ A 内の具体的なメカニズム選択
+-### カテゴリ A 内の具体的なメカニズム選択
++> - Prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first.
  
--監査役フィードバックを踏まえ、前回の提案（カテゴリ A: 分析前の BEHAVIORAL SCOPE 追加）は以下の理由で取り下げた。
-+カテゴリ A には以下の三つのメカニズムが列挙されている:
+-カテゴリ A には以下の三つのメカニズムが列挙されている:
++この「結論反転(=pivot)一点集中」は、表現が強いほど compare で片方向（いま頭にある暫定結論）へ探索が寄り、反対側の反証経路が細るリスクがあります（直近却下理由と同型）。
++一方で、ここを “証拠型” や “観測境界” に結びつけず、単に「順序（スケジューリング）」として両方向対称にするのは、failed-approaches.md が禁じる経路の半固定（特定方向・特定証拠型への具体化）とはメカニズムが異なります。
  
--1. 実効差分が「逆方向推論の新規導入」ではなく「分析前の中間表現追加」であり、BL-7 / BL-10 / BL-11 と同系統
--2. 既存の `NO COUNTEREXAMPLE EXISTS` ですでに逆方向推論が担保されているため増分価値が小さい
--3. `Diverges when:` という中間ラベルが原則 #7 のアンカリングリスクを持つ
-+1. ステップの実行順序を入れ替える
-+2. 並列に行っていた分析を直列にする（またはその逆）
-+3. 結論から逆算して必要な証拠を特定する（逆方向推論）
+-1. ステップの実行順序を入れ替える
+-2. 並列に行っていた分析を直列にする（またはその逆）
+-3. 結論から逆算して必要な証拠を特定する（逆方向推論）
++カテゴリA（推論の順序・構造変更）としては、反証の“対象”を固定せずに、反証の“順番”を「片側集中→交互化」へ変更でき、EQUIV/NOT_EQ のどちらかだけを最適化して逆側を悪化させるリスクを下げられます。
  
--今回選択するカテゴリ B は、**何を記録するかではなく、何から読むかの順序を変える**アプローチである。  
--具体的には、各 relevant test の分析において「テストソース（entrypoint・引数・セットアップ）を確認してから変更コードをトレースする」という読取り順序を明示的に規定する。
-+今回は **メカニズム 3「逆方向推論」** を選択する。
+-今回は **メカニズム 3「逆方向推論」** を選択する。
++# 3) 改善仮説（1つ）
++反証対象の選定を「暫定結論の pivot だけに集中」させず、EQUIV と NOT_EQUIV の両仮説を交互に圧力テストする順序にすると、暫定結論への早期コミット（確認バイアス）を減らし、偽 EQUIV と偽 NOT_EQUIV の双方が減る。
  
--- **新しいラベルや中間表現を追加しない** → BL-7 / 原則 #7 と重ならない
--- **受動的な記録フィールドの追加ではなく、能動的な読取り順序の制約** → BL-8 と異なる
--- **YES/NO ゲートではない** → BL-10 と異なる
--- **テスト側 assertion 形式の過剰規定でない** → BL-5 と異なる
-+理由: `compare` モードにおける現在のフローは「変更 A と変更 B を順方向にトレースし、最後に差異があれば NOT EQUIVALENT と結論づける」という構造である。この順方向アプローチでは、推論者が EQUIVALENT へ収束しそうだと感じた時点で反証探索を浅く打ち切るリスクがある。逆方向推論、すなわち「EQUIVALENT であるとしたら成立しなければならない必要条件を先に列挙し、そのうちのどれが崩れるかを見る」というアプローチは、反証すべき具体的なターゲットを先に明示することで、無意識の確証バイアスによる早期収束を構造的に防ぐ。これは Objective.md の Exploration Framework が定義する「逆算して必要な証拠を特定する」に直接対応する。
+-理由: `compare` モードにおける現在のフローは「変更 A と変更 B を順方向にトレースし、最後に差異があれば NOT EQUIVALENT と結論づける」という構造である。この順方向アプローチでは、推論者が EQUIVALENT へ収束しそうだと感じた時点で反証探索を浅く打ち切るリスクがある。逆方向推論、すなわち「EQUIVALENT であるとしたら成立しなければならない必要条件を先に列挙し、そのうちのどれが崩れるかを見る」というアプローチは、反証すべき具体的なターゲットを先に明示することで、無意識の確証バイアスによる早期収束を構造的に防ぐ。これは Objective.md の Exploration Framework が定義する「逆算して必要な証拠を特定する」に直接対応する。
++# 4) 具体変更（SKILL.md 該当箇所の引用と変更方針）
++変更対象: Core Method / Step 5: Refutation check の最初の箇条書き（反証の“最初に何を狙うか”）
  
- ---
+----
++現行（短引用）:
++- "Prioritize the claim/assumption whose negation would flip the final answer ... when choosing what to refute first."
  
--## 2. 改善仮説（1つのみ）
-+## 改善仮説
+-## 改善仮説
++提案: これを「両方向の交互スケジューリング」に置換（証拠種類や観測境界の指定は追加しない）。
  
--**仮説**: EQUIV→NOT_EQUIVALENT の誤判定（15368・13821・15382 等）は、エージェントが変更コードを先に読んで意味的差異を検出し、その差異の印象を持ったまま各テストの分析に入ることで「コード差異 → テスト結果差異」という推論ジャンプが生じる。Compare テンプレートの `ANALYSIS OF TEST BEHAVIOR` において、各 relevant test の分析ブロック先頭に **「テストソースを先に読んで entrypoint・引数・セットアップを確定してから変更コードをトレースせよ」** という順序制約を追加することで、エージェントはテスト側の具体的な入力から出発して変更コードに入るようになり、その入力が変更後の動作を変えるかどうかをトレースする自然な流れが生まれる。真の EQUIV ケースでは、テスト入力が変更の意味的差異を踏まないことが実際のトレースで確認され、NOT_EQ への推論ジャンプが遮断される。
-+`compare` モードの STRUCTURAL TRIAGE セクションにおいて、構造的な等価性の必要条件を先に宣言させ、その後の詳細トレースをその必要条件の検証として位置づけることで、順方向トレースの終盤での反証スキップを減らし、EQUIVALENT の誤判定を抑制できる。
+-`compare` モードの STRUCTURAL TRIAGE セクションにおいて、構造的な等価性の必要条件を先に宣言させ、その後の詳細トレースをその必要条件の検証として位置づけることで、順方向トレースの終盤での反証スキップを減らし、EQUIVALENT の誤判定を抑制できる。
++# 5) Decision-point delta（IF/THEN 2行）
++Before: IF 暫定結論に到達し、反証対象を選ぶ THEN “否定したら結論が反転する” 1点を最優先で潰す because 結論反転インパクト（pivot）
++After:  IF 暫定結論に到達し、反証対象を選ぶ THEN その結論を支える最も依存度の高い主張を潰したら、次は反対結論側の最有力主張も潰す（交互に進める） because 両仮説に対する対称な反証圧（drift抑制）
  
- ---
+----
++# 6) 変更差分プレビュー（Before/After, 3–10行）
++Before (Step 5 抜粋):
++- Prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first.
++- "No test exercises this difference" — before asserting this, describe what such a test would look like ...
  
--## 3. SKILL.md の変更内容
-+## SKILL.md の変更内容
+-## SKILL.md の変更内容
++After (Step 5 抜粋):
++- When choosing what to refute first, alternate pressure-testing both sides: refute the most load-bearing claim for your current tentative conclusion, then refute the strongest claim for the opposite conclusion.
++- "No test exercises this difference" — before asserting this, describe what such a test would look like ...
  
- ### 変更箇所
+-### 変更箇所
++# 7) failed-approaches.md との照合（整合 1–2点）
++- 「証拠種類の事前固定」をしない: 交互化は“順序”のみで、何を証拠として探すか（テスト/オラクル/接続など）をテンプレで固定しない。
++- 「特定方向のガードレールへの置換」を避ける: 片方向（pivot優先）への寄せを弱め、むしろ方向非依存（EQUIV/NOT_EQ 両側）にするため、探索経路の半固定化を起こしにくい。
  
--Compare certificate template の `ANALYSIS OF TEST BEHAVIOR` セクション内、`For each relevant test:` ブロックのフォーマットを変更する。
-+`compare` モードの `STRUCTURAL TRIAGE` ブロック（SKILL.md 180〜191 行目）に、必要条件の事前宣言を求める一文を追加する。
- 
--### 変更前（該当部分の抜粋）
-+### 変更前
- 
- ```
--ANALYSIS OF TEST BEHAVIOR:
+-`compare` モードの `STRUCTURAL TRIAGE` ブロック（SKILL.md 180〜191 行目）に、必要条件の事前宣言を求める一文を追加する。
 -
--For each relevant test:
--  Test: [name]
--  Claim C[N].1: With Change A, this test will [PASS/FAIL]
--                because [trace through code — cite file:line]
--  Claim C[N].2: With Change B, this test will [PASS/FAIL]
--                because [trace through code — cite file:line]
--  Comparison: SAME / DIFFERENT outcome
-+STRUCTURAL TRIAGE (required before detailed tracing):
-+Before tracing individual functions, compare the two changes structurally:
-+  S1: Files modified — list files touched by each change. Flag any file
-+      modified in one change but absent from the other.
-+  S2: Completeness — does each change cover all the modules that the
-+      failing tests exercise? If Change B omits a file that Change A
-+      modifies and a test imports that file, the changes are NOT EQUIVALENT
-+      regardless of the detailed semantics.
-+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-+      prioritize structural differences (S1, S2) and high-level semantic
-+      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-+      is infeasible for large patches and produces unreliable conclusions.
- ```
- 
--### 変更後
-… omitted 109 diff line(s) across 1 additional file(s)/section(s)
+-### 変更前
+-
+-```
+-STRUCTURAL TRIAGE (required before detailed tracing):
+-Before tracing individual functions, compare the two changes structurally:
+-  S1: Files modified — list files touched by each change. Flag any file
+-      modified in one change but absent from the other.
+-  S2: Completeness — does each change cover all the modules that the
+-      failing tests exercise? If Change B omits a file that Change A
+-      modifies and a test imports that file, the changes are NOT EQUIVALENT
+… omitted 67 diff line(s) across 1 additional file(s)/section(s)
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-`benchmark/swebench/runs/iter-24/proposal.md` を書き出しました。内容を整理して説明します。
+benchmark/swebench/runs/iter-24/proposal.md に提案を書き込みました。
 
----
-
-## 提案の要旨
-
-### カテゴリ: A — 推論の順序・構造を変える（逆方向推論）
-
-### 改善仮説
-
-`compare` モードの STRUCTURAL TRIAGE に S0 項目を 3 行追加し、トレース開始前に「等価性の必要条件」を先に宣言させる。
-
-```
-S0: Equivalence preconditions — before reading any code, state what must
-    be true for the two changes to be EQUIVALENT, then treat each item as
-    a falsification target during S1–S3 and the ANALYSIS that follows.
-```
-
-### なぜこれがカテゴリ A か
-
-既存の `compare` フローは「変更 A と変更 B を順方向にトレース → 差異があれば NOT EQUIVALENT」という構造だった。S0 は「結論（EQUIVALENT）が成立するための条件を先に列挙し、それを崩す方向で証拠を探す」という逆方向推論をトレース前に確立させる。これは Objective.md の「結論から逆算して必要な証拠を特定する」に直接対応する。
-
-### failed-approaches との照合
-
-4 つの汎用原則すべてに抵触しないことを確認:
-
-- 探索ドリフト / 探索経路の固定 → S0 は探索パターンではなく論理的前提の宣言
-- 仮説更新の即時前提修正義務 → S0 はトレース前の一度きりで更新ループを持たない
-- 結論直前の自己監査の膨張 → S0 は結論直前ではなくトレース前に位置する
-
-`benchmark/swebench/runs/iter-24/proposal.md` を書き出しました。内容を整理して説明します。
-
----
-
-## 提案の要旨
-
-### カテゴリ: A — 推論の順序・構造を変える（逆方向推論）
-
-### 改善仮説
-
-`compare` モードの STRUCTURAL TRIAGE に S0 項目を 3 行追加し、トレース開始前に「等価性の必要条件」を先に宣言させる。
-
-```
-S0: Equivalence preconditions — before reading any code, state what must
-    be true for the two changes to be EQUIVALENT, then treat each item as
-    a falsification target during S1–S3 and the ANALYSIS that follows.
-```
-
-### なぜこれがカテゴリ A か
-
-既存の `compare` フローは「変更 A と変更 B を順方向にトレース → 差異があれば NOT EQUIVALENT」という構造だった。S0 は「結論（EQUIVALENT）が成立するための条件を先に列挙し、それを崩す方向で証拠を探す」という逆方向推論をトレース前に確立させる。これは Objective.md の「結論から逆算して必要な証拠を特定する」に直接対応する。
-
-### failed-approaches との照合
-
-4 つの汎用原則すべてに抵触しないことを確認:
-
-- 探索ドリフト / 探索経路の固定 → S0 は探索パターンではなく論理的前提の宣言
-- 仮説更新の即時前提修正義務 → S0 はトレース前の一度きりで更新ループを持たない
-- 結論直前の自己監査の膨張 → S0 は結論直前ではなくトレース前に位置する
-
-### 変更規模: 3 行（hard limit 5 行以内）
-
-session_id: 20260414_055525_43628c
+session_id: 20260418_160046_5ac093
