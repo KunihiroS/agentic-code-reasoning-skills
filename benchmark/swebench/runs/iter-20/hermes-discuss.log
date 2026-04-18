@@ -1,256 +1,142 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/14/26 00:12:39] INFO     Processing request of type            server.py:727
+[04/18/26 15:46:38] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
   ┊ 📖 read      benchmark/swebench/runs/iter-20/proposal.md  0.8s
-  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      SKILL.md  0.9s
   ┊ 📖 read      failed-approaches.md  0.9s
   ┊ 📖 read      Objective.md  0.9s
-  ┊ 📖 read      README.md  0.9s
+  ┊ 📖 read      README.md  0.8s
   ┊ 📖 read      docs/design.md  0.9s
-  ┊ 📋 plan      4 task(s)  0.0s
-  ┊ 📖 read      SKILL.md  0.8s
-[04/14/26 00:13:28] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 00:13:29] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s semantic diff change impact analysis program repair patch equivalence test outcomes research  0.4s
-[04/14/26 00:13:30] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s code review change impact analysis semantic differences static analysis tests research  0.4s
-[04/14/26 00:13:31] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s program equivalence regression impact analysis semantic differences patches paper  0.4s
-[04/14/26 00:13:40] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s patch equivalence verification paper  0.3s
-[04/14/26 00:13:41] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 00:13:42] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s change impact analysis software engineering paper  0.4s
-[04/14/26 00:13:43] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s program equivalence software testing paper  0.3s
-[04/14/26 00:13:48] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 00:13:49] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s arXiv 2603.01896  0.3s
-[04/14/26 00:13:50] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s change impact analysis software engineering  0.3s
-[04/14/26 00:13:51] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s program equivalence testing semantics  0.3s
-[04/14/26 00:14:18] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s site:arxiv.org code reasoning patches equivalence  0.3s
-[04/14/26 00:14:19] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s site:ieeexplore.ieee.org change impact analysis software  0.3s
-[04/14/26 00:14:20] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 00:14:21] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s site:dl.acm.org program equivalence testing software engineering  0.3s
-[04/14/26 00:14:37] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 00:14:38] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s Agentic Code Reasoning Ugare Chandra  0.3s
-[04/14/26 00:14:39] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s software change impact analysis testing  0.3s
-[04/14/26 00:14:40] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s semantic diff code review impact analysis  0.3s
-[04/14/26 00:14:59] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://arxiv.org/abs/2603.01896                   
-                             "HTTP/1.1 200 OK"                                  
-  ┊ ⚡ mcp_ddg_s   0.1s
-[04/14/26 00:15:00] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 00:15:01] INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Chang                
-                             e_impact_analysis "HTTP/1.1 200 OK"                
-  ┊ ⚡ mcp_ddg_s   0.8s
-[04/14/26 00:15:02] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Regre                
-                             ssion_testing "HTTP/1.1 200 OK"                    
-  ┊ ⚡ mcp_ddg_s   0.4s
-[04/14/26 00:15:22] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Progr                
-                             am_equivalence "HTTP/1.1 404 Not                   
-                             Found"                                             
-  ┊ ⚡ mcp_ddg_s   0.8s
-[04/14/26 00:15:23] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 00:15:24] INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Stati                
-                             c_program_analysis "HTTP/1.1 200                   
-                             OK"                                                
-  ┊ ⚡ mcp_ddg_s   1.4s
-[04/14/26 00:15:26] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Softw                
-                             are_verification_and_validation                    
-                             "HTTP/1.1 200 OK"                                  
-  ┊ ⚡ mcp_ddg_s   0.4s
-  ┊ 📋 plan      update 2 task(s)  0.0s
+  ┊ 📋 plan      3 task(s)  0.0s
+  ┊ 📋 plan      update 3 task(s)  0.0s
   ┊ ✍️  write     benchmark/swebench/runs/iter-20/discussion.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-20/discussion.md → b/benchmark/swebench/runs/iter-20/discussion.md
-@@ -0,0 +1,211 @@
-+# Iteration 20 — 監査ディスカッション
-+
-+## 総評
-+提案の狙い自体は理解できる。構造トリアージの直後に「見つかった差異がどれくらい重要そうか」を明示させる発想は、change impact analysis 的な考え方と整合し、微細差分の早期握りつぶしを減らしたいという問題意識も妥当である。
-+
-+ただし、提案文の S4 は「重要度を明示する」だけでなく、MINOR/INERT を full ANALYSIS からスキップできる新しい分岐を導入している。この点が大きい。現行 SKILL.md には既に、
-+- Guardrail #4: semantic difference を見つけたら relevant test を trace してから影響なしと言え
-+- Compare checklist: 差異を見つけたら differing path を少なくとも1本 trace してから no impact を結論せよ
-+- Step 5.5: semantic difference 発見時に relevant test trace を要求
-+という anti-skip の仕組みが入っている。
-+
-+そのため、提案は「不足している新能力の追加」というより、「既存ガードレールより前段で新しい予備判定ゲートを置く」変更になっている。しかもそのゲートは、証拠がまだ十分でない段階で MINOR/INERT と判断して除外する経路を作る。これにより、狙いとは逆に subtle-but-real な差異を早い段階で処理済みにしてしまう危険がある。
-+
-+結論として、カテゴリ選定は概ね妥当だが、提案された具体文言は as written では承認しにくい。
-+
-+## 1. 既存研究との整合性
-+
-+### 参考URLと要点
-+1. https://arxiv.org/abs/2603.01896
-+   - Agentic Code Reasoning の中核は、premises・execution path tracing・formal conclusion を要求する semi-formal reasoning を「certificate」として使い、skip や unsupported claim を防ぐ点にある。
-+   - この観点からは、「差異の影響を明示的に考えさせる」方向性は整合的。
-+   - ただし同論文の強みは per-item tracing と refutation obligation にあるので、early triage による skip 経路を新設するのは、研究の anti-skip メカニズムとはやや緊張関係にある。
-+
-+2. https://en.wikipedia.org/wiki/Change_impact_analysis
-+   - change impact analysis は「変更の潜在的帰結を特定する」「何が影響を受けるかを見積もる」営みとして説明されている。
-+   - 提案の「difference significance」を差異発見後に考える発想は、この一般原則には整合する。
-+   - 一方で impact analysis は traceability / dependency の裏づけを重視するので、test path への実証がない早期分類だけで skip するのは弱い。
-+
-+3. https://en.wikipedia.org/wiki/Regression_testing
-+   - change impact analysis は regression testing で実行すべきテスト集合の選定に使われることがある。
-+   - これは「どの差異が test outcome に効きうるか」を考える発想を支持する。
-+   - ただし regression の文脈では、変更はしばしば間接影響を持つ。したがって「untested branches だけ」と早期に断定するのは、まさに危険な種類の省略である。
-+
-+### 監査所見
-+研究・実務一般の観点から、差異の影響度を見る発想自体は妥当。しかし proposal の S4 は「impact を考える」だけでなく「その分類をもとに detailed tracing を省略できる」点で一歩踏み込みすぎている。これは Agentic Code Reasoning の certificate 的設計と完全には噛み合わない。
-+
-+## 2. Exploration Framework のカテゴリ選定は適切か
-+カテゴリ C（比較の枠組みを変える）は、分類上は妥当。
-+
-+理由:
-+- 提案は compare モード内部で「見つかった差異をどう比較・扱うか」を変えるもの。
-+- 新しい file discovery 方法や search order の変更ではないので B ではない。
-+- self-check を最後に増やす話ではないので D でもない。
-+- wording polish だけではなく comparison logic に触れているので E でもない。
-+
-+ただし実質的には、C と D の境界に少し乗っている。なぜなら S4 は単なる comparison lens ではなく、新しい judgment gate として働くからである。つまりカテゴリ選定は acceptable だが、メカニズムの設計は慎重さが足りない。
-+
-+汎用原則として見たときの問題は、カテゴリ自体ではなく分類粒度にある。
-+- CRITICAL = return value / exception type / control flow on a known test path
-+- MINOR = only untested branches
-+- INERT = cosmetic / whitespace / log-only
-+という3分類は分かりやすい反面、重要な差異の型をかなり狭く表現している。
-+
-+例えば以下はこの3分類に収まりにくいが、実際には test outcome に効きうる。
-+- state mutation の順序差
-+- object identity / aliasing 差
-+- iterator / collection ordering 差
-+- resource lifecycle 差
-+- protocol / contract 準拠性の差
-+- caching / memoization による observable effect の差
-+- downstream handler が前提とする data shape 差
-+
-+したがって、「汎用原則として理にかなうか」という問いには、「影響度を見るという原則は理にかなうが、その具体分類はやや粗く、汎化の観点で十分に抽象化されていない」と答えるのが妥当。
-+
-+## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方への作用
-+
-+### 変更前の実効的挙動
-+現行 SKILL.md は、semantic difference を発見した後の扱いについて既にかなり明確である。
-+- 差異を見つけたら relevant test path を trace する
-+- no impact と言うには counterexample 不在を示す
-+- subtle difference を dismiss してはならない
-+
-+つまり現行版の burden of proof は「差異を dismiss する側」に重い。
-+
-+### 変更後の実効的挙動
-+提案後は burden of proof が一部変わる。
-+- まず S4 で差異を CRITICAL / MINOR / INERT に分類する
-+- full ANALYSIS が必須なのは CRITICAL のみ
-… omitted 133 diff line(s) across 1 additional file(s)/section(s)
+@@ -1,112 +1,87 @@
+-# Iteration 20 — discussion
++# Iteration 20 — Discussion
+ 
+-## 総評
+-提案の核は、compare における関連テスト探索と比較粒度を「変更記号の参照」中心から「テストが実際に観測している oracle/contract facet」中心へ少し寄せる点にあります。これは結論を直接指示する変更ではなく、D2 の候補化ルールと per-test 記録の粒度を変える提案なので、監査 PASS の下限を満たしつつ compare の意思決定に実効差を出しうる方向です。
++## 既存研究との整合性
++- 検索なし（理由: 一般原則の範囲で自己完結）。
++- README.md / docs/design.md の研究コア（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）とは表面的には整合する。差分の重要度を明示して反証の当たりどころを決める、という狙い自体は Compare の補助ヒューリスティックとして理解可能。
++- ただし研究コアが強いのは「per-test iteration と反証義務」であり、反証対象の優先順位を固定すること自体はコアではない。したがって、導入するなら exploration を狭めない弱い補助に留める必要がある。
+ 
+-## 1. 既存研究との整合性
+-最小限の検索あり。理由: 提案が「test oracle」という既存概念に明示的に依拠しているため、その一般概念としての妥当性だけ確認した。
++## Exploration Framework のカテゴリ選定
++- カテゴリ C（比較の枠組みを変える）の選定自体は妥当。
++- 理由: 提案の中心は「差異を CONTRACT / DATA-STATE / INTERNAL に分類し、比較粒度と反証優先順位を変える」ことであり、これは Objective.md の C「差異の重要度を段階的に評価する」「変更のカテゴリ分類を先に行う」に一致する。
++- ただし、現 proposal の書き方は「比較枠組みの変更」から一歩進んで「Step 5 の探索順序の半固定」に踏み込んでいる。カテゴリ選定は合っているが、実装文言が failed-approaches に近づいている点は要注意。
+ 
+-- URL: https://en.wikipedia.org/wiki/Test_Oracle
+-  - 要点: test oracle は「入力に対して正しい出力/振る舞いを記述する情報源」であり、実結果と期待結果を比較する基準である。
+-  - 要点: oracle は返り値だけでなく、状態・例外・契約・事前/事後条件など広い観測対象を含みうるため、提案の「観測量ベースで関連テストを拾う」という方向性自体は一般原則と整合する。
++## compare 影響の実効性チェック
++- 1) Decision-point delta:
++  - IF/THEN 形式で 2 行（Before/After）になっているか？ YES
++  - Trigger line（発火する文言の自己引用）が差分プレビュー内に含まれているか？ YES
++  - 評価: 条件と行動は一応変わっている。Before は「任意順」、After は「最高ティア差分から」。よって単なる理由の言い換えではない。
++  - ただし、変わる意思決定ポイントが「最初に何を反証するか」に偏っており、「結論を出す / 保留する / 追加で探す」の分岐条件そのものはまだ弱い。compare への効きはゼロではないが、実効差は限定的。
++- 2) Failure-mode target:
++  - 狙いは両方。
++  - 偽 EQUIV 側: 契約差分やデータ差分を internal 相当として軽視する誤りを減らしたい。
++  - 偽 NOT_EQUIV 側: 内部差分をそのまま挙動差と見なして過反応する誤りを減らしたい。
++  - メカニズムは理解できるが、「highest tier first」が本当に両方向で効くかは未整理。高ティア差分に寄せるほど、低ティアだが実テストに効く差分の拾い直しが遅れるリスクもある。
++- 3) Non-goal:
++  - 証拠種類の事前固定をしない、観測境界へ過度に還元しない、探索順序を固定しない、という境界条件の宣言は適切。
++  - しかし実際の追加文言「Use Tier to choose the first refutation target in Step 5 (highest tier first).」は、この Non-goal と少し緊張関係にある。宣言上は避けると言っているが、実装上は refutation priority を半固定している。
++- Discriminative probe:
++  - 抽象ケース: 2 つの変更が同じ出力を返すように見えるが、一方だけ契約上の例外条件や永続状態更新の条件を変えているケース。
++  - 変更前は、目立つ内部差分やローカル制御フローから先に追って「違いはあるがテスト影響は薄そう」または逆に「内部差分があるので違いそう」とぶれやすい。変更後は、契約/データ差分を先に ledger 化できれば、どの差分が test outcome に写像されうるかの説明はしやすくなる。
++  - ただしこれは「最初に見る順番の改善」としては分かる一方、既存文言の置換・再配置ではなく必須工程の純追加に近い。
++- 支払い（必須ゲート総量不変）の明示:
++  - NO。proposal は「2 行追加のみ」「必須ゲート純増なし」と主張するが、DELTA LEDGER 1–3 rows と highest-tier-first rule は compare の実質的な必須作業を増やしている。どの既存必須要件を optional 化/統合して支払うのかが書かれていない。
+ 
+-研究コアとの整合性は概ね良いです。README.md / docs/design.md のコアは「premises・仮説駆動探索・手続き間トレース・反証」であり、今回案はその骨格を壊さず、compare の per-test iteration をより識別的にする補強です。
++## EQUIVALENT / NOT_EQUIVALENT への作用
++- EQUIVALENT 判定への正方向:
++  - INTERNAL 差分を CONTRACT / DATA と切り分けられれば、内部実装差に引っ張られた偽 NOT_EQUIV を下げる可能性はある。
++- EQUIVALENT 判定への負方向:
++  - 「highest tier first」が強く働くと、高ティアに見える差分の説明に寄り、実テスト上は無害な差分でも保守的に NOT_EQUIV へ倒れやすくなる恐れがある。
++- NOT_EQUIVALENT 判定への正方向:
++  - 契約差分・データ差分を先に言語化できれば、偽 EQUIV の一因である「差分の重要度の見誤り」は減らせる。
++- NOT_EQUIVALENT 判定への負方向:
++  - 低ティア扱いされた差分でも、実際には既存テストの assertion に直結する場合がある。その場合、優先順位づけが探索遅延として働き、反例発見を鈍らせる。
++- 総評:
++  - 片方向最適化を避けたいという狙いは良いが、現文言のままだと「両方向に効く一般原則」というより「Step 5 の入口を highest-tier-first に寄せる局所最適化」に見える。したがって両方向改善の主張は、まだ設計より強い。
+ 
+-## 2. Exploration Framework のカテゴリ選定
+-判定: C（比較の枠組みを変える）で適切。
++## failed-approaches.md との照合
++- 「探索経路の半固定」に該当するか: YES
++  - 原因文言: 「Use Tier to choose the first refutation target in Step 5 (highest tier first).」
++  - failed-approaches.md は「どこから読み始めるか」「既存の反証優先順位をある局所観点へ差し替える変更」を危険視している。今回の文言はまさに Step 5 の優先順位を tier 観点へ差し替えている。
++- 「必須ゲート増」に該当するか: YES
++  - 原因文言: 「DELTA LEDGER (1–3 rows, before edge cases): ...」
++  - compare テンプレートに新しい記入義務が増えている。しかも payment の明示がない。
++- 「証拠種類の事前固定」に該当するか: NO
++  - Tier 自体は証拠ソース（テスト、仕様、ドキュメント等）を固定していない。この点は proposal の説明どおり比較的安全。
++- 本質的な再演か:
++  - はい、完全一致ではないが、本質的には「反証の優先順位を特定の局所観点で半固定する」失敗原則にかなり近い。
+ 
+-理由:
+-- 変更対象は探索順序ではなく、compare における「何を同一視し、どのテストを relevant とみなすか」という比較枠組みそのもの。
+-- Objective.md の C には「差異の重要度を段階的に評価」「変更のカテゴリ分類」が含まれており、oracle/contract を比較粒度として導入するのはこの範囲に収まる。
+-- B（情報取得方法）要素も少し含むが、主作用点は D2 の relevance 判定なので主カテゴリは C で妥当。
++## 汎化性チェック
++- proposal 文中に、具体的な数値 ID、ベンチマーク対象リポジトリ名、テスト名、コード断片の引用は見当たらない。明示的なルール違反はない。
++- CONTRACT / DATA-STATE / INTERNAL という分類は言語非依存で、特定ドメインに閉じていない。
++- ただし「contract」という語は API/インターフェース中心の設計を暗に想起させるため、非 OOP・非公開 API 中心のコードにも当てはまるよう、「externally observable behavior / persisted state / internal mechanism」などの補助説明があるとさらに安全。
+ 
+-## 3. compare 影響の実効性チェック
+… omitted 110 diff line(s) across 1 additional file(s)/section(s)
   ┊ 📋 plan      update 2 task(s)  0.0s
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-監査結果を benchmark/swebench/runs/iter-20/discussion.md に書き込みました。
+discussion を作成して保存しました:
+benchmark/swebench/runs/iter-20/discussion.md
 
-結論:
+結論は:
 承認: NO
 
-要点:
-- カテゴリCの選定自体は概ね妥当
-- ただし提案S4は「重要度を見る観点追加」ではなく、実質的に early skip gate を導入している
-- 現行SKILL.mdの Guardrail #4 / compare checklist / Step 5.5 と緊張し、subtle difference の早期切り捨てを制度化する恐れがある
-- EQUIVALENT/NOT_EQUIVALENT の両方向に対称には効かず、実効的には「差異を捨てる側」に寄りやすい
-- 明示的な overfitting 違反は見当たらないが、分類語彙がやや狭く汎化性に軽い懸念あり
+主因は、proposal の核である
+「Use Tier to choose the first refutation target in Step 5 (highest tier first).」
+が、failed-approaches.md の禁止している「探索経路の半固定 / 反証優先順位の局所観点への差し替え」に本質的に近いためです。
 
-監査結果を benchmark/swebench/runs/iter-20/discussion.md に書き込みました。
+あわせて discussion には以下も入れています。
+- 検索なしの明記と理由
+- Exploration Framework カテゴリ C の妥当性評価
+- EQUIVALENT / NOT_EQUIVALENT 両方向への作用分析
+- 停滞診断
+- Decision-point delta / Failure-mode target / Non-goal
+- Discriminative probe
+- payment（必須ゲート総量不変）の未明示指摘
+- 修正指示 3 点
 
-結論:
+discussion を作成して保存しました:
+benchmark/swebench/runs/iter-20/discussion.md
+
+結論は:
 承認: NO
 
-要点:
-- カテゴリCの選定自体は概ね妥当
-- ただし提案S4は「重要度を見る観点追加」ではなく、実質的に early skip gate を導入している
-- 現行SKILL.mdの Guardrail #4 / compare checklist / Step 5.5 と緊張し、subtle difference の早期切り捨てを制度化する恐れがある
-- EQUIVALENT/NOT_EQUIVALENT の両方向に対称には効かず、実効的には「差異を捨てる側」に寄りやすい
-- 明示的な overfitting 違反は見当たらないが、分類語彙がやや狭く汎化性に軽い懸念あり
+主因は、proposal の核である
+「Use Tier to choose the first refutation target in Step 5 (highest tier first).」
+が、failed-approaches.md の禁止している「探索経路の半固定 / 反証優先順位の局所観点への差し替え」に本質的に近いためです。
 
-参照した外部URLも discussion.md に記載済みです。
+あわせて discussion には以下も入れています。
+- 検索なしの明記と理由
+- Exploration Framework カテゴリ C の妥当性評価
+- EQUIVALENT / NOT_EQUIVALENT 両方向への作用分析
+- 停滞診断
+- Decision-point delta / Failure-mode target / Non-goal
+- Discriminative probe
+- payment（必須ゲート総量不変）の未明示指摘
+- 修正指示 3 点
 
-session_id: 20260414_001239_52d37f
+必要なら、この discussion を踏まえて「承認が通りやすい再提案案」までそのまま起こせます。
+
+session_id: 20260418_154638_652bba

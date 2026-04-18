@@ -1,0 +1,21 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/18/26 15:47:35] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 read      benchmark/swebench/runs/iter-20/proposal.md  0.8s
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      Objective.md  0.8s
+  ┊ 🔧 patch     SKILL.md  0.6s
+  ┊ review diff
+a/SKILL.md → b/SKILL.md
+@@ -216,6 +216,8 @@
+   Claim C[N].2: With Change B, behavior is [description]
+   Comparison: SAME / DIFFERENT outcome
+ 
++DELTA LEDGER (1–3 rows, before edge cases): Δ[N]=[difference], Tier=CONTRACT/DATA/INTERNAL, Observable=[what would differ]
++Use Tier to choose the first refutation target in Step 5 (highest tier first).
+ EDGE CASES RELEVANT TO EXISTING TESTS:
+ (Only analyze edge cases that the ACTUAL tests exercise)
+   E[N]: [edge case]
+  ┊ 📖 read      SKILL.md  0.8s

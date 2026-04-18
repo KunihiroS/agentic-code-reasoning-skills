@@ -1,211 +1,87 @@
-# Iteration 20 — 監査ディスカッション
+# Iteration 20 — Discussion
 
-## 総評
-提案の狙い自体は理解できる。構造トリアージの直後に「見つかった差異がどれくらい重要そうか」を明示させる発想は、change impact analysis 的な考え方と整合し、微細差分の早期握りつぶしを減らしたいという問題意識も妥当である。
+## 既存研究との整合性
+- 検索なし（理由: 一般原則の範囲で自己完結）。
+- README.md / docs/design.md の研究コア（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）とは表面的には整合する。差分の重要度を明示して反証の当たりどころを決める、という狙い自体は Compare の補助ヒューリスティックとして理解可能。
+- ただし研究コアが強いのは「per-test iteration と反証義務」であり、反証対象の優先順位を固定すること自体はコアではない。したがって、導入するなら exploration を狭めない弱い補助に留める必要がある。
 
-ただし、提案文の S4 は「重要度を明示する」だけでなく、MINOR/INERT を full ANALYSIS からスキップできる新しい分岐を導入している。この点が大きい。現行 SKILL.md には既に、
-- Guardrail #4: semantic difference を見つけたら relevant test を trace してから影響なしと言え
-- Compare checklist: 差異を見つけたら differing path を少なくとも1本 trace してから no impact を結論せよ
-- Step 5.5: semantic difference 発見時に relevant test trace を要求
-という anti-skip の仕組みが入っている。
+## Exploration Framework のカテゴリ選定
+- カテゴリ C（比較の枠組みを変える）の選定自体は妥当。
+- 理由: 提案の中心は「差異を CONTRACT / DATA-STATE / INTERNAL に分類し、比較粒度と反証優先順位を変える」ことであり、これは Objective.md の C「差異の重要度を段階的に評価する」「変更のカテゴリ分類を先に行う」に一致する。
+- ただし、現 proposal の書き方は「比較枠組みの変更」から一歩進んで「Step 5 の探索順序の半固定」に踏み込んでいる。カテゴリ選定は合っているが、実装文言が failed-approaches に近づいている点は要注意。
 
-そのため、提案は「不足している新能力の追加」というより、「既存ガードレールより前段で新しい予備判定ゲートを置く」変更になっている。しかもそのゲートは、証拠がまだ十分でない段階で MINOR/INERT と判断して除外する経路を作る。これにより、狙いとは逆に subtle-but-real な差異を早い段階で処理済みにしてしまう危険がある。
+## compare 影響の実効性チェック
+- 1) Decision-point delta:
+  - IF/THEN 形式で 2 行（Before/After）になっているか？ YES
+  - Trigger line（発火する文言の自己引用）が差分プレビュー内に含まれているか？ YES
+  - 評価: 条件と行動は一応変わっている。Before は「任意順」、After は「最高ティア差分から」。よって単なる理由の言い換えではない。
+  - ただし、変わる意思決定ポイントが「最初に何を反証するか」に偏っており、「結論を出す / 保留する / 追加で探す」の分岐条件そのものはまだ弱い。compare への効きはゼロではないが、実効差は限定的。
+- 2) Failure-mode target:
+  - 狙いは両方。
+  - 偽 EQUIV 側: 契約差分やデータ差分を internal 相当として軽視する誤りを減らしたい。
+  - 偽 NOT_EQUIV 側: 内部差分をそのまま挙動差と見なして過反応する誤りを減らしたい。
+  - メカニズムは理解できるが、「highest tier first」が本当に両方向で効くかは未整理。高ティア差分に寄せるほど、低ティアだが実テストに効く差分の拾い直しが遅れるリスクもある。
+- 3) Non-goal:
+  - 証拠種類の事前固定をしない、観測境界へ過度に還元しない、探索順序を固定しない、という境界条件の宣言は適切。
+  - しかし実際の追加文言「Use Tier to choose the first refutation target in Step 5 (highest tier first).」は、この Non-goal と少し緊張関係にある。宣言上は避けると言っているが、実装上は refutation priority を半固定している。
+- Discriminative probe:
+  - 抽象ケース: 2 つの変更が同じ出力を返すように見えるが、一方だけ契約上の例外条件や永続状態更新の条件を変えているケース。
+  - 変更前は、目立つ内部差分やローカル制御フローから先に追って「違いはあるがテスト影響は薄そう」または逆に「内部差分があるので違いそう」とぶれやすい。変更後は、契約/データ差分を先に ledger 化できれば、どの差分が test outcome に写像されうるかの説明はしやすくなる。
+  - ただしこれは「最初に見る順番の改善」としては分かる一方、既存文言の置換・再配置ではなく必須工程の純追加に近い。
+- 支払い（必須ゲート総量不変）の明示:
+  - NO。proposal は「2 行追加のみ」「必須ゲート純増なし」と主張するが、DELTA LEDGER 1–3 rows と highest-tier-first rule は compare の実質的な必須作業を増やしている。どの既存必須要件を optional 化/統合して支払うのかが書かれていない。
 
-結論として、カテゴリ選定は概ね妥当だが、提案された具体文言は as written では承認しにくい。
+## EQUIVALENT / NOT_EQUIVALENT への作用
+- EQUIVALENT 判定への正方向:
+  - INTERNAL 差分を CONTRACT / DATA と切り分けられれば、内部実装差に引っ張られた偽 NOT_EQUIV を下げる可能性はある。
+- EQUIVALENT 判定への負方向:
+  - 「highest tier first」が強く働くと、高ティアに見える差分の説明に寄り、実テスト上は無害な差分でも保守的に NOT_EQUIV へ倒れやすくなる恐れがある。
+- NOT_EQUIVALENT 判定への正方向:
+  - 契約差分・データ差分を先に言語化できれば、偽 EQUIV の一因である「差分の重要度の見誤り」は減らせる。
+- NOT_EQUIVALENT 判定への負方向:
+  - 低ティア扱いされた差分でも、実際には既存テストの assertion に直結する場合がある。その場合、優先順位づけが探索遅延として働き、反例発見を鈍らせる。
+- 総評:
+  - 片方向最適化を避けたいという狙いは良いが、現文言のままだと「両方向に効く一般原則」というより「Step 5 の入口を highest-tier-first に寄せる局所最適化」に見える。したがって両方向改善の主張は、まだ設計より強い。
 
-## 1. 既存研究との整合性
+## failed-approaches.md との照合
+- 「探索経路の半固定」に該当するか: YES
+  - 原因文言: 「Use Tier to choose the first refutation target in Step 5 (highest tier first).」
+  - failed-approaches.md は「どこから読み始めるか」「既存の反証優先順位をある局所観点へ差し替える変更」を危険視している。今回の文言はまさに Step 5 の優先順位を tier 観点へ差し替えている。
+- 「必須ゲート増」に該当するか: YES
+  - 原因文言: 「DELTA LEDGER (1–3 rows, before edge cases): ...」
+  - compare テンプレートに新しい記入義務が増えている。しかも payment の明示がない。
+- 「証拠種類の事前固定」に該当するか: NO
+  - Tier 自体は証拠ソース（テスト、仕様、ドキュメント等）を固定していない。この点は proposal の説明どおり比較的安全。
+- 本質的な再演か:
+  - はい、完全一致ではないが、本質的には「反証の優先順位を特定の局所観点で半固定する」失敗原則にかなり近い。
 
-### 参考URLと要点
-1. https://arxiv.org/abs/2603.01896
-   - Agentic Code Reasoning の中核は、premises・execution path tracing・formal conclusion を要求する semi-formal reasoning を「certificate」として使い、skip や unsupported claim を防ぐ点にある。
-   - この観点からは、「差異の影響を明示的に考えさせる」方向性は整合的。
-   - ただし同論文の強みは per-item tracing と refutation obligation にあるので、early triage による skip 経路を新設するのは、研究の anti-skip メカニズムとはやや緊張関係にある。
+## 汎化性チェック
+- proposal 文中に、具体的な数値 ID、ベンチマーク対象リポジトリ名、テスト名、コード断片の引用は見当たらない。明示的なルール違反はない。
+- CONTRACT / DATA-STATE / INTERNAL という分類は言語非依存で、特定ドメインに閉じていない。
+- ただし「contract」という語は API/インターフェース中心の設計を暗に想起させるため、非 OOP・非公開 API 中心のコードにも当てはまるよう、「externally observable behavior / persisted state / internal mechanism」などの補助説明があるとさらに安全。
 
-2. https://en.wikipedia.org/wiki/Change_impact_analysis
-   - change impact analysis は「変更の潜在的帰結を特定する」「何が影響を受けるかを見積もる」営みとして説明されている。
-   - 提案の「difference significance」を差異発見後に考える発想は、この一般原則には整合する。
-   - 一方で impact analysis は traceability / dependency の裏づけを重視するので、test path への実証がない早期分類だけで skip するのは弱い。
+## 停滞診断
+- 懸念点（1 点だけ）:
+  - proposal は audit rubric に刺さりやすい説明（両方向改善、Non-goal、failed-approaches 整合）の密度は高いが、compare の実際の意思決定で変わるのは「最初にどれを反証するか」だけで、結論の分岐条件そのものはあまり変えていない。監査に通りやすいが compare を大きく動かさない停滞型に寄る懸念がある。
 
-3. https://en.wikipedia.org/wiki/Regression_testing
-   - change impact analysis は regression testing で実行すべきテスト集合の選定に使われることがある。
-   - これは「どの差異が test outcome に効きうるか」を考える発想を支持する。
-   - ただし regression の文脈では、変更はしばしば間接影響を持つ。したがって「untested branches だけ」と早期に断定するのは、まさに危険な種類の省略である。
+## 全体の推論品質への期待効果
+- 良い点:
+  - 差分を無差別に扱わず、観測可能性に近い粒度で整理させる発想は、compare の雑な過大評価/過小評価を減らす方向に働きうる。
+  - 特に「Observable=[what would differ]」を短く言語化させる部分は、反証対象の見通しを良くするので有益。
+- 限界:
+  - 本当に効いている部分は「Tier」よりも「Observable を先に書かせること」に見える。highest-tier-first まで固定すると gains より regression risk が増える。
+  - また ledger を新設するなら、どこかの既存必須要素を統合して総量を保たないと、compare 品質改善ではなく template 充足負荷の増加になりやすい。
 
-### 監査所見
-研究・実務一般の観点から、差異の影響度を見る発想自体は妥当。しかし proposal の S4 は「impact を考える」だけでなく「その分類をもとに detailed tracing を省略できる」点で一歩踏み込みすぎている。これは Agentic Code Reasoning の certificate 的設計と完全には噛み合わない。
+## 修正指示
+1. 「highest tier first」を削り、Tier は refutation の固定優先順位ではなく「見落とし防止の補助ラベル」に弱めること。
+   - 追加ではなく置換を優先し、「Use Tier to choose the first refutation target...」は削除し、代わりに「If a difference is classified as INTERNAL, explicitly state why it would still be observable to existing tests before treating it as decisive.」のような判定条件寄りの1行へ差し替えるのがよい。
+2. DELTA LEDGER を足すなら、既存の EDGE CASES 節か pass-to-pass 節の一部を統合して“支払い”を明示すること。
+   - 例: EDGE CASES の各項目に Tier/Observable を吸収し、独立した新ゲートにしない。
+3. compare への実効差を強めるなら、順序指定ではなく分岐条件として書くこと。
+   - 例: 「INTERNAL 差分だけで NOT EQUIVALENT を主張するなら、その差分が既存テストの assertion / pass-fail にどう写像されるかを先に示す」のように、結論条件を変える1行へ再設計する。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
-カテゴリ C（比較の枠組みを変える）は、分類上は妥当。
+## 総合判断
+- 提案の狙い自体は理解でき、カテゴリ選定や汎化性にも大きな問題はない。
+- しかし現状の核となる変更は、failed-approaches.md が禁じる「探索経路の半固定」と「実質的な必須ゲート増」を同時に含んでいる。しかも payment が明示されていないため、compare の実効改善より template 負荷の増加として出るリスクが高い。
 
-理由:
-- 提案は compare モード内部で「見つかった差異をどう比較・扱うか」を変えるもの。
-- 新しい file discovery 方法や search order の変更ではないので B ではない。
-- self-check を最後に増やす話ではないので D でもない。
-- wording polish だけではなく comparison logic に触れているので E でもない。
-
-ただし実質的には、C と D の境界に少し乗っている。なぜなら S4 は単なる comparison lens ではなく、新しい judgment gate として働くからである。つまりカテゴリ選定は acceptable だが、メカニズムの設計は慎重さが足りない。
-
-汎用原則として見たときの問題は、カテゴリ自体ではなく分類粒度にある。
-- CRITICAL = return value / exception type / control flow on a known test path
-- MINOR = only untested branches
-- INERT = cosmetic / whitespace / log-only
-という3分類は分かりやすい反面、重要な差異の型をかなり狭く表現している。
-
-例えば以下はこの3分類に収まりにくいが、実際には test outcome に効きうる。
-- state mutation の順序差
-- object identity / aliasing 差
-- iterator / collection ordering 差
-- resource lifecycle 差
-- protocol / contract 準拠性の差
-- caching / memoization による observable effect の差
-- downstream handler が前提とする data shape 差
-
-したがって、「汎用原則として理にかなうか」という問いには、「影響度を見るという原則は理にかなうが、その具体分類はやや粗く、汎化の観点で十分に抽象化されていない」と答えるのが妥当。
-
-## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方への作用
-
-### 変更前の実効的挙動
-現行 SKILL.md は、semantic difference を発見した後の扱いについて既にかなり明確である。
-- 差異を見つけたら relevant test path を trace する
-- no impact と言うには counterexample 不在を示す
-- subtle difference を dismiss してはならない
-
-つまり現行版の burden of proof は「差異を dismiss する側」に重い。
-
-### 変更後の実効的挙動
-提案後は burden of proof が一部変わる。
-- まず S4 で差異を CRITICAL / MINOR / INERT に分類する
-- full ANALYSIS が必須なのは CRITICAL のみ
-- MINOR / INERT は justification があれば skip できる
-
-この差は小さく見えて、実効的には大きい。現行は「trace してから dismiss」、提案後は「early classify して justified skip が可能」になる。
-
-### 真に NOT_EQUIVALENT なものへの作用
-狙いとしては、subtle difference を CRITICAL として早く拾い、見逃しを減らしたいのだと思われる。
-
-ただし proposal の CRITICAL 定義には
-- known test path
-- alters return value / exception / control flow
-という条件が入っている。
-
-問題は、構造トリアージ直後の段階では、まだその差異が known test path に乗るかどうかが十分分かっていないことが多い点である。すると、本来は重要な差異でも、
-- まだ test path への接続が示せていない
-- 影響形態が return value / exception / control flow として直ちに言語化できない
-という理由で MINOR 扱いされ、skip の対象になりうる。
-
-これは NOT_EQUIVALENT を EQUIVALENT と誤る方向のリスクをむしろ増やす。
-
-### 真に EQUIVALENT なものへの作用
-一方で INERT 分類は、cosmetic/log-only 差分への過剰反応を抑えうる。これは EQUIVALENT を NOT_EQUIVALENT と誤るケースには効く可能性がある。
-
-ただしこの利点は限定的である。なぜなら現行 SKILL.md でも、
-- D1 により equivalence は test outcome basis で定義済み
-- counterexample obligation がある
-- subtle difference があっても relevant test trace を経て no impact を言う構造になっている
-からである。
-
-つまり proposal が新たに得る利得は主に「benign-looking difference を早く畳める」ことであって、「危険な difference を確実に拾う」能力ではない。
-
-### 片方向にしか作用しないか
-実効的には、かなり片方向である。
-
-提案文は両方向改善を主張しているが、実際の差分は
-- CRITICAL 差異の trace を新たに義務化する
-よりも
-- MINOR / INERT 差異を skip 可能にする
-ことの方が強い作用を持つ。
-
-しかも CRITICAL に分類できるには既にある程度の理解が必要であり、そこが満たせない subtle diff ほど MINOR 側に落ちやすい。したがって、この変更は対称的な改善ではなく、実務上は「差異を早めに捨てる側」に寄りやすい。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 原則1: 探索シグナルの捜索への偏り禁止
-提案者は「発見済み差異の重要度分類だから抵触しない」と主張しているが、完全には同意しない。
-
-S4 は、何が重要差異かのシグナルをかなり具体的に固定している。
-- return value
-- exception type
-- control flow
-- untested branches
-- cosmetic/whitespace/log-only
-
-これにより、エージェントは「影響があるか」を広く考えるより、「この差異は上のどれに当てはまるか」を先に考えやすくなる。結果として、上記ラベルに乗りにくい差異が相対的に見落とされる危険がある。これは failed-approaches のいう「特定シグナルの捜索」への寄りと無縁ではない。
-
-### 原則2: 探索ドリフト対策の自由度削減禁止
-ここはより懸念が強い。
-
-提案は表向き「新しい探索義務は課していない」と書いているが、実際には
-- S4 分類を挟む
-- MINOR/INERT なら skip justification を書く
-という新しい早期判定経路を導入している。
-
-これは探索の自由度を削るというより、「探索に入る前に省略可能性を判定する」ゲートであり、ドリフト抑制のつもりで exploration breadth を狭める類型に近い。
-
-### 原則3: 自己監査チェックの増殖禁止
-これは直接の自己監査追加ではないので、大きな抵触ではない。
-
-ただし機能的には、新しい必須判断軸を structural triage に埋め込んでいる。場所が Step 5.5 でないだけで、実質的には pre-analysis gate である。したがって「形式的にはセーフ、実質的にはやや危うい」という評価になる。
-
-### 総合
-failed-approaches の3原則のうち、特に 1 と 2 に近い再演リスクがある。表現は違うが本質的には「探索前に重要/不要の判定を強める」方向であり、過去に避けるべきとされた傾向と無関係ではない。
-
-## 5. 汎化性チェック
-
-### 明示的ルール違反の有無
-提案文中に、禁止対象である
-- ベンチマークケース ID
-- リポジトリ名
-- テスト名
-- ベンチマーク対象実装コード断片
-は見当たらない。
-
-含まれているのは主に
-- SKILL.md 自身の行番号参照
-- Guardrail #4 という内部参照
-- 既存文言の自己引用
-であり、Objective.md の監査基準上は原則セーフ。
-
-したがって、明示的なルール違反としての overfitting 証拠はない。
-
-### 暗黙のドメイン仮定の有無
-ただし汎化性の懸念は残る。
-
-1. test-path 中心の重要度定義
-   - compare モード自体が test-modulo equivalence なので test path を見ること自体は妥当。
-   - しかし S4 は「known test path」に乗るかどうかを早い段階で重要度の定義に使っており、test reachability がまだ不明な差異を軽く扱いやすい。
-
-2. 影響タイプの狭さ
-   - return value / exception / control flow への寄せは、多くのケースでは有効でも、汎用的な semantic effect を尽くしていない。
-
-3. cosmetic/log-only の即時 INERT 化
-   - logging 差分は多くの場合 benign だが、テストが log output や side effect を観測する環境では inert と断定できない。もちろん compare の relevant tests に閉じれば大半は無害だが、早期ラベルとしてはやや強すぎる。
-
-結論として、「明示的 overfitting はない」が、「分類語彙の設計が少し狭く、汎用性 3 点満点ではなく 2 点寄り」という評価になる。
-
-## 6. 全体の推論品質にどう効くと期待できるか
-
-### 期待できる正の効果
-- 差異を見つけた後に「それが何を変える差異なのか」を一度言語化させる点は良い。
-- large patch で line-by-line に沈むのを避け、比較の焦点を立てる補助にはなりうる。
-- 「どうでもよさそうに見える差異も、なぜ無害なのかを述べよ」という意識づけ自体は有益。
-
-### 想定される負の効果
-- 現行の Guardrail #4 / Compare checklist / Step 5.5 と役割が重複し、純増の改善幅が小さい。
-- 一方で skip path だけは新たに増えるため、差異 dismissal を制度化してしまう。
-- 特に large patch で S3 と結びつくと、「exhaustive trace はしない」+「MINOR/INERT は skip」で、結局 subtle but outcome-relevant diff を落としやすくなる。
-
-### 監査結論
-「差異の重要度を考える」という発想自体は前向きだが、as written の S4 は reasoning quality を安定的に上げるより、分析の早期打ち切りを正当化する方向に働く可能性が高い。改善効果は不確実で、回帰リスクの方が無視できない。
-
-## 代替提案（この方向を残すなら）
-この方向を活かすなら、skip authorization を消すのが安全。
-
-例えば以下のような弱い形なら、研究コアと矛盾しにくい。
-- 「semantic difference を見つけたら、tentative に likely-impact / unclear / likely-no-impact を書け」
-- 「ただしこの分類だけを根拠に ANALYSIS を省略してはならない」
-- 「no impact を結論するには現行どおり relevant test trace が必要」
-
-これなら early focus aid にはなるが、dismissal gate にはなりにくい。
-
-## 最終判断
-承認: NO（理由: S4 が単なる観点追加ではなく、MINOR/INERT の早期スキップ経路を作っており、現行の anti-skip guardrail と緊張する。実効的には EQUIVALENT/NOT_EQUIVALENT の両方向に対称に効く変更ではなく、 subtle difference の早期除外を制度化する回帰リスクがあるため。）
+承認: NO（理由: failed-approaches.md にある「反証優先順位の局所観点への差し替え」という本質的失敗の再演であり、highest-tier-first が探索経路の半固定として働くため）
