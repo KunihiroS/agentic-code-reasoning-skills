@@ -1,240 +1,89 @@
-# Iteration 19 — 監査ディスカッション
+# Iteration 19 Discussion
 
-前提: この監査では、指定された 6 ファイルのみを参照した。
-外部根拠は DuckDuckGo MCP による Web 検索結果のみを使った。
+## 既存研究との整合性
+- 検索なし（理由: 一般原則の範囲で自己完結）。
+- 提案の中核は「確認バイアスを避けるため、次の探索を“支持集め”ではなく“仮説分離”寄りにする」という一般的な探索原則であり、README.md / docs/design.md の研究コア（仮説駆動探索、反証、証拠先行）だけで十分評価可能。
+- ただし、現行文言のままでは「分離効率」を強く最適化しすぎて、failed-approaches.md が禁じる探索経路の半固定へ寄りやすい。
 
-## 総評
+## Exploration Framework のカテゴリ選定
+- 判定: B. 情報の取得方法を改善する は概ね適切。
+- 理由: 変更対象は compare の結論規則そのものではなく、Step 3 の「次に何を読むか」の優先順位付けだから。A（順序変更）や D（自己チェック追加）ではなく、探索の選び方の改善として整理するのが自然。
+- ただし実質が「候補の中から常に pairwise discrimination を優先する規則」にまで強まると、B の範囲を越えて探索経路の半固定に接近する。
 
-提案は `SKILL.md` Step 4 の既存ルール
-`Read the actual definition. Do not infer behavior from the name.`
-に対し、関数本体の逐語読解の前に
-- return type
-- parameter types
-- top-level branch structure
-を先に把握するよう補足するもの（proposal.md:23-49, SKILL.md:106-112）。
+## compare 影響の実効性チェック
+- 1) Decision-point delta
+  - Before: IF 次アクション候補が複数ある THEN 「関係がありそう」な候補を選び、正当化を後付けする。
+  - After: IF 次アクション候補が複数ある THEN 「競合する上位2仮説を最も強く分離できる候補」を選ぶ。
+  - IF/THEN 形式で 2 行（Before/After）になっているか？ YES
+  - Trigger line（発火する文言の自己引用）が差分プレビューにあるか？ YES
+  - コメント: 条件も行動も一応変わっており、「理由だけの言い換え」ではない。ただし行動が強すぎて、compare の柔軟性を削る方向に働く懸念がある。
 
-これは「定義を読め」という既存原則を壊さず、読み順を少し具体化するという意味では小さく安全な変更である。一方で、現状のベンチマーク上の主要弱点が `EQUIVALENT` 側にあること（README.md:81-94）を踏まえると、この提案が主に効きそうなのはむしろ `NOT_EQUIVALENT` 側であり、ボトルネックとの整合が弱い。また、固定的に「何を先に見るか」を 3 点へ寄せるため、failed-approaches.md の「証拠種類の事前固定」への警戒と部分的に重なる。
+- 2) Failure-mode target
+  - 狙い: 両方。
+  - 偽 EQUIV 低減メカニズム: 支持的な読解ではなく、反証しやすい次アクションを優先させることで、未発見の差分を拾いやすくする。
+  - 偽 NOT_EQUIV 低減メカニズム: 表層差分を見つけた直後に確証へ走らず、その差分が本当に test outcome を分けるかを分離的に読ませることで、下流で同値に収束するケースを拾いやすくする。
+  - ただし「上位2仮説」固定は、実際には第三の説明や構造差の拾い直しを弱め、両側改善ではなく片方向最適化に転ぶ危険がある。
 
-結論として、方向性自体は理解できるが、現行文言のままでは承認しにくい。
+- 3) Non-goal
+  - 判定ゲートの追加、STRUCTURAL TRIAGE の強化、証拠種類の事前固定をしない、という境界は明示されている。
+  - 置換1行で総量不変を狙っている点もよい。
+  - ただし「pairwise discrimination を常に最優先する」という実質ルールは、非goal と書いてあっても探索経路の半固定として作用しうる。
 
-## 1. 既存研究との整合性
+- Discriminative probe
+  - 抽象ケース: A/B の差分を見つけた直後、表層上は NOT_EQUIV に見えるが、別モジュールの吸収ロジックで test outcome は一致するケース。
+  - 変更前は「関連がありそう」な差分周辺を読み続けて偽 NOT_EQUIV に寄りやすい。変更後は、その差分が assertion boundary まで届くか／吸収されるかを最短で分ける読解を選べれば回避しやすい。
+  - ただしこれは「既存の NEXT ACTION RATIONALE を少し反証寄りに置換する」程度で十分で、上位2仮説固定まで強める必要はない。
 
-### 1-1. Agentic Code Reasoning 論文との整合
-URL: https://arxiv.org/abs/2603.01896
-要点:
-- 論文の要旨は、明示的 premises、execution path tracing、formal conclusion を要求する semi-formal reasoning が精度を改善する、というもの。
-- 提案はこのコア構造を変えず、Step 4 の tracing 前の読み方を微修正するだけなので、研究コアとは矛盾しない。
-- 特に `docs/design.md` が強調する「interprocedural tracing as structure, not advice」（docs/design.md:52-55）とは整合する。つまり、実定義を読んで VERIFIED behavior を積む枠組み自体は維持されている。
+- 支払い（必須ゲート総量不変）
+  - A/B の対応付けは一応明示あり。追加ではなく「NEXT ACTION RATIONALE」1行の置換として書かれている。
+  - この点は問題なし。
 
-評価:
-- 整合: ある
-- ただし、論文が直接支持しているのは「構造化された tracing の有効性」であって、「return type / parameter types / branch shape を必ず先に見る」という個別読解順までは直接支持していない。ここは論文からの演繹であり、実証の強さは一段弱い。
+## EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+- EQUIVALENT 側:
+  - 良い面: no-counterexample 探索に入る前段として、差分を生みうる経路を優先的に読めるので、安易な EQUIVALENT を減らしうる。
+  - 悪い面: 「2仮説分離」に寄せすぎると、EQUIVALENT に必要な広めの消極証明（他経路・第三の説明の潰し込み）より、目先の二択整理を優先してしまう可能性がある。
+- NOT_EQUIVALENT 側:
+  - 良い面: 見つけた差異が assertion boundary に届くかを素早く見に行けるなら、実効差分に結びついた NOT_EQUIVALENT を出しやすい。
+  - 悪い面: pairwise な分離効率を優先すると、構造差・テスト到達性・別粒度の証拠を後回しにし、逆に偽 NOT_EQUIVALENT や過早結論を招く恐れがある。
+- 総評: 「両方向に効かせたい」という狙い自体は妥当。ただし現行文言は片方向にしか作用しないというより、両方向にノイズを入れる危険が残る。
 
-### 1-2. Top-down code comprehension 研究との整合
-URL: https://tobiasduerschmid.github.io/SEBook/development_practices/topdown.html
-要点:
-- line-by-line の機械的読解から離れ、先に高水準の mental model を作る top-down comprehension を重視している。
-- 開発者は hypothesis formulation と searching for beacons によって読解効率と正確性を上げる、という整理になっている。
-- 提案の「本体精読前に signature と branch shape を先に把握する」は、まさに line-by-line anchoring を避けて高水準の見取り図を先に作る、という意味でかなり整合的。
+## failed-approaches.md との照合
+- 探索経路の半固定: YES
+  - 原因文言: 「競合する上位2仮説を最も強く分離」「最短で分離」「highest-information next step」
+  - 理由: 現場の候補集合を保つつもりでも、実運用では pairwise な分離タスクへ探索入口を寄せる。failed-approaches.md の「読解順序の半固定」「最小の分岐候補への寄せ」と本質が近い。
+- 必須ゲート増: NO
+  - 1行置換であり、新しい section や checklist は増えていない。
+- 証拠種類の事前固定: NO（ただし境界的）
+  - 証拠の種類そのものは固定していないが、「2仮説を分離できる証拠」を優先するため、事実上その種の証拠に偏る危険はある。
 
-評価:
-- 整合: 比較的強い
-- ただしこの資料は一般的な top-down comprehension を支持するのであって、提案の 3 項目を最適な固定チェックリストとして支持しているわけではない。
+## 汎化性チェック
+- 明示的な違反（数値 ID、リポジトリ名、テスト名、コード断片）: なし。
+- ただし軽微な懸念:
+  - 「上位2仮説」という形式は、常に競合仮説が二者択一で整理できることを暗黙に想定しており、複数枝・層状の不確実性があるコード推論では一般性を少し損なう。
+  - 特定言語依存ではないが、探索空間を pairwise classification 的に見る癖を強めるため、複数モジュール・複数粒度の compare では過度な単純化になりうる。
 
-### 1-3. Program comprehension の一般論との整合
-URL: https://www.sciencedirect.com/topics/computer-science/program-comprehension
-要点:
-- program comprehension は code から出発しつつ、より高い abstraction へ持ち上げる過程と整理されている。
-- code concept assignment や feature location のように、「細部に入る前に概念レベルで何を見ているかを整理する」ことは一般に自然である。
-- 提案の interface/branch の先行把握は、その抽象化の初手としては妥当。
+## 停滞診断
+- 懸念点（1点だけ）:
+  - この提案は「NEXT ACTION RATIONALE の説明を賢く見せる」方向に寄りやすく、実際の compare の分岐変更よりも、監査 rubric 上の説明強化に見えてしまう危険がある。とくに agent が実際の探索順を変えず、後から「これは二仮説を分離する一手だった」と書けてしまうなら、compare の意思決定はあまり変わらない。
 
-評価:
-- 整合: ある
-- ただしこちらも提案の具体的な読み順 3 点を直接立証するものではなく、抽象化先行の一般原則を支持する程度。
+## 全体の推論品質への期待効果
+- 期待できる改善:
+  - 単なる支持集めを抑え、反証可能性を早めに織り込む方向性はよい。
+  - 置換1行で複雑性を増やさない点もよい。
+- ただし現行案のままでは:
+  - 反証志向の一般原則ではなく、「上位2仮説の分離」という狭い探索規則に落ちており、汎用の compare 改善としてはまだ硬すぎる。
 
-### 小結
-研究との整合性は「ある」。
-ただし根拠の強さは
-- semi-formal reasoning との整合: 強い
-- top-down comprehension との整合: 中程度〜強い
-- 提案文そのものの 3 点固定チェックリストの妥当性: 間接支持
-に留まる。
+## 最大のブロッカー
+- failed-approaches.md の本質的再演。
+- 具体的には、「上位2仮説を最も強く分離」「highest-information next step」という文言が、探索経路の半固定を再導入している点が最大の問題。ここを外さない限り承認しにくい。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
+## 修正指示（2〜3点）
+1. 「上位2仮説」「最も強く分離」「highest-information」を削る。
+   - 置換先は、二者択一を前提にせず「現在の未解決点や主要な競合解釈のうち、少なくとも1つを反証または解消できる次アクション」のように弱める。
+2. “反証しやすさ” を主目的に残すなら、探索経路固定を避ける境界を同じ1行内で明示する。
+   - 追加ではなく置換で、「証拠種類や読解順を固定しない範囲で」を埋め込むか、既存の “why justified” を一部残して自由度を保つ。
+3. compare への実効差を明確にするため、Decision-point delta の After を「どの条件で結論を出さず追加探索に回すか」が見える分岐に寄せる。
+   - 例: 候補が複数あるとき常に pairwise 分離へ寄せるのではなく、表層差分が見つかったが assertion boundary への到達が未確認なら、その到達可否を縮める読解を優先、のように compare の停止/継続判断へ接続する。
 
-結論: カテゴリ B の選定は概ね妥当。
-
-理由:
-- Objective.md のカテゴリ B は「情報の取得方法を改善する」であり、例として
-  - コードの読み方の指示を具体化する
-  - 何を探すかではなく、どう探すかを改善する
-  - 探索の優先順位付けを変える
-  が挙がっている（Objective.md:148-152）。
-- 今回の変更は、Step 4 内で「関数定義をどう読むか」の順序を具体化するものであり、まさに B の中核に入る。
-- A（推論順序の変更）ほど大きくない。D（自己チェック追加）でもない。E（表現改善）に見える面もあるが、本質は wording の改善ではなく探索手順の具体化なので B が最も近い。
-
-ただし留保:
-- 「暗黙的確認バイアスを抑える」という狙い自体は D 的にも見える。
-- しかし実装箇所が Step 5.5 の自己監査ではなく Step 4 の読み方規則なので、分類としては B でよい。
-
-## 3. EQUIVALENT 判定 / NOT_EQUIVALENT 判定の両方への作用
-
-## 実効差分
-現行 `SKILL.md` の Step 4 Rules には
-- 実定義を読む
-- VERIFIED を source 読了後にのみ付ける
-- source 不在時の二次証拠探索順
-- conditionals / mapping / configuration を追う
-- loop/exception 内の反実仮想確認
-がある（SKILL.md:106-112）。
-
-提案が足すのは、そのうち最初の行に対する「full body 読解前に interface と top-level shape を先にメモする」という前処理である（proposal.md:35-38）。
-
-つまり、これは新しい判定規則ではなく「関数読解のプリミティブな初手」を追加する変更である。
-
-### NOT_EQUIVALENT への作用
-正方向の効果は比較的わかりやすい。
-
-期待できる点:
-- 最初に見えた branch に固定されるのを防ぎ、後半分岐・default case・exception arm の存在を早く把握しやすい。
-- compare モードで 2 変更が異なる腕を通るケースを見つけやすくなる。
-- proposal.md 自身もここを主効果として述べている（proposal.md:64-70）。
-
-監査所見:
-- `NOT_EQUIVALENT` には確かに効きうる。
-- ただし README.md では現状 `Not-equivalent pairs` はすでに 100% で、残存失敗は `Equivalent pairs` 側にある（README.md:83-94）。
-- したがって、たとえこの提案が `NOT_EQUIVALENT` をさらに堅くするとしても、現状ボトルネックの解消には直結しない可能性が高い。
-
-### EQUIVALENT への作用
-ここは正負両面がある。
-
-正方向:
-- 先頭分岐だけ見て「差がある」と早合点するのを避け、関数全体の top-level shape を一度見渡してからトレースするので、局所差異への過剰反応は減りうる。
-- 引数型・戻り型を先に把握することで、そもそも比較対象の契約が同じかを早く整理できる。
-
-負方向 / 限界:
-- branch shape を先に強調すると、逆に「構造が違う = 振る舞いが違う」と受け取りやすくなり、tested behavior が同じでも偽の `NOT_EQUIVALENT` を増やす危険がある。
-- `EQUIVALENT` 判定で重要なのは、構文の似姿ではなく「既存テストに対する outcome の同一性」である（SKILL.md:171-180, 242-247）。
-- そのため、top-level branch shape の事前確認は補助にはなるが、`EQUIVALENT` 側の主失敗要因を直接突く改善とは言いにくい。
-
-### 片方向にしか作用しないか
-結論: 片方向専用ではないが、期待効果は非対称。
-
-- `NOT_EQUIVALENT` には比較的直接効く。
-- `EQUIVALENT` にも一定の補助効果はありうるが、主作用ではない。
-- 現状の benchmark pain point が `EQUIVALENT` であることを踏まえると、実効改善が片寄る懸念は大きい。
-
-監査上はここが最も大きい懸念である。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 原則 1: 次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎない
-failed-approaches.md:8-10
-
-提案者は「同一情報源内の読み順であり、証拠種類の固定ではない」と主張している（proposal.md:80-83）。
-これは半分は正しい。
-
-良い点:
-- 次に読むファイルや次の探索対象を固定しているわけではない。
-- 同一関数定義の中での視線誘導に留まる。
-
-ただし懸念:
-- 実際には「return type / parameter types / top-level branch structure」を毎回先に拾わせるので、関数読解時の証拠抽出を固定ミニチェックリスト化している。
-- これは failed-approaches の禁じる「特定シグナルの捜索」への寄り方を、探索全体ではなく“関数内部の読解”に縮小して持ち込む形になりうる。
-- 特に state mutation、aliasing、data transformation、callee contract、dispatch table、implicit protocol など、branch shape 以外が本質のケースでは、先行 3 項目が注意資源を奪う可能性がある。
-
-判定:
-- 完全な再演ではない
-- ただし本質的リスクは部分的に同じ
-
-### 原則 2: 探索ドリフト対策時に探索自由度を削りすぎない
-failed-approaches.md:11-13
-
-良い点:
-- 変更範囲は 1 文追加で小さい。
-- 読む対象ファイルや関数を制約しない。
-
-懸念:
-- あらゆる関数で type/branch shape の先行確認を半必須にすると、単純 accessor や data-container 的コードでも儀式が増える。
-- そのぶん attention budget を消費し、重要な downstream handling や data flow の追跡が薄くなる可能性はある。
-
-判定:
-- 軽度の緊張あり
-- ただし原則 1 ほど強い抵触ではない
-
-### 原則 3: 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない
-failed-approaches.md:14-16
-
-判定:
-- これは抵触しない
-- 追加箇所は Step 4 であり、Step 5.5 の pre-conclusion self-check ではない
-
-### 小結
-`failed-approaches.md` との関係では、完全な禁止領域ではないが、原則 1 の縮小再演に近い匂いがある。
-
-## 5. 汎化性チェック
-
-### 明示的ルール違反の有無
-提案文を確認した限り、以下は見当たらない。
-- ベンチマーク対象リポジトリ名
-- 特定のテスト名
-- 特定のケース ID
-- ベンチマーク実コード断片
-
-含まれているのは
-- `SKILL.md` 自身の既存文言引用
-- Step 番号
-- 行数やカテゴリ名
-であり、これは Objective.md の R1 減点対象外の扱いに近い（Objective.md:202-213）。
-
-したがって、明白な overfitting ルール違反はない。
-
-### 暗黙のドメイン仮定
-ここには懸念がある。
-
-提案文は
-- return type
-- parameter types
-- if/switch/try-catch shape
-を前面に出している（proposal.md:35-38）。
-
-この表現は以下を暗黙に強く想定する。
-- 明示的型を持つ、または型注釈が安定して読める言語
-- branch-centric な imperative / OO コード
-- 関数本体の top-level shape が意味を持ちやすい実装スタイル
-
-弱くなる対象:
-- dynamic language で型がほぼ契約を表さないコード
-- functional / expression-oriented / declarative / macro-heavy なコード
-- dataflow, protocol, callback ordering, mutation, or configuration semantics が本質のコード
-- top-level branch より下位 call chain や data transformation の方が重要なケース
-
-判定:
-- 露骨な benchmark overfit ではない
-- ただし汎化性は満点ではなく、「多くの一般的コードには有効だが、かなり imperative 寄り」という留保が必要
-
-## 6. 全体の推論品質がどう向上すると期待できるか
-
-期待できる改善:
-- line-by-line 読解開始時の path anchoring を弱める
-- 関数の入口契約と大枠の制御構造を先に把握することで、Step 3 の仮説更新が多少しやすくなる
-- Step 4 の VERIFIED behavior 記述が、局所トレースより少し俯瞰的になる
-
-期待しにくい改善:
-- `EQUIVALENT` の難所である「構造差はあるが test outcome は同じ」を見抜く力の大幅改善
-- downstream handling の取りこぼし防止
-- state / data flow / dispatch / indirect call を主因とする誤判定の削減
-
-総合すると、改善幅は「局所的・中程度」に留まる可能性が高い。小さな hygiene improvement としては理解できるが、現状の主要失敗に対する打点は弱い。
-
-## 最終判断
-
-承認: NO（理由: 研究コアとの整合とカテゴリ B の妥当性は認められるが、現行文言は `NOT_EQUIVALENT` 側に偏って効く可能性が高く、README.md が示す主要弱点である `EQUIVALENT` 側の改善根拠が弱い。また `return type / parameter types / top-level branch structure` を固定的に先行確認させる点は、failed-approaches.md の「証拠種類の事前固定」原則と部分的に同質で、言語・実装スタイル一般性にも軽い難がある。）
-
-## 参考: 承認に近づけるなら
-
-もし再提案するなら、次の方向の方が安全。
-
-- `return type / parameter types / if/switch/try-catch` の固定列挙を弱める
-- 代わりに「Before reading the full body, sketch the function's interface/contract and the major control-flow or dispatch regions relevant to the current hypothesis.」のように、interface/contract と control-flow/dispatch を抽象的に表現する
-- さらに compare モードとの接続を明示するなら、「do not treat structural differences as semantic differences until traced to tested behavior」といった EQUIVALENT 側保護の一文の方が、現状の課題にはより適合する
+## 結論
+承認: NO（理由: failed-approaches.md が禁じる「探索経路の半固定」の本質的再演が残っているため）

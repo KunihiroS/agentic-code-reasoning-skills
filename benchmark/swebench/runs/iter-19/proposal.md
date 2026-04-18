@@ -1,96 +1,44 @@
-# Iteration 19 — Proposal
+1) 過去提案との差異: 直近却下が「compare の早期 NOT_EQUIV 条件の具体化/境界への還元」だったのに対し、本提案は全モード共通の Step 3 における“次に何を読むか”の優先順位付け（情報取得）を改善する。
+2) Target: 両方（偽 EQUIV と偽 NOT_EQUIV を同時に下げる）
+3) Mechanism (抽象): 複数の探索候補があるとき、最も“仮説を分離する（反証しやすい）”次アクションを選ぶよう、Step 3 の記録テンプレに 1 行だけ明示する。
+4) Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件（S1/S2 の扱い）や、判定ゲートの追加/強化は行わない。
 
-## Exploration Framework カテゴリ: B（強制指定）
+禁止方向（failed-approaches.md + 直近却下履歴の要約）
+- 既存判定基準を「特定の観測境界」だけに還元して条件を狭める（構造差→境界写像、VERIFIED/可視オラクル依存など）。
+- 反証優先順位や探索経路を、特定観点へ寄せたり半固定する（読解順序の固定、最小分岐候補への寄せ等）。
+- 新しい必須メタ判断/ゲートの純増（UNVERIFIED を専用トリガ化、結論萎縮を招く追加チェック等）。
 
-### カテゴリ B 内でのメカニズム選択理由
+カテゴリ B 内での具体的メカニズム選択理由
+- B は「何を探すか」ではなく「どう探すか / 優先順位」を扱う。ここでは“探索の入口を半固定”せず、都度の候補集合の中で選択基準だけを改善する。
+- Step 3 には既に「NEXT ACTION RATIONALE」があるが、正当化の文章化に留まりやすく、確認バイアス（都合の良い証拠だけを積む）を抑える選択規準が弱い。そこで“弁明を書く”から“識別力の高い一手を選ぶ”へ、記録欄の意味を寄せる。
 
-カテゴリ B は「情報の取得方法を改善する」であり、以下の3つのメカニズムを含む:
+改善仮説（1 つ）
+- 仮説: 次アクションを「最も正しそうな説明を補強する読解」ではなく「現に競合している 2 つの仮説を最短で分離（少なくとも一方を反証）できる読解」に寄せると、(a) 早期の偽 EQUIV（反例探索が弱い）と (b) 早期の偽 NOT_EQUIV（表層差分への過剰適応）の双方を減らせる。
 
-- コードの読み方の指示を具体化する
-- 何を探すかではなく、どう探すかを改善する
-- 探索の優先順位付けを変える
+SKILL.md 該当箇所（短い引用）と変更
+- 該当（Step 3 の探索ジャーナル末尾）:
+  "NEXT ACTION RATIONALE: [why the next file or step is justified]"
+- 変更: 同じ 1 行を「競合仮説を分離する（反証しやすい）次アクション」を明示する書き方に置換し、探索優先順位の基準をテンプレ内に埋め込む。
 
-今回は **「コードの読み方の指示を具体化する」** を選択する。
+Decision-point delta（IF/THEN 2 行）
+Before: IF 次に読む/検索する候補が複数ある THEN 直感的に“関係がありそう”なものを選ぶ because 正当化（NEXT ACTION RATIONALE）を後付けで書ける。
+After:  IF 次に読む/検索する候補が複数ある THEN 競合する上位 2 仮説を最も強く分離（少なくとも一方を反証）できる候補を選ぶ because 最小の追加読解で誤判定（偽 EQUIV/偽 NOT_EQ）を同時に減らせる。
 
-理由: SKILL.md の Step 4 では UNVERIFIED 関数に対して二次証拠の探索順序（test usage first, then type signatures, then documentation）を定義しているが、VERIFIED 関数（ソースが手元にある場合）に対しては本体を読む前に何を先に確認すべきかという読み順の指針が存在しない。その結果、エージェントが関数本体の先頭から逐語的に読み始め、最初に目についた分岐でトレースの方向を固定してしまう（暗黙的確認バイアス）リスクがある。シグネチャ・戻り型・主要分岐を本体精読の前に一覧することで、full body読解の前にコードパスの優先順位を立て、その後のトレースが仮説に偏りにくくなる。
+変更差分プレビュー（Before/After, 3–10 行）
+Before:
+  UNRESOLVED:
+    - [remaining questions]
 
+  NEXT ACTION RATIONALE: [why the next file or step is justified]
+After:
+  UNRESOLVED:
+    - [remaining questions]
 
-## 改善仮説
+  NEXT ACTION RATIONALE: [which two live hypotheses this next action best discriminates (can refute), and why it is the highest-information next step]
 
-関数定義を読む際に本体全体を逐語的に追う前にシグネチャ・戻り型・主要分岐の形状を先に把握する習慣を Step 4 の読み方指示として明示することで、最初に目に入った実行経路への過度な固着を防ぎ、代替経路を見落とす確率を下げることができる。
+failed-approaches.md との照合（整合 1–2 点）
+- 「証拠の種類をテンプレで事前固定しすぎる変更は避ける」に整合: 何を探すかの固定ではなく、“候補が複数あるときの選び方”のみを与える（候補集合は都度の仮説から自然に生じる）。
+- 「探索の自由度を削りすぎない／読解順序の半固定を避ける」に整合: “常に A→B→C を読め”のような経路固定はせず、その場の分岐で情報利得の高い一手を選ぶだけで探索幅を温存する。
 
-
-## SKILL.md のどこをどう変えるか
-
-### 変更対象
-
-SKILL.md Step 4 の Rules セクション内、現在の以下の行:
-
-```
-- Read the actual definition. Do not infer behavior from the name.
-```
-
-### 変更後
-
-```
-- Read the actual definition. Do not infer behavior from the name.
-  Before reading the full body, note the return type, parameter types, and the top-level branch structure (if/switch/try-catch shape). This primes the trace direction without committing to a path prematurely.
-```
-
-### 変更の性質
-
-既存行「Read the actual definition. Do not infer behavior from the name.」への文言追加・精緻化。
-新規ステップ・新規フィールド・新規セクションは一切追加しない。
-
-### 変更規模
-
-追加行数: 2行（既存1行の直後に2行の補足文を追記）
-削除行数: 0行
-合計変更行数: 2行（hard limit の 5行以内）
-
-
-## 一般的な推論品質への期待効果
-
-### 減少が期待される失敗パターン
-
-1. **暗黙的経路固着（Implicit Path Anchoring）**
-   - 現象: エージェントが関数本体の最初の条件分岐を「主経路」と思い込み、テストが実際に通る経路（後半の分岐・例外処理・デフォルトケース）を追わない
-   - 改善機序: 本体精読前に top-level branch structure を一覧することで、どの分岐が存在するかを把握した上でトレースを開始できる
-
-2. **シグネチャ誤読による型混乱**
-   - 現象: 戻り型や引数型を本体中盤で初めて把握し、すでに構築した前提と矛盾したときに修正コストが高い
-   - 改善機序: 先行確認により型情報を Step 3 の HYPOTHESIS 更新に組み込みやすくなる
-
-3. **compare モードにおける NOT_EQUIVALENT 見落とし（overall 改善）**
-   - 二つの変更が分岐の異なる腕を通る場合に等価と誤判定するケースは、分岐形状を事前に把握していれば早期に気づきやすい
-
-### 影響するモード
-
-全モード（compare / diagnose / explain / audit-improve）に共通する Step 4 の変更であるため、全体推論品質への波及が期待できる。
-特に compare モードの overall 精度に寄与する（フォーカスドメイン: overall と整合）。
-
-
-## failed-approaches.md の汎用原則との照合
-
-### 原則1: 探索ドリフト対策時に探索自由度を削りすぎない
-
-照合結果: 抵触しない。
-本変更は「読む順序の事前整理」であり、読む対象ファイルや関数の選択を制限するものではない。探索の幅（どのファイルを読むか）には干渉せず、個々の関数を読む際の内部手順に限定している。
-
-### 原則2: 次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎない
-
-照合結果: 抵触しない。
-「シグネチャと主要分岐を先に見る」は証拠の種類を固定するのではなく、関数定義という同一の情報源を読む順序を提案している。どの情報を証拠として使うかの判断はエージェントに委ねたまま。
-
-### 原則3: 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない
-
-照合結果: 抵触しない。
-本変更は Step 4 の読み方指示であり、Step 5.5 の自己監査チェックリストへの追加ではない。
-
-
-## 変更規模の宣言
-
-- 追加: 2行
-- 削除: 0行
-- 合計: 2行
-- hard limit (5行): 満たす
+変更規模の宣言
+- SKILL.md の置換 1 行のみ（5 行以内、必須ゲートの純増なし）。
