@@ -2,40 +2,23 @@
 
 ## 前イテレーションの分析
 
-- 前回スコア: 不明（iter-14 の scores.json は参照外のため記載省略）
-- 失敗ケース: 詳細は参照外のため省略
-- 失敗原因の分析: compare モードで最も頻発するパターンとして、差異を発見しながら
-  その差異がテスト実行パス上に存在するかどうかを確認しないまま
-  EQUIVALENT / NOT_EQUIVALENT を判定してしまうケースが確認された。
-  Guardrail #4 はこれを禁止しているが、Step 5.5 のチェックリストには
-  「実際にテストをトレースしたか」を問い直す項目がなかった。
+- 前回スコア: N/A（このファイル作成時点では参照しない）
+- 失敗ケース: N/A（このファイル作成時点では参照しない）
+- 失敗原因の分析: 反証/自己チェックは存在するが、複数の中間主張がある状況で「どれを最優先で反証すべきか」が曖昧だと、結論反転に直結する弱点を外して偽 EQUIV / 偽 NOT_EQUIV の両方を起こしうる。
 
 ## 改善仮説
 
-Step 5.5「Pre-conclusion self-check」の4番目チェック項目に、
-「差異が見つかった場合、その差異がテスト実行パス上にあることを確認したか」
-という問いかけをサブ条件として追加することで、推論者が自己監査の段階で
-確認漏れに能動的に気づける頻度が増加し、全体の推論品質が向上する。
+反証対象の優先順位を「結論の反転（EQUIV↔NOT_EQUIV / PASS↔FAIL）に最も直結する主張/仮定」へ寄せることで、同じ必須反証コストの範囲で判定感度を上げ、偽 EQUIV と偽 NOT_EQUIV を同時に減らす。
 
 ## 変更内容
 
-SKILL.md の Step 5.5 チェックリスト4番目の項目（
-「The conclusion I am about to write asserts nothing beyond what the traced evidence supports.」）
-に対して、以下のサブ条件を文言追加した（既存行の削除なし、+2行）:
+- Step 5 の Scope を「広く当てる」から、複数候補があるときにまず“最も決定感度が高い主張/仮定”を優先して反証する指示へ置換/補強した。
+- Step 5.5 の UNVERIFIED 項目を、影響説明ができない仮定は「結論へ影響しない」と断定せず、不確実性として結論/確信度へ反映する指示に置換した。
 
-```
-If a semantic difference was found, did I trace at least one relevant test through the differing
-path before concluding it affects (or does not affect) the outcome? (cf. Guardrail #4)
-```
-
-新規ステップ・新規フィールド・新規セクションの追加は一切行っていない。
+Trigger line (final): "- Prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first."
+上の Trigger line は、proposal の差分プレビューにある Trigger line と文言・意図の両面で一致する。
 
 ## 期待効果
 
-- EQUIVALENT 過剰判定の抑制: 差異を発見しながら「テストに影響しないだろう」と
-  仮定したまま確認を省略するケースにおいて、Step 5.5 の自問によって
-  その省略が表面化し、誤判定前に修正される機会が増える。
-- NOT_EQUIVALENT 過剰判定の抑制: 差異発見と同時に即断するケースでも
-  同様の問いかけにより、テストトレースを経ない判定を抑止できる。
-- 変更の影響範囲は Step 5.5（結論直前のメタチェック）に限定されており、
-  探索フェーズ（Step 3, 4）や他モードへの干渉はない。回帰リスクは低い。
+- 偽 EQUIV: 重要な差が結論を反転させるタイプの見落としに対し、最優先で反証を当てやすくなる。
+- 偽 NOT_EQUIV: 重要でない差を決定打と誤認するリスクを下げ、結論反転に関係する根拠へ反証を集中できる。
