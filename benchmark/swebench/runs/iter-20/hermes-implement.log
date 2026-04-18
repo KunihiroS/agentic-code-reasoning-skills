@@ -19,3 +19,69 @@ a/SKILL.md → b/SKILL.md
  (Only analyze edge cases that the ACTUAL tests exercise)
    E[N]: [edge case]
   ┊ 📖 read      SKILL.md  0.8s
+  ┊ ✍️  write     benchmark/swebench/runs/iter-20/rationale.md  0.6s
+  ┊ review diff
+a/benchmark/swebench/runs/iter-20/rationale.md → b/benchmark/swebench/runs/iter-20/rationale.md
+@@ -1 +1,29 @@
+-ディスカッションで却下された提案のため skip
++# Iteration 20 — 変更理由
++
++## 前イテレーションの分析
++
++- 前回スコア: 不明（この参照範囲では取得できない）
++- 失敗ケース: 不明（この参照範囲では取得できない）
++- 失敗原因の分析: compare の判定で、差分の重要度（契約差分・データ差分・内部差分）に基づく反証対象の優先順位が明示されていないと、
++  - 内部差分を過大評価して偽 NOT EQUIVALENT を出す
++  - 契約/データ差分を過小評価して偽 EQUIVALENT を出す
++  の両方向の誤りが起きうる。
++
++## 改善仮説
++
++差分を最小限のティア（CONTRACT / DATA / INTERNAL）で短く分類し、そのティアを Step 5 の最初の反証対象選択に使うと、
++「目立つ差分」ではなく「観測に写像されやすい差分」から当てに行く規則が入り、偽 EQUIVALENT と偽 NOT EQUIVALENT の両方を同時に下げられる。
++
++Trigger line (final): "Use Tier to choose the first refutation target in Step 5 (highest tier first)."
++上の Trigger line は proposal の差分プレビューにある文言と一致する（同一文）。
++
++## 変更内容
++
++SKILL.md の compare テンプレート内で、edge case セクションに入る直前に 2 行を追加した:
++- 差分を 1–3 行で列挙し、Tier=CONTRACT/DATA/INTERNAL と Observable（何が違えば観測されるか）を併記する「DELTA LEDGER」
++- その Tier を用いて Step 5 の最初の反証対象を最高ティア差分から選ぶルール
++
++## 期待効果
++
++- 偽 EQUIVALENT の抑制: 契約・データ差分があるのに「内部差分っぽい」と扱って見落とす確率を下げる（Observable を明記するため）。
++- 偽 NOT EQUIVALENT の抑制: 内部差分を即座に挙動差とみなして早期に NOT EQUIVALENT へ寄せる過反応を下げる（Tier で優先順位が付き、反証が段階化されるため）。
+  ┊ 📖 read      benchmark/swebench/runs/iter-20/rationale.md  0.8s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+1) SKILL.md の編集（proposal.md 記載の変更のみ）
+- compare テンプレートの EDGE CASES セクション直前に、proposal の差分プレビュー通り 2 行を追加しました（変更規模: +2 行）。
+  - 追加行（最終反映）:
+    - `DELTA LEDGER (1–3 rows, before edge cases): Δ[N]=[difference], Tier=CONTRACT/DATA/INTERNAL, Observable=[what would differ]`
+    - `Use Tier to choose the first refutation target in Step 5 (highest tier first).`
+
+仕上げチェック（Decision-point delta の反映確認）
+- After 条件（「Step 5 の反証開始時、DELTA LEDGER の最高ティア差分から当てに行く」）が、SKILL.md の該当箇所に上記 2 行として実際に入っていることを再読で確認しました。
+
+2) benchmark/swebench/runs/iter-20/rationale.md を Objective.md の rationale.md フォーマットで作成
+- Objective.md の見出し構成（前イテレーションの分析 / 改善仮説 / 変更内容 / 期待効果）に従って作成しました。
+- 追加の停滞対策（必須）として、rationale.md に以下を 1 行自己引用で記載済みです:
+  - `Trigger line (final): "Use Tier to choose the first refutation target in Step 5 (highest tier first)."`
+1) SKILL.md の編集（proposal.md 記載の変更のみ）
+- compare テンプレートの EDGE CASES セクション直前に、proposal の差分プレビュー通り 2 行を追加しました（変更規模: +2 行）。
+  - 追加行（最終反映）:
+    - `DELTA LEDGER (1–3 rows, before edge cases): Δ[N]=[difference], Tier=CONTRACT/DATA/INTERNAL, Observable=[what would differ]`
+    - `Use Tier to choose the first refutation target in Step 5 (highest tier first).`
+
+仕上げチェック（Decision-point delta の反映確認）
+- After 条件（「Step 5 の反証開始時、DELTA LEDGER の最高ティア差分から当てに行く」）が、SKILL.md の該当箇所に上記 2 行として実際に入っていることを再読で確認しました。
+
+2) benchmark/swebench/runs/iter-20/rationale.md を Objective.md の rationale.md フォーマットで作成
+- Objective.md の見出し構成（前イテレーションの分析 / 改善仮説 / 変更内容 / 期待効果）に従って作成しました。
+- 追加の停滞対策（必須）として、rationale.md に以下を 1 行自己引用で記載済みです:
+  - `Trigger line (final): "Use Tier to choose the first refutation target in Step 5 (highest tier first)."`
+- また、この Trigger line が proposal の差分プレビュー中の Trigger line と同一文で一致することを 1 文で確認済みです。
+
+session_id: 20260418_154735_055d50

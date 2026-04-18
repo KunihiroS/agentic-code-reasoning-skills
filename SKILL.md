@@ -144,6 +144,8 @@ Before writing the formal conclusion, check each item below. If any answer is **
 - [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
 - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
 - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+      If a semantic difference was found, did I trace at least one relevant test through the differing
+      path before concluding it affects (or does not affect) the outcome? (cf. Guardrail #4)
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
@@ -162,7 +164,7 @@ Goal: determine whether two changes produce the same relevant behavior.
 
 ### Certificate template
 
-Complete every section; first sketch the minimal counterexample shape (reverse from D1), then use ANALYSIS to try to produce/refute it.
+Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
 
 ```
 DEFINITIONS:
@@ -190,8 +192,8 @@ Before tracing individual functions, compare the two changes structurally:
       comparison over exhaustive line-by-line tracing. Exhaustive tracing
       is infeasible for large patches and produces unreliable conclusions.
 
-If S2 establishes a structural gap on a relevant test path (a file/module/test-data
-that relevant tests import/exercise is missing), you may proceed directly to FORMAL CONCLUSION
+If S1 or S2 reveals a clear structural gap (missing file, missing module
+update, missing test data), you may proceed directly to FORMAL CONCLUSION
 with NOT EQUIVALENT without completing the full ANALYSIS section.
 
 PREMISES:
@@ -251,7 +253,8 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 ### Compare checklist
 - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
 - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
-- Identify changed files for both sides
+- Identify changed files for both sides; for each changed file, locate the
+  enclosing function or method boundary before tracing callers or callees
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
@@ -454,7 +457,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
 4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
-5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis — verify both upstream (where the value was set or the state was created) and downstream (where it is consumed or checked).
+5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
 
 ### General
