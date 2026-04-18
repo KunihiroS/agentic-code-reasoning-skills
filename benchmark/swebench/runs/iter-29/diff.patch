@@ -1,13 +1,13 @@
 diff --git a/SKILL.md b/SKILL.md
-index bece161..ee8dd5c 100644
+index d37b2120..206a2a85 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -190,8 +190,6 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
- COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-   Test [name] will [PASS/FAIL] with Change A because [trace — cite file:line]
-   Test [name] will [FAIL/PASS] with Change B because [trace — cite file:line]
--  By P[N]: this test checks [assertion/behavior stated in P3 or P4], and the
--           divergence above causes that assertion to produce a different result.
-   Therefore changes produce DIFFERENT test outcomes.
+@@ -255,7 +255,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- When a semantic difference is found, localize the earliest A↔B divergence to a specific test assertion (or show downstream neutralization) before concluding "no impact"
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
  
- NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+ ---

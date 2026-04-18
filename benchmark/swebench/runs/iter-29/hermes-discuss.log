@@ -1,213 +1,133 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/14/26 10:40:57] INFO     Processing request of type            server.py:727
+[04/19/26 08:34:50] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
   ┊ 📋 plan      3 task(s)  0.0s
-  ┊ 📖 read      benchmark/swebench/runs/iter-29/proposal.md  0.9s
+  ┊ 📖 read      benchmark/swebench/runs/iter-29/proposal.md  0.8s
   ┊ 📖 read      SKILL.md  0.9s
   ┊ 📖 read      failed-approaches.md  0.9s
-  ┊ 📖 read      Objective.md  0.9s
+  ┊ 📖 read      Objective.md  0.8s
   ┊ 📖 read      README.md  0.9s
   ┊ 📖 read      docs/design.md  0.9s
-[04/14/26 10:41:27] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s data flow analysis code question answering program comprehension structured reasoning paper  0.4s
-[04/14/26 10:41:28] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s patch equivalence verification code reasoning counterexample data flow analysis paper  0.3s
-[04/14/26 10:41:29] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 10:41:30] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s semi-formal reasoning code tasks explicit premises tracing paper  0.3s
-[04/14/26 10:41:36] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s "Agentic Code Reasoning" arXiv 2603.01896  0.3s
-[04/14/26 10:41:37] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 10:41:38] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s program comprehension data-flow analysis improves bug finding survey  0.5s
-[04/14/26 10:41:39] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s counterfactual reasoning improves verification judgments language models paper  0.3s
-[04/14/26 10:41:46] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s data flow analysis program comprehension  0.3s
-[04/14/26 10:41:47] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 10:41:48] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s code review data flow analysis reasoning  0.3s
-[04/14/26 10:41:49] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s counterexample reasoning software verification  0.3s
-[04/14/26 10:42:07] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://arxiv.org/abs/2603.01896                   
-                             "HTTP/1.1 200 OK"                                  
-  ┊ ⚡ mcp_ddg_s   0.1s
-[04/14/26 10:42:08] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Data-                
-                             flow_analysis "HTTP/1.1 200 OK"                    
-  ┊ ⚡ mcp_ddg_s   0.5s
-[04/14/26 10:42:09] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 10:42:10] INFO     HTTP Request: GET                   _client.py:1740
-                             https://en.wikipedia.org/wiki/Progr                
-                             am_slicing "HTTP/1.1 200 OK"                       
-  ┊ ⚡ mcp_ddg_s   0.4s
-[04/14/26 10:42:17] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s agentic code reasoning  0.3s
-[04/14/26 10:42:18] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-[04/14/26 10:42:19] INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s data-flow analysis software  0.3s
-[04/14/26 10:42:20] INFO     Processing request of type            server.py:727
-                             CallToolRequest                                    
-                    INFO     HTTP Request: POST                  _client.py:1740
-                             https://html.duckduckgo.com/html                   
-                             "HTTP/1.1 202 Accepted"                            
-  ┊ ⚡ mcp_ddg_s program slicing software  0.3s
   ┊ ✍️  write     benchmark/swebench/runs/iter-29/discussion.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-29/discussion.md → b/benchmark/swebench/runs/iter-29/discussion.md
-@@ -1,249 +1,235 @@
--# Iteration 29 — 監査コメント
-+# Iter-29 監査コメント
+@@ -1,235 +1,84 @@
+-# Iter-29 監査コメント
++# Iteration 29 Discussion
  
  ## 総評
--提案の問題意識自体は妥当です。iter-28 の `By P[N]` は実効差分として NOT_EQ 側の立証責任だけを上げており、これはロールバック候補です。
 -
--一方で、今回の提案は **実質的に2つの仮説を同時に混ぜています**。
--- 変更1: iter-28 の非対称制約の除去（回帰修正）
--- 変更2: 関数レベル A/B 並列記録の追加（新規仮説）
+-提案の着眼点自体は妥当です。`compare` モードの Claim 記述は現在「changed code から assertion outcome までの trace」を要求していますが、`explain` モードには存在する `DATA FLOW ANALYSIS` 的な視点（どの値・型・副作用がどう変わるか）の明示はありません。したがって、「差分は見つけたが、その差分が何を変えるのかを曖昧なまま PASS/FAIL を言い切る」失敗を減らしたい、という問題設定は研究の方向性と整合しています。
 -
--Objective.md の「1イテレーション1仮説」に照らすと、この時点で設計としてやや不適切です。さらに、変更2は failed-approaches.md の失敗パターンにかなり近く、承認しづらいです。
+-ただし、提案文のまま承認するには懸念が残ります。とくに `EQUIVALENT` 判定側では、「何が変わるか」を必須で書かせる文言が、実際には観測可能な差がないケースでも差異の捏造圧力になりえます。結果として、この変更は `NOT_EQUIVALENT` 側には効きやすい一方で、`EQUIVALENT` 側には片方向のバイアスを生む可能性があります。
+-
+-以下、観点ごとに述べます。
+-
+----
++提案の主眼は、compare における「意味差分を見つけた後の no-impact / impact 断定」を、test assertion に結びついた説明まで引き上げることにあります。これは新しい証拠種類を追加する提案というより、既存 compare bullet「差分を見つけたら少なくとも1本の relevant test を追う」を、より判別的な分岐条件へ置換する提案です。SKILL.md の compare 定義がもともと「relevant test outcomes の同一性」を基準にしていること、NOT_EQUIVALENT 側では既に diverging assertion を要求していることから、方向性自体は研究コアと整合しています（SKILL.md:169-178, 226-230, 258）。
+ 
+ ## 1. 既存研究との整合性
++- 検索なし（理由: 一般原則の範囲で自己完結）。
++- README.md と docs/design.md の要旨では、論文のコアは semi-formal reasoning による「premises → tracing → refutation → formal conclusion」の証拠駆動化であり、特に compare は per-test iteration と counterexample obligation が中核です（README.md:49-57, docs/design.md:11-18, 33-50）。
++- proposal は localize の DIVERGENCE ANALYSIS を compare に移植すると述べていますが、これは docs/design.md が明示する「原論文の他タスクの手法を翻訳して guardrail 化する」方針と矛盾しません（docs/design.md:66-68, Objective.md:168-171）。
+ 
+-### 結論
+-概ね整合的です。特に「明示的なトレース」「データ依存の可視化」「反例ベースの確認」は、原論文および古典的な静的解析の考え方と矛盾しません。
++## 2. Exploration Framework のカテゴリ選定
++- 判定: 適切（F 寄り、ただし C にもまたがる）。
++- 理由:
++  - proposal は compare の最終判定基準そのものを変えるのではなく、原論文由来の localize/explain 的な「divergence を具体位置に結ぶ書式」を compare に再利用しようとしているため、Objective.md の F「原論文の未活用アイデアを導入する」に合っています（Objective.md:168-171）。
++  - 同時に compare 内の decision point を差し替えるため C の側面もありますが、メカニズムの源泉は原論文の他モードなので、主カテゴリ F で妥当です。
+ 
+-### DuckDuckGo MCP で確認した URL と要点
++## 3. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
++- EQUIVALENT への作用:
++  - 変更前は、意味差分を見つけても「relevant test を1本追った」だけで no-impact を言いやすく、たまたま観た経路で差分が吸収された場合に偽 EQUIV が残りえます。
++  - 変更後は、assertion まで接続した downstream neutralization を説明できない限り no-impact を断定しづらくなるので、偽 EQUIV を減らす方向に働きます。
++- NOT_EQUIVALENT への作用:
++  - 変更前は、意味差分そのものを outcome 差と短絡し、assertion で本当に観測されるかの詰めが甘いまま偽 NOT_EQUIV に倒れる余地があります。
++  - 変更後は、impact 側も assertion-anchored divergence を要求するため、差分の過大評価を抑えられます。
++- 実効差分:
++  - これは片方向最適化ではなく、「差分を見つけた瞬間の断定条件」を両方向で厳密化する変更です。
++  - ただし wording が assertion 側に寄りすぎると、構造差や import 差を structural triage で先に切る既存ルートとの役割分担が曖昧になるため、compare bullet の置換対象が「semantic difference 後の no-impact 判定」に限定されることを実装時に明記したほうが安全です。
+ 
+-1. https://arxiv.org/abs/2603.01896
+-   - `Agentic Code Reasoning` の要旨では、semi-formal reasoning の本質を「explicit premises」「execution path tracing」「formal conclusions」に置いています。
+-   - これは README の要約（`README.md:49-57`）および design 文書の要約（`docs/design.md:33-40`）とも一致しています。
+-   - 提案は compare に「より具体的な意味論の記述」を足すだけで、前提・トレース・結論というコア構造を壊していません。
+-
+-2. https://en.wikipedia.org/wiki/Data-flow_analysis
+-   - データフロー解析は「program 中の各点で変数にどの値が到達しうるか」を追う技法であり、定義・変更・使用の追跡が中心です。
+-   - 提案が compare の Claim に「value/type/side-effect の具体的変化」を要求する発想は、この一般的な静的解析の考え方と整合しています。
+-   - 特に「差分の存在」ではなく「何が伝播するか」を問う点は妥当です。
+-
+-3. https://en.wikipedia.org/wiki/Program_slicing
+-   - プログラムスライシングは、ある観測点の値に影響する文だけを依存関係から追う発想です。
+-   - compare で assertion outcome に届く差分だけを見たい、という問題設定は slicing 的な観点と相性がよく、提案の狙いは汎用原理として理解できます。
+-
+-### 補足
+-DuckDuckGo の search API 自体は今回のクエリで結果が返らず、同じ MCP の fetch_content で上記の正規 URL を確認しました。少なくとも研究方向の妥当性確認としては十分です。
 -
 ----
 -
--## 1. 関連研究・実務知見に基づく評価（DuckDuckGo MCP 検索）
+-## 2. Exploration Framework のカテゴリ選定は適切か
 -
--### 1-1. Semi-formal reasoning 自体の有効性
--- URL: https://arxiv.org/html/2603.01896v1
--- 要点:
--  - Meta の *Agentic Code Reasoning* は、明示的前提・手続き間トレース・形式的結論を要求する **semi-formal reasoning** により patch equivalence 精度を改善したと報告している。
--  - 重要なのは「証拠を伴う tracing を必須化すること」であり、単なる出力欄の追加ではなく、**unsupported claim を防ぐ certificate 構造**が効くという主張。
--- 本提案への含意:
--  - 変更1（`By P[N]` 削除）は、semi-formal reasoning のコアを壊さず、むしろ非対称な余計な制約を外すので整合的。
--  - 変更2は「function-level の比較を明示する」点では論文の方向性に近いが、**新しい記録欄を増やすだけで tracing 行動が本当に増えるかは別問題**。
+-### 結論
+-カテゴリ F の選定は妥当です。ただし、見た目としては E（表現・フォーマット改善）にも見えるため、その点は区別して整理した方がよいです。
 -
--### 1-2. 関数単位だけでは不十分で、文脈選択＋構造化推論が必要
--- URL: https://arxiv.org/html/2602.06751v1
--- 要点:
--  - *Beyond Function-Level Analysis: Context-Aware Reasoning for Inter-Procedural Vulnerability Detection* は、関数単体では不十分で、caller/callee/global context が必要だと述べる。
--  - ただし、**raw context を雑に追加しても性能は上がらず**、選別された文脈と structured reasoning の組み合わせで初めて改善したとしている。
--- 本提案への含意:
--  - 「テスト単位ではなく関数単位で比較する」という発想自体は研究的に自然。
--  - しかし、今回の変更2は文脈選択や検証行動の改善ではなく、**trace table に A/B 並列記録を要求するだけ**で、論文が有効だとした “processed context + structured reasoning” まで到達していない。
+-### 理由
+-- 提案の核は単なる wording tweak ではなく、`explain` モードにある `DATA FLOW ANALYSIS` の発想を `compare` に移植することです（`proposal.md:12-29`）。
+-- 実際、`SKILL.md` では `explain` にだけ `DATA FLOW ANALYSIS` があり（`SKILL.md:347-352`）、`compare` の Claim には存在しません（`SKILL.md:205-213`）。
+-- design 文書も、Code Question Answering 由来のテンプレート特徴として「Function trace table + data flow tracking」を明示しています（`docs/design.md:15-18`）。
 -
--### 1-3. 手続き間比較は精度とコストのトレードオフが強い
--- URL: https://www.cs.cornell.edu/courses/cs6120/2020fa/lesson/8/
--- 要点:
--  - Interprocedural / context-sensitive analysis は精度を上げ得るが、**コストが急増する**。
--  - 文脈感度を上げるほど探索量が増え、実務上は強いトレードオフがある。
--- 本提案への含意:
--  - 変更2は各 changed function について A/B 両側の behavior 記録を義務化するため、ターン消費・注意資源消費を増やす方向。
--  - これは BL-8, BL-10, BL-12, BL-13 で既に観測された「オーバーヘッド増 → 結論到達力低下」の再発リスクが高い。
+-したがって、「論文の別モードの未活用アイデアを compare に応用する」という意味で F に当たります。
 -
--### 1-4. LLM は prompt 上のアンカーに引っ張られやすい
--- URL: https://link.springer.com/article/10.1007/s42001-025-00435-2
--- 要点:
--  - *Anchoring bias in large language models* は、LLM の判断が初期情報や与えられた枠組みに強く影響されると報告する。
--  - 単純な CoT や reflection では十分な緩和にならず、偏った観点を最初に与えると判断が引きずられやすい。
--- 本提案への含意:
--  - 変更2は「implementation differs between A and B」という **差異そのものを先に強調**するため、
--    EQUIV ケースでも「差があるのだから結果も違うはず」というアンカリングを強める危険がある。
--  - 提案者の意図は逆だが、実際には **差異の可視化が NOT_EQ 方向のバイアス**を強める可能性がある。
--
--### 1-5. Prompt template の細かな差分でも性能は大きく変わる
--- URL: https://arxiv.org/html/2504.02052v2
--- 要点:
--  - *From Prompts to Templates* は、prompt template の小さな構造差でも instruction-following 性能がかなり変わると指摘する。
--- 本提案への含意:
--  - 「チェックリスト末尾に 2 行だけ」でも軽微とは言い切れない。
--  - 特に reasoning テンプレートでは、追加された 1 行が新しい作業目標として目的化しやすい。
--
--### 学術的・実務的結論
--- **変更1（`By P[N]` 削除）**: 妥当。iter-28 の非対称な立証責任増加を取り除く回帰修正として合理的。
--- **変更2（A/B 並列記録）**: 発想の方向は研究的に理解できるが、現在の形では「検証行動の改善」より「記録欄・注視先の追加」に見え、実務的には回帰リスクが高い。
+-### 但し書き
+-- 実装の形は 2 行の wording 変更なので、表面的にはカテゴリ E 的です。
+-- しかし、改善メカニズムの出所が原論文 Appendix D にある以上、主カテゴリを F と見る判断は自然です。
 -
 ----
 -
--## 2. Exploration Framework のカテゴリ選択は適切か
+-## 3. EQUIVALENT / NOT_EQUIVALENT の両方にどう作用するか
 -
--### 判定
--**部分的に不適切**です。
-+
-+提案の着眼点自体は妥当です。`compare` モードの Claim 記述は現在「changed code から assertion outcome までの trace」を要求していますが、`explain` モードには存在する `DATA FLOW ANALYSIS` 的な視点（どの値・型・副作用がどう変わるか）の明示はありません。したがって、「差分は見つけたが、その差分が何を変えるのかを曖昧なまま PASS/FAIL を言い切る」失敗を減らしたい、という問題設定は研究の方向性と整合しています。
-+
-+ただし、提案文のまま承認するには懸念が残ります。とくに `EQUIVALENT` 判定側では、「何が変わるか」を必須で書かせる文言が、実際には観測可能な差がないケースでも差異の捏造圧力になりえます。結果として、この変更は `NOT_EQUIVALENT` 側には効きやすい一方で、`EQUIVALENT` 側には片方向のバイアスを生む可能性があります。
-+
-+以下、観点ごとに述べます。
-+
-… omitted 400 diff line(s) across 1 additional file(s)/section(s)
+… omitted 227 diff line(s) across 1 additional file(s)/section(s)
   ┊ 📋 plan      update 3 task(s)  0.0s
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-監査結果を benchmark/swebench/runs/iter-29/discussion.md に書き出しました。
+discussion を作成しました。
+出力先:
+benchmark/swebench/runs/iter-29/discussion.md
 
-要点:
-- 研究整合性: 概ねあり
-- カテゴリ選定: Fで妥当
-- 主な懸念: 現行文言だと NOT_EQUIVALENT 側に主に効き、EQUIVALENT 側では差分の捏造圧力になりうる
-- failed-approaches との関係: 完全再演ではないが、原則1に軽度に接近
-- 汎化性: ベンチ固有要素の混入は見当たらないが、value/type/side-effect という固定表現はやや狭い
+要旨:
+- Web 検索は不要として「検索なし（理由あり）」を明記
+- Exploration Framework は F を主カテゴリとして妥当と判断
+- EQUIVALENT / NOT_EQUIVALENT の両方向に効くことを実効差分として分析
+- failed-approaches.md との照合では、
+  - 新規必須ゲート増ではない
+  - 証拠種類の事前固定でもない
+  - ただし “earliest divergence” は探索経路の半固定に弱く触れうる、と指摘
+- 汎化性違反（固有 ID / repo 名 / テスト名 / 実コード断片）はなし
+- 必須の停滞診断、Decision-point delta、Discriminative probe、支払い総量不変チェックをすべて記載
+- 最終判定は「承認: YES」
 
-結論:
-承認: NO
-監査結果を benchmark/swebench/runs/iter-29/discussion.md に書き出しました。
+discussion を作成しました。
+出力先:
+benchmark/swebench/runs/iter-29/discussion.md
 
-要点:
-- 研究整合性: 概ねあり
-- カテゴリ選定: Fで妥当
-- 主な懸念: 現行文言だと NOT_EQUIVALENT 側に主に効き、EQUIVALENT 側では差分の捏造圧力になりうる
-- failed-approaches との関係: 完全再演ではないが、原則1に軽度に接近
-- 汎化性: ベンチ固有要素の混入は見当たらないが、value/type/side-effect という固定表現はやや狭い
+要旨:
+- Web 検索は不要として「検索なし（理由あり）」を明記
+- Exploration Framework は F を主カテゴリとして妥当と判断
+- EQUIVALENT / NOT_EQUIVALENT の両方向に効くことを実効差分として分析
+- failed-approaches.md との照合では、
+  - 新規必須ゲート増ではない
+  - 証拠種類の事前固定でもない
+  - ただし “earliest divergence” は探索経路の半固定に弱く触れうる、と指摘
+- 汎化性違反（固有 ID / repo 名 / テスト名 / 実コード断片）はなし
+- 必須の停滞診断、Decision-point delta、Discriminative probe、支払い総量不変チェックをすべて記載
+- 最終判定は「承認: YES」
 
-結論:
-承認: NO
-理由: 片方向バイアスの懸念があり、ゼロ変化・吸収済み変化も正しく表現できる wording に直してから再提案すべき、と判断しました。
+必要なら、今の discussion の文面をさらに厳しめ/柔らかめに調整できます。
 
-session_id: 20260414_104057_fc5b55
+session_id: 20260419_083450_05b65d
