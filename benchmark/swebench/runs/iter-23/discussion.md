@@ -1,188 +1,101 @@
-# Iteration 23 — 監査コメント
+# Iteration 23 Discussion
 
 ## 総評
-提案の発想自体は理解できる。`explain` モードの `SEMANTIC PROPERTIES` 的視点を `compare` に輸入し、`subtle difference dismissal` を減らしたいという筋は、原論文の設計思想とは整合する。
+提案の狙い自体は理解できる。差分を見つけたときに「テストを1本ざっくり追う」より、「assert に届く値への寄与」を見るほうが compare の判定密度を上げたい、という発想は研究コア（明示的トレース、反証、証拠に基づく結論）と整合的で、偽 EQUIV / 偽 NOT_EQUIV の両側を意識している点もよい。
 
-ただし、今回の文言は `compare` の判定基準である「既存テストに対する観測可能な差分」よりも、「変更が触る意味的差分そのもの」に注意を寄せやすい。結果として、NOT_EQUIVALENT 側の差分検出には少し効く可能性がある一方、EQUIVALENT 側では「意味的には違うが既存テストでは同値」というケースを過剰に NOT_EQUIVALENT 寄りに読む回帰リスクがある。
-
-結論として、現行案のままでは承認しない。
-
----
+ただし今回は、failed-approaches.md が明示的に避けるべきだとしている「既存の汎用ガードレールを、特定の追跡方向で具体化しすぎる置換」にかなり近い。しかも補助ヒューリスティックの追加ではなく、Guardrail #4 の中核文言を置換しようとしているため、compare 改善より探索経路の半固定化が先に立つ懸念がある。
 
 ## 1. 既存研究との整合性
+検索なし（理由: 一般原則の範囲で自己完結）。
 
-### 参照URLと要点
-1. https://arxiv.org/abs/2603.01896
-   - 要点: Agentic Code Reasoning 論文の中核は、明示的 premises、execution-path tracing、formal conclusion を要求する semi-formal reasoning にある。
-   - 監査コメント: 提案は「意味的性質を明文化する」方向なので、structured reasoning を強めるという意味では整合的。
+README.md と docs/design.md の範囲で十分に根拠づけられている。特に docs/design.md の「Code Question Answering では data flow tracking を使う」は事実であり、explain 由来の観点を compare に移植したい、というカテゴリ F の発想自体は妥当。
 
-2. https://en.wikipedia.org/wiki/Loop_invariant
-   - 要点: 不変条件は、表面的な入力境界ではなく、ループやアルゴリズムのより深い正しさ・状態保証を捉えるための標準的な考え方である。
-   - 監査コメント: `semantic invariants` を考慮対象に入れること自体は、一般的なプログラム検証の発想として妥当。
+ただし、論文由来であることと、compare の guardrail として置換してよいことは別問題。研究整合性はあるが、導入位置と強さには再検討が必要。
 
-3. https://en.wikipedia.org/wiki/Hoare_logic
-   - 要点: 正しさ推論は precondition / postcondition / assertion で状態変化を捉える。入力だけでなく状態保証を追うのが本筋。
-   - 監査コメント: `state constraints` を見るという方向性は Hoare 的な正しさ推論と整合する。
+## 2. Exploration Framework のカテゴリ選定
+カテゴリ F の選定は概ね適切。理由は、proposal が「原論文の未活用アイデアを compare に移植する」と明示しており、Objective.md の F に合っているため。
 
-4. https://en.wikipedia.org/wiki/Equivalence_checking
-   - 要点: 等価性検証では、最終的には観測可能な出力列や振る舞いの一致が基準であり、内部差分そのものではない。
-   - 監査コメント: ここが今回案の弱点。`compare` は D1 上「テスト結果が同じか」が基準なので、意味的差分の列挙は必ず観測可能差分へ再接続される必要がある。
+一方で、実際に変えているものは compare 時の「どう探すか」という探索方法でもあるので、副次的には B にもまたがる。とはいえ主分類を F としたこと自体は不自然ではない。
 
-5. https://en.wikipedia.org/wiki/Counterexample-guided_abstraction_refinement
-   - 要点: 重要なのは、見つけた差分候補が真の counterexample か、spurious かを切り分けること。
-   - 監査コメント: 今回案は差分候補の発見には寄与しうるが、「その差分が実テストで反例になるか」を強制する文言ではない。研究的にはここまで踏み込んで初めて compare 強化として安定する。
+## 3. compare 影響の実効性チェック
+- Decision-point delta:
+  - Before: IF semantic difference is found THEN trace at least one relevant test through the differing code path before concluding no impact.
+  - After: IF semantic difference is found THEN trace the assert-dependent data-flow slice on both sides before judging impact.
+  - IF/THEN 形式で 2 行になっているか: YES
+  - 条件も行動も同じで理由だけ言い換えか: NO
+  - Trigger line（発火する文言の自己引用）が差分プレビューにあるか: YES
+    - 該当: "identify the assert-dependent value(s) and trace the minimal data flow slice (difference → asserted value) on both sides"
 
-### まとめ
-研究整合性は「部分的に YES」。
-- YES: 意味的性質・不変条件を追う発想自体は、プログラム検証・コード推論の主流原則と整合。
-- ただし: 等価性判定では、意味的差分そのものではなく「観測可能な反例」に結びつける必要がある。今回の文言はそこが弱い。
+- Failure-mode target:
+  - 狙いは両方。 
+  - 偽 NOT_EQUIV 側: 差分を見ただけで重要とみなしすぎる誤判定を、assert への未到達確認で減らしたい。
+  - 偽 EQUIV 側: 「1本のテストを追ったが、どの値が assert を左右するかが曖昧なまま見落とす」誤判定を、assert 依存値の明示で減らしたい。
 
----
+- Non-goal:
+  - 早期 NOT_EQUIV 条件や STRUCTURAL TRIAGE には触れない、という境界は明確。
+  - ただし「証拠種類の事前固定を避ける」「探索経路の半固定を避ける」という失敗原則への境界は、現状の文面では十分に守れていない。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
+- Discriminative probe:
+  - 抽象ケース: 2 つの変更が同じテスト経路を通るが、一方は assert に使われない中間状態だけを変え、もう一方は assert の入力値そのものを変える。
+  - 変更前は「関連テストを1本追った」だけで両者を同程度に扱い、偽 NOT_EQUIV と偽 EQUIV の両方が起こりうる。
+  - 変更後は assert 依存値まで局所化できれば区別しやすくなる。ただし、これを guardrail の既定方向として固定すると、assert 値に還元しづらい差分（例: 例外条件、状態変化、順序依存）を逆に取りこぼすおそれがある。
 
-カテゴリ F の選択は概ね妥当。
+- 支払い（必須ゲート総量不変）:
+  - YES。proposal は 1 行置換で純増なしと明示しており、A/B の対応付けもある。
 
-理由:
-- `explain` モードの `SEMANTIC PROPERTIES` を `compare` に持ち込む、という主張は Objective の F「他モードの手法を compare に応用する」に一致する。
-- `subtle difference dismissal` という論文のエラー分析を根拠にしており、F「エラー分析セクションの知見を反映する」にも一致する。
+## 4. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+片方向最適化ではなく、理屈上は両方向に作用する提案になっている点は評価できる。
 
-ただし補足:
-- 実装としては新しい推論機構の導入というより、既存コメント行の精緻化であり、実質は F と E の中間に近い。
-- つまりカテゴリ誤りではないが、「F だから強い改善になる」とまでは言えない。変更の強さはかなり限定的。
+- EQUIVALENT 判定への作用:
+  - 差分があっても assert へ届かないなら「見かけの差」を落としやすくなるので、偽 NOT_EQUIV を減らす方向に働く。
 
-結論:
-- カテゴリ F 判定: 妥当
-- ただし改善の実効性はカテゴリ選定とは別問題で、そこには懸念が残る
+- NOT_EQUIVALENT 判定への作用:
+  - 差分が assert 入力に届くかを両側で明示するため、「なんとなく同じ経路を通る」だけで EQUIV としてしまう偽 EQUIV を減らす方向に働く。
 
----
+- ただし実効的差分としては、どちらにも効く一方で、探索を assert-data-flow に寄せすぎると「assert 値以外の観測差」を拾う柔軟性を失う。よって、両方向に効きうるが、導入の仕方を誤ると両方向に副作用もありうる。
 
-## 3. EQUIVALENT 判定 / NOT_EQUIVALENT 判定の両方への作用
+## 5. failed-approaches.md との照合
+ここが最大の懸念点。
 
-### 提案が効く方向
-この変更が効くとすれば主に以下。
-- 変更間に微妙な意味的差分がある
-- その差分が既存テストの assertion や control-flow に実際につながっている
-- しかし従来の agent は「境界値ではないので無視してよい」と早合点していた
+- 「探索経路の半固定」: YES
+  - 原因文言: "identify the assert-dependent value(s) and trace the minimal data flow slice (difference → asserted value) on both sides"
+  - 理由: 差分発見後の次の探索を、実質的に「assert 依存の最小データフロー」に寄せており、failed-approaches.md 22-25 行の「特定の追跡方向や観点で具体化しすぎない」に近い。
 
-この場合、`semantic invariants or state constraints` を見るよう促すことで、真の NOT_EQUIVALENT を拾いやすくなる可能性はある。
+- 「必須ゲート増」: NO
+  - 1 行置換で純増なし。
 
-### 提案が悪化させうる方向
-一方で `compare` の定義はあくまで「既存テストの pass/fail outcome が同じか」である。ここで意味的差分の列挙を前面に出すと、以下の回帰がありうる。
-- 実装の意味論的説明は違う
-- だが既存テストがその差分を観測していない
-- 本来は EQUIVALENT modulo tests
-- しかし agent が差分の存在自体を重く見て NOT_EQUIVALENT に寄る
+- 「証拠種類の事前固定」: YES
+  - 原因文言: 同上。
+  - 理由: proposal は「同じテスト/assert 根拠のまま」と説明しているが、実際には compare における優先証拠を data-flow-to-assert にかなり固定している。failed-approaches.md 8-12 行, 22-25 行の警告に抵触気味。
 
-特に今回の文言には `that each change modifies` が入っており、test-centric というより change-centric に読める。これは compare モードの基準と少しズレる。
+結論として、これは failed-approaches.md の本質的な再演にかなり近い。特に問題なのは「弱い補助」ではなく、既存の汎用 guardrail の置換として提案している点。
 
-### 実効的差分の評価
-変更前:
-- EDGE CASES は主に「実テストが踏む境界条件」を確認する欄として読める
+## 6. 汎化性チェック
+- 具体的な数値 ID, リポジトリ名, テスト名, コード断片: 目立つ違反なし。
+- 提案文はベンチマーク固有のリポジトリやテストを直接持ち込んでいない。
+- ドメイン依存性: 明示的な特定言語・特定フレームワーク前提は薄い。
 
-変更後:
-- 実テストが踏む境界条件に加え、「変更が影響する semantic invariants / state constraints」も列挙対象になる
+ただし暗黙の前提として、「比較したい差分の重要性は assert に流れ込む値として整理しやすい」というモデルを置いている。この前提は多くのテストで有効だが、例外発生、破壊的更新、順序、外部副作用、非値的な観測差まで一般化できるとは限らない。したがって R1 的には 2〜3 の中間、少なくとも無条件に 3 とまでは言いにくい。
 
-この差分は中立ではない。差分検出方向に圧をかける。
+## 7. 推論品質の改善期待
+改善期待はある。特に、差分を見つけた後の「どこまで追えば impact/no-impact を言えるか」を具体化するので、compare の局所的な証拠密度は上がりうる。
 
-### 片方向にしか作用しないか
-かなり片方向に近い。
-- 正方向: subtle difference の発見、すなわち NOT_EQUIVALENT の根拠補強
-- 逆方向: EQUIVALENT を積極的に守る仕組みは増えていない
+しかし現案のままでは、改善の本体が「説明の精密化」だけで終わらず、本当に compare の意思決定を変える点はある一方、その変え方が狭い方向への探索誘導になっている。つまり、推論品質を上げる可能性はあるが、同時に探索の自由度を削って回帰を招くリスクが無視できない。
 
-つまり、提案者が書いている「EQUIVALENT 誤判定の減少」は論理的に弱い。むしろ自然な一次効果は「誤って EQUIVALENT と言うケースを減らす」ことであり、これは benchmark 上は NOT_EQUIVALENT 側に効く方向である。EQUIVALENT 側には、下手をすると逆風になりうる。
+## 停滞診断
+懸念は1点だけ。今回の proposal は、監査 rubic 上は「研究由来」「1行置換」「両方向を意識」と説明しやすいが、compare の実運用では差分発見後の探索を assert-data-flow に寄せるだけで、他の有力な観測差の探索余地を狭めるおそれがある。つまり「監査に刺さる説明強化」に寄りすぎ、compare の改善が探索の幅を犠牲にする形で実装される懸念がある。
 
-結論:
-- 両方向に均等には作用しない
-- 実質的には NOT_EQUIVALENT 側へ寄る変更
-- EQUIVALENT 側の改善主張は現状の文言だけでは弱い
+## 修正指示
+1. 置換をやめて、Guardrail #4 の汎用性は残すこと。
+   - 「trace at least one relevant test...」を消さず、data-flow-to-assert は補助ヒューリスティックに下げるべき。
+   - failed-approaches.md の 22-25 行に照らすと、既存ガードレールの方向固定な置換が問題。
 
----
+2. assert-data-flow を必須方向にしない境界を 1 行で明示すること。
+   - 例: 「when the test outcome is determined by asserted values」など、適用条件を限定し、例外・副作用・状態変化・順序差には他の観測経路も許す。
+   - 追加するなら、別の既存文言を optional 化/統合して“支払い”を明示すること。
 
-## 4. failed-approaches.md の汎用原則との照合
-
-### 原則1: 探索で探す証拠の種類を事前固定しすぎない
-ここに軽い抵触懸念がある。
-
-今回案は「境界条件に加えて semantic invariants / state constraints を見よ」としており、証拠の種類を一段具体化している。提案者の言う通り特定の関数名やパターンを指定しているわけではないが、それでも compare の探索を特定の証拠型へ寄せる作用はある。
-
-完全に同じ失敗の再演ではないが、方向としては近い。
-
-### 原則2: 探索の自由度を削りすぎない
-ここも軽い懸念あり。
-
-文言は「広げている」ように見えるが、実際には compare の思考フレームを「意味的不変条件を見るべき」という方向へ誘導する。これにより、本来見るべき API contract、例外の有無、 import path、 data-shape 差分などを agent がすべて invariants 語彙に回収してしまうおそれがある。
-
-### 原則3: 局所的仮説更新を前提修正義務に直結させすぎない
-これは抵触しない。今回の変更は Step 3 の premise/hypothesis 更新規律には触れていない。
-
-### 原則4: 結論直前の自己監査に新しい必須判定ゲートを増やしすぎない
-これは抵触しない。Step 5.5 には手を入れていない。
-
-### まとめ
-- 原則3, 4: 問題なし
-- 原則1, 2: 弱いが無視できない緊張あり
-
-したがって「表現を変えただけの過去失敗の再演」とまでは言わないが、過去失敗原則から完全に安全とは言えない。
-
----
-
-## 5. 汎化性チェック
-
-### 明示的ルール違反の有無
-提案文中を確認した限り、以下のような強い違反は見当たらない。
-- 特定のベンチマークケース ID
-- 特定リポジトリ名
-- 特定テスト名
-- 対象リポジトリ由来のコード断片
-
-含まれているのは主に以下。
-- SKILL.md 自身の文言引用
-- 論文の Appendix / section 参照
-- 一般概念名 (`semantic invariants`, `state constraints`, `control flow` など)
-
-この範囲なら、過剰適合の直接証拠とは言いにくい。
-
-### 暗黙のドメイン想定
-ただし、文言にはやや偏りがある。
-- `state constraints` は命令的・状態遷移的コードには自然だが、純関数型、宣言的変換、データクエリ、型レベル制約中心のコードにはやや不自然。
-- `that each change modifies` という表現は、変更差分が「何かの状態や不変条件を変える」と読めるケースに寄っており、リファクタ・名前変更・表現差し替え・ error-message 差分などには適用像が弱い。
-
-### 汎化性の結論
-- 露骨な overfitting 証拠: なし
-- ただし語彙選択はやや stateful / imperative 偏重
-- より汎化するなら `semantic obligations, observable guarantees, or state constraints` のように広げた方がよい
-
----
-
-## 6. 全体の推論品質がどう向上すると期待できるか
-
-限定的な改善は期待できる。
-
-期待できる点:
-- agent が「境界値だけ見て終わる」ことを防ぎ、より深い意味差分を言語化しやすくなる
-- テストが暗黙に依存している順序保証、例外保証、状態保存則のような性質を見落としにくくなる
-
-期待しにくい点:
-- compare の最重要論点である「その差分が既存テストで観測されるか」を直接強化していない
-- したがって、真の反例探索よりも「差分候補の発見」に寄った改善になっている
-- その結果、EQUIVALENT 判定の安定化よりは、差分過検出の方へ振れやすい
-
-総合すると、推論品質の改善幅は小〜中程度で、しかも改善方向が偏っている。
-
----
+3. Decision-point delta は維持しつつ、「assert へ局所化できない場合の fallback」を同じ差分プレビュー内で自己引用すること。
+   - 現状は発火条件はあるが、非適合ケースの逃げ道がないため compare の弾力を失いやすい。
 
 ## 最終判断
-不承認。
-
-理由の要約:
-1. 研究との整合性はあるが、equivalence checking の核心である「観測可能な反例」への接続が弱い。
-2. 実効的には NOT_EQUIVALENT 側へ片寄る変更で、EQUIVALENT 側の改善根拠が弱い。
-3. failed-approaches の「証拠型の事前固定」「探索自由度の狭窄」に軽く触れており、安全圏と言い切れない。
-4. 現状の benchmark 文脈では、EQUIVALENT 側の誤判定をむしろ悪化させる回帰リスクがある。
-
-もし修正版を出すなら、`semantic invariants` 自体を EDGE CASES に追加するより、
-「意味的差分を見つけたら、必ずその差分に依存する既存テスト assertion / call path を 1 本具体的に追跡せよ」
-のように、差分発見ではなく test-observable counterexample 接続を強化する方が安全。
-
-承認: NO（理由: 変更の一次効果が差分検出方向に片寄っており、EQUIVALENT と NOT_EQUIVALENT の両側をバランスよく改善する設計になっていないため）
+承認: NO（理由: failed-approaches.md が禁じる「既存の汎用ガードレールを、特定の追跡方向・証拠型へ置換して探索経路を半固定化する」再演に近い）
