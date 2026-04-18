@@ -1,15 +1,21 @@
 diff --git a/SKILL.md b/SKILL.md
-index 9d1e9fb..746f348 100644
+index f48e1c6c..572dd585 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -84,7 +84,9 @@ OBSERVATIONS from [filename]:
-   O[N]: [another finding with file:line]
+@@ -60,11 +60,13 @@ Write a short task statement and list constraints (e.g., no repository execution
+ Before concluding anything, write numbered premises grounded in known facts.
  
- HYPOTHESIS UPDATE:
--  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]
-+  H[M]: CONFIRMED / REFUTED / REFINED — [explanation];
-+        if REFUTED or REFINED, revisit the premises P[N] that supported H[M]
-+        and correct any that no longer hold before proceeding.
+ ```
+-P1: [fact about the task, inputs, or expected behavior]
+-P2: [fact about relevant files, tests, or specifications]
+-P3: ...
++P1 [OBS]: [observed fact about the task, inputs, or expected behavior]
++P2 [OBS]: [observed fact about relevant files, tests, or specifications]
++P3 [ASM|DEF]: ...
+ ```
  
- UNRESOLVED:
-   - [remaining questions]
++Tag premises as OBS (observed), ASM (assumed), or DEF (definition) so downstream claims can surface their weakest dependency; if a claim depends on ASM, treat that ASM as the highest-priority refutation target.
++
+ Do not treat guesses as premises. Every later claim must reference a premise by number.
+ 
+ ### Step 3: Hypothesis-driven exploration

@@ -1,132 +1,48 @@
-# Iteration 21 — Proposal
+1) 過去提案との差異: 構造差→早期 NOT_EQUIV の条件調整や反証優先順位(=pivot/最高tier先)の強化ではなく、「前提の出自(観測/仮定/定義)を可視化して思い込みを検査する」方向に限定する。
+2) Target: 両方（偽 EQUIV / 偽 NOT_EQUIV の同時低減）
+3) Mechanism (抽象): 番号付き前提に provenance タグを付け、後続の主張が「どの仮定に依存しているか」を自動的に露出させて反証対象選びを改善する。
+4) Non-goal: STRUCTURAL TRIAGE や早期 NOT_EQUIV 判定条件の“観測境界への狭め”は一切いじらない。
 
-## Exploration Framework カテゴリ: D（強制指定）
+本文
 
-カテゴリ D: メタ認知・自己チェックを強化する
+カテゴリ D（メタ認知・自己チェック）内での具体メカニズム選択理由
+- 失敗しやすいのは「推論の中に紛れ込んだ仮定が、番号付き前提の見かけで事実扱いされる」こと。これが EQUIV/NOT_EQUIV のどちら側でも誤判定を誘発する。
+- “何の証拠を探すべきか”をテンプレで固定せずに、思い込み(ASSUMED)を明示して弱い環を特定できる。探索経路の半固定にもなりにくい（次の一手はタグ付き前提への依存関係で決まるが、証拠種別は固定しない）。
 
-### カテゴリ内でのメカニズム選択理由
+改善仮説（1つ）
+- 前提を OBS/ASM/DEF にタグ付けしておくと、後段の主張(C)が「ASM を踏み台にしている」ことが早期に見えるため、結論が片方向に寄る前に“反転しうる仮定”へ反証努力を配分でき、偽 EQUIV と偽 NOT_EQUIV を同時に減らせる。
 
-カテゴリ D には3つのメカニズムがある。
+SKILL.md 該当箇所（短い引用）
+- Step 2: Numbered premises
+  - "Before concluding anything, write numbered premises grounded in known facts." 
+  - "Do not treat guesses as premises. Every later claim must reference a premise by number."
 
-  (1) 推論の途中で自分の思い込みを疑うチェックポイントを追加
-  (2) 結論に至った推論チェーンの弱い環を特定させる
-  (3) 確信度と根拠の対応を明示させる
+どう変えるか
+- 前提テンプレートを provenance 付きに圧縮して、(a) どれが観測で、(b) どれが仮定/定義か、を常に見える状態にする。
+- 追加の必須ゲートは増やさず、Step 2 内の書式だけでメタ認知(思い込み検査)を“摩擦ゼロで常時ON”にする。
 
-(2) と (3) は Step 5.5 の自己監査フェーズに近く、
-failed-approaches.md の「結論直前の自己監査に新しい必須のメタ判断を
-増やしすぎない」という禁則に抵触するリスクが高い。
+Decision-point delta（IF/THEN 2行）
+Before: IF ある主張Cが必要 THEN 番号付き前提Pを参照して正当化する because 「番号付き=根拠済み」という形式的保証
+After:  IF 主張Cが ASM タグの前提に依存する THEN その ASM を最優先の反証対象として扱う（観測へ置換/弱い環として明示） because 「反転しうる仮定」を可視化した依存関係
 
-今回は (1) を採用する。理由: 思い込みの検査は「結論前の追加判定ゲート」
-ではなく「探索中のリアルタイム更新」として埋め込める。
-具体的には、Step 3 の HYPOTHESIS UPDATE ブロックにすでに
-「CONFIRMED / REFUTED / REFINED」という更新タグがある。
-この既存行に「前提が崩れた場合」を明示する一語を加えることで、
-仮説の更新が「前提 P[N] の見直し」にまで波及するかを
-探索中に自然に自問させる効果が得られる。これは既存行の精緻化であり、
-新規ステップ・新規フィールドの追加ではない。
-
-
-## 改善仮説
-
-「仮説が REFUTED または REFINED になった時点で、
-その根拠となった前提（P[N]）自体を見直す自問を促せば、
-前提の誤りに由来する誤判定を探索中に検出できる。
-前提の誤りを後段まで持ち越すことが、全体推論品質の低下の一因となっている。」
-
-
-## SKILL.md への変更内容
-
-### 変更箇所
-
-Step 3 の HYPOTHESIS UPDATE ブロック（SKILL.md 86〜87 行付近）
-
-### 変更前（既存行）
-
+変更差分プレビュー（Before/After, 3–10行）
+Before:
 ```
-HYPOTHESIS UPDATE:
-  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]
+P1: [fact about the task, inputs, or expected behavior]
+P2: [fact about relevant files, tests, or specifications]
+P3: ...
 ```
-
-### 変更後（既存行への追記）
-
+After:
 ```
-HYPOTHESIS UPDATE:
-  H[M]: CONFIRMED / REFUTED / REFINED — [explanation];
-        if REFUTED or REFINED, revisit the premises P[N] that supported H[M]
-        and correct any that no longer hold before proceeding.
+P1 [OBS]: [observed fact about the task, inputs, or expected behavior]
+P2 [OBS]: [observed fact about relevant files, tests, or specifications]
+P3 [ASM|DEF]: ...
 ```
+(+ 1 line) Tag premises as OBS (observed), ASM (assumed), or DEF (definition) so downstream claims can surface their weakest dependency.
 
-### 変更規模の宣言
+failed-approaches.md との照合（整合 1–2点）
+- 「証拠種類の事前固定を避ける」(failed-approaches.md 8–10): タグは“何を探すか”を固定しない。仮定の可視化のみで、探索の自由度は保つ。
+- 「自己監査に新しい必須メタ判断を増やしすぎない」(27–31): 新しい必須ゲートを純増せず、Step 2 の表記圧縮で弱い環を露出させるだけ（追加の手順強制をしない）。
 
-追加・変更: 2 行（既存 1 行を分割し 2 行に精緻化）
-削除: 0 行
-合計変更規模: 2 行（hard limit 5 行以内 ✓）
-
-新規ステップ・新規フィールド・新規セクションの追加: なし
-既存行への文言追加・精緻化: あり（HYPOTHESIS UPDATE ブロック内のみ）
-
-
-## 一般的な推論品質への期待効果
-
-### 減少が期待される失敗パターン
-
-(a) 誤前提の持ち越しによる誤判定
-    探索序盤で設定した前提 P[N] が途中の観測で覆されたにもかかわらず、
-    仮説更新のみで前提が修正されず、後段の推論がその誤前提を引き続き
-    参照して誤った結論に至るパターン。
-
-(b) 確認バイアスの蓄積
-    仮説が REFINED のまま探索が続くとき、古い前提を温存することで
-    新しい証拠の解釈が歪まれるパターン。REFUTED/REFINED のたびに
-    前提を見直す習慣をつけることで、この蓄積を中断させられる。
-
-(c) compare モードでの overall 品質低下
-    2 つの変更を比較する際、初期の構造前提（S1/S2）が後の観測で
-    否定されても更新されず、最終的に誤った EQUIVALENT/NOT EQUIVALENT
-    の結論が導かれるパターン。今回の変更は compare/diagnose/explain
-    すべての Step 3 に共通して適用されるため、overall ドメインに
-    直接寄与する。
-
-### 非影響範囲
-
-Step 5.5 の自己監査チェックリスト、Step 6 の結論フォーマット、
-Guardrail 一覧には変更を加えないため、既存の反証プロセスや
-確信度付け方式はそのまま維持される。
-
-
-## failed-approaches.md 汎用原則との照合
-
-### 原則1: 探索の正当化から特定シグナルの捜索への偏りを避ける
-
-今回の変更は「REFUTED または REFINED になったときに前提を見直せ」
-という条件付き自問であり、探索すべきシグナルの種類を事前固定しない。
-前提の見直しは「どの証拠を次に探すか」を固定しない。
-→ 抵触なし
-
-### 原則2: 探索ドリフト対策で探索の自由度を削りすぎない
-
-前提の見直しは探索の打ち切りや優先順位の固定ではなく、
-既存の探索ループ内でのリフレクションを一言追加するだけ。
-探索の幅を狭める記述を含まない。
-→ 抵触なし
-
-### 原則3: 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない
-
-今回の変更は Step 5.5（結論直前）ではなく Step 3（探索中）の
-HYPOTHESIS UPDATE ブロックへの追記であり、結論前の新規判定ゲートを
-追加するものではない。探索中のリアルタイム前提更新を促す記述は
-既存の Step 3 の性質と一致しており、新しい評価軸を Step 5.5 に
-追加することとは性質が異なる。
-→ 抵触なし
-
-
-## 監査向け補足
-
-変更が反映される箇所は SKILL.md の Step 3 テンプレート
-（HYPOTHESIS UPDATE フィールド）のみ。全モード（compare/diagnose/
-explain/audit-improve）の Step 3 に均等に適用されるため、
-特定モードへの過剰適合はない。
-
-SKILL.md の他のセクション（Step 4 trace table, Step 5.5,
-Step 6, Guardrails, Compare/Diagnose/Explain/Audit-Improve の
-個別テンプレート）への変更は一切なし。
+変更規模の宣言
+- SKILL.md 変更は最大 4 行（Step 2 のテンプレ3行置換 + 説明1行追加）で、5行以内の制約を満たす。

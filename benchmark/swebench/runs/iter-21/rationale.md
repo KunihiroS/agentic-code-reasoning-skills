@@ -2,55 +2,24 @@
 
 ## 前イテレーションの分析
 
-- 前回スコア: 不明（iter-20 の scores.json 未参照）
-- 失敗ケース: 不明（参照制限により scores.json を参照せず）
-- 失敗原因の分析: 前提（P[N]）が仮説更新（REFUTED/REFINED）の後も
-  修正されず、後段の推論が誤前提を引き続き参照して誤判定に至るパターンが
-  推論品質低下の一因と分析された。
+- 前回スコア: （未取得）
+- 失敗ケース: （未取得）
+- 失敗原因の分析: 反証可能な前提と、推論中に紛れ込む仮定/定義の区別が出力上で不透明な場合、下流の主張が「どの弱い依存（仮定）に支えられているか」が見えにくく、EQUIV/NOT_EQUIV の両側で誤判定（思い込みの固定化、反証対象の取り違え）に繋がりうる。
 
 ## 改善仮説
 
-仮説が REFUTED または REFINED になった時点で、その根拠となった前提
-（P[N]）自体を見直す自問を探索中に促せば、前提の誤りに由来する誤判定を
-後段に持ち越す前に検出できる。前提の誤りを後段まで持ち越すことが、
-全体推論品質の低下の一因となっている。
+番号付き前提に provenance（観測/仮定/定義）タグを付けて常に可視化すると、各主張が依存している最も弱い前提（特に ASM）を早期に特定できる。これにより、結論が片方向に寄る前に「反転しうる仮定」を最優先で反証対象へ回し、偽 EQUIV と偽 NOT_EQUIV を同時に減らせる。
 
 ## 変更内容
 
-SKILL.md の Step 3 テンプレート内 HYPOTHESIS UPDATE ブロックの既存1行を
-精緻化し、2行に拡張した。変更前後は以下の通り。
+- Step 2 の前提テンプレートを、P1/P2 を [OBS]、可変要素を [ASM|DEF] として書く形式に置換した（追加の必須ゲートは増やさず、書式の統合のみ）。
+- タグ付けの目的を 1 行で明示し、下流の主張が ASM に依存している場合は、その ASM を最優先の反証対象として扱う決定点を Step 2 の範囲内に統合した。
 
-変更前:
-```
-HYPOTHESIS UPDATE:
-  H[M]: CONFIRMED / REFUTED / REFINED — [explanation]
-```
+Trigger line (final): "Tag premises as OBS (observed), ASM (assumed), or DEF (definition) so downstream claims can surface their weakest dependency; if a claim depends on ASM, treat that ASM as the highest-priority refutation target."
 
-変更後:
-```
-HYPOTHESIS UPDATE:
-  H[M]: CONFIRMED / REFUTED / REFINED — [explanation];
-        if REFUTED or REFINED, revisit the premises P[N] that supported H[M]
-        and correct any that no longer hold before proceeding.
-```
-
-新規ステップ・新規フィールド・新規セクションの追加はなし。
-既存行への文言追加・精緻化のみ（変更規模: 2行、hard limit 5行以内）。
+上の Trigger line は、proposal の差分プレビューにある「前提を OBS/ASM/DEF でタグ付けして弱い依存を露出させる」趣旨と一致し、その弱い依存（ASM）を反証優先に接続する点までを同一の一般化として 1 行に統合している。
 
 ## 期待効果
 
-(a) 誤前提の持ち越しによる誤判定の減少:
-    探索序盤で設定した前提が途中の観測で覆されても、仮説更新のみで前提が
-    修正されず後段で再利用されるパターンを、REFUTED/REFINED のたびに前提
-    見直しを自問させることで中断できる。
-
-(b) 確認バイアスの蓄積の抑制:
-    仮説が REFINED のまま探索が続く際に古い前提が温存され新証拠の解釈が
-    歪まれるパターンを、前提見直しの習慣づけで軽減できる。
-
-(c) 全モード（compare/diagnose/explain/audit-improve）共通の Step 3 に
-    均等に適用されるため、特定モードへの過剰適合はない。
-
-Step 5.5 の自己監査チェックリスト、Step 6 の結論フォーマット、
-Guardrail 一覧への変更はないため、既存の反証プロセスや確信度付け方式は
-そのまま維持される。
+- compare において、主張の正当化が「番号付き=根拠済み」という形式に依存して思い込みが混入するリスクを下げる。
+- ASM 依存が見えた時点で反証努力をそこに集中できるため、結論の早期固定化を抑え、偽 EQUIV / 偽 NOT_EQUIV の双方を減らす方向に働く。
