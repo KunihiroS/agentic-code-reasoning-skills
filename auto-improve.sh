@@ -645,6 +645,9 @@ else:
   # === 7.5. Worktree クリーンアップ ===
   log "Worktree クリーンアップ..."
   rm -rf "$HOME/bench_workspace/worktrees/"* "$HOME/bench_workspace/worktrees_compare/"* 2>/dev/null || true
+  for _repo in "$HOME/bench_workspace/repos/"*/; do
+    git -C "$_repo" worktree prune 2>/dev/null || true
+  done
   log "Worktree クリーンアップ完了"
 
   # === 8. ゴール判定 ===
