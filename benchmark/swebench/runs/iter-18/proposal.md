@@ -1,134 +1,46 @@
-# Iteration 18 — Proposal
+過去提案との差異: iter-12〜14 のように「STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定の観測境界へ狭める」方向ではなく、Step 5（反証）の実行順序だけを“結論を左右する主張から先に”へ再配置する。
+Target: 両方（偽 EQUIV と偽 NOT_EQUIV）
+Mechanism (抽象): 反証を「全ての主要主張に均等適用」から「結論反転に必要十分な hinge-claim から優先適用」へ順序最適化する。
+Non-goal: STRUCTURAL TRIAGE の早期結論条件（missing file/import 等）を制限・置換したり、新しい必須ゲートを増やしたりしない。
 
-## Exploration Framework カテゴリ: A (強制指定)
+カテゴリA（推論の順序・構造）内でのメカニズム選択理由
+- SKILL.md は Step 3 で「次アクションは discriminative power（不確実性を最も解消する）で選ぶ」と明記している一方、Step 5（反証）は“どの主張から反証するか”の順序原理が弱く、結果として(1) 重要でない主張へ反証努力が分散する、(2) 結論を左右する主張の反証が遅れ、早期に誤結論が固まる、の両リスクが残る。
+- そこで「反証の対象の選び方（対象の優先順位）」にだけ順序原理を導入し、探索の自由度を削らずに（境界を固定せずに）全モード共通で効く改善にする。
 
-カテゴリ A「推論の順序・構造を変える」の中から、
-今回は **逆方向推論 (backward reasoning)** を選択する。
+改善仮説（1つ）
+- 反証（Step 5）を hinge-claim（否定されると結論が反転する最小集合）から先に当てる順序へ変えると、(a) 偽 EQUIV: 重要差分の見落とし、(b) 偽 NOT_EQUIV: 重要でない差分への過剰反応、の両方を同時に減らせる。
 
-### カテゴリ内でのメカニズム選択理由
+SKILL.md 該当箇所（短い引用）と変更案
+- 現行（Core Method / Step 5）:
+  "Scope: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim — especially:"
+- 変更: 「まず hinge-claim を選んでそこから反証する」順序を 1〜2 文で差し込み、既存の例示（especially 以下）を圧縮して置換する（必須手順の総量は増やさない）。
 
-compare モードの per-test 分析は現在、前向き（forward）に進む:
-テストを読み → 各変更のコードパスをトレースし → PASS/FAIL を記録する。
-この順序では、エージェントは「差異を発見したら止まる」設計になっているが、
-EQUIVALENT 判定の場合は差異が見つからないまま分析が終わる。
-そのとき、「何を探しているか」が明示されていないため、
-確証バイアス（無差異を確認し続けること）が生じやすい。
+Decision-point delta（IF/THEN、2行）
+Before: IF Step 5 で複数の key intermediate claim がある THEN それらを広く（網羅気味に）反証対象として扱う because 重要度の序列が明示されていない。
+After:  IF Step 5 で複数の key intermediate claim がある THEN まず 1–2 個の hinge-claim（否定されると結論が反転する主張）から反証する because 最大の判別力を最初に確保し、早期収束の誤りを減らす。
 
-逆方向推論は「もしこれらが NOT EQUIVALENT なら、どの動作差異が存在するはずか」を
-分析開始前に明示させる。これにより per-test トレースが、
-無差異確認ではなく、**具体的な反証ターゲットに対する有向探索** になる。
-他の Category A メカニズム（ステップ順序の入れ替え、並列/直列変換）より
-失敗モードへの対応が直接的であり、変更も最小限に収まる。
+変更差分プレビュー（Before/After, 3–10行）
+Before:
+  ### Step 5: Refutation check (required)
+  This step is **mandatory**, not optional.
 
----
+  **Scope**: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim — especially:
+  - "No test exercises this difference" — ...
+  - "This behavior is X" ...
+  - "These test outcomes are identical/different" — ...
 
-## 改善仮説
+After:
+  ### Step 5: Refutation check (required)
+  This step is **mandatory**, not optional.
 
-compare モードで EQUIVALENT 判定を下す際、エージェントは
-「テストを一通りトレースして差異が見つからなかった」という
-消極的な証拠に依存しやすい。
-分析開始前に NOT EQUIVALENT となり得る条件を逆算して明示させると、
-per-test トレースが方向付けられた反証探索に変わり、
-仮説に都合のよい観察だけを積み重ねる確証バイアスが抑制される。
-これにより EQUIVALENT 判定の精度が向上し、全体正答率も改善される。
+  **Scope**: When multiple key intermediate claims exist, start with 1–2 hinge claims (claims whose negation would flip your conclusion), then expand to other key claims as needed.
+  - "No test exercises this difference" — ...
+  - "This behavior is X" ...
+  - "These test outcomes are identical/different" — ...
 
----
+failed-approaches.md との照合（整合 1–2 点）
+- 「証拠の種類をテンプレで事前固定しすぎない」に整合: hinge-claim は“特定の証拠タイプ”を固定せず、各タスクの結論反転点に応じて対象が変わる（方向非依存）。
+- 「探索の自由度を削りすぎない」に整合: 新しい観測境界への還元や、特定経路の半固定は行わず、既存 Step 5 の範囲内で“どこから反証するか”の順序だけを与える。
 
-## SKILL.md への具体的な変更
-
-### 変更箇所
-
-compare モードの Certificate template 内、
-ANALYSIS OF TEST BEHAVIOR セクションの冒頭に 1 行追加する。
-
-### 変更前 (SKILL.md line 203–206 付近)
-
-```
-ANALYSIS OF TEST BEHAVIOR:
-
-For each relevant test:
-  Test: [name]
-```
-
-### 変更後
-
-```
-ANALYSIS OF TEST BEHAVIOR:
-
-Pre-analysis: Before tracing any test, state the minimal behavioral difference
-that would make these changes NOT EQUIVALENT (e.g., a specific return value,
-exception, or side effect that would diverge). This defines the target of the
-per-test search below.
-
-For each relevant test:
-  Test: [name]
-```
-
-### 変更規模の宣言
-
-追加行数: 4 行（hard limit 5 行以内）
-削除行数: 0 行（制限カウント対象外）
-既存セクションへの文言追加のみ。新規ステップ・新規フィールド・新規セクションなし。
-
----
-
-## 一般的な推論品質への期待効果
-
-### 減少が期待される失敗パターン
-
-1. **消極的 EQUIVALENT 判定**
-   差異が見つからなかったから EQUIVALENT、という構造の判断。
-   逆方向ターゲットを先に定義することで、
-   「見つからなかった」ではなく「探してなかった」ことが可視化される。
-
-2. **Guardrail #4 の違反（subtle difference dismissal）**
-   意味的差異を発見しても「テストに影響しない」と早期に棄却するパターン。
-   NOT EQUIVALENT 条件を先に明示しておくと、
-   発見された差異がそのターゲットに該当するかを照合する動機が生まれる。
-
-3. **確証バイアスによる探索の早期打ち切り**
-   per-test 分析中に「差異なし」が続くと分析が形式化し、
-   後半のテストが浅くなる傾向がある。
-   分析前に反証ターゲットを宣言すると、後半テストへの注意も維持される。
-
-### 影響しない（回帰リスクが低い）パターン
-
-- NOT EQUIVALENT 判定: COUNTEREXAMPLE セクションは変更しないため影響なし
-- diagnose / explain / audit-improve モード: compare テンプレート固有の変更であり無影響
-- STRUCTURAL TRIAGE による早期終了パス: Pre-analysis より前に完了するため無影響
-
----
-
-## failed-approaches.md の汎用原則との照合
-
-### 原則 1: 探索の証拠種類をテンプレートで事前固定しすぎない
-
-今回の変更は「何の証拠を探すか」を固定するのではなく、
-「どのような **差異** が存在すれば NOT EQUIVALENT になるか」という
-**方向性** を宣言させるに留まる。
-具体的な探索対象（ファイル、関数、テスト）は依然としてエージェントが判断する。
-→ 抵触しない。
-
-### 原則 2: 探索ドリフト対策で探索の自由度を削りすぎない
-
-Pre-analysis は探索手順を制約するのではなく、
-「分析の目的を明確にする」プロンプトである。
-per-test のトレース手順・観察の記録方法は変更しない。
-→ 抵触しない。
-
-### 原則 3: 結論直前の自己監査に新しい必須メタ判断を増やしすぎない
-
-Pre-analysis は ANALYSIS セクションの **冒頭** に置かれる前処理であり、
-Step 5.5（結論直前の自己チェック）には手を加えない。
-また「推論の最弱点を特定させる」ような複合評価軸ではなく、
-1 つの問い（NOT EQUIVALENT 条件の明示）に限定している。
-→ 抵触しない。
-
----
-
-## 変更規模の宣言（再掲）
-
-- 追加行数: 4 行
-- 変更行数: 0 行
-- 削除行数: 0 行
-- hard limit (5 行) に対して: 適合
+変更規模の宣言
+- SKILL.md 変更は Step 5 の Scope 文を 1〜2 文差し替えるだけ（最大 4〜5 行以内、必須ゲートの純増なし）。

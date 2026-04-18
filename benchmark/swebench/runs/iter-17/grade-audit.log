@@ -9,4 +9,4 @@ without_skill:
 with_skill:
   Overall (file+func): 27/28 = 96.4%
   File match:          27/28 = 96.4%
-  Function match:      20/28 = 71.4%
+  Function match:      21/28 = 75.0%

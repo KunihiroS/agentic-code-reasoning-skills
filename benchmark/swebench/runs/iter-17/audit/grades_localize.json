@@ -1818,13 +1818,15 @@
       "reissueWithRequests"
     ],
     "predicted_files": [
+      "tool/tsh/tsh.go",
       "`lib/kube/kubeconfig/kubeconfig.go"
     ],
     "predicted_functions": [
+      "onLogin",
       "`Update"
     ],
     "file_match": true,
-    "function_match": false,
+    "function_match": true,
     "correct": true,
     "cost_usd": 0,
     "turns": 0

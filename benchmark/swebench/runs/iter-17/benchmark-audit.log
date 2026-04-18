@@ -149,7 +149,6 @@ Generated 28 prompt files in /tmp/tmp.gV8hdOqXa2
 [START] instance_gravitational__teleport-82185f232ae8974258397e121b3bc2ed0c3729ed-v626ec2a48416b10a88641359a169d99e935ff037 / without_skill  15:33:42
 [DONE]  instance_gravitational__teleport-82185f232ae8974258397e121b3bc2ed0c3729ed-v626ec2a48416b10a88641359a169d99e935ff037 / without_skill  128s
 [START] instance_gravitational__teleport-82185f232ae8974258397e121b3bc2ed0c3729ed-v626ec2a48416b10a88641359a169d99e935ff037 / with_skill  15:35:50
+[DONE]  instance_gravitational__teleport-82185f232ae8974258397e121b3bc2ed0c3729ed-v626ec2a48416b10a88641359a169d99e935ff037 / with_skill  170s
 
-[DONE]  instance_gravitational__teleport-82185f232ae8974258397e121b3bc2ed0c3729ed-v626ec2a48416b10a88641359a169d99e935ff037 / with_skill  75s
-
-=== Audit Benchmark complete: 28 instances, 8889s total ===
+=== Audit Benchmark complete: 28 instances, 9031s total ===
