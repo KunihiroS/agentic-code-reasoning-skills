@@ -434,11 +434,24 @@ fi
 for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   log "========== イテレーション開始 =========="
 
-  # Phase 3: 停滞検知 → メタエージェント自動トリガー
-  if python3 "$BENCH_DIR/detect_stagnation.py" "$ARCHIVE_FILE" "$META_STAGNATION_WINDOW" 2>/dev/null; then
-    log "停滞検知: メタエージェントを起動"
-    if run_meta_agent; then
-      log "テンプレート更新完了。イテレーションを続行。"
+  # Phase 3: 停滞検知 → メタエージェント自動トリガー（scored iter が window 以上溜まった場合のみ）
+  meta_scored_since_last=$(python3 -c "
+import json
+entries = [json.loads(l) for l in open('$ARCHIVE_FILE') if l.strip()]
+new_entries = [e for e in entries if 'template_version' in e and e.get('valid_parent') and e['scores'].get('audit',0) > 0]
+if not new_entries:
+    print(0)
+else:
+    current_tv = max(e.get('template_version',0) for e in new_entries)
+    since = [e for e in new_entries if e.get('template_version',0) >= current_tv]
+    print(len(since))
+" 2>/dev/null || echo 0)
+  if [ "$meta_scored_since_last" -ge "$META_STAGNATION_WINDOW" ]; then
+    if python3 "$BENCH_DIR/detect_stagnation.py" "$ARCHIVE_FILE" "$META_STAGNATION_WINDOW" 2>/dev/null; then
+      log "停滞検知: メタエージェントを起動 (scored=$meta_scored_since_last)"
+      if run_meta_agent; then
+        log "テンプレート更新完了。イテレーションを続行。"
+      fi
     fi
   fi
 

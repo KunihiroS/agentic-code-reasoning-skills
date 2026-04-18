@@ -12,23 +12,34 @@ with open(archive_file) as f:
         if line:
             entries.append(json.loads(line))
 
-# Only consider valid entries with scores
-scored = [e for e in entries if e.get("valid_parent") and e["scores"].get("audit", 0) > 0]
+# Only consider new-format entries (with template_version) that have scores
+scored = [
+    e for e in entries
+    if "template_version" in e
+    and e.get("valid_parent")
+    and e["scores"].get("audit", 0) > 0
+]
 
 if len(scored) < window:
     print("insufficient_data")
     sys.exit(1)
 
 recent = scored[-window:]
-all_scored = scored
 
-# Best audit score ever achieved
-best_audit_ever = max(e["scores"].get("audit", 0) for e in all_scored)
-# Best audit in recent window
+# Best scores across all new-format scored entries
+best_audit_ever = max(e["scores"].get("audit", 0) for e in scored)
+best_compare_ever = max(e["scores"].get("compare", 0) for e in scored)
+
+# Best scores in recent window
 best_audit_recent = max(e["scores"].get("audit", 0) for e in recent)
+best_compare_recent = max(e["scores"].get("compare", 0) for e in recent)
 
-# Stagnation: recent best doesn't exceed historical best
-stagnant = best_audit_recent <= best_audit_ever and len(all_scored) > window
+# Stagnation: neither metric improved in the recent window
+stagnant = (
+    best_audit_recent < best_audit_ever
+    and best_compare_recent < best_compare_ever
+    and len(scored) > window
+)
 
 if stagnant:
     print("stagnant")

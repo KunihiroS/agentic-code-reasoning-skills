@@ -36,7 +36,7 @@ snap_exists = os.path.isfile(snap_path)
 import hashlib
 import glob
 
-prompts_dir = os.path.join(os.path.dirname(archive_file), "..", "..", "prompts")
+prompts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "prompts")
 version_file = os.path.join(prompts_dir, ".version")
 template_version = 0
 if os.path.isfile(version_file):
