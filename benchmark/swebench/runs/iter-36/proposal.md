@@ -1,126 +1,100 @@
-# Iter-36 Proposal
+1) 過去提案との差異: 「探索を特定の観測境界へ写像して狭める」方向ではなく、既存の早期 NOT_EQUIV 分岐に“根拠の具体化(impact witness)”を要求して早計な短絡だけを抑える。
+2) Target: 両方（特に偽 NOT_EQUIV と audit の改善、ただし EQUIV 側の萎縮を増やさない）
+3) Mechanism (抽象): compare の STRUCTURAL TRIAGE で早期結論に飛ぶ条件を「構造差そのもの」から「構造差＋影響の目撃(impact witness)」へ寄せ、情報取得(何を確認してから結論へ進むか)の分岐を変える。
+4) Non-goal: 構造差を“特定の観測境界だけ”に還元して探索経路を半固定化すること、また新しい必須フェーズ/モードを増やすことはしない。
 
-## Exploration Framework カテゴリ: A (強制指定)
 
-### カテゴリ A 内での具体的メカニズム選択
+[Step 1 — 禁止方向の列挙（failed-approaches + 却下履歴から）]
+- 証拠タイプのテンプレ事前固定（「この証拠を探せ」を固定しすぎて探索自由度を削る）
+- 既存の判定基準を特定の観測境界だけに過度に還元（構造差→境界写像で狭める）
+- 読解順序・探索入口の半固定（どこから読むべきかを強く決め打ち）
+- ドリフト対策の名目で局所の“もっともらしさ”を押し付け、未列挙論点の発見を弱める
+- 結論直前に新しい必須メタ判断を増やす（既存の反証義務と重複し、片方向に萎縮させる）
 
-カテゴリ A の3つのメカニズムのうち、**逆方向推論 (結論から逆算して必要な証拠を特定する)** を選択する。
 
-**選択理由:**
+[Step 2 — overall に直結する意思決定ポイント候補（IF/THEN 分岐）]
+候補A（compare / 早期結論の分岐）:
+- IF STRUCTURAL TRIAGE が「明確な structural gap」を示す THEN ANALYSIS をスキップして NOT EQUIVALENT に進む（SKILL.md に明記）
 
-Compare テンプレートは現在、STRUCTURAL TRIAGE → PREMISES → ANALYSIS という前向きの順序で動く。
-ANALYSIS セクションでは各テストについて Change A と Change B の振る舞いを個別にトレースし、
-最後に COUNTEREXAMPLE CHECK で反証を試みる構造になっている。
+候補B（compare / EQUIV 主張時の探索継続分岐）:
+- IF EQUIVALENT を主張しつつ「counterexample の形」が具体化できない THEN 追加探索を要求する / あるいは結論を保留・低信頼に倒す
 
-この構造では、詳細トレース (ANALYSIS) が「結論を先に持たない状態」で行われるため、
-トレースが証拠収集の目的を持ちにくく、中立的な記述に流れやすい。
-その結果、微細な差異を発見した後に「これは結果に影響するか」という判断が後付けになる。
+候補C（Core / UNVERIFIED の扱いによる探索優先分岐）:
+- IF UNVERIFIED が最終結論を反転させうる依存点にある THEN 次アクションを「間接証拠（呼び出し箇所・テスト利用・doc）」の取得へ寄せる ELSE そのまま進み不確実性を明示
 
-逆方向推論を導入すると: STRUCTURAL TRIAGE 完了直後に仮結論 (LIKELY EQUIVALENT / LIKELY NOT EQUIVALENT)
-を明示させ、その仮結論を「覆すことを目的として」ANALYSIS を実施させる。
-これにより ANALYSIS が証拠収集でも確認でもなく「仮結論への挑戦」として機能し、
-見落とされやすい反証候補を積極的に探す動機が生まれる。
 
-逆方向推論はステップの削除でも新規追加でもなく、STRUCTURAL TRIAGE 完了時点に
-判断の先行固定を求める記述順序の変更であり、既存行への文言追加として5行以内に収まる。
+[Step 2.5 — 各候補のデフォルト挙動と、変更後に観測可能に変わるアウトカム（各1行）]
+- 候補A: デフォルト= structural gap を見た時点で NOT_EQUIV に短絡しがち / 変更後= NOT_EQUIV へ進む前に「影響の目撃」を要求でき、偽 NOT_EQUIV と audit の弱さが減る（必要なら追加探索へ分岐）
+- 候補B: デフォルト= “NO COUNTEREXAMPLE EXISTS” が抽象のままでも EQUIV 結論へ進みがち / 変更後= 追加探索 or 低信頼へ分岐し、偽 EQUIV を抑える
+- 候補C: デフォルト= UNVERIFIED を置いたまま結論へ寄りがち / 変更後= 追加探索（間接証拠の収集）へ分岐し、保留/UNVERIFIED 明示が増える
 
----
 
-## 改善仮説
+[Step 3 — 今回選ぶ分岐（1つ）]
+選定: 候補A（compare の STRUCTURAL TRIAGE → 早期 NOT_EQUIV 分岐）
+理由（2点以内）:
+- compare で「ANALYSIS を省略して結論へ進む」明示分岐があり、実行時アウトカム（NOT_EQUIV / 追加探索 / audit 証拠密度）が確実に変わりうる。
+- 現状は早期 NOT_EQUIV の“根拠の型”が薄くなりやすく、偽 NOT_EQUIV だけでなく監査時の説明（なぜそれがテスト結果差につながるのか）も弱くなりやすい。
 
-STRUCTURAL TRIAGE 完了直後に仮結論を先置きすることで、続く ANALYSIS が
-仮結論を覆すことを目的とした証拠探索として機能し、EQUIVALENT 誤判定 (差異を発見しても
-その影響を過小評価するパターン) および NOT EQUIVALENT 誤判定 (構造的差異のない
-ケースでのノイズ検出) の両方を抑制できる。
 
----
+[Step 4 — 改善仮説（1つ、抽象・汎用）]
+仮説: 構造差で早期 NOT_EQUIV に飛ぶときに「影響の目撃（impact witness）」を必須化（ただし新フェーズ追加ではなく既存の結論文の要件として）すると、構造差が“テスト結果差に接続する”ことを最小コストで確認する分岐が働き、偽 NOT_EQUIV を減らしつつ真の NOT_EQUIV は維持できる。
 
-## SKILL.md のどこをどう変えるか
 
-### 変更対象
+[Step 5 — 抽象ケースでの Before/After 挙動差（結末を明記）]
+ケース: Change A は2ファイルに触れるが、片方は実質的にテスト結果へ影響しない（コメント/デッドコード/未参照の補助）。Change B は影響しない側の変更を含めない。
+- Before: structural gap（片方のファイル欠落）だけで早期 NOT_EQUIV に進み、偽 NOT_EQUIV が起きがち。
+- After: 早期結論に進むには「どのテスト/どの assertion boundary/どの具体使用が変わるか」という impact witness を書ける必要がある。書けない場合は ANALYSIS に進んで影響接続を探す（結末: 偽 NOT_EQUIV を回避し、EQUIV か UNVERIFIED/低信頼として扱う）。
 
-SKILL.md の Compare テンプレート内、STRUCTURAL TRIAGE ブロックの末尾
-(S3 の記述直後、"If S1 or S2 reveals a clear structural gap..." パラグラフの直前)
 
-### 変更前 (既存行)
+カテゴリB内でのメカニズム選択理由:
+- 変更点は「何を探すか（証拠タイプの固定）」ではなく、「早期結論に進む前に最低限どの情報を取得しておくか」を具体化するもの。
+- 読解順序の半固定ではなく、既存の早期ショートカット分岐に対する“根拠取得の要件”を追加するため、探索自由度の削減よりも誤短絡の抑制に寄る。
 
-```
-  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-      prioritize structural differences (S1, S2) and high-level semantic
-      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-      is infeasible for large patches and produces unreliable conclusions.
 
-If S1 or S2 reveals a clear structural gap (missing file, missing module
-```
+該当箇所（SKILL.md 自己引用）と変更:
+- 現行（compare / 証明書テンプレ冒頭）:
+  "Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS."
+- 現行（compare / STRUCTURAL TRIAGE 後の早期結論案内）:
+  "If S1 or S2 reveals a clear structural gap (missing file, missing module\nupdate, missing test data), you may proceed directly to FORMAL CONCLUSION\nwith NOT EQUIVALENT without completing the full ANALYSIS section."
 
-### 変更後 (文言追加: +2行)
+Payment（必須ゲート純増を避けるための入替）:
+Payment: add MUST("If you take the structural-triage early-exit, you MUST state an impact witness...") ↔ demote/remove MUST("Complete every section.")
 
-```
-  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-      prioritize structural differences (S1, S2) and high-level semantic
-      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-      is infeasible for large patches and produces unreliable conclusions.
-  S4: Provisional verdict — before entering ANALYSIS, state LIKELY EQUIVALENT
-      or LIKELY NOT EQUIVALENT based solely on S1–S3. The goal of ANALYSIS
-      is to challenge this verdict, not to confirm it.
 
-If S1 or S2 reveals a clear structural gap (missing file, missing module
-```
+Decision-point delta（IF/THEN 2行）:
+Before: IF structural gap を見つけた THEN ANALYSIS を省略して NOT_EQUIV 結論へ進む because 構造差がそのまま非同値を示す
+After:  IF structural gap を見つけた THEN （impact witness を書けるなら）ANALYSIS を省略して NOT_EQUIV へ進む;（書けないなら）ANALYSIS へ進む because 構造差がテスト結果差へ接続する根拠を最小限で確認する
 
-### 変更内容の説明
 
-S4 として2行を追加する。新規セクション・新規フィールドではなく、
-STRUCTURAL TRIAGE という既存ブロック内の末尾項目として位置づけるため、
-「既存ステップへの文言追加・精緻化」の範囲に収まる。
+変更差分プレビュー（Before/After, 3〜10行）:
+Before:
+- Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
+...
+- If S1 or S2 reveals a clear structural gap (missing file, missing module
+  update, missing test data), you may proceed directly to FORMAL CONCLUSION
+  with NOT EQUIVALENT without completing the full ANALYSIS section.
 
-変更規模: 追加2行 (削除0行)。hard limit (5行) 以内。
+After:
+- Complete every section; exception: if you early-exit after STRUCTURAL TRIAGE,
+  you MUST state an impact witness (test/assertion boundary or concrete usage)
+  in FORMAL CONCLUSION.
+...
+- If S1 or S2 reveals a clear structural gap (missing file, missing module
+  update, missing test data), you may proceed directly to FORMAL CONCLUSION
+  with NOT EQUIVALENT only when you can state an impact witness.
 
----
+Trigger line (planned): "impact witness (test/assertion boundary or concrete usage)"
 
-## 一般的な推論品質への期待効果
 
-### 減少が期待される失敗パターン
+Discriminative probe（抽象ケース, 2〜3行）:
+- Before は「片側にファイルがない」だけで NOT_EQUIV に飛び、実際にはテスト結果が同じでも偽 NOT_EQUIV になりうる。
+- After は early-exit 条件に impact witness が必要なので、影響接続が示せない場合は ANALYSIS へ分岐し、NOT_EQUIV の短絡を避けられる。
 
-**1. 「差異を発見したが影響しないと判断した」パターン (EQUIVALENT 誤判定)**
 
-現行フローでは ANALYSIS の各テスト分析が証拠収集として始まり、COUNTEREXAMPLE CHECK
-で初めて「この差異が影響するか」を問う。このため ANALYSIS 中に差異を見つけても
-「軽微かもしれない」という先入観が残りやすい。
+failed-approaches.md との整合（1〜2点）:
+- 「特定の観測境界だけに過度に還元」を避ける: これは“境界へ写像して狭める”のではなく、早期結論の根拠を具体化して偽 NOT_EQUIV を減らす。
+- 「読解順序の半固定を避ける」と整合: どこから読むべきかを固定せず、早期結論を選ぶ場合にだけ最小限の根拠取得を要求する。
 
-S4 で仮結論を先置きすると、仮に LIKELY EQUIVALENT と置いた場合の ANALYSIS は
-「それを覆す例があるか」という問いとして動く。差異を見つけた瞬間に
-「これは仮結論を崩せるか」という評価が自然に発生し、影響の過小評価を抑制する。
 
-**2. 「構造的には同一だが細部で迷った」パターン (NOT EQUIVALENT 誤判定)**
-
-S1–S3 で構造的ギャップが見つからない場合、S4 では LIKELY EQUIVALENT が自然な仮結論となる。
-この仮結論を覆す証拠を探す形で ANALYSIS が動くため、証拠なき NOT EQUIVALENT 判定を
-出しにくくなる。
-
-### 維持されるコア構造
-
-番号付き前提、仮説駆動探索、手続き間トレース、必須反証のすべてが維持される。
-S4 は STRUCTURAL TRIAGE の一部として機能し、PREMISES 以降のステップを削除・
-省略しない。
-
----
-
-## failed-approaches.md の汎用原則との照合
-
-| 原則 | 本提案との関係 | 判定 |
-|------|---------------|------|
-| 探索を「特定シグナルの捜索」に寄せすぎない | S4 は「仮結論を覆す証拠」を探す方向性を与えるが、証拠の種類は固定しない。探索経路は探索者に委ねられる | 抵触なし |
-| 読解順序の半固定で探索経路を早期に細らせない | S4 は記述タイミング (仮結論を先に書く) の変更であり、どのファイルをどの順に読むかを指定しない | 抵触なし |
-| 局所的な仮説更新を前提修正義務に直結させすぎない | S4 は ANALYSIS 開始前の一回限りの仮置きであり、探索中の更新義務ではない | 抵触なし |
-| 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない | S4 は STRUCTURAL TRIAGE 内 (結論直前ではなく冒頭フェーズ) に位置し、Step 5.5 の自己監査とは別のポイント | 抵触なし |
-
-すべての原則との照合で抵触なし。
-
----
-
-## 変更規模の宣言
-
-- 追加行数: 2行
-- 削除行数: 0行
-- hard limit (5行): **遵守**
-- 変更形式: 既存ブロック (STRUCTURAL TRIAGE) への末尾項目追加。新規ステップ・新規セクションの追加には該当しない
+変更規模の宣言:
+- SKILL.md への変更は 5 行以内（compare セクション内の 2 箇所の文言置換/追記のみ、モード追加なし）。
