@@ -1,0 +1,12 @@
+OSError: [Errno 122] Disk quota exceeded
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/kunihiros/agentic-code-reasoning-skills/benchmark/swebench/generate_compare_pro_prompts.py", line 67, in <module>
+    prompt_file.write_text(prompt)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/usr/lib64/python3.14/pathlib/__init__.py", line 814, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [Errno 122] Disk quota exceeded

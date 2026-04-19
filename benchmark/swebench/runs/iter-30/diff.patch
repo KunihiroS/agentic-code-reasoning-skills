@@ -1,23 +1,13 @@
 diff --git a/SKILL.md b/SKILL.md
-index bece161..1c46288 100644
+index eb739ace..1cb80d01 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -172,12 +172,18 @@ For each relevant test:
-                 because [trace through code — cite file:line]
-   Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                 because [trace through code — cite file:line]
-+  (Base this on the first observation point the test can detect — returned value,
-+   raised exception, mutated state, or assertion input — not merely on internal
-+   code differences.)
-   Comparison: SAME / DIFFERENT outcome
+@@ -261,7 +261,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- When a semantic difference is found, run a split probe: (i) counterexample-to-assertion, (ii) oracle-absorbs-diff; then choose NOT_EQ vs EQUIV
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
  
- For pass-to-pass tests (if changes could affect them differently):
-   Test: [name]
-   Claim C[N].1: With Change A, behavior is [description]
-   Claim C[N].2: With Change B, behavior is [description]
-+  (Base this on the first observation point the test can detect — returned value,
-+   raised exception, mutated state, or assertion input — not merely on internal
-+   code differences.)
-   Comparison: SAME / DIFFERENT outcome
- 
- EDGE CASES RELEVANT TO EXISTING TESTS:
+ ---

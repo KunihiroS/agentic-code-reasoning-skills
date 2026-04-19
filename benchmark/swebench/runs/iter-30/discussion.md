@@ -1,213 +1,106 @@
-# Iter-30 Discussion
+# Iteration 30 Discussion
+
+## 検索
+- 検索なし（理由: 提案の中心は「差分検出後に EQUIV / NOT_EQ の両方向へ同一トリガで短い探索を走らせる」という一般的な探索設計であり、既存研究の固有主張を追加導入するより、README.md / docs/design.md / SKILL.md / failed-approaches.md の範囲で自己完結に評価できるため）
 
 ## 総評
+提案の核は、Compare checklist の既存 1 行
+- "When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact"
+を、差分発見時に
+- 反例成立側（diverging assertion へ届くか）
+- 無害化側（test oracle が差分を吸収するか）
+の二股探索へ置換する点にある。
 
-提案の狙い自体は理解できる。Step 3 の探索開始前に、結論から逆算して必要証拠を意識させることで、探索の目的志向性を上げたいという発想は、一般的な推論原則としてはもっともである。
-
-ただし、今回の文言は `SKILL.md` 全体の共通 Step 3 に入るため、`compare` 以外のモードにも波及する。その割に「each possible conclusion」がどのモードで何を指すかが曖昧で、しかも「minimum evidence」という語が早期打ち切り条件として働きうる。結果として、提案者が意図する「両方向の証拠収集の強化」よりも、「探索対象の早期固定」「証拠種類の事前固定」に近い挙動を誘発する懸念がある。
-
-私の結論は、現状の文言のままでは 承認 NO。
-
----
+これは「差分を見た後の次アクション」を変える提案であり、単なる説明強化ではなく compare の分岐規則に触れている。しかも 1 行置換・必須ゲート純増なしと明示しており、過度に保守的に拒否する理由は弱い。
 
 ## 1. 既存研究との整合性
+- README.md / docs/design.md が強調する研究コアは、番号付き前提・仮説駆動探索・手続き間トレース・必須反証。
+- 本提案はそれらを削らず、compare における「必須反証」を差分検出直後の探索順序へ対称的に埋め込み直すもの。
+- 特に docs/design.md の「per-item iteration as the anti-skip mechanism」「incomplete reasoning chains 防止」と整合的で、Guardrail #4 の具体化として自然。
+- 研究コアを逸脱して新しい判定哲学を持ち込むものではなく、既存の semi-formal reasoning を compare の decision point に寄せて再配置した提案と見なせる。
 
-DuckDuckGo MCP の検索 API は今回複数回 no results となったため、同 MCP の fetch_content で直接 URL を取得して確認した。
+## 2. Exploration Framework のカテゴリ選定
+判定: A. 推論の順序・構造を変える で妥当。
 
-### 参照 URL と要点
+理由:
+- 変えているのは「何を根拠に結論するか」そのものではなく、「差分を見た直後にどちら向きの探索を先に/並列に短く走らせるか」という順序・構造。
+- 証拠の種類を固定する提案ではなく、同一トリガで両方向の探索を対称化するものなので、B（取得方法）やE（表現）より A が中心。
+- D（自己チェック強化）寄りにも見えるが、結論直前の監査追加ではなく、探索の途中分岐を変える点で A とみるのが適切。
 
-1. https://arxiv.org/abs/2603.01896
-   - `Agentic Code Reasoning` 本論文。
-   - 要点: 明示的前提、実コードの経路追跡、形式的結論、反証を要求する semi-formal reasoning が精度改善に寄与する。
-   - 整合性評価: 今回提案は「探索前に必要証拠を意識させる」点では論文の certificate 的発想と整合する。ただし論文のコアは「証拠を明示して辿ること」であり、「最小証拠を事前に固定すること」を強く主張しているわけではない。
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+- EQUIVALENT 側: 単に「差分あり」だけで NOT_EQ に倒れるのを防ぎ、test oracle の吸収・正規化・比較粒度によって実効差分が消えるケースを拾いやすくする。
+- NOT_EQUIVALENT 側: 単に「影響なし」を正当化する追跡だけで終わるのを防ぎ、diverging assertion へ届く反例トレースを早めに探すことで、偽 EQUIV を減らしやすくする。
+- 実効差分としては、変更前が「no impact の正当化」へ重心を置いていたのに対し、変更後は「反例成立 vs オラクル吸収」の識別的証拠を同一トリガで取りにいく。
+- したがって片方向最適化ではなく、両方向の誤判定を同じ箇所で減らす設計になっている。
 
-2. https://en.wikipedia.org/wiki/Backward_chaining
-   - 要点: backward chaining / backward reasoning は、ゴールから出発してその結論成立に必要な前提・データへ逆算する goal-driven な推論法。
-   - 整合性評価: 提案者が A カテゴリの「逆方向推論」と呼ぶ根拠としては妥当。特に compare タスクで「EQUIVALENT / NOT_EQUIVALENT のどちらを示すには何が要るか」を先に考える発想とは合う。
+## 4. failed-approaches.md との照合
+総論として、本質的再演の可能性は低い。ただし文言の運び方次第で「証拠種類の半固定」に寄るリスクはある。
 
-3. https://en.wikipedia.org/wiki/Hypothetico-deductive_model
-   - 要点: 仮説を立て、その仮説が真なら何が観測されるかを導き、反証的な観測を探す、という科学的方法の記述。
-   - 整合性評価: 「どの結論にどんな証拠が要るか」を先に意識するのは、仮説から可観測な区別条件を導くという意味で整合的。ただし重要なのは falsifiable な区別条件であり、「minimum evidence」という表現は falsification より sufficiency/打ち切りに寄りやすい。
-
-4. https://en.wikipedia.org/wiki/Confirmation_bias
-   - 要点: 人は仮説に都合のよい情報だけを探しやすく、反対証拠を無視しやすい。特に one-sided な仮説検証が起こりやすい。
-   - 整合性評価: 提案者の「EQUIV・NOT_EQ の両方向の証拠を均等に集めたい」という問題意識は妥当。
-   - ただし逆に、事前に「必要証拠」を固定しすぎると、その枠内でだけ証拠を集める confirmation bias を再強化する危険もある。
-
-### 小結
-
-研究との整合性は「部分的にはある」が、「minimum evidence」という wording は研究が重視する反証可能性よりも、探索の早期収束を促す方向に誤読されやすい。したがって、研究整合性は限定付きで肯定、全面的な裏付けまでは弱い。
-
----
-
-## 2. Exploration Framework のカテゴリ選定は適切か
-
-### 判定
-概ね適切。ただし A に完全に閉じるというより、A と B の境界上にある。
-
-### 理由
-
-- Objective.md の A には明示的に「結論から逆算して必要な証拠を特定する（逆方向推論）」が含まれている。
-- 今回の提案文はまさにそれを Step 3 に導入しようとしているため、A と分類すること自体は自然。
-- 一方で、実際に起こる作用は「どの情報を先に取りに行くか」「探索の優先順位をどう付けるか」にも及ぶため、運用上は B（情報の取得方法の改善）にもまたがる。
-
-### 監査上の見方
-
-カテゴリ選定を理由に即否定する必要はない。ただし「A だから failed-approaches の B 系失敗を回避できる」とは言えない。実際の作用は探索優先度と証拠取得の型に影響するため、失敗原則照合は厳しめに見るべき。
-
----
-
-## 3. EQUIVALENT / NOT_EQUIVALENT の両方への作用
-
-## 変更前と変更後の実効差分
-
-変更前:
-- Step 3 は「ファイルを開く前に仮説を書く」を要求する。
-- 何をもって仮説が支持/反証されるかは、Step 3 内の `EVIDENCE` や Step 5 の refutation check で後から埋める構造。
-
-変更後:
-- 仮説を書く前に、「各 possible conclusion に必要な minimum evidence」を明示させる。
-- つまり探索開始前から、結論と証拠の対応を先に設計することになる。
-
-これは単なる wording 追加ではあるが、探索のスタート地点を「仮説生成」から「結論ごとの証拠要件の先行設計」に寄せるため、実効上はかなり違う。
-
-### EQUIVALENT への作用
-
-期待される正方向:
-- EQUIVALENT は本来、「差分が見当たらない」ではなく「 relevant tests 上で反例がない」と示す必要がある。
-- そのため、先に「EQUIVALENT を言うには何が必要か」を考えさせるのは、浅い一致判定を減らす可能性がある。
-- 特に compare テンプレートの `NO COUNTEREXAMPLE EXISTS` を、探索前から意識させる点は有益。
-
-懸念:
-- EQUIVALENT に必要な証拠は本質的に open-ended で、「minimum evidence」が定義しにくい。
-- そのためエージェントが安易に「主要な呼び出し経路が一致していれば十分」などと早期に閾値を置いてしまうと、微妙な差分を見落として premature EQUIVALENT に寄る危険がある。
-
-### NOT_EQUIVALENT への作用
-
-期待される正方向:
-- NOT_EQUIVALENT は通常、少なくとも 1 つの具体的反例・発散テスト・分岐差分が必要になる。
-- 先に「何が見つかれば差異判定になるか」を明示すれば、反例探索が鋭くなる可能性はある。
-
-懸念:
-- NOT_EQUIVALENT はもともと「1 個の十分な反例」で成立しやすく、minimum evidence との相性が良すぎる。
-- そのため、探索が「反例らしきものを 1 個見つけること」に過剰最適化され、 downstream で test outcome まで効くかの追跡が甘くなるおそれがある。
-- しかし現行 SKILL はすでに Step 5 と compare テンプレートで counterexample obligation を持っており、そこに対する純増効果は限定的。
-
-### 片方向にしか効かないか
-
-「理論上は両方向に効く」が、「実務上の強い効き方は対称ではない」と見る。
-
-- EQUIVALENT 側には、探索前から non-counterexample 条件を意識させる効果がありうる。
-- NOT_EQUIVALENT 側には、すでに counterexample 中心の既存構造があるため上乗せ幅が小さい。
-- さらに `minimum evidence` という語感上、NOT_EQ の方が定義しやすく、EQUIV は雑に定義されやすい。
-
-よって、「両方向に均等に効く」という提案者の主張は強すぎる。実効的には EQUIV の不足を補いたい提案だが、文言次第では逆に premature EQUIV も premature NOT_EQ も起こしうる。
-
----
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 総合判定
-提案者の自己評価よりも、failed-approaches に近い。完全一致ではないが、本質的な再演リスクがある。
-
-### 原則 1 との照合
-
-failed-approaches:
-- 「次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」
-
-今回提案:
-- 「各 possible conclusion が要求する minimum evidence」を事前に書かせる。
-
-評価:
-- これは具体的シグナル名を固定してはいないが、「証拠の種類・十分性」を探索前に先取りしている。
-- 実質的には、探索を open-ended な正当化から「事前に想定した証拠型の捜索」へ寄せる。
-- したがって、failed-approaches の警告とかなり近い。
-
-### 原則 2 との照合
-
-failed-approaches:
-- 「探索ドリフト対策を追加する際は、探索の自由度を削りすぎない」
-- 「どこから読み始めるか」「どの境界を先に確定するか」の半固定は探索経路を細らせる
-
-今回提案:
-- 読む順序自体は固定していない。
-- しかし「minimum evidence」を先に確定させることで、どの境界を十分とみなすかを事前に固定しやすい。
-
-評価:
-- 読解順序の固定ではないが、「探索をどこで止めるか」「何を relevant とみなすか」の早期固定に繋がる。
-- これは failed-approaches の趣旨から見ると非抵触とは言い切れない。
-
-### 原則 3・4 との照合
-
-- 原則 3（局所的な仮説更新を即座の前提修正義務に結びつけない）には直接は抵触しない。
-- 原則 4（結論直前のメタ判断追加）にも直接は抵触しない。追加位置は Step 3 だからである。
-
-### 小結
-
-最大の問題は、提案者が「これは特定シグナル固定ではないので非抵触」としている点。監査上はそこまで楽観できない。今回の変更は、具体的な信号名ではなくても「証拠要件の事前テンプレート化」に寄っており、失敗原則のコアと十分に近い。
-
----
+- 「探索経路の半固定」: NO
+  - 理由: 「差分を見たら二股化する」はトリガベースの分岐であり、読み始め順・確定順を半固定していない。
+- 「必須ゲート増」: NO
+  - 理由: proposal 自身が 1 行置換・必須ゲート純増なし・総量不変を明示している。
+- 「証拠種類の事前固定」: NO（軽微懸念あり）
+  - 理由: 反例 / 吸収 は証拠テンプレの固定というより結論候補の対称化。ただし実装文言が「必ず assertion と normalization を探せ」のように狭くなると再演化するので、最終文言は abstract に保つべき。
 
 ## 5. 汎化性チェック
+判定: 概ね良好。
 
-### 明示的なルール違反の有無
+- 提案文に特定の数値 ID、ベンチマーク case ID、リポジトリ名、テスト名、実コード断片は見当たらない。
+- 含まれる数値は「1行置換」「5行以内」等の変更規模表現であり、ベンチマーク識別子ではない。
+- 例示は「丸め・ソート・例外型のみ確認」「内部表現・順序・メッセージ」など一般的で、特定言語や特定ドメインに閉じていない。
+- ただし "counterexample-to-assertion" と "oracle-absorbs-diff" を最終実装で狭いテスト文化に寄せて書くと、assert 主体の単体テスト像に暗黙依存しやすい。discussion 段階では許容だが、実装では「diverging observable test check」程度に少し抽象化してもよい。
 
-提案文には以下が含まれる:
-- `Iter-30` というイテレーション番号
-- `SKILL.md` の変更前/変更後の一行引用
-- 変更行数などのメタ情報
+## 6. 期待される推論品質の向上
+- 差分発見後の確認バイアスを減らせる。従来は「影響なし」側の追跡に流れやすかったが、同時に反例成立側も短く試すことで片寄りを抑えられる。
+- compare における主要な誤りである「差分＝即 NOT_EQ」と「差分はあるが影響なしだろう＝即 EQUIV」の両方に対し、識別的な追加探索を要求できる。
+- 変更点が局所的なので、研究コアや他モードへ波及せず、回帰リスクを比較的低く抑えながら compare の意思決定密度だけを上げられる。
 
-ただし、これらはベンチマーク対象リポジトリ名・テスト名・ケース ID・実装コード断片ではない。
-Objective.md の R1 でも、`SKILL.md` 自身の文言引用は減点対象外と明記されている。
+## 停滞診断
+- 懸念点（1点のみ）: proposal は比較的よくできているが、実装時に「split probe」の説明だけが増えて、実際には agent が従来通り EQUIV 側の no-impact justification を主に行うなら、監査 rubic には刺さっても compare の実行判断はあまり変わらない。
 
-したがって、私の判定は次の通り。
+- failed-approaches 該当性
+  - 探索経路の半固定: NO
+  - 必須ゲート増: NO
+  - 証拠種類の事前固定: NO
 
-- ベンチマーク対象リポジトリ名: 含まれていない
-- テスト名 / テスト ID: 含まれていない
-- ベンチマーク対象実装コード断片: 含まれていない
-- 具体的数値 ID: `Iter-30` はあるが、監査上問題となる「ケース ID / ベンチマーク固有識別子」ではない
-- `SKILL.md` 自己引用: あり。ただしルール上許容範囲
+## compare 影響の実効性チェック
+- 0) 実行時アウトカム差:
+  - セマンティック差分を見つけたとき、回答生成前に「反例トレース」か「吸収証拠」かのどちらが先に見つかったかで、ANSWER と CONFIDENCE と追加探索要求が変わりうる。
 
-### 暗黙のドメイン依存性
+- 1) Decision-point delta:
+  - IF/THEN 形式で 2 行（Before/After）になっているか？ YES
+  - Before/After が条件も行動も同じで理由だけ言い換えか？ NO
+  - Trigger line（発火する文言の自己引用）が差分プレビュー内に含まれているか？ YES
+  - コメント: ここは具体で、compare に効く分岐になっている。
 
-ここはむしろ懸念がある。
+- 2) Failure-mode target:
+  - 対象は両方。
+  - 偽 EQUIV: semantic difference を見つけても露出 assert への到達確認が弱く、影響なしに倒してしまう。
+  - 偽 NOT_EQ: semantic difference を見つけた時点で test oracle による吸収可能性を確かめず、差分ありをそのまま outcome 差とみなしてしまう。
 
-提案の文言は compare の二値判定には比較的自然だが、他モードでは不自然になりやすい。
+- 3) Non-goal:
+  - 読み始め順や証拠型を固定しない。
+  - 構造差の早期 NOT_EQ 条件を観測境界へ狭めない。
+  - 新しい結論前メタゲートを増やさない。
 
-- `compare`: possible conclusion = EQUIVALENT / NOT_EQUIVALENT と読みやすい
-- `diagnose`: possible conclusion は候補 root cause 群であり、二値ではない
-- `explain`: possible conclusion は質問依存で多様、固定集合ではない
-- `audit-improve`: finding は複数個・複数カテゴリであり、「各 possible conclusion」というより「各 finding 仮説」になる
+- Discriminative probe:
+  - 抽象ケースとして、2変更が内部順序だけ異なるが、あるテストは集合比較で吸収し、別のテストは順序文字列を直接比較するとする。
+  - 変更前は agent がどちらか片側だけを見て偽 EQUIV または偽 NOT_EQ に寄りやすい。変更後は同じ差分トリガで「露出する比較」と「吸収する比較」の両方を短く探すため、 test outcome 差の有無をより直接に識別できる。
+  - これは新規ゲート追加ではなく、既存の no-impact tracing 1 行を split probe に置き換える説明で成立している。
 
-つまり、表面的には汎用語だが、実際には compare 的な二者択一構図を暗黙に想定している。ここは汎化性の減点要因。
+- 支払い（必須ゲート総量不変）の明示:
+  - YES。proposal は「Compare checklist の 1 行置換」「必須ゲート純増なし」を明記しており、A/B 対応は足りている。
 
----
+## 最大の懸念
+最大ブロッカーにはしないが、実装文言が具体化されすぎて「assert / normalization という特定証拠型を必ず探す」調子になると、failed-approaches の「証拠種類の事前固定」に近づく。このため、最終文言は test-oracle evidence を抽象的に書き、例示は任意扱いに留めるのが安全。
 
-## 6. 全体の推論品質がどう向上すると期待できるか
+## 修正指示
+1. split probe の 2 本目は "oracle-absorbs-diff" をそのまま固定語にせず、"evidence that the relevant test observation treats the difference as immaterial" のように少し抽象化すること。
+2. After 行の action は「attempt both briefly, then choose based on discriminative evidence」とし、二股探索が新しい長大な必須工程に見えないよう短さを維持すること。
+3. 現行 1 行との置換関係を diff preview でさらに明確にし、追加でなく置換であることを一目で分かる形に保つこと。
 
-### 期待できる改善
+## 結論
+この提案は、監査に通るための説明強化だけでなく、compare の分岐点を実際に変える具体性がある。failed-approaches の主要禁則にも正面からは抵触しておらず、しかも片方向最適化ではなく EQUIV / NOT_EQ の双方に効く。
 
-- 探索開始時点で「何が分かれば十分か」を意識するため、漫然とした情報収集は減る可能性がある。
-- compare モードでは、EQUIV / NOT_EQ の双方に対する必要証拠を意識させることで、片側だけの証拠収集を抑えられる可能性がある。
-- Step 5 の refutation check を、探索末尾の儀式ではなく探索設計に近づける点は良い方向。
-
-### 想定される悪化リスク
-
-- 「minimum evidence」が早期打ち切り条件として作用し、 subtle difference の見落としを増やす。
-- 事前に思いついた証拠類型だけを集める confirmation bias を強化する。
-- compare 以外のモードでは possible conclusion の定義が曖昧で、探索開始時の認知負荷だけ増える。
-- 一行変更に見えて、共通 Step 3 の意味付け全体を変えるため、影響範囲は広い。
-
-### 期待値の結論
-
-局所的には改善の余地があるが、現文言のまま共通 Step 3 に入れると、推論品質の全体改善よりも、モード不整合と探索早期固定のリスクが上回るとみる。
-
----
-
-## 最終判断
-
-承認: NO（理由: `minimum evidence each possible conclusion` という文言が、compare 以外のモードで曖昧であり、かつ failed-approaches.md が禁じる「証拠要件の事前固定」「探索経路の早期細化」に本質的に近い。EQUIVALENT / NOT_EQUIVALENT の両方向へ対称に効く保証も弱く、共通 Step 3 へのグローバル変更としては回帰リスクがある。）
-
-## 補足
-
-もし方向性自体を活かすなら、共通 Step 3 ではなく compare テンプレート内部に限定し、`minimum evidence` ではなく `what evidence would distinguish the competing conclusions or refute the current hypothesis` のように、停止条件ではなく識別条件・反証条件を問う wording に寄せた方が安全である。
+承認: YES
