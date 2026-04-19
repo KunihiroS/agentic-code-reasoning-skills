@@ -491,7 +491,7 @@ else:
   # === 1. 改善案提案 ===
   # 強制カテゴリローテーション (iter-87〜106 の観察で B/E に極端偏り、D/F が 0 回だったため)
   # current_iter % 6: 0=A 1=B 2=C 3=D 4=E 5=F
-  cat_idx=$(( current_iter % 6 ))
+  cat_idx=$(( current_iter % 7 ))
   case "$cat_idx" in
     0) FORCED_CAT="A"; FORCED_CAT_DESC="推論の順序・構造を変える (ステップの順序、並列/直列、逆方向推論)" ;;
     1) FORCED_CAT="B"; FORCED_CAT_DESC="情報の取得方法を改善する (読み方の具体化、探索の優先順位)" ;;
@@ -499,6 +499,7 @@ else:
     3) FORCED_CAT="D"; FORCED_CAT_DESC="メタ認知・自己チェックを強化する (思い込み検査、弱い環特定、確信度)" ;;
     4) FORCED_CAT="E"; FORCED_CAT_DESC="表現・フォーマットを改善する (曖昧文言の具体化、簡潔化、例示)" ;;
     5) FORCED_CAT="F"; FORCED_CAT_DESC="原論文の未活用アイデアを導入する (localize/explain 手法の compare 応用、エラー分析知見)" ;;
+    6) FORCED_CAT="G"; FORCED_CAT_DESC="認知負荷の削減 (不要なセクション・チェック項目・例示の削除、重複の統合、冗長の圧縮)" ;;
   esac
   export FORCED_CAT FORCED_CAT_DESC
   log "Hermes ($HERMES_PROPOSER_MODEL): 分析・改善案作成中... [強制カテゴリ: $FORCED_CAT]"
