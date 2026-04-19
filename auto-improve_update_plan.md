@@ -1672,3 +1672,28 @@ README 記載の公式評価結果:
 - **確定版**: iter-1 の snapshot (482 行)
 - **配布先**: ローカル (~/.claude/skills/)、GitHub (claude-config)、README に同期済み
 - **主な変更点 (iter-0 → iter-1)**: Step 3 に INFO GAIN (optional) + 探索優先度の 1 行追加（わずか 2 行の変更が最も効果的だった）
+
+---
+
+## 19. meta-agent-2/auto-improve ブランチ開始 (2026-04-20)
+
+### 19.1 ブランチの目的
+
+`meta-agent/auto-improve` から派生。前ブランチの仕組み（score_prop、archive、メタエージェント、カテゴリ G）を引き継ぎつつ、ベンチマークモデルを変更して SKILL.md の効果検証を深める。
+
+### 19.2 変更: ベンチマークモデルの変更
+
+| 項目 | Before (meta-agent/auto-improve) | After (meta-agent-2/auto-improve) |
+|------|----------------------------------|-----------------------------------|
+| ベンチモデル | claude-haiku-4.5 | gpt-5.4-mini |
+| プロバイダ | github-copilot | openai-codex |
+
+**変更理由:**
+- より弱いモデルを使うことで、SKILL.md の効果（with/without の差分）をより顕著に観測できると期待
+- haiku は十分に能力が高く、SKILL.md なしでも 59-65% 程度を出すため、スキルの寄与分が小さくノイズに埋もれやすかった
+- 弱いモデルほど構造化された推論ガイドの恩恵が大きい（原論文の知見とも整合）
+- github-copilot 依存を減らし、openai-codex に統一することでプロバイダの一貫性も向上
+
+**注意:**
+- ベースラインが変わるため、archive.jsonl をリセットし iter-0 からやり直す必要がある
+- 前ブランチの iter-1 (compare 75%, audit 92%) とは直接比較不可
