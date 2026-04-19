@@ -106,7 +106,7 @@ For every function or method encountered on a relevant code path, record:
 **Rules:**
 - Read the actual definition. Do not infer behavior from the name.
 - Mark the Behavior column VERIFIED only after reading the source.
-- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for type signatures, documentation, or test usage as secondary evidence. Optionally probe language behavior with an independent script.
+- If source is unavailable (third-party library), mark UNVERIFIED and note the assumption. Search for secondary evidence in priority order: test usage first (shows actual behavior), then type signatures, then documentation. Optionally probe language behavior with an independent script.
 - Trace through conditionals, mapping tables, and configuration — not just the happy path.
 - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
 
@@ -183,8 +183,8 @@ Before tracing individual functions, compare the two changes structurally:
       modified in one change but absent from the other.
   S2: Completeness — does each change cover all the modules that the
       failing tests exercise? If Change B omits a file that Change A
-      modifies and a test imports that file, the changes are NOT EQUIVALENT
-      regardless of the detailed semantics.
+      modifies and a relevant test's PASS/FAIL depends on that file's behavior,
+      the changes are NOT EQUIVALENT (tie it to a concrete assertion boundary).
   S3: Scale assessment — if either patch exceeds ~200 lines of diff,
       prioritize structural differences (S1, S2) and high-level semantic
       comparison over exhaustive line-by-line tracing. Exhaustive tracing
@@ -249,7 +249,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 ```
 
 ### Compare checklist
-- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+- **Structural triage first**: compare modified file lists; treat asymmetry as a counterexample lead unless tied to a PASS/FAIL boundary
 - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
 - Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
