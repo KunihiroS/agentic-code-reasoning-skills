@@ -11,7 +11,9 @@ ${PROPOSAL_PATH} の改善案に従い、以下を順番に実行してくださ
   （diff が散ると audit の“汎化性/過剰適合”疑いが増え、compare の実効差も見えにくくなる）
 - 仕上げチェック: 編集後に、proposal の Decision-point delta（Before/After IF/THEN 2 行）が、
   SKILL.md の該当箇所に **実際に反映** されているかを再読で確認する。
-  （理由だけの言い換えに落ちていたら、差分プレビューと一致する形に戻す）
+  - 特に、Before/After の差が「理由の言い換え」だけになっていないこと（条件 or 行動が変わっていること）。
+  - Trigger line が、Decision-point delta の“分岐を発火させる場所”に配置されていること（末尾の注意書きに追加して終わり、を避ける）。
+  （上が崩れていたら、差分プレビューと一致する形に戻す）
 
 - 追加の停滞対策（必須）:
   - rationale.md に、Decision-point delta を発火させる **Trigger line（最終的に SKILL.md に入った文言）** を 1 行だけ自己引用して載せる。

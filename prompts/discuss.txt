@@ -52,6 +52,10 @@ ${DISCUSSION_PATH}
        → NO の場合: 実装がズレて compare が停滞しやすいので、他が良くても承認しない（まず Trigger line をプレビューに入れさせる）。
      - NO の場合: 監査コメントはまずここを具体化させる（他の指摘は増やしすぎない）
   2) Failure-mode target: 減らしたい誤判定（偽 EQUIV / 偽 NOT_EQUIV / 両方）と、そのメカニズム
+  2.5) STRUCTURAL TRIAGE / 早期結論に触れる提案か？（YES/NO）
+     - YES の場合: NOT_EQUIV の根拠が「ファイル差がある」だけに退化していないか確認。
+       * `impact witness`（PASS/FAIL に結びつく具体的な分岐＝assertion boundary を 1 つ“目撃”できる形）を提案が要求しているか？（YES/NO）
+       * NO なら compare 停滞（偽 NOT_EQUIV）に直結しやすいので承認しない。修正指示はこの 1 点に絞る。
   3) Non-goal: 変えないこと（探索経路の半固定・必須ゲート増・証拠種類の事前固定を避けるための境界条件）
 
   追加チェック（必須、短く 1 点だけ）:
