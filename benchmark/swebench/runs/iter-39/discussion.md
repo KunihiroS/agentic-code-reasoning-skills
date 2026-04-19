@@ -1,183 +1,103 @@
-# Iter-39 Discussion
+# iter-39 proposal discussion
 
 ## 総評
+提案の狙い自体は明確で、compare における「STRUCTURAL TRIAGE からの早期 NOT_EQUIV 断定」の誤爆を減らしたい、という実行時アウトカム差も書けています。監査向けの説明強化だけでなく、実際に早期分岐の発火条件を変えようとしている点は評価できます。
 
-提案は、SKILL.md の Step 3 にある CONFIDENCE 行を
-
-- 変更前: `CONFIDENCE: high / medium / low`
-- 変更後: `CONFIDENCE: high (grounded in P[N]) / medium / low`
-
-へ精緻化し、high を宣言する場合だけ「どの前提に立脚しているか」を明示させるものです。
-
-結論から言うと、この変更は
-- 研究コアと整合的
-- failed-approaches.md の禁止方向をほぼ踏まない
-- 汎化性も高い
-- 回帰リスクも小さい
-
-一方で、改善幅は大きくなく、効き方は「新しい探索能力を足す」というより「根拠のない過剰確信を弱める」タイプです。したがって、効果は plausibly positive だが限定的、という評価です。
+一方で、今回の文言は「構造差が有効になる条件」を `relevant-test dependency witness` という特定の根拠型へ寄せており、failed-approaches.md が禁じている「特定の観測境界への還元」「証拠種類の事前固定」にかなり近いです。さらに、proposal 文面自体に具体 iter 番号が入っており、汎化性ルールにも抵触しています。
 
 ## 1. 既存研究との整合性
+検索なし（理由: 一般原則の範囲で自己完結）
 
-### 1-1. Agentic Code Reasoning 論文との整合
-- URL: https://arxiv.org/abs/2603.01896
-- 要点:
-  - semi-formal reasoning は、明示的な premises、execution path tracing、formal conclusion を要求することで「certificate」として働き、unsupported claim を減らす。
-  - patch equivalence / fault localization / code QA の各タスクで精度改善が報告されている。
-- 本提案との関係:
-  - 「high confidence は premise 参照付きでのみ許す」という変更は、論文の certificate 的発想と整合する。
-  - ただし論文が直接「confidence は premise 番号付きで書け」と主張しているわけではない。したがって、これは論文のコアを拡張する軽微な運用補強であり、論文の未活用アイデア導入というより既存コアの補強に近い。
+README.md / docs/design.md / SKILL.md の範囲では、提案は「証拠なしの早期結論を減らす」という意味で semi-formal reasoning の方向には沿っています。特に SKILL.md の compare が要求する per-test tracing / counterexample obligation と、構造差だけでの即断を慎重化したい意図は整合的です。
 
-### 1-2. Confidence calibration 一般研究との整合
-- URL: https://aclanthology.org/2024.findings-acl.515/
-- 要点:
-  - Fact-and-Reflection (FaR) は、まず relevant facts を出させ、その後に reflection させることで calibration を改善し、Expected Calibration Error を 23.5% 下げたと報告している。
-  - 「答え」より前に「根拠となる fact」を表に出させることが calibration 改善に効く、という方向性を示している。
-- 本提案との関係:
-  - 本提案も「高い確信」を出す前に、その拠り所となる前提を外在化させるため、発想としてはかなり近い。
-  - ただし FaR は QA 全般の calibration 研究であり、コード推論における compare タスクへ直接の外挿ではない点は留保が必要。
+ただし整合しているのは「証拠要求を強める」方向までで、`dependency witness` を早期 NOT_EQUIV の主要根拠型として据える点は、研究コアの強化というより compare の admissible evidence を狭める設計変更です。
 
-### 1-3. Overconfidence 低減研究との整合
-- URL: https://arxiv.org/html/2502.11028
-- 要点:
-  - LLM の overconfidence は実用上のリスクであり、structured prompting や alternative consideration が miscalibration を減らしうる。
-  - 特に「考慮すべき別の可能性を明示する」ことが過剰確信の抑制に寄与しうると整理されている。
-- 本提案との関係:
-  - 本変更は alternative path を直接増やすものではないが、「high confidence を無根拠に言い切れなくする」ので、少なくとも overconfidence 対策としての方向性は妥当。
+## 2. Exploration Framework のカテゴリ選定
+判定: 条件付きで妥当
 
-### 研究整合性の総括
-研究上の裏付けは十分にある。ただし直接的に支持されているのは「confidence を evidence/facts と結びつけると calibration が良くなりうる」という一般原理であり、本提案の 1 行変更がどれほど大きな改善を生むかまでは既存研究から強くは言えない。
+名目上は E. 表現・フォーマット改善 ですが、実効的には compare の早期分岐条件を書き換えるので、単なる wording polish ではなく「意思決定境界の再定義」です。とはいえ、新モード追加や手順純増ではなく既存 2-3 行の置換である点から、E に置くこと自体は不自然ではありません。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
+ただし監査上は「E と称しているが、compare の分岐条件を実質変更している」ことを明示した方がよいです。ここを曖昧にすると、監査には刺さるが compare 影響が説明不足、という停滞が起きやすいです。
 
-実装者はカテゴリ D（メタ認知・自己チェックを強化する）を選んでいる。これは概ね適切です。
+## 3. EQUIVALENT / NOT_EQUIVALENT への作用
+- NOT_EQUIVALENT 側: 直接作用します。従来は structural gap だけで早期 NOT_EQUIV に行けた場面の一部が、ANALYSIS 継続へ押し戻されます。偽 NOT_EQUIV は減りうる一方、真の NOT_EQUIV でも早期結論できず手数が増えます。
+- EQUIVALENT 側: 間接作用です。EQUIV の判定基準自体を変える提案ではなく、NOT_EQUIV への早期流入を減らした結果として、ANALYSIS を経て EQUIV に戻るケースが増える、という形です。
+- したがって片方向にしか作用しないか: 「完全な片方向」ではないが、主作用は明らかに NOT_EQUIV 側です。EQUIV 側への改善は副次的で、逆方向悪化（真の NOT_EQUIV を取り逃がす）への明示的な緩和策はまだ弱いです。
 
-理由:
-- 変更対象は探索順序ではなく、探索中の「自分の確信をどう表明するか」というメタ認知レイヤー。
-- 新しい比較軸や test-level 手順は追加していないため、A/C ではない。
-- 文面の変更ではあるが、単なる wording polish ではなく「high を名乗る条件」を変えるので、E より D と見る方が本質に近い。
+## 4. failed-approaches.md との照合
+結論: 本質的再演の懸念あり
 
-補足すると、この提案は D と E の境界上にはあります。表面的には 1 行の wording change ですが、作用点はフォーマットの見た目ではなく「根拠なき high confidence を抑える」という自己監査的メカニズムです。そのため、主カテゴリ D という整理は妥当です。
+failed-approaches.md には次が明記されています。
+- 「既存の判定基準を、特定の観測境界だけに過度に還元しすぎない」
+- 「結論根拠の型を単一の観測可能な witness に揃える方向の具体化も同類」
 
-## 3. EQUIVALENT 判定 / NOT_EQUIVALENT 判定への作用
-
-## 3-1. 作用メカニズム
-この変更が直接変えるのは「探索中の hypothesis に対して、high confidence をどれだけ気軽に宣言できるか」です。つまり、結論を直接変えるルールではなく、探索中の確信の出し方を抑制する soft control です。
-
-期待される効果は次の通りです。
-- unsupported な high confidence を medium/low に下げやすくなる
-- その結果、仮説への早すぎるコミットを弱める
-- 代替仮説や追加確認へ戻る心理的余地を残す
-
-## 3-2. EQUIVALENT への作用
-EQUIVALENT 誤判定は、典型的には「差分はあるがテスト結果に効かない」と早く確信しすぎるケース、あるいは「反例がなさそう」と premature closure するケースで起きやすいです。
-
-この変更は、そうした premature closure を少し抑える方向に働きます。特に、high confidence の根拠が premise に接続できない場合、探索継続や premise 再点検に戻りやすくなるため、EQUIVALENT 側の誤答抑制には比較的効きやすいです。
-
-## 3-3. NOT_EQUIVALENT への作用
-NOT_EQUIVALENT 誤判定にも理屈上は効きます。たとえば、局所的な semantic difference を見つけた瞬間に「これはテスト outcome も違うはずだ」と過剰確信してしまう場合、high confidence に premise linkage を要求することで、test-path まで追えているかを自省しやすくなります。
-
-ただし NOT_EQUIVALENT 側は、もともと SKILL.md に
-- per-test tracing
-- counterexample obligation
-- diverging assertion の特定
-
-がすでに入っており、証拠要求が強いです。そのため今回の 1 行変更の追加効果は、EQUIVALENT 側より小さい可能性が高いです。
-
-## 3-4. 片方向にしか作用しないか
-「完全に片方向」ではありません。仕組み自体は、unsupported な high confidence 全般を抑えるため、理論上は両方向に作用します。
-
-ただし実効的には非対称です。
-- EQUIVALENT 側: 「反例なし」を早く信じすぎる誤りを抑えるので効きやすい
-- NOT_EQUIVALENT 側: 既存の counterexample 要件が強いため、追加効果は相対的に小さい
-
-したがって、「両方向に作用するが、強さは対称ではない」というのが妥当な評価です。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 4-1. 「特定シグナルの捜索」への寄りすぎ
-今回の変更は「次に何を探せ」とは指定していません。要求しているのは high confidence の場合に premise 番号を明記することだけです。したがって、探索対象を特定シグナルに固定する変更ではありません。
-
-この点で failed-approaches.md の最初の禁止原則には基本的に抵触しません。
-
-### 4-2. 探索の自由度を削りすぎない
-読み始める順番や、どの境界を先に見るかを固定していないため、探索経路の自由度はほぼ維持されています。この点でも大きな抵触はありません。
-
-### 4-3. 局所的な仮説更新を前提修正義務へ直結させすぎない
-今回の変更は、仮説が崩れた瞬間に premise の修正を義務化するものではありません。high confidence を名乗る条件を厳しくするだけで、局所更新と global premise 管理を強く結びつけてはいません。
-
-この意味で、failed-approaches にある「探索中の局所的な仮説更新を、即座の前提修正義務に直結させすぎない」にも大筋では抵触しません。
-
-### 4-4. 結論直前の新しい必須メタ判断の追加
-変更箇所は Step 3 であり、Step 5.5 の pre-conclusion self-check ではありません。したがって blacklist の中でも最も危険な「結論直前の新しい判定ゲート追加」には当たりません。
-
-### 4-5. ただし残る懸念
-懸念がゼロではありません。現行 SKILL.md にはすでに
-- `EVIDENCE: [what supports this hypothesis — cite premises or prior observations]`
-- `Do not treat guesses as premises. Every later claim must reference a premise by number.`
-
-があり、すでに evidence-premise linkage はかなり要求されています。そのため今回の変更は、新原則の導入というより既存要求の再ラベル化に近い面があります。
-
-つまり、「本質的に同じ失敗の再演」ではないが、「既存ガードレールの重複強調」に留まって効果が薄い」リスクはあります。
+今回の proposal はまさに、早期 NOT_EQUIV の admissible evidence を `relevant-test dependency witness` に寄せています。例として import / call path / test-data reference を許していても、どれも「relevant test 依存の witness」という同一族です。したがって、表現を変えた再演に近いです。
 
 ## 5. 汎化性チェック
+判定: 違反あり
 
-## 5-1. 明示的な固有識別子の有無
-提案文には、ベンチマーク対象リポジトリ名、テスト名、関数名、クラス名、ファイルパス、ケース ID、対象コード断片の引用は含まれていません。
+指摘:
+- proposal 冒頭に `iter-33/34/38` という具体的 numeric ID が入っています。ユーザー指定ルール上、これは実装者のルール違反として指摘対象です。
+- リポジトリ名・テスト名・実コード断片の持ち込みは見当たりません。
+- ただし `import/call path/test-data reference` という witness 例示は、言語非依存ではあるものの「テスト経路へマップしやすい差分」を優先する暗黙の前提が強く、非テスト資産や設定駆動差分の広い扱いを弱める恐れがあります。
 
-含まれている具体表現は主に
-- `Step 3`
-- `CONFIDENCE`
-- `P[N]`
-- `Guardrail #1/#2/#4`
-- `iter-39`
-- 変更行数
+## 6. 期待される推論品質向上
+期待できる改善はあります。
+- 構造差だけでの早期断定を減らし、ANALYSIS へ押し戻す条件が明確になる
+- 「ファイル差があるから違うはず」という粗い NOT_EQUIV を減らせる
+- compare の出力において、UNVERIFIED な impact を NOT_EQUIV 根拠として使う誤りを抑えやすい
 
-のような、SKILL 自身またはイテレーション運用上のメタ情報です。これは benchmark target を狙い撃ちする固有識別子とは性質が違います。
+ただしその改善は、「早期 NOT_EQUIV の根拠を狭める」ことで得るタイプなので、真の structural mismatch を早く拾う力まで一緒に弱める回帰リスクがあります。
 
-厳密に言えば `iter-39` のような数値付き運用メタ情報は proposal 文中に存在します。ただし、これは過剰適合を示す benchmark case ID ではなく、単なる反復管理ラベルです。したがって、汎化性違反として強く問題視する必要はありません。
+## 停滞診断（必須）
+- 懸念 1 点: 監査 rubric には刺さる説明（“根拠を伴うときだけ発火”）が十分ですが、compare の実行で許容される根拠型を狭めることの副作用説明が薄く、実運用では「早期 NOT_EQUIV が減る」以外の意思決定差がやや単調です。
 
-## 5-2. ドメイン・言語・テストパターン依存性
-提案は
-- 特定言語の構文
-- 特定フレームワーク
-- 特定のテストスタイル
-- 特定のリポジトリ構造
+- 探索経路の半固定: NO
+- 必須ゲート増: NO
+- 証拠種類の事前固定: YES
+  - 原因文言: `relevant-test dependency witness` / `import/call path/test-data reference`
 
-を前提としていません。premise 番号への grounding は、任意の言語・任意の静的コード推論タスクで成立します。
+## compare 影響の実効性チェック（必須）
+- 0) 実行時アウトカム差:
+  - structural gap を見つけただけでは NOT_EQUIV を即断しにくくなり、ANALYSIS 継続が増える。
+  - その結果、ANSWER が `NO not equivalent` から `YES equivalent` または低信頼結論へ変わるケースが観測可能に増える。
 
-このため、汎化性は高いと判断できます。
+- 1) Decision-point delta:
+  - Before/After が IF/THEN 2 行になっているか: YES
+  - ただし compare 影響が理由の言い換えだけか: NO。条件と行動が実際に変わっている。
+  - Trigger line の自己引用があるか: YES
+  - コメント: この点は proposal の中で最も良い部分です。発火行の自己引用まで含めており、実装ズレの危険は低いです。
 
-## 6. 全体の推論品質への期待改善
+- 2) Failure-mode target:
+  - 主対象: 偽 NOT_EQUIV
+  - 副作用リスク: 真の NOT_EQUIV でも早期断定が抑制され、十分な ANALYSIS を回し切れない場合に偽 EQUIV へ流れる可能性
+  - メカニズム: structural gap 単独を不十分として扱い、impact witness がない場合は継続探索へ回すため
 
-期待できる改善は次の 3 点です。
+- 2.5) STRUCTURAL TRIAGE / 早期結論に触れる提案か?: YES
+  - `impact witness` を要求しているか?: YES
+  - ただし witness の型を実質的に relevant-test dependency family へ寄せているため、ここが compare 停滞の新たなボトルネックになりうる。
 
-1. 高確信のハードルが少し上がる
-- 「なんとなく high」と書きにくくなり、根拠の外在化が促される。
+- 3) Non-goal:
+  - 読解順序の固定はしない
+  - 新しい独立ゲートは増やさない
+  - ただし「早期 NOT_EQUIV の admissible evidence をどの family に限るか」は変えない/狭めすぎない、という境界条件を明記すべき
 
-2. unsupported certainty の早期露見
-- 仮説自体は立ててもよいが、high confidence を付けるには premise linkage が必要なため、思い込み混入が可視化されやすくなる。
+- 追加チェック: Discriminative probe:
+  - 提案内の抽象ケース自体は有効です。片側に追加ファイルがあるが relevant tests は触れない場合、Before は偽 NOT_EQUIV に倒れやすく、After は ANALYSIS に戻して EQUIV を回復できる、という差は具体です。
+  - ただし probe が救うのは主に「余分な追加物」のケースで、逆向きに「structural gap 自体が十分強い非同値証拠」なケースの守りは弱いです。
 
-3. 既存コアを壊さず calibration を補強できる
-- premises / tracing / refutation / conclusion という研究コアを変えずに、確信表明だけを狭く補強している。
+- 追加チェック（支払い）:
+  - 「支払い（必須ゲート総量不変）」の A/B 対応付けが明示されているか: YES
+  - `置換のみ` と書かれており、純増ではないことは明記できています。
 
-一方で、限界も明確です。
-- 新しい証拠収集行動を増やす変更ではない
-- refutation の粒度を直接強化する変更でもない
-- agent が単に `medium` を多用するだけなら、推論そのものは改善しない
+## 監査コメント
+良い点は、compare 停滞の典型である「監査向け説明だけ増えて実行時分岐が変わらない」提案ではなく、早期 NOT_EQUIV の発火条件そのものを書き換えている点です。Decision-point delta と Trigger line も揃っており、proposal としての体裁はかなり良いです。
 
-したがって、期待値としては「大幅な能力向上」ではなく、「過剰確信による取りこぼし・見落としをわずかに減らす軽量な calibration 改善」です。
+ただし最大の問題は、早期 NOT_EQUIV の根拠を `relevant-test dependency witness` へ揃える方向が、failed-approaches.md の「単一 witness への還元」そのものに近いことです。これは compare の誤爆を減らす代わりに、他の有効な structural signal を捨てやすく、結果として compare 全体を弱める懸念があります。加えて iter 番号の明記は汎化性ルール違反です。
 
-## 最終判断
+## 修正指示（2-3点）
+1. `iter-33/34/38` のような具体 ID を proposal から削除してください。過去失敗は「結論直前メタ判断の追加」「探索経路の半固定化」のような一般化表現だけで足ります。
+2. `relevant-test dependency witness` を唯一の admissible 根拠族として置かないでください。置換するなら、「test outcome への具体的影響を示す観測可能根拠を 1 つ」と広げ、import/call path/test-data に閉じない書き方へ差し替えてください。
+3. その広げた文言でも MUST 総量を増やさないよう、現在の early-exit 行の置換に留めることを明示してください。追加行ではなく既存 2-3 行の統合置換で十分です。
 
-私はこの提案を、
-- 汎用的で
-- 研究コアに整合し
-- blacklist を実質回避しており
-- 回帰リスクが低い
-
-という理由で前向きに評価します。
-
-ただし、追加効果は限定的であり、既存の EVIDENCE / premise discipline とかなり近いため、「効くとしても小さく効く」タイプの変更です。大きな改善を約束する提案としては弱いですが、1 行変更としては合理的です。
-
-承認: YES
+承認: NO（理由: failed-approaches.md の「結論根拠を単一 witness 型へ還元しすぎる失敗」の本質的再演に近く、さらに proposal 文面に具体 numeric ID が含まれるため）

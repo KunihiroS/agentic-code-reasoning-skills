@@ -60,13 +60,10 @@ Write a short task statement and list constraints (e.g., no repository execution
 Before concluding anything, write numbered premises grounded in known facts.
 
 ```
-P1 [OBS]: [observed fact about the task, inputs, or expected behavior]
-P2 [OBS]: [observed fact about relevant files, tests, or specifications]
-P3 [ASM|DEF]: ...
+P1: [fact about the task, inputs, or expected behavior]
+P2: [fact about relevant files, tests, or specifications]
+P3: ...
 ```
-
-Tag premises as OBS (observed), ASM (assumed), or DEF (definition) so downstream claims can surface their weakest dependency.
-If a claim depends on ASM, treat that ASM as the highest-priority refutation target.
 
 Do not treat guesses as premises. Every later claim must reference a premise by number.
 
@@ -118,8 +115,7 @@ For every function or method encountered on a relevant code path, record:
 ### Step 5: Refutation check (required)
 This step is **mandatory**, not optional.
 
-**Scope**: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim.
-- Prioritize the claim/assumption whose negation would flip the final answer (EQUIV↔NOT_EQUIV / PASS↔FAIL) when choosing what to refute first.
+**Scope**: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim — especially:
 - "No test exercises this difference" — before asserting this, describe what such a test would look like and show you searched for exactly that pattern.
 - "This behavior is X" for a non-trivial control flow — before asserting this, ask what evidence would exist if the behavior were not X.
 - "These test outcomes are identical/different" — before asserting this, state what evidence would refute it.
@@ -147,7 +143,7 @@ If the opposite answer were true, what evidence would exist?
 Before writing the formal conclusion, check each item below. If any answer is **NO**, fix it before Step 6.
 
 - [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
-- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption; if you cannot state what would change if the assumption were false, reflect that uncertainty in the conclusion/confidence.
+- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
 - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
 - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
 
