@@ -1,20 +1,21 @@
 # Iteration 37 — Overfitting 監査
 
 ## 判定: PASS
-## 合計スコア: 19/21
+## 合計スコア: 16/18
 
 | # | 項目 | スコア | 根拠 |
 |---|------|--------|------|
-| R1 | 汎化性 | 2 | 追加指示は Django 固有の API や SWE-bench 固有のケース知識ではなく、「テストが pass/fail を決める比較値を先に特定し、その値の生成元まで戻って変更影響を確認する」という一般的なデータフロー確認手順である。他プロジェクトにも適用できる。ただし表現は `relevant test` を起点とする compare モード向けであり、完全にタスク非依存とは言い切れないため 2 とする。 |
-| R2 | 研究コアの踏襲 | 3 | README と docs/design.md が強調する研究コアは、番号付き前提・仮説駆動探索・手続き間トレース・必須反証・certificate 的な証拠収集である。今回の追加は compare checklist 内で per-test の証拠収集粒度を上げるだけで、既存のコア構造を削らない。むしろ論文が述べる「明示的 premises と concrete trace によって unsupported claims を防ぐ」という semi-formal reasoning の趣旨を補強している。 |
-| R3 | 推論プロセスの改善 | 3 | 変更は「この場合は EQUIV/NOT_EQ と判定せよ」と結論を指示していない。代わりに、Claim を書く前に (1) テストが実際に読む・比較する値を特定し、(2) その値の生成元へ 1 段戻り、(3) 変更影響の有無を確認する、という探索順序を追加している。これはまさに推論手順の改善である。 |
-| R4 | 反証可能性の維持 | 3 | この追加は反証を弱めず、むしろ「コード差異を見つけたから即 FAIL」という短絡に対する反証チェックとして働く。テストが比較する値まで影響が届いていなければ、その差異は counterexample にならないため、反例採用前の証拠品質を高める変更と評価できる。 |
-| R5 | 複雑性の抑制 | 3 | 変更は Compare checklist に 1 行追加するだけで、テンプレート構造・フェーズ構成・出力フォーマットを増やしていない。新しい表や深い条件分岐もなく、認知負荷の増加はごく小さい。最小 diff で狙いを明確化している。 |
-| R6 | 回帰リスク | 3 | 影響範囲は compare モードの Claim 作成前チェックに限定される。真の NOT_EQ ケースでも、変更がテスト比較値へ届くなら従来どおり差異を立証できるため、正答ケースを壊すリスクは低い。追加コストも「1 段戻る」確認に留まり、広範な手順変更ではない。 |
-| R7 | ケース非依存性 | 2 | diff 自体は特定の issue ID、関数名、パッチ形状を一切参照せず、一般的なテスト値追跡ルールとして書かれている。一方で rationale は django__django-15368 など具体的失敗例を動機としており、特定失敗パターンとの関連は推測可能である。そのため 2 とする。 |
+| R1 | 汎化性 | 3 | diff/rationale は SKILL.md 自身の文言、一般概念（STRUCTURAL TRIAGE, counterexample witness, diverging assertion）と抽象説明に留まっており、ベンチマーク対象リポジトリの固有識別子（リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テストID、実装コード引用）を含まない。変更内容も「構造差だけで NOT EQUIVALENT を確定しない」「具体的 witness を要求する」という一般的な推論規律であり、任意の言語・フレームワーク・プロジェクトに適用可能。 |
+| R2 | 研究コアの踏襲 | 3 | README.md と docs/design.md が示す研究コアは、番号付き前提・仮説駆動探索・手続き間トレース・必須反証・形式的結論である。原論文も semi-formal reasoning を「explicit premises, trace execution paths, formal conclusions, certificate」と説明し、patch equivalence では counterexample obligation を中核に置く。本変更は STRUCTURAL TRIAGE の早期終了を反証義務と整合させるもので、コア構造を弱めず補強している。 |
+| R3 | 推論プロセスの改善 | 3 | 変更は結論ラベル自体を指示せず、早期終了時の手順を改善している。具体的には、構造差を見つけた後も「具体的 counterexample witness を述べる」「述べられなければ ANALYSIS に戻る」という分岐を追加し、構造差→結論の飛躍を防ぐ。これは結論ではなく推論経路の品質向上に当たる。 |
+| R4 | 反証可能性の維持 | 3 | NOT EQUIVALENT を主張する際の根拠を file-list difference だけで済ませず、diverging assertion のような観測可能な witness に接続させているため、反証可能性は明確に強化されている。既存の COUNTEREXAMPLE セクションとも整合し、反証ステップの省略を防ぐ方向の変更である。 |
+| R5 | 複雑性の抑制 | 2 | 追加は4行程度で局所的だが、「witness を述べられるか否か」で ANALYSIS スキップ可否を分ける条件分岐はわずかに複雑性を増やす。ただし、既存の早期終了ルールを全面的に置き換えるほどではなく、改善目的に見合う範囲に収まっている。 |
+| R6 | 回帰リスク | 2 | 影響範囲は Compare セクションの STRUCTURAL TRIAGE 早期終了条件に限定されるため広範な回帰リスクは低い。一方で、failed-approaches.md が警告するように判定条件を特定の観測境界へ寄せすぎると探索を狭める懸念はゼロではない。本変更は「witness がなければ ANALYSIS に戻る」ためそのリスクをかなり緩和しているが、構造差だけで十分だった一部ケースでは早期確定しにくくなる可能性があるため 2 点とする。 |
 
 ## 総合コメント
 
-本変更は、compare モードにおける per-test tracing を「変更箇所の差異発見」で止めず、「テストが実際に比較する値」に接続させる小さなガードレールである。README と docs/design.md が述べる certificate-based reasoning、そして原論文の semi-formal reasoning の核である「証拠を先に埋めてから結論する」という方針と整合する。特に原論文の error analysis にある *incomplete execution tracing* や *dismissing subtle differences* に対して、テスト観測値までの到達確認を要求する点は妥当な補強である。
+今回の変更は、STRUCTURAL TRIAGE を維持しつつ、NOT EQUIVALENT の結論だけを「具体的な counterexample witness」に接続し直した点が妥当である。これは README.md / docs/design.md / 原論文の certificate-based reasoning と整合しており、特に patch equivalence における counterexample obligation を早期終了経路にも適用した形になっている。
 
-また、変更は 1 行追加のみで複雑性が非常に低く、テンプレートや反証義務を削っていないため、overfitting や研究コアからの逸脱は見られない。懸念があるとすれば、動機が特定の EQUIV 偽陰性ケース分析に基づいている点だが、ルール自体は十分一般化されている。合格基準（全項目 2 以上、合計 14 以上）を明確に満たすため、本監査では PASS とする。
+また、rationale が述べる「構造差のみで偽 NOT EQUIVALENT が生じうる」という問題設定は、結論の直指示ではなく推論手順の改善として表現されているため、過剰適合の兆候は見られない。failed-approaches.md の観点では、判定根拠を特定の観測境界に過度還元する変更は危険だが、本変更は witness 不在時に ANALYSIS へ戻す逃げ道を残しており、その失敗類型をある程度回避している。
+
+以上より、汎用性・研究整合性・反証可能性の観点で十分に合格水準を満たしており、監査結果は PASS とする。

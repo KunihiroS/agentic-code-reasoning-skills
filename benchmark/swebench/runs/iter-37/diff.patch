@@ -1,12 +1,17 @@
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..e82029b 100644
+index d8962e92..2c950ba5 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -215,6 +215,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
- - Identify changed files for both sides
- - Identify fail-to-pass AND pass-to-pass tests
- - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
-+- For each relevant test, read the test to identify the data value it reads or compares to determine pass/fail; trace back one step to where that value is produced and verify whether the change affects it before writing a Claim
- - Trace each test through both changes separately before comparing
- - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
- - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+@@ -191,8 +191,10 @@ Before tracing individual functions, compare the two changes structurally:
+       is infeasible for large patches and produces unreliable conclusions.
+ 
+ If S1 or S2 reveals a clear structural gap (missing file, missing module
+-update, missing test data), you may proceed directly to FORMAL CONCLUSION
+-with NOT EQUIVALENT without completing the full ANALYSIS section.
++update, missing test data), you may skip the full ANALYSIS section,
++but only conclude NOT EQUIVALENT after stating a concrete counterexample witness.
++If you cannot state such a witness, complete the ANALYSIS section.
++If you conclude NOT EQUIVALENT from STRUCTURAL TRIAGE, cite a counterexample witness (e.g., a diverging assertion) rather than file-list difference alone.
+ 
+ PREMISES:
+ P1: Change A modifies [file(s)] by [specific description]

@@ -1,111 +1,79 @@
-# Iter-37 Proposal
+過去提案との差異: 「証拠源や読解順序を局所的に固定する」のではなく、STRUCTURAL TRIAGE の早期 NOT EQUIVALENT を既存の counterexample 証拠枠へ接続して“結論根拠の型”だけを揃える。
+Target: 偽 NOT_EQUIV（副次的に偽 EQUIV も抑制）
+Mechanism (抽象): 「構造差」から直接結論へ飛ぶ比較をやめ、構造差を“テスト影響の根拠型（witness）”で分類してから結論へ進める。
+Non-goal: 構造差の検出基準を特定の観測境界（テスト依存・オラクル可視など）へ還元して探索経路を半固定化しない。
 
-## Exploration Framework Category: B
-### カテゴリ内のメカニズム選択理由
+ステップ 1（禁止方向の列挙）
+- 禁止: 探索で追うべき証拠タイプをテンプレで事前固定しすぎる（確認バイアス・探索入口の狭窄）。
+- 禁止: 既存判定基準を「特定の観測境界だけ」に過度に還元して狭める（境界に乗らない決定的シグナルを捨てやすい）。
+- 禁止: 読解順序・探索経路の半固定（どこから読み始めるか／どの境界を先に確定するかの固定）。
+- 禁止: 結論直前の新しい必須メタ判断の純増（萎縮・形式適応・既存チェックと重複）。
+- 直近却下との注意点: EQUIV 側だけ／NOT_EQ 側だけに効く片方向最適化、または focus_domain の偏りで逆方向を悪化させる提案は不可。
 
-カテゴリ B は「情報の取得方法を改善する」と定義され、次の三つのメカニズムを含む:
-- コードの読み方の指示を具体化する
-- 何を探すかではなく、どう探すかを改善する
-- 探索の優先順位付けを変える
+ステップ 2（SKILL.md から decision point 候補を 3 つ）
+候補 A: STRUCTURAL TRIAGE の早期終了
+- IF: S1/S2 で structural gap を見つけた
+- THEN: ANALYSIS を省略して NOT EQUIVALENT 結論へ進む
 
-今回選択するメカニズムは「探索の優先順位付けを変える」である。
+候補 B: 「関連テスト」が不明/未提示な場合の D1 スコープ調整
+- IF: テストスイートが不明で D1 をそのまま適用できない
+- THEN: D1 のスコープを制限して比較結論（EQUIV/NOT_EQ/不確実性の明示）へ進む
 
-compare モードの STRUCTURAL TRIAGE において S3 は大規模パッチへの対処を定めているが、
-小・中規模パッチに対して「どの差分を先に読むか」の優先付けが明示されていない。
-エージェントは差分をファイル出現順に機械的に処理しがちであり、
-意味的に中心的な変更（ロジック変更、制御フロー変更）を
-付随的な変更（フォーマット、コメント、インポート整理）と同列に扱ってしまう。
-これは overall スコアを下げる主因の一つである「証拠収集の方向性の分散」
-—— 関係の薄い差分に注意を使い、核心的な差分の証拠収集が浅くなる —— を引き起こす。
+候補 C: UNVERIFIED が結論へ影響しうる場合の扱い
+- IF: 重要関数が UNVERIFIED で、その仮定がテスト outcome を変えうる
+- THEN: その仮定を含む強い結論（EQUIV/NOT_EQ）を避けるか、追加探索（副証拠）へ倒す
 
-先に意味変化の大きい差分を読むよう優先順位を明示することで、
-限られた探索ステップを核心的な証拠取得に集中でき、
-全体的な推論品質の向上が見込まれる。
+ステップ 2.5（各候補のデフォルト挙動と、観測可能に変わるアウトカム）
+- 候補 A: デフォルトは「ファイル差＝即 NOT_EQUIV」に倒れやすい（ANALYSIS/COUNTEREXAMPLE を迂回）→ 変更後は NOT_EQUIV/追加探索 の分岐が変わる。
+- 候補 B: デフォルトは「テスト不明でも形式上 compare を完走し、スコープ制限が曖昧」になりやすい → 変更後は UNVERIFIED/保留/CONFIDENCE が変わる。
+- 候補 C: デフォルトは「UNVERIFIED を但し書きしつつ結論へ進む」か「過度な保留」に振れやすい → 変更後は EQUIV/保留/CONFIDENCE が変わる。
 
----
+ステップ 3（1 つ選ぶ）
+選択: 候補 A（STRUCTURAL TRIAGE の早期終了）
+選定理由（2 点以内）:
+- compare の最終アウトカム（NOT_EQUIV 早期確定 vs 追加探索）が直接変わり、停滞の主因になりやすい「早期断定」を制御できる。
+- 現行テンプレート内に「NOT_EQ なら counterexample が必要」という根拠型が既にあるのに、早期終了がそれをバイパスできており、比較枠組みの不整合が起きている。
 
-## 改善仮説
+ステップ 4（改善仮説: 1 つ）
+仮説: 「構造差は差異検出には有効だが、それ単体を結論根拠にすると偽 NOT_EQUIV を生む」。STRUCTURAL TRIAGE は“結論”ではなく“差異の分類”として扱い、NOT_EQUIV 結論へ進むときは常にテスト影響の witness（具体的な失敗/差分を生む観測点）で根拠型を揃えると、両方向（EQUIV/NOT_EQ）の判定品質が上がる。
 
-compare モードの構造的トリアージ段階で、差分の種別（ロジック変更 vs 付随的変更）に
-基づく読解優先順位を明示することで、エージェントが限られた探索コストを
-意味的に中心的な変更の検証に優先投入できるようになり、
-evidence の収集精度が向上して全体的な判定精度が上がる。
+ステップ 5（抽象ケースで Before/After の挙動差）
+抽象ケース: 変更 A は「周辺の補助ファイル」も触るが、変更 B は触らない。ただし relevant tests はその補助ファイルに到達せず、期待される PASS/FAIL は両者で同一。
+- Before（起きがち）: IF “A だけが触るファイルがある” THEN NOT EQUIVALENT（STRUCTURAL TRIAGE の早期終了）→ 偽 NOT_EQUIV。
+- After（避ける）: IF “A だけが触るファイルがある” THEN まず「それが relevant tests に影響する witness があるか」を最小限で示す（例: そのファイルを import/call するテスト、または diverging assertion）; witness が示せないなら早期 NOT_EQ はせず ANALYSIS へ進む → 最終的に EQUIVALENT へ到達（または根拠不足なら不確実性を明示）。
 
----
+カテゴリ C 内での具体的メカニズム選択理由
+- これは探索経路や証拠種類を固定する変更ではなく、「比較の粒度／差異重要度」の扱いを変える提案。
+- “構造差＝重要”を一段階の判断にせず、「差異は検出」「重要度は witness で分類」という二段階にすることで、比較枠組み（差異→結論の写像）を改善する。
 
-## SKILL.md のどこをどう変えるか
+SKILL.md 該当箇所（自己引用）と変更
+引用:
+- "If S1 or S2 reveals a clear structural gap ... you may proceed directly to FORMAL CONCLUSION with NOT EQUIVALENT without completing the full ANALYSIS section."
+- "COUNTEREXAMPLE (required if claiming NOT EQUIVALENT): ... Diverging assertion: [test_file:line — the specific assert/check that produces a different result]"
 
-### 変更対象
+変更方針:
+- STRUCTURAL TRIAGE の早期終了を「ANALYSIS は省略可」までに留め、NOT EQUIVALENT 結論へ進む場合は counterexample witness（diverging assertion など）を必ず提示する、という比較枠組みに揃える。
 
-compare モードの STRUCTURAL TRIAGE、S3 の説明行。
+Decision-point delta（IF/THEN を 2 行）
+Before: IF S1/S2 で structural gap を見つけた THEN ANALYSIS を飛ばして NOT EQUIVALENT に進む because 構造差そのものを結論根拠として許している。
+After:  IF S1/S2 で structural gap を見つけた THEN ANALYSIS は省略してよいが、NOT EQUIVALENT に進むなら counterexample witness（diverging assertion 等）を提示し、提示できない場合は ANALYSIS に戻る because NOT_EQ の根拠型を「テスト影響の観測点」に揃える。
 
-### 変更前
+変更差分プレビュー（Before/After、Trigger line planned を 1 行含む）
+Before:
+  If S1 or S2 reveals a clear structural gap ... you may proceed directly to FORMAL CONCLUSION
+  with NOT EQUIVALENT without completing the full ANALYSIS section.
+After:
+  If S1 or S2 reveals a clear structural gap ... you may skip the full ANALYSIS section,
+  but only conclude NOT EQUIVALENT after stating a concrete counterexample witness.
+  Trigger line (planned): "If you conclude NOT EQUIVALENT from STRUCTURAL TRIAGE, cite a counterexample witness (e.g., a diverging assertion) rather than file-list difference alone."
 
-```
-  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-      prioritize structural differences (S1, S2) and high-level semantic
-      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-      is infeasible for large patches and produces unreliable conclusions.
-```
+Discriminative probe（抽象ケース）
+- Before: 片側だけが触るファイルがある、という理由だけで NOT_EQ 早期確定 → 実際は relevant tests に影響せず、偽 NOT_EQ が発生しやすい。
+- After: 同じ状況でも witness を要求するため、影響が示せない structural gap は「追加探索（ANALYSIS）」へ押し戻され、最終結論が EQUIV（または不確実性明示）に分岐しうる。
 
-### 変更後 (追加分: 1行, 変更行: 1行、計2行の変更)
+failed-approaches.md との照合（整合点）
+- 「証拠種類の事前固定」や「読解順序の半固定」を導入しない（witness は“型”であり、どこから読むかを固定しない）。
+- 「特定の観測境界への過度な還元」を避けつつ、NOT_EQ 結論の根拠を具体化して偽 NOT_EQ を減らす（境界の固定ではなく、結論根拠の明示）。
 
-```
-  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-      prioritize structural differences (S1, S2) and high-level semantic
-      comparison over exhaustive line-by-line tracing. Exhaustive tracing
-      is infeasible for large patches and produces unreliable conclusions.
-      For any size patch, read logic/control-flow changes before
-      formatting, comment, or import-only changes.
-```
-
-### 説明
-
-既存の S3 行の末尾に 1 文（2行）を追記するのみ。
-「大規模パッチ向けの既存指示」はそのまま維持しつつ、
-「全サイズパッチ共通の読解優先順位」を補足として付加する。
-新規セクション・新規フィールド・新規ステップの追加はなし。
-
----
-
-## 一般的な推論品質への期待効果
-
-### 減少が期待される失敗パターン
-
-1. 付随的差分（フォーマット・コメント・インポート変更）を詳細にトレースした後、
-   核心的なロジック変更のトレースが浅くなり EQUIVALENT を誤判定するケース
-   （overall および equiv カテゴリの失敗に直結）
-
-2. 複数ファイルにまたがる変更で、出現順に読み進めた結果、
-   最も意味的に重要な変更が後回しになり、探索が途中で収束してしまうケース
-
-3. 「差分があるがテスト影響なし」と早期に判定してしまうケース —— ロジック変更を
-   先に確認する順序制約が、Guardrail #4（微妙な差分を軽視しない）の遵守を補強する
-
-### 回帰リスク
-
-変更範囲は S3 の補足 1 文のみ。
-NOT_EQUIVALENT 判定（既に 100% 正答）が影響を受けるとすれば、
-ロジック変更が先に見つかるため EQUIVALENT 誤判定がしにくくなる方向であり、
-スコアを下げる方向の回帰は考えにくい。
-
----
-
-## failed-approaches.md の汎用原則との照合
-
-| 原則 | 該当するか | 判定 |
-|------|-----------|------|
-| 次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける | 今回の変更は「証拠の種類」ではなく「読む順序の優先付け」を示す。種類の固定ではない | 抵触なし |
-| 探索の自由度を削りすぎない | 優先順位は「先に読む」であり「後の変更を読まない」ではない。探索の全体幅は変わらない | 抵触なし |
-| 仮説更新を前提修正義務に直結させすぎない | 本変更は探索順序のみを扱い、仮説更新・前提管理とは無関係 | 抵触なし |
-| 結論直前の自己監査に新しい必須のメタ判断を増やしすぎない | 本変更は Step 3 以前の STRUCTURAL TRIAGE 内の補足であり、Step 5.5 の自己監査には影響しない | 抵触なし |
-
-全原則との照合: **抵触なし**
-
----
-
-## 変更規模の宣言
-
-- 変更行数: **2行追加**（既存行の削除なし）
-- hard limit（5行）以内: **適合**
-- 新規ステップ・新規フィールド・新規セクションの追加: **なし**
+変更規模の宣言
+- 変更は Compare セクションの STRUCTURAL TRIAGE 早期終了説明に対する置換/追記のみ。差分は五行以内。

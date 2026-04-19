@@ -1,61 +1,87 @@
 あなたは SKILL.md の変更に対する監査役です。
 
-以下のファイルを参照してください:
-- Objective.md の Audit Rubric セクション
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
 - README.md
 - docs/design.md
 - docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
 
-以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
-Objective.md に定義された audit.md フォーマットに従って
-benchmark/swebench/runs/iter-37/audit.md を作成してください。
+この 6 ファイル以外を read / search / list してはいけません。
 
-合格基準: 全項目 2 以上、かつ合計 14/21 以上
+【出力先】
+benchmark/swebench/runs/iter-37/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
 
 diff:
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..e82029b 100644
+index d8962e92..2c950ba5 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -215,6 +215,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
- - Identify changed files for both sides
- - Identify fail-to-pass AND pass-to-pass tests
- - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
-+- For each relevant test, read the test to identify the data value it reads or compares to determine pass/fail; trace back one step to where that value is produced and verify whether the change affects it before writing a Claim
- - Trace each test through both changes separately before comparing
- - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
- - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+@@ -191,8 +191,10 @@ Before tracing individual functions, compare the two changes structurally:
+       is infeasible for large patches and produces unreliable conclusions.
+ 
+ If S1 or S2 reveals a clear structural gap (missing file, missing module
+-update, missing test data), you may proceed directly to FORMAL CONCLUSION
+-with NOT EQUIVALENT without completing the full ANALYSIS section.
++update, missing test data), you may skip the full ANALYSIS section,
++but only conclude NOT EQUIVALENT after stating a concrete counterexample witness.
++If you cannot state such a witness, complete the ANALYSIS section.
++If you conclude NOT EQUIVALENT from STRUCTURAL TRIAGE, cite a counterexample witness (e.g., a diverging assertion) rather than file-list difference alone.
+ 
+ PREMISES:
+ P1: Change A modifies [file(s)] by [specific description]
 
 rationale:
 # Iteration 37 — 変更理由
 
 ## 前イテレーションの分析
 
-- 前回スコア: 65%（13/20）
-- 失敗ケース: django__django-15368, django__django-11179, django__django-13821, django__django-15382, django__django-14787, django__django-11433, django__django-12663
-- 失敗原因の分析:
-  - EQUIV 偽陰性（4件: 15368, 11179, 13821, 15382）: エージェントがコード差異を発見した後、その差異がテストの比較値に到達するかを確認せずに Claim FAIL と書く。テストが実際に比較している値を読まずに NOT_EQ と誤判定している。
-  - UNKNOWN（3件: 14787, 11433, 12663）: ターン数超過による未判定。探索コスト増加が原因であり、今回の変更対象外。
+- 前回スコア: 不明（このイテレーションの参照範囲では提供されていない）
+- 失敗ケース: 不明（このイテレーションの参照範囲では提供されていない）
+- 失敗原因の分析: STRUCTURAL TRIAGE で「構造差」を検出しただけで NOT EQUIVALENT を早期確定できると、後段で要求されている counterexample witness（テスト影響を示す観測点）なしに結論へ到達しうる。その結果、「ファイル差（構造差）はあるが relevant tests の outcome は同一」という状況で偽 NOT EQUIVALENT を生みやすい。
 
 ## 改善仮説
 
-各 relevant test についてテストソースを読み「テストが pass/fail を決定するために読む・比較するデータ依存値」を先に特定し、その値の生成元を 1 段逆方向に確認してから Claim を書く探索行動を追加することで、コード差異の発見でトレースを打ち切るショートカットが構造的に減り、EQUIV 偽陰性（EQUIV を NOT_EQ と誤判定）を減らせる。
+STRUCTURAL TRIAGE は差異検出には有効だが、それ自体を結論根拠にすると誤判定（特に偽 NOT EQUIVALENT）を誘発する。よって、STRUCTURAL TRIAGE から NOT EQUIVALENT を結論する場合でも、結論根拠の型を counterexample witness（例: diverging assertion）に揃えるようにし、witness を提示できない structural gap は ANALYSIS へ押し戻す。
 
-現在の失敗パターンでは、エージェントは「Change A と Change B で関数 X が返す値が違う」というコード差異を発見し、その差異がテストの比較値に到達するかを確認せずに Claim FAIL と書く。テストが実際に比較している値（例: `assertEqual(response.status_code, 200)` の `response.status_code`）を先に特定すれば、変更がその値に影響するかどうかを確認する動機が生まれ、影響しない場合は Claim を PASS に修正できる。
+Trigger line (final): "If you conclude NOT EQUIVALENT from STRUCTURAL TRIAGE, cite a counterexample witness (e.g., a diverging assertion) rather than file-list difference alone."
+
+上の Trigger line は提案で計画された Trigger line と同一（少なくとも同等の一般化）であることを確認した。
 
 ## 変更内容
 
-Compare checklist に探索指示を 1 行追加した。
-
-追加行:
-```
-- For each relevant test, read the test to identify the data value it reads or compares to determine pass/fail; trace back one step to where that value is produced and verify whether the change affects it before writing a Claim
-```
-
-変更規模: 1 行追加のみ。テンプレートフィールド変更なし。新セクション追加なし。
+Compare セクションの STRUCTURAL TRIAGE 早期終了ルールを置換し、(1) ANALYSIS のスキップ自体は許容しつつ、(2) NOT EQUIVALENT 結論には concrete counterexample witness を必須化し、(3) witness を提示できない場合は ANALYSIS を完了する、という分岐へ変更した。また、この分岐を発火させるための Trigger line を該当箇所に直接配置した。
 
 ## 期待効果
 
-- EQUIV 正答率の改善を期待（現在 6/10 → 7〜9/10）。失敗していた 15368, 11179, 13821, 15382 において、テストの比較値を先に特定する探索ステップが挿入されることで、変更がその値に影響しないと確認できれば Claim を PASS に修正できる。
-- NOT_EQ 正答率への悪影響なし（現在 7/10 → 維持 or 改善）。真の NOT_EQ ケースでは変更がテストの比較値に確かに影響を与えるため、追加の確認ステップは結論を変えない。
-- UNKNOWN ケース（14787, 11433, 12663）への影響なし。追加は 1 ステップの確認のみであり、ターン数超過の原因となる探索コストを増やさない。
+- 偽 NOT EQUIVALENT の抑制: 「構造差のみ」→「テスト影響の観測点（witness）を伴う差異」へ根拠型を統一することで、結論が structural gap の存在だけに引きずられるのを防ぐ。
+- 双方向の判定品質の安定: witness が示せない場合に ANALYSIS へ戻すため、EQUIVALENT に到達できるケース（または根拠不足の不確実性明示）を閉ざしにくくなり、NOT_EQ 側への片方向最適化になりにくい。

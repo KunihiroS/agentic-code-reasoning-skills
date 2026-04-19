@@ -1,160 +1,96 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/14/26 11:28:50] INFO     Processing request of type            server.py:727
+[04/19/26 19:49:17] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-まず参照可能なファイルを読み込みます。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      SKILL.md  0.8s
-  ┊ 📖 read      Objective.md  0.8s
-  ┊ 📖 preparing read_file…
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      failed-approaches.md  0.8s
-  ┊ 📖 read      README.md  0.8s
-  ┊ 📖 preparing read_file…
-  ┊ 📖 read      docs/design.md  0.8s
-
-╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-全ファイルを読み込みました。分析と proposal.md の作成に移ります。
-╰──────────────────────────────────────────────────────────────────────────────╯
-  ┊ 🐍 preparing execute_code…
-  ┊ 🐍 exec      import os  3.2s
-  ┊ ✍️ preparing write_file…
+  ┊ 📖 read      failed-approaches.md  0.9s
+  ┊ 📖 read      SKILL.md  0.9s
+  ┊ 📖 read      Objective.md  0.9s
   ┊ ✍️  write     benchmark/swebench/runs/iter-37/proposal.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-37/proposal.md → b/benchmark/swebench/runs/iter-37/proposal.md
-@@ -1,127 +1,111 @@
--# Iteration 37 — 改善案（差し戻し後再提案）
-+# Iter-37 Proposal
+@@ -1,111 +1,79 @@
+-# Iter-37 Proposal
++過去提案との差異: 「証拠源や読解順序を局所的に固定する」のではなく、STRUCTURAL TRIAGE の早期 NOT EQUIVALENT を既存の counterexample 証拠枠へ接続して“結論根拠の型”だけを揃える。
++Target: 偽 NOT_EQUIV（副次的に偽 EQUIV も抑制）
++Mechanism (抽象): 「構造差」から直接結論へ飛ぶ比較をやめ、構造差を“テスト影響の根拠型（witness）”で分類してから結論へ進める。
++Non-goal: 構造差の検出基準を特定の観測境界（テスト依存・オラクル可視など）へ還元して探索経路を半固定化しない。
  
--## 前回提案の却下理由と方針転換
-+## Exploration Framework Category: B
-+### カテゴリ内のメカニズム選択理由
+-## Exploration Framework Category: B
+-### カテゴリ内のメカニズム選択理由
++ステップ 1（禁止方向の列挙）
++- 禁止: 探索で追うべき証拠タイプをテンプレで事前固定しすぎる（確認バイアス・探索入口の狭窄）。
++- 禁止: 既存判定基準を「特定の観測境界だけ」に過度に還元して狭める（境界に乗らない決定的シグナルを捨てやすい）。
++- 禁止: 読解順序・探索経路の半固定（どこから読み始めるか／どの境界を先に確定するかの固定）。
++- 禁止: 結論直前の新しい必須メタ判断の純増（萎縮・形式適応・既存チェックと重複）。
++- 直近却下との注意点: EQUIV 側だけ／NOT_EQ 側だけに効く片方向最適化、または focus_domain の偏りで逆方向を悪化させる提案は不可。
  
--前回提案（`because [trace through changed code to the assertion or exception — cite file:line]`）は以下の理由で却下された：
-+カテゴリ B は「情報の取得方法を改善する」と定義され、次の三つのメカニズムを含む:
-+- コードの読み方の指示を具体化する
-+- 何を探すかではなく、どう探すかを改善する
-+- 探索の優先順位付けを変える
+-カテゴリ B は「情報の取得方法を改善する」と定義され、次の三つのメカニズムを含む:
+-- コードの読み方の指示を具体化する
+-- 何を探すかではなく、どう探すかを改善する
+-- 探索の優先順位付けを変える
++ステップ 2（SKILL.md から decision point 候補を 3 つ）
++候補 A: STRUCTURAL TRIAGE の早期終了
++- IF: S1/S2 で structural gap を見つけた
++- THEN: ANALYSIS を省略して NOT EQUIVALENT 結論へ進む
  
--- **BL-16 / BL-11 / BL-2 系と実質同型**：「assertion or exception までトレースを終端させる」は、観測点アンカリング（BL-16）・outcome mechanism 注釈（BL-11）・NOT_EQ 立証責任引き上げ（BL-2）と同方向
--- **実効差分が非対称**：PASS/FAIL 両 Claim に対称的な文言でも、差分は FAIL 側の立証負荷として重く作用する（共通原則 #6）
--- **カテゴリ F の新規性不足**：既存失敗（BL-16/11/2 系）の再表現であり、未試行メカニズムとは言いにくい
-+今回選択するメカニズムは「探索の優先順位付けを変える」である。
+-今回選択するメカニズムは「探索の優先順位付けを変える」である。
++候補 B: 「関連テスト」が不明/未提示な場合の D1 スコープ調整
++- IF: テストスイートが不明で D1 をそのまま適用できない
++- THEN: D1 のスコープを制限して比較結論（EQUIV/NOT_EQ/不確実性の明示）へ進む
  
--監査役の推薦に従い、**カテゴリ B（情報の取得方法）** として、「変更差分行からフォワードトレースする」代わりに「テストが読む最終データ依存値から 1 段逆方向に遡る」探索指示を追加する。
-+compare モードの STRUCTURAL TRIAGE において S3 は大規模パッチへの対処を定めているが、
-+小・中規模パッチに対して「どの差分を先に読むか」の優先付けが明示されていない。
-+エージェントは差分をファイル出現順に機械的に処理しがちであり、
-+意味的に中心的な変更（ロジック変更、制御フロー変更）を
-+付随的な変更（フォーマット、コメント、インポート整理）と同列に扱ってしまう。
-+これは overall スコアを下げる主因の一つである「証拠収集の方向性の分散」
-+—— 関係の薄い差分に注意を使い、核心的な差分の証拠収集が浅くなる —— を引き起こす。
-+
-+先に意味変化の大きい差分を読むよう優先順位を明示することで、
-+限られた探索ステップを核心的な証拠取得に集中でき、
-+全体的な推論品質の向上が見込まれる。
+-compare モードの STRUCTURAL TRIAGE において S3 は大規模パッチへの対処を定めているが、
+-小・中規模パッチに対して「どの差分を先に読むか」の優先付けが明示されていない。
+-エージェントは差分をファイル出現順に機械的に処理しがちであり、
+-意味的に中心的な変更（ロジック変更、制御フロー変更）を
+-付随的な変更（フォーマット、コメント、インポート整理）と同列に扱ってしまう。
+-これは overall スコアを下げる主因の一つである「証拠収集の方向性の分散」
+-—— 関係の薄い差分に注意を使い、核心的な差分の証拠収集が浅くなる —— を引き起こす。
++候補 C: UNVERIFIED が結論へ影響しうる場合の扱い
++- IF: 重要関数が UNVERIFIED で、その仮定がテスト outcome を変えうる
++- THEN: その仮定を含む強い結論（EQUIV/NOT_EQ）を避けるか、追加探索（副証拠）へ倒す
  
- ---
+-先に意味変化の大きい差分を読むよう優先順位を明示することで、
+-限られた探索ステップを核心的な証拠取得に集中でき、
+-全体的な推論品質の向上が見込まれる。
++ステップ 2.5（各候補のデフォルト挙動と、観測可能に変わるアウトカム）
++- 候補 A: デフォルトは「ファイル差＝即 NOT_EQUIV」に倒れやすい（ANALYSIS/COUNTEREXAMPLE を迂回）→ 変更後は NOT_EQUIV/追加探索 の分岐が変わる。
++- 候補 B: デフォルトは「テスト不明でも形式上 compare を完走し、スコープ制限が曖昧」になりやすい → 変更後は UNVERIFIED/保留/CONFIDENCE が変わる。
++- 候補 C: デフォルトは「UNVERIFIED を但し書きしつつ結論へ進む」か「過度な保留」に振れやすい → 変更後は EQUIV/保留/CONFIDENCE が変わる。
  
--## 選択した Exploration Framework カテゴリ
-+## 改善仮説
+----
++ステップ 3（1 つ選ぶ）
++選択: 候補 A（STRUCTURAL TRIAGE の早期終了）
++選定理由（2 点以内）:
++- compare の最終アウトカム（NOT_EQUIV 早期確定 vs 追加探索）が直接変わり、停滞の主因になりやすい「早期断定」を制御できる。
++- 現行テンプレート内に「NOT_EQ なら counterexample が必要」という根拠型が既にあるのに、早期終了がそれをバイパスできており、比較枠組みの不整合が起きている。
  
--**カテゴリ B: 情報の取得方法を改善する**
--
--> 「何を探すかではなく、どう探すか・何を確認してから判断するかを改善する」
--
--### 選択理由
--
--現行の失敗モード（15368, 11179, 13821, 15382）に共通する根本は「コード差異を発見した後、それがテスト結果を変えるかを確認せずに Claim FAIL と書く」ことにある。現在の Compare checklist は「変更差分からテストを通じてフォワードトレースする」ことを指示しており、エージェントは差分行を起点にして「この関数が Y を返す → テストが失敗する」という連鎖をフォワードに構成する。
--
--この方向では、差分と test の間にある「*テストは何の値を実際に比較しているか*」を読まずにスキップしやすい。テストが比較している値（最終データ依存値）を先に特定し、その値が変更によって変わるかを確認する方向（test → 値 → 変更の影響）は、現行とは探索の起点と方向が異なる。
--
--### 過去の Category B 試行との差分確認
--
--| 過去の試行 | 機構 | 今回との違い |
--|---|---|---|
--| BL-8 (iter-7) | Step 4 テーブルに `Relevant to` 列を追加（受動的記録フィールド） | 今回はフィールド追加ではなく、探索の開始点・方向を変える探索指示 |
--| BL-10 (iter-7) | Reachability ゲート（変更コードへの到達確認 YES/NO） | BL-10 は「差分からテストへ到達するか」の YES/NO ゲート。今回は「テストが読む値から変更へ遡る」方向であり、ゲートではなく探索順序の変更 |
--| BL-11 (iter-23) | outcome mechanism 注釈（assertion/exception/side effect を記録） | 今回は固定ラベルを使わない。テストごとに「どの値が outcome を決めるか」を読んで特定する |
--| BL-12 (iter-25) | テスト先読みによる固定順序化（`Entry:` フィールド追加） | BL-12 は「先にテストの entry point を記録する」フィールド追加。今回は「テストから値の依存元を特定する」探索指示であり、フィールド追加なし |
--| BL-13 (iter-26) | `Key value` データフロートレース欄の追加 | BL-13 は新フィールドとして追加し記録させた。今回はフィールド化しない。チェックリストへの探索指示のみ |
--| BL-16 (iter-30) | `Comparison:` 直前に first observation point 注釈を追加 | BL-16 は観測点を「テンプレートフィールド」として追加。今回はテンプレートを変えず、checklist の探索指示のみ変更 |
-+compare モードの構造的トリアージ段階で、差分の種別（ロジック変更 vs 付随的変更）に
-+基づく読解優先順位を明示することで、エージェントが限られた探索コストを
-+意味的に中心的な変更の検証に優先投入できるようになり、
-+evidence の収集精度が向上して全体的な判定精度が上がる。
+-## 改善仮説
++ステップ 4（改善仮説: 1 つ）
++仮説: 「構造差は差異検出には有効だが、それ単体を結論根拠にすると偽 NOT_EQUIV を生む」。STRUCTURAL TRIAGE は“結論”ではなく“差異の分類”として扱い、NOT_EQUIV 結論へ進むときは常にテスト影響の witness（具体的な失敗/差分を生む観測点）で根拠型を揃えると、両方向（EQUIV/NOT_EQ）の判定品質が上がる。
  
- ---
+-compare モードの構造的トリアージ段階で、差分の種別（ロジック変更 vs 付随的変更）に
+-基づく読解優先順位を明示することで、エージェントが限られた探索コストを
+-意味的に中心的な変更の検証に優先投入できるようになり、
+-evidence の収集精度が向上して全体的な判定精度が上がる。
++ステップ 5（抽象ケースで Before/After の挙動差）
++抽象ケース: 変更 A は「周辺の補助ファイル」も触るが、変更 B は触らない。ただし relevant tests はその補助ファイルに到達せず、期待される PASS/FAIL は両者で同一。
++- Before（起きがち）: IF “A だけが触るファイルがある” THEN NOT EQUIVALENT（STRUCTURAL TRIAGE の早期終了）→ 偽 NOT_EQUIV。
++- After（避ける）: IF “A だけが触るファイルがある” THEN まず「それが relevant tests に影響する witness があるか」を最小限で示す（例: そのファイルを import/call するテスト、または diverging assertion）; witness が示せないなら早期 NOT_EQ はせず ANALYSIS へ進む → 最終的に EQUIVALENT へ到達（または根拠不足なら不確実性を明示）。
  
--## 改善仮説（1つ）
-+## SKILL.md のどこをどう変えるか
+----
++カテゴリ C 内での具体的メカニズム選択理由
++- これは探索経路や証拠種類を固定する変更ではなく、「比較の粒度／差異重要度」の扱いを変える提案。
++- “構造差＝重要”を一段階の判断にせず、「差異は検出」「重要度は witness で分類」という二段階にすることで、比較枠組み（差異→結論の写像）を改善する。
  
--**各 relevant test についてテストソースを読み「テストが pass/fail を決定するために読む・比較するデータ依存値」を先に特定し、その値の生成元を 1 段逆方向に確認してから Claim を書く探索行動を追加することで、コード差異の発見でトレースを打ち切るショートカットが構造的に減り、EQUIV 偽陰性（EQUIV を NOT_EQ と誤判定）を減らせる。**
-+### 変更対象
- 
--論拠：現在の失敗パターン（15368, 13821, 15382, 11179）では、エージェントは「Change A と Change B で関数 X が返す値が違う」という*コード差異*を発見し、その差異がテストの比較値に到達するかを確認せずに Claim FAIL と書く。テストが実際に比較している値（例：`assertEqual(response.status_code, 200)` の `response.status_code`）を先に特定すれば、変更が*その値*に影響するかどうかを確認する動機が生まれ、影響しない場合は Claim を PASS に修正できる。
-+compare モードの STRUCTURAL TRIAGE、S3 の説明行。
- 
--この探索指示は「固定ラベル（assertion/exception）で観測点を指定する」ことなく、テストごとに値を読んで特定するよう要求するため、BL-11/16 のアンカリング問題を回避する。
-+### 変更前
-+
-+```
-+  S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-+      prioritize structural differences (S1, S2) and high-level semantic
-… omitted 128 diff line(s) across 1 additional file(s)/section(s)
+-## SKILL.md のどこをどう変えるか
++SKILL.md 該当箇所（自己引用）と変更
++引用:
++- "If S1 or S2 reveals a clear structural gap ... you may proceed directly to FORMAL CONCLUSION with NOT EQUIVALENT without completing the full ANALYSIS section."
++- "COUNTEREXAMPLE (required if claiming NOT EQUIVALENT): ... Diverging assertion: [test_file:line — the specific assert/check that produces a different result]"
+… omitted 96 diff line(s) across 1 additional file(s)/section(s)
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-`benchmark/swebench/runs/iter-37/proposal.md` を作成しました。
+benchmark/swebench/runs/iter-37/proposal.md に提案を書き込みました。
 
----
-
-以下が proposal の要点サマリーです。
-
-**カテゴリ: B — 情報の取得方法を改善する**
-メカニズム: 探索の優先順位付けを変える
-
-**改善仮説**
-compare モードの STRUCTURAL TRIAGE（S3）に、全サイズパッチ共通の読解優先順位として
-「ロジック・制御フロー変更をフォーマット・コメント・インポート変更より先に読む」
-という 1 文を補記する。
-
-**変更箇所と規模**
-SKILL.md の S3 末尾に 2 行追加。新規セクション・フィールド・ステップなし。
-変更規模 2 行（hard limit 5 行以内）。
-
-**期待効果**
-- 付随的差分の詳細トレースに探索コストが吸われ、核心的差分のトレースが浅くなる失敗を抑制
-- Guardrail #4（微妙な差分を軽視しない）の遵守を構造的に補強
-- overall および equiv カテゴリの誤判定減少を期待。回帰リスクは極低。
-
-`benchmark/swebench/runs/iter-37/proposal.md` を作成しました。
-
----
-
-以下が proposal の要点サマリーです。
-
-**カテゴリ: B — 情報の取得方法を改善する**
-メカニズム: 探索の優先順位付けを変える
-
-**改善仮説**
-compare モードの STRUCTURAL TRIAGE（S3）に、全サイズパッチ共通の読解優先順位として
-「ロジック・制御フロー変更をフォーマット・コメント・インポート変更より先に読む」
-という 1 文を補記する。
-
-**変更箇所と規模**
-SKILL.md の S3 末尾に 2 行追加。新規セクション・フィールド・ステップなし。
-変更規模 2 行（hard limit 5 行以内）。
-
-**期待効果**
-- 付随的差分の詳細トレースに探索コストが吸われ、核心的差分のトレースが浅くなる失敗を抑制
-- Guardrail #4（微妙な差分を軽視しない）の遵守を構造的に補強
-- overall および equiv カテゴリの誤判定減少を期待。回帰リスクは極低。
-
-**failed-approaches.md との照合: 全原則に抵触なし**
-
-session_id: 20260414_112850_32ef64
+session_id: 20260419_194917_69f2b1

@@ -1,189 +1,105 @@
-# Iter-37 監査コメント
+# iter-37 proposal 監査コメント
 
 ## 総評
-提案の狙い自体は理解できる。差分読解の初動で意味的に重要な変更へ注意を寄せる、という発想は一般論としてもっともらしい。
-ただし、今回の具体案は `failed-approaches.md` に明記された失敗方向とかなり近く、しかも `import-only changes` を付随的変更として一段低く扱う文言が汎化性を損ねる。
-結論として、現状の文案のままでは承認しにくい。
-
----
+提案の主眼は、STRUCTURAL TRIAGE で見つけた structural gap をそのまま NOT EQUIVALENT の結論根拠にせず、既存の COUNTEREXAMPLE 要件に接続して「結論根拠の型」を統一することにある。これは compare の実行時分岐を実際に変える提案であり、単なる説明強化ではない。加えて、研究コア（前提・探索・トレース・反証）を崩さず、既存テンプレート内の不整合を狭く補正する方向なので、監査 PASS の下限は満たしうる。
 
 ## 1. 既存研究との整合性
+検索なし（理由: 一般原則の範囲で自己完結）。
 
-### 参照した Web 情報
-1. arXiv: Agentic Code Reasoning
-   - URL: https://arxiv.org/abs/2603.01896
-   - 要点: 明示的前提、実行経路トレース、形式的結論からなる semi-formal reasoning が、patch equivalence / fault localization / code QA の精度を改善すると述べる。つまり「探索を構造化して、重要な証拠に注意を集中させる」方向性そのものは研究と整合的。
+README.md と docs/design.md が強調するコアは「structured certificate により unsupported claims を防ぐこと」であり、SKILL.md 自身も compare で NOT EQUIVALENT 時に COUNTEREXAMPLE を必須としている。今回の提案は新理論導入ではなく、既存 compare テンプレート内部の整合化として読める。
 
-2. Google Engineering Practices: What to look for in a code review
-   - URL: https://google.github.io/eng-practices/review/reviewer/looking-for.html
-   - 要点: コードレビューでは style より design / functionality / complexity を重視すべきとされる。したがって「まず機能的・意味的差分を見る」という高レベル方針には一般的妥当性がある。
+## 2. Exploration Framework のカテゴリ選定
+カテゴリ C「比較の枠組みを変える」は適切。
 
-3. Google Engineering Practices: Small CLs
-   - URL: https://google.github.io/eng-practices/review/developer/small-cls.html
-   - 要点: 大きい変更ほど重要点が見落とされやすく、レビュー品質が下がる。提案が「限られた探索コストを核心差分へ寄せたい」と考える根拠にはなる。
+理由:
+- 提案は「何を先に読むか」「何を探すか」の固定ではなく、差異から結論への写像を変えている。
+- structural gap を「即時結論」ではなく「witness 付きなら NOT_EQ、無ければ ANALYSIS 継続」という二段階判定に変えるため、比較粒度・差異重要度の扱いの修正に当たる。
+- A/B/D/E ではなく C に置いたのは妥当。探索順の固定や自己監査の純増が主題ではない。
 
-4. Martin Fowler: Definition of Refactoring
-   - URL: https://martinfowler.com/bliki/DefinitionOfRefactoring.html
-   - 要点: refactoring は observable behavior を変えない変更である。つまり cosmetic / structural cleanup と semantic change を区別する発想自体はソフトウェア工学上自然。
+## 3. EQUIVALENT / NOT_EQUIVALENT 両方向への作用
+片方向最適化ではない。
 
-5. Python Language Reference: The import system
-   - URL: https://docs.python.org/3/reference/import.html
-   - 要点: import は単なる見た目ではなく、モジュール探索・初期化・名前束縛・副作用を伴う。したがって `import-only changes` を一般に「付随的変更」とみなすのは危険。
-
-### 研究整合性の結論
-- 良い点:
-  - 「証拠収集の注意を重要差分へ集中させる」方向は、semi-formal reasoning の趣旨と矛盾しない。
-  - style より functionality を優先する、という一般的レビュー原則とも整合する。
-- 問題点:
-  - 提案文の具体化が粗い。特に `import-only` を formatting/comment と同列に落とすのは、言語横断の一般原則として弱い。
-  - 研究が推しているのは「重要な証拠の取りこぼし防止」であって、「読解順序の半固定」それ自体ではない。
-
----
-
-## 2. Exploration Framework のカテゴリ選定は適切か
-
-### 判定
-カテゴリ B「情報の取得方法を改善する」は表面的には妥当。
-実際、提案は「何を結論するか」ではなく「差分をどう読むか」を変えているため、A/C/D/E/F よりは B に近い。
-
-### ただし重要な留保
-今回のメカニズムは B の中でもかなり危うい部類で、実質的には「読解順序の半固定」である。
-`Objective.md` の B には確かに「探索の優先順位付けを変える」が含まれるが、`failed-approaches.md` はまさにこの種の変更に対して警戒を明示している。
-
-特に以下と近い:
-- `failed-approaches.md`:
-  - 「探索ドリフト対策を追加する際は、探索の自由度を削りすぎない」
-  - 「とくに『どこから読み始めるか』『どの境界を先に確定するか』のような読解順序の半固定は…探索経路を早期に細らせ…構造差分や別粒度の手掛かりを拾う余地を減らしやすい」
-
-したがって、カテゴリ B を選んだこと自体は不自然ではないが、選んだメカニズムは blacklist に非常に近い。
-
----
-
-## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定への作用
-
-## 3.1 変更前との実効的差分
-現行の `SKILL.md` は compare モードでまず:
-- S1: modified files 比較
-- S2: completeness 確認
-- S3: 大規模差分では structural / high-level semantic comparison を優先
-
-ここに提案は新たに:
-- 「任意サイズのパッチで logic/control-flow changes を formatting/comment/import-only より先に読む」
-
-を加える。これは見た目以上に強い追加で、単なる補足ではなく、全サイズ・全ケース向けの読解順序ルールになる。
-
-## 3.2 EQUIVALENT 側への作用
-プラスに働く可能性:
-- cosmetic diff が多いケースで、些末差分に認知コストを使いすぎず、意味差分の有無を先に確認できる。
-- その結果、表面的差分に引きずられて NOT_EQUIVALENT に寄る誤りは減る可能性がある。
-- 逆に、真の semantic difference を先に見つけやすくなるため、浅い探索のまま誤って EQUIVALENT と言う事故も減る可能性がある。
-
-ただし限界:
-- 本当に EQUIVALENT かを示すには、最後は「差分が cosmetic に留まる」ことの確認が必要であり、後回しにした差分も結局読む必要がある。
-- したがって改善幅は「初動の注意配分」レベルに留まる。
-
-## 3.3 NOT_EQUIVALENT 側への作用
-提案文は「NOT_EQUIVALENT は既に 100% なので悪化しにくい」と述べるが、これは楽観的すぎる。
-
-悪化しうる点:
-1. `import-only` が意味的変更である場合
-   - Python では import は副作用・初期化・名前束縛に関与する。
-   - 他言語でも import/use/include/annotation/registration/dependency wiring のみの変更が挙動差を生む。
-   - そのため `import-only` を付随扱いすると、NOT_EQUIVALENT の決定的証拠を初動で軽視しうる。
-
-2. 構造差分よりローカルなロジック差分へ意識が吸われる場合
-   - 現行 S1/S2 は「ファイル欠落」「モジュール欠落」「test data 欠落」のような強い NOT_EQ シグナルを先に拾う設計。
-   - 追加文は S3 にぶら下がる形でも、「まず logic/control-flow を読め」という別の優先軸を与えるため、実運用では S1/S2 の早期判定力を相対的に弱めるおそれがある。
-
-3. ロジック差分が目立たない NOT_EQ ケースを取りこぼす可能性
-   - 設定、登録、データ、import、例外伝播、デコレータ、メタデータ変更などは、見た目上 `logic/control-flow` ではなくてもテスト結果を変えうる。
-
-### 小結
-この変更は実効的には両方向対称ではない。
-- 主作用: 「cosmetic ノイズより semantic 差分に注意を寄せる」ことで EQUIVALENT/NOT_EQUIVALENT の双方に理論上プラス
-- ただし実際の文言は `import-only` を過度に軽視するため、NOT_EQUIVALENT 側の安全性を削るリスクがある
-
-よって「片方向にしか作用しないか」という問いへの答えは:
-- 形式上は両方向に作用する
-- しかし実質上は、ロジック変更が前面に出るケースに偏って効く
-- その一方で、非ロジック系の意味差分を含む NOT_EQUIVALENT を悪化させうる
-
----
+- EQUIVALENT 側:
+  structural gap だけで早期 NOT_EQ に倒れていたケースを ANALYSIS 側へ戻せるため、偽 NOT_EQ を減らす。結果として EQUIVALENT に到達できる余地が増える。
+- NOT_EQUIVALENT 側:
+  NOT_EQ を禁止するのではなく、witness を伴うときに確定させるため、真の NOT_EQ は維持可能。むしろ「ファイル差がある」だけの弱い根拠から、「テスト結果が分岐する」という D1 準拠の根拠へ強化される。
+- 実効差分:
+  変更前は S1/S2 の structural gap があれば ANALYSIS を飛ばして即 NOT_EQ に倒れうる。変更後は structural gap があっても witness 不在なら NOT_EQ を保留して ANALYSIS に戻る。この分岐変更は compare 実行時に観測可能。
 
 ## 4. failed-approaches.md との照合
+本質的再演ではない、ただし境界は要注意。
 
-### 結論
-抵触なしとは言いにくい。むしろ、かなり近い再演である。
+適合している点:
+- 「読解順序の半固定」は導入していない。どこから読むかは固定せず、NOT_EQ に進む条件だけを狭めている。
+- 「証拠種類の事前固定」も限定的。witness は新しい探索テンプレの固定というより、既存 COUNTEREXAMPLE 欄の整合的適用である。
+- 「必須ゲート純増」についても、既存の NOT_EQ にはもともと counterexample が required と明記されているため、完全な新設ではなく bypass の解消に近い。
 
-### 理由
-提案は「証拠の種類は固定していないからセーフ」と主張するが、`failed-approaches.md` が禁じているのはそれだけではない。より本質的には、探索の経路を初期段階で細らせること自体が危険だと述べている。
-
-該当箇所の趣旨:
-- 「探索の自由度を削りすぎない」
-- 「どこから読み始めるか」の半固定は、構造差分や別粒度の手掛かりを拾う余地を減らす
-
-今回の追加文はまさに:
-- どこから読み始めるか
-- 何を先に読み、何を後回しにするか
-
-を固定している。
-これは failed-approaches の警告の中心にかなり近い。
-
-### 監査判断
-提案書内の「抵触なし」という自己評価には同意しない。
-少なくとも「明確な懸念あり」であり、ブラックリスト方向との距離は近い。
-
----
+要注意点:
+- failed-approaches.md は「既存の判定基準を特定の観測境界だけに過度に還元しすぎない」と警告している。今回の提案はこの危険に最も近い。
+- ただし proposal は witness を「diverging assertion 等」としており、特定の 1 種類に固定していない。また compare の定義 D1 が test outcome 同一性である以上、NOT_EQ の根拠を test-impact witness に寄せることは compare モードでは自然。
+- よって「本質的再演」とまでは言えないが、実装文言が assertion-only に狭まると失敗原則の再演になりうる。
 
 ## 5. 汎化性チェック
+汎化性違反は見当たらない。
 
-### 明示的なルール違反の有無
-- ベンチマーク対象リポジトリ名: なし
-- テスト名: なし
-- ケース ID: なし
-- ベンチマーク実コード断片: なし
-
-この点では大きな overfitting の痕跡は見当たらない。
-
-### ただし補足
-提案内には `SKILL.md` 自身の文言引用があるが、これは変更前/後比較のための自己引用であり、`Objective.md` の R1 の減点対象外と読める。したがって、これ自体を違反とは扱わない。
-
-### 暗黙のドメイン依存性
-ここが本質的懸念。
-提案は以下を暗に仮定している:
-- semantic difference は主に logic/control-flow に表れる
-- import-only changes は多くの場合 cosmetic である
-- formatting/comment/import は同じ「付随的変更」群として扱ってよい
-
-これらは一般原則としては強すぎる。
-- Python: import 自体が実行・副作用・初期化に関与しうる
-- Java/C#/Go/TypeScript などでも annotation, registration, dependency wiring, module resolution, build metadata 変更が挙動差を生みうる
-- 設定ファイルや test data の差分は control-flow 変更なしでも test outcome を変える
-
-よって、表面上は具体名を出していないが、実質的には「意味差分はロジックに現れやすい」という特定パターンへ寄った提案であり、汎化性は満点ではない。
-
----
+- 提案文中に具体的な数値 ID、ベンチマーク対象リポジトリ名、テスト名、コード断片はない。
+- 具体例は「補助ファイル」「relevant tests」など抽象ケースに留まっている。
+- 特定言語・特定テストフレームワーク・特定リポジトリ前提も薄い。
+- ただし “diverging assertion” を唯一の witness 例として強く読ませると、assert 文ベースのテスト観を暗黙前提にしやすい。実装時は import failure, exception boundary, output mismatch なども witness に含む広い表現を維持すべき。
 
 ## 6. 全体の推論品質への期待効果
+期待効果はある。
 
-### 期待できる改善
-- 差分のノイズに振り回されず、意味のある変化へ早く到達するという点では一定の改善余地がある。
-- 特に「大差分で探索コストが不足しがち」という問題意識は妥当。
+- compare テンプレート内の局所不整合（early NOT_EQ bypass vs required counterexample）を解消できる。
+- structural diff を「差異検出」と「差異の結論化」に分離するため、早計な NOT_EQ を減らしやすい。
+- しかも full ANALYSIS の常時強制ではないため、複雑性増加を小さく抑えながら、必要なときだけ追加探索へ戻せる。
 
-### ただし現行文案の問題
-- 効果の源泉が「重要差分への注意集中」であるのに、実装文言が「読解順序の固定」と「import-only の軽視」になっている。
-- そのため、改善の核より副作用の方が目立つ。
+## 停滞診断
+- 懸念 1 点: 「counterexample witness を出すべき」という監査受けのよい説明強化に見える危険はある。ただし本 proposal は early NOT_EQ の可否という compare の分岐自体を変えるので、理由の言い換えだけではない。
 
-### より安全な方向性
-もし同じ狙いを維持するなら、以下のような弱いヒューリスティックに留める方がよい。
-例:
-- cosmetic-only edit と potential semantic edit を区別して triage せよ
-- ただし import / config / registration / metadata changes は cosmetic とみなすな
-- S1/S2 の structural gap 検出を最優先とし、それを上書きしない
+### failed-approaches 該当性
+- 探索経路の半固定: NO
+- 必須ゲート増: NO（既存の NOT_EQ counterexample 要件の bypass 解消という位置づけ。ただし実装で新しい独立ゲートのように書くと YES 化しうる）
+- 証拠種類の事前固定: NO（現提案文の範囲では witness の型は広い。assertion のみに狭めると YES）
 
-つまり、「読解順序の固定」ではなく「semantic-risk tagging の注意喚起」に寄せるならまだ検討余地がある。
+## compare 影響の実効性チェック
+- 0) 実行時アウトカム差:
+  structural gap 発見時に、即 NOT_EQ で終わるケースの一部が「ANALYSIS へ戻る / 不確実性を明示する / 最終的に EQUIV へ到達する」に変わる。これは ANSWER と CONFIDENCE と追加探索要求に観測差が出る。
 
----
+- 1) Decision-point delta:
+  Before: IF S1/S2 で clear structural gap THEN ANALYSIS を飛ばして NOT EQUIVALENT に進む。
+  After: IF S1/S2 で clear structural gap THEN NOT_EQ に進む前に counterexample witness を述べ、無ければ ANALYSIS に戻る。
+  IF/THEN 形式で 2 行か: YES
+  Trigger line の自己引用があるか: YES
 
-## 最終判定
-承認: NO（理由: `failed-approaches.md` が禁じる「読解順序の半固定」に実質的に近く、`import-only changes` を付随扱いする文言が汎化性と NOT_EQUIVALENT 側の安全性を損なうため）
+- 2) Failure-mode target:
+  主対象は偽 NOT_EQ。メカニズムは「file-list difference alone」による早期断定を防ぎ、test-impact に結び付く差だけを NOT_EQ 根拠として採用すること。
+  副次的には、根拠の弱い NOT_EQ を減らすことで、真の EQUIV を取りこぼしにくくする。
+
+- 2.5) STRUCTURAL TRIAGE / 早期結論に触れる提案か:
+  YES
+  impact witness を要求しているか: YES
+  評価: ここが明示されているため、「ファイル差があるだけ」の粗い NOT_EQ 退化は回避方向。
+
+- 3) Non-goal:
+  structural gap の検出自体は維持し、探索順・読解開始点・特定の証拠収集順序は固定しない。full ANALYSIS の常時必須化もしない。
+
+### Discriminative probe
+片側だけが周辺ファイルを触るが、そのファイルは relevant tests の呼び出し経路に乗らない抽象ケースを考える。変更前は「片側だけが触るファイルあり」で NOT_EQ に落ちやすい。変更後は witness 不在なら ANALYSIS 継続に戻るため、既存文言の置換だけで偽 NOT_EQ を避けやすい。
+
+### 支払い（必須ゲート総量不変）確認
+A/B の対応付けは概ね明示されている。
+- 追加するもの: early NOT_EQ 時の witness 要件
+- 支払うもの: full ANALYSIS を常時必須にはせず、「ANALYSIS 省略可」は維持
+
+このため、mandatory load の純増ではなく、既存 bypass の閉塞として成立している。
+
+## 最大のブロッカー
+なし。
+
+## 修正指示（最小限）
+1. 実装文言では witness を「diverging assertion 等」に限定せず、「test outcome difference を具体化する観測点（assertion / exception boundary / import failure / returned-output mismatch など）」と広めに書くこと。assertion-only に狭めると failed-approaches の「特定観測境界への過度な還元」に近づく。
+2. 変更差分では「new gate を追加した」のではなく、「既存 COUNTEREXAMPLE required を STRUCTURAL TRIAGE bypass にも整合適用する」と明記すること。これで必須ゲート純増の誤読を防げる。
+3. 可能なら After 文の末尾を「otherwise continue analysis or state uncertainty if test impact remains unverified」として、ANALYSIS 復帰と不確実性明示の両分岐を残すこと。これで EQUIV 側への戻しだけでなく、根拠不足時の中立処理も明確になる。
+
+承認: YES
