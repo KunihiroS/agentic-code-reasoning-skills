@@ -1,237 +1,110 @@
-# Iter-40 監査ディスカッション
+# iter-40 discussion
 
 ## 総評
+この提案は、compare における既存の弱点「semantic difference を見つけても、途中の直観で no impact と切り上げてしまう」を、結論ではなく行動分岐の変更として狙っており、監査 PASS の下限は満たしています。変更規模も 1 行置換に留まり、研究コア（前提・仮説駆動探索・手続き間トレース・必須反証）を壊していません。
 
-提案は非常に小さい差分で、compare モードの `NO COUNTEREXAMPLE EXISTS` における `Searched for:` の粒度を具体化するものです。方向性としては「EQUIVALENT を言う前に、実際の assertion や condition を見よ」という促しであり、Guardrail #4 の補強意図は理解できます。
-
-ただし、監査観点では 2 つの懸念が強いです。
-
-1. 効果が実質的に `EQUIVALENT` 側にしか作用せず、compare タスク全体の対称性改善ではない
-2. `failed-approaches.md` が禁じている「探索で探す証拠の種類の事前固定」にかなり近い
-
-そのため、私は現時点では承認に慎重で、結論は NO です。
-
----
+Web 検索: 検索なし（理由: proposal の根拠は README.md / docs/design.md / SKILL.md / failed-approaches.md の範囲で自己完結しており、特定概念の外部妥当性確認が必須なほど強い新規主張ではない）
 
 ## 1. 既存研究との整合性
+整合しています。README.md と docs/design.md では、paper のコアは「明示的 premises」「per-item tracing」「counterexample obligation」「incomplete reasoning chains / subtle difference dismissal の抑制」にあります。今回の提案は compare の既存 bullet
 
-### 参照 1
-- URL: https://arxiv.org/abs/2603.01896
-- 要点:
-  - Semi-formal reasoning の本質は、明示的 premises、execution path tracing、formal conclusion という「証拠に基づく構造化推論」にある。
-  - 論文要約では「templates act as a certificate: the agent cannot skip cases or make unsupported claims」とされており、テンプレート具体化そのものは研究コアと整合する。
-  - 一方で、論文のコアは「特定の証拠型を探せ」と狭く固定することではなく、証拠を伴う tracing を要求することにある。
+- "When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact"
 
-### 参照 2
-- URL: https://www.infoworld.com/article/4153054/meta-shows-structured-prompts-can-make-llms-more-reliable-for-code-review.html
-- 要点:
-  - 記事は semi-formal reasoning を「explicitly state assumptions and trace execution paths before deriving a conclusion」と要約している。
-  - ここでも価値の中心は tracing と justification であり、検索対象を assertion に寄せること自体が主眼ではない。
-  - また、structured reasoning には token/latency overhead の tradeoff があると指摘しており、細かな追加指示は効果対象が狭いなら慎重であるべき。
+を、downstream 観測点まで届く追跡に具体化するものです。これは paper/design の anti-skip / incomplete-chain 防止を compare 側へ少し強める方向で、研究コアからの逸脱ではありません。
 
-### 参照 3
-- URL: https://link.springer.com/article/10.1007/s10009-025-00794-1
-- 要点:
-  - Assertions は program behavior を確認するための重要な自動化手段であり、ソフトウェアテスト研究でも中心的テーマの 1 つである。
-  - よって、assertion text や assertion condition に着目させる発想自体は一般論として妥当。
-  - ただしこの知見が直接支持するのは「assertion は重要な観察対象である」という点までであり、「テンプレートで assertion を明示列挙すると全体性能が上がる」までは言えない。
+## 2. Exploration Framework のカテゴリ選定
+カテゴリ F（原論文の未活用アイデアを導入する）は概ね適切です。
+理由:
+- localize / explain 由来の「途中で止めず観測可能な地点まで追う」という発想を compare に移している
+- error analysis の "subtle difference dismissal" と "incomplete reasoning chains" を、compare の no-impact 分岐に適用している
+- 変更の中心が compare の判定分岐の質向上であり、単なる wording polish（E）や自己監査追加（D）ではない
 
-### 小結
-研究との整合性は部分的にはあります。特に「根拠なき EQUIVALENT 宣言を減らす」という意図は、README.md と docs/design.md が強調する certificate-based reasoning と矛盾しません。
+補足すると、実体は F 寄りの B（情報の取得方法の改善）でもありますが、主たる根拠づけは paper の未反映知見の移植なので F でよいです。
 
-しかし、研究コアが求めるのは tracing の厳密化であって、探索シグナルの型を増やすことではありません。したがって、整合性は「弱く肯定」、強い裏付けまではありません。
+## 3. compare 影響の実効性チェック
+0) 実行時アウトカム差
+- 「semantic difference ありだが no impact」と早期に書いていた実行が、少なくとも 1 回は downstream 観測点までの追加追跡を要求される
+- その結果、EQUIVALENT を即断せず、追加探索 / CONFIDENCE 低下 / NOT_EQUIVALENT 反転のいずれかが観測可能に増える
 
----
+1) Decision-point delta
+- IF/THEN 形式で 2 行（Before/After）になっているか？: YES
+- Trigger line（発火する文言の自己引用）が差分プレビュー内にあるか？: YES
+- 実効差分の評価: 条件も行動も変わっています。Before は「意味差があっても途中で no impact に進みがち」、After は「観測点まで同値を示せない限り no impact を保留して追加探索」。理由の言い換えではなく、分岐先が変わっています。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
+2) Failure-mode target
+- 主対象: 偽 EQUIVALENT
+- メカニズム: 差分発見後、テスト観測点まで追わず「影響なし」と切り上げることで、実際には outcome 差があるケースを見逃す
+- 副作用の扱い: 根拠薄い NOT_EQUIVALENT も抑制しうる。理由は、観測点で再収束しているケースでは no-impact の根拠が強くなり、単なる局所差分だけで different と言い張りにくくなるため
 
-### 提案者の主張
-proposal.md ではこの変更を
-- カテゴリ E. 表現・フォーマットを改善する
-- メカニズム: 曖昧文言の具体化
-と分類しています。
+2.5) STRUCTURAL TRIAGE / 早期結論に触れる提案か？
+- NO
+- よって、"file 差があるだけで NOT_EQUIV" への退化懸念や impact witness 要求の不足は、この提案の主問題ではありません
 
-### 監査所見
-この分類は形式上は妥当です。実際、変更対象は SKILL.md compare テンプレートの 1 行の文言であり、手順追加でも順序変更でもありません。したがって、見た目の diff は明らかにカテゴリ E です。
+3) Non-goal
+- 変えないことは比較的明確です。STRUCTURAL TRIAGE の強化・固定化はしない、特定 witness 型への一本化はしない、新しい必須ゲートを純増しない、という境界が書かれています
+- この非目標設定は、failed-approaches.md の禁止方向を意識できています
 
-ただし、機能面ではカテゴリ B. 情報の取得方法を改善する との境界上にあります。なぜなら、今回の変更は単なる言い換えではなく、「何を search すべきか」の証拠種別を 1 つ増やしており、探索行動そのものを誘導するからです。
+追加チェック: Discriminative probe
+- あります。抽象ケースとして「途中では軽微に見えるが、観測点で値分岐する差」を置いており、変更前は偽 EQUIV、変更後は観測点まで追うので回避できる、という比較が 2〜3 行で成立しています
+- しかも説明は「既存 1 行の置換」で成立しており、新しい必須ゲートの増設説明になっていません
 
-つまり:
-- 表層分類: E でよい
-- 実効メカニズム: B 的でもある
+追加チェック: 支払い（必須ゲート総量不変）
+- 明示あり: YES
+- 評価: 1 bullet の置換であり、A/B の対応付けも提案文中で明示されています。ここは停滞対策上の要件を満たします
 
-この点は重要です。failed-approaches.md が警戒しているのは主に探索自由度を狭めるタイプの変更であり、見かけ上 E でも、実効として B の「証拠種別の事前固定」に寄るなら注意が必要です。
+## 4. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+### EQUIVALENT 側
+- 変更前: semantic difference を見つけても、「たぶんテストに見えない」と途中で判断し、偽 EQUIVALENT に倒れやすい
+- 変更後: downstream 観測点までの到達が必要になるため、観測点で差が出るケースを拾いやすくなる
+- 期待効果: 主に偽 EQUIVALENT 減少
 
-### 小結
-カテゴリ E というラベル自体は不自然ではありません。しかし、監査上は「実際には exploration steering を伴う E」と見なすべきで、単なる harmless な wording tweak として扱うのは危険です。
+### NOT_EQUIVALENT 側
+- 良い方向: 単なる局所差分だけではなく、観測点での差まで追う圧力がかかるので、雑な NOT_EQUIVALENT も減らせる余地がある
+- 注意点: 「観測点まで示せない = NOT_EQUIVALENT」と読まれると逆効果です。proposal 本文は "保留して追加探索" と書いており、この点は一応回避されています
+- 総評: 片方向最適化ではなく両側に作用しうるが、一次効果は明確に EQUIVALENT 側（偽 EQUIV 抑制）です
 
----
+## 5. failed-approaches.md との照合
+本質的再演とはまでは言えません。理由は、この変更が
+- 探索の入口全体を固定していない
+- compare 全体の読解順序を縛っていない
+- 新しい独立ゲートを増やしていない
+- 単一 witness 型だけに判定根拠を還元していない
+ためです。
 
-## 3. EQUIVALENT 判定と NOT_EQUIVALENT 判定の両方への作用
+ただし、近接リスクはあります。failed-approaches.md は特に以下を警戒しています。
+- 「既存の汎用ガードレールを、特定の追跡方向や観点で具体化しすぎない」
+- 「既存の判定基準を、特定の観測境界だけに過度に還元しすぎない」
 
-## 実効的差分
-変更箇所は SKILL.md compare モードの以下だけです。
+今回の文言は "first downstream observation point" を入れるので、この 2 つに触れやすいです。ただ、適用範囲が「semantic difference を見つけ、しかも no impact で切ろうとする局面」に限定されており、全探索の半固定ではないため、禁止原則の本質的再演とはまだ言いません。
 
-変更前:
-- `Searched for: [specific pattern — test name, code path, or input type]`
+## 6. 汎化性チェック
+提案文中に benchmark 固有の数値 ID、リポジトリ名、テスト名、コード断片は含まれていません。違反なしです。
 
-変更後:
-- `Searched for: [specific pattern — assertion text or condition, test name, code path, or input type]`
+また、想定している観測点は assertion / check / exception と抽象化されており、特定言語・特定テストフレームワークへの依存も強くありません。唯一の懸念は、"observation point" が単体テストの assert に寄りすぎて読まれる可能性ですが、proposal では check/exception まで広げているため、現状は許容範囲です。
 
-この行は `NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT)` ブロックの内部にあります。SKILL.md 234-240 行が示す通り、このブロックは EQUIVALENT を主張する場合にのみ使われます。
+## 7. 停滞診断（必須）
+- 懸念 1 点: proposal は監査的には説明がよくできていますが、実装時に "observation point" の定義が曖昧なままだと、compare の実行で単に文章が長くなるだけで、実際の追加探索発火率が上がらない恐れがあります。つまり audit-friendly だが runtime decision change が弱まるリスクは少しあります。
 
-### EQUIVALENT 側への作用
-直接作用します。期待できる効果は以下です。
+- 探索経路の半固定: NO
+  - 理由: 発火条件が「semantic difference を見つけ、かつ no impact を言おうとする局面」に限定されており、最初から読む順番や探索入口を固定していない
 
-- 抽象的な `Searched for: any behavioral difference` のような記入を減らす
-- テスト oracle としての assertion 条件に目を向けさせる
-- subtle difference が assertion 差分として顕在化するケースで、偽陽性 EQUIVALENT を減らす
+- 必須ゲート増: NO
+  - 理由: 既存 bullet の置換であり、proposal でも MUST の純増なしと明記されている
 
-つまり、proposal.md の主張どおり、主作用は「EQUIVALENT の過剰宣言抑制」です。
+- 証拠種類の事前固定: NO
+  - 理由: 観測点の概念はやや具体化されるが、assertion のみ固定ではなく check / exception を含む。証拠の型を単一に固定してはいない
 
-### NOT_EQUIVALENT 側への作用
-直接作用しません。NOT_EQUIVALENT では compare テンプレートの `COUNTEREXAMPLE` ブロックを使い、必要なのは
-- diverging assertion
-- A/B での PASS/FAIL の差
-です。今回の変更行はそこに入っていません。
+## 8. 全体の推論品質への期待
+この変更は、compare の中でも特に「差分を見つけた後の扱い」の質を上げます。利点は以下です。
+- 途中の直観で no impact と切らず、テスト outcome へ接続する証拠密度が上がる
+- EQUIVALENT 判定の根拠が「差分があるが軽微そう」から「観測点まで追って再収束を確認した」へ改善する
+- NOT_EQUIVALENT 判定も、単なる局所差分ではなく観測点差分を伴う方向へ寄りやすい
+- 変更範囲が compare の 1 bullet に限定され、他モードや研究コアへの副作用が小さい
 
-したがって、NOT_EQUIVALENT 側に対する改善効果は原理的にかなり限定的です。ありうるのはせいぜい間接効果です。
-
-- モデルが compare 全体をより assertion-centered に理解し、差分を見る際に assertion を意識するようになる
-- ただしそれはテンプレート上の明示要求ではなく、副次的学習に期待しているだけ
-
-### 片方向性の確認
-はい、この変更は実質的に片方向です。
-
-- 直接効果: EQUIVALENT のみ
-- 間接効果: NOT_EQUIVALENT にもゼロではないが、弱く不確実
-
-### 片方向変更としての懸念
-ベンチマーク全体で compare を改善するなら、理想的には
-- EQUIVALENT 側の false positive を減らしつつ
-- NOT_EQUIVALENT 側の検出力も維持または改善
-であるべきです。
-
-しかし今回は、NOT_EQUIVALENT 側には触れず、EQUIVALENT 側だけに認知負荷を足します。そのため、効果が出るとしても局所的です。さらに、assertion text を先頭に置いたことで、モデルが「まず assertion を探す」方向に寄り、構造差分や call path 差分の初期検出が弱まるリスクもあります。
-
-要するに、この変更は compare モードの左右対称性を改善していません。むしろ「EQUIVALENT を言う時だけ、見よ」という片肺強化です。
-
----
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 原則 1: 探索で探すべき証拠の種類をテンプレートで事前固定しすぎない
-failed-approaches.md 8-9 行:
-- 「次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」
-
-今回の提案は、まさに `Searched for:` の候補に `assertion text or condition` を追加するものです。提案者は「追加列挙であり、既存選択肢は残るから抵触しない」と述べていますが、監査上はそれだけでは十分ではありません。
-
-なぜなら、LLM は列挙された語の先頭や具体度の高い語に強く引っ張られやすく、しかも今回追加されるのは test name / code path / input type よりも意味的に強いシグナルだからです。結果として、自由度は形式上維持されても、実効上は assertion-centric な探索に寄る可能性があります。
-
-よって、「本質的に同じ失敗の再演ではない」とは言い切れません。むしろかなり近縁です。
-
-### 原則 2: 探索ドリフト対策を追加する際は、探索の自由度を削りすぎない
-failed-approaches.md 11-13 行は、局所的具体化が探索幅を狭めうると警告しています。
-
-今回の変更は 1 行で小規模ですが、まさに局所的具体化です。しかも compare では
-- test name
-- code path
-- input type
-- assertion text/condition
-という複数粒度を扱う必要がある中で、assertion を追加することは exploration bandwidth の再配分を起こします。
-
-それ自体は悪ではありませんが、「どの未検出失敗を埋める確実な証拠があるか」が proposal.md だけではまだ弱いです。
-
-### 原則 3, 4
-- 前提修正義務の強化ではないので、原則 3 への抵触は薄い
-- 新しい必須フィールドや新規判断ゲートを増やしてはいないので、原則 4 への抵触も薄い
-
-### 小結
-最重要の原則 1 には近いです。提案者の自己評価より厳しく見るべきです。私は「文面を変えただけなのでセーフ」ではなく、「探索シグナルの型追加という意味で、failed approach の危険域に踏み込んでいる」と判断します。
-
----
-
-## 5. 汎化性チェック
-
-### 明示的なルール違反の有無
-proposal.md を確認した限り、以下のような禁止要素は見当たりません。
-
-- 具体的な数値 ID
-- 特定リポジトリ名
-- 特定テスト名
-- ベンチマーク対象コード断片
-- 特定関数名やクラス名
-
-含まれているのは
-- `Searched for:` など SKILL.md 自身の文言引用
-- `Guardrail #4` という内部一般概念
-- 抽象例としての `any behavioral difference`
-程度で、これは Objective.md の R1 で明示的に減点対象外に近い扱いです。
-
-### 暗黙のドメイン依存性
-一方で、暗黙の偏りはあります。
-
-`assertion text or condition` は主に
-- テストコード内に assertion が明示的に書かれるスタイル
-- assertion 文言や条件式が読みやすく残るテスト文化
-を想定しています。
-
-これは Python / xUnit 系にはよく合いますが、以下では相対的に弱くなります。
-- snapshot テスト中心
-- golden file 比較中心
-- property-based testing
-- fuzz / metamorphic testing
-- 明示 assert より helper abstraction が深いテストコード
-- テスト名と fixture 構成の方が oracle を表しているケース
-
-つまり、提案は露骨な overfitting ではないが、「assertion が主要 oracle である」文化をやや前提化しています。
-
-### 小結
-明示的ルール違反はありません。R1 的に即失格ではないです。ただし、assertion-centered な暗黙バイアスはあり、完全に言語・テスト様式中立とは言いにくいです。
-
----
-
-## 6. 全体の推論品質がどう向上すると期待できるか
-
-### 見込める改善
-限定的には改善が見込めます。
-
-- EQUIVALENT 主張時の refutation check が少し具体的になる
-- test oracle を assertion/condition レベルで確認する習慣が強まる
-- 「広い概念だけ書いて検索したことにする」形式的充填を減らす可能性がある
-
-特に、README.md 47-57 行および docs/design.md 33-55 行が強調する「certificate の anti-skip 機能」を、EQUIVALENT 側の最後の反証確認で少しだけ補強する効果はありえます。
-
-### 限界
-ただし、全体の推論品質向上としては限定的です。
-
-- compare 全体ではなく EQUIVALENT 側に偏った強化
-- assertion に寄りすぎると code path / input type / structural gap の探索を相対的に弱めうる
-- 「何を search したか」の記述品質は上がっても、実際の tracing 品質が上がる保証はない
-
-つまり、改善が起きるとしても
-- tracing 自体の質を上げる変更ではなく
-- trace 後の自己記述を少し良くする変更
-に留まる可能性があります。
-
----
+## 修正指示（最小限）
+1. Trigger line の observation point を、"the earliest test-relevant observation point on that path" のように少しだけ補い、「assert だけを追う」と誤読されないようにしてください。
+2. 同じ 1 行の中か直後の短い補足で、"failure to establish such an observation does not itself imply NOT EQUIVALENT; it requires further tracing or lower confidence" を明示してください。これで逆方向の誤適用を防げます。
+3. 追加説明を増やすなら新 bullet を足さず、既存の no-impact bullet の置換だけで完結させてください。支払い総量不変を崩さないためです。
 
 ## 結論
-
-### 判断
-私はこの提案を現時点では承認しません。
-
-### 理由の要約
-1. 変更の直接作用先が `NO COUNTEREXAMPLE EXISTS` だけであり、実質的に EQUIVALENT 側への片方向修正である
-2. failed-approaches.md の最重要警戒事項である「証拠種類の事前固定」にかなり近い
-3. assertion は重要な観点だが、研究的裏付けは「assertion は重要」までであり、「テンプレートで assertion を追加列挙すると compare の汎用性能が上がる」までは支持されていない
-4. 形式上は小差分だが、実効上は探索バイアスを変えるため、 harmless な wording tweak より重い
-
-### 条件付きで再提案するなら
-もしこの方向を続けるなら、次の条件が必要です。
-
-- EQUIVALENT 側だけでなく compare 全体の対称性を保つこと
-- assertion を特権化するのではなく、「test oracle / observed check」など、より汎用でテスト文化中立な表現にすること
-- failed-approaches.md の原則 1 に対して、なぜこれは事前固定ではなく探索補助に留まるのかをより厳密に説明すること
-
-承認: NO（理由: EQUIVALENT 側への片方向修正に留まり、かつ failed-approaches.md が禁じる「探索証拠種別の事前固定」に本質的に近いため）
+承認: YES

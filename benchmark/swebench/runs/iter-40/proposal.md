@@ -1,103 +1,74 @@
-# Iter-40 — Proposal
+過去提案との差異: 早期 NOT_EQUIV の条件を特定の観測境界へ写像して狭めるのではなく、「差分が無関係」と切り捨てる局面で localize/explain 由来の“影響の局在化”を要求して誤った EQUIV を減らす。
+Target: 偽 EQUIV（副作用として偽 NOT_EQUIV も抑制）
+Mechanism (抽象): 「意味差が見つかったが影響なし」と判断する分岐で、結論に進む前に downstream の観測点まで差分影響を局在化するよう行動を変える。
+Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV を新しい必須ゲートで強化/固定したり、特定の境界だけを唯一の根拠型にすることはしない。
 
-## Exploration Framework カテゴリ
+Step 1 (禁止方向の整理; failed-approaches + 却下履歴の要約)
+- 構造差→NOT_EQUIV を「テスト依存/オラクル可視」など特定の観測境界に写像して成立条件を狭める（探索経路の半固定化になりやすい）
+- 結論根拠の型を単一 witness へ還元しすぎる（他の有効シグナルを結論根拠から外して比較を弱める）
+- 追うべき証拠種類や読解順序をテンプレで事前固定しすぎる（確認バイアス/探索自由度の低下）
+- 結論直前に新しい必須のメタ判断/追加ゲートを純増させる（萎縮・停滞を招きうる）
 
-カテゴリ: **E. 表現・フォーマットを改善する**
+Step 2 (SKILL.md から: overall に効く意思決定ポイント候補; IF/THEN で書ける分岐)
+候補 A: pass-to-pass tests の扱い
+- 分岐: IF 「pass-to-pass が changed code の call path に無い/不明」 THEN 「pass-to-pass を比較対象から外す」
 
-### カテゴリ E 内でのメカニズム選択理由
+候補 B: 意味差を見つけた後の “no impact” 結論
+- 分岐: IF 「意味差が見つかった」 THEN 「少なくとも 1 つの relevant test を差分経路で追ってから、影響なし結論に進む/進まない」
 
-カテゴリ E の 3 つのメカニズム（曖昧文言の具体化 / 簡潔化 / 例示）のうち、
-「曖昧文言の具体化」を選択する。
+候補 C: UNVERIFIED な挙動が trace 上に残る場合の結論強度
+- 分岐: IF 「重要な挙動が UNVERIFIED のまま」 THEN 「結論を強く断定する/確信度を下げる/追加探索する」
 
-理由: compare モードの `NO COUNTEREXAMPLE EXISTS` ブロックにある
-`Searched for:` フィールドは、モデルが「何を探したか」を書く欄だが、
-どの粒度・どの種類のシグナルを探せばよいかが明示されていない。
-その結果、モデルは "any behavioral difference" のような抽象的な記述で
-形式的に充填しがちであり、実際のアサーション文字列やコード条件への
-着目が促されない。対照的に `Found:` フィールドにはすでに括弧注記
-"cite file:line, or NONE FOUND with search details" があり、
-`Searched for:` 側との対称性が崩れている。
+Step 2.5 (各候補のデフォルト挙動 / 観測可能なアウトカム)
+- 候補 A: デフォルト= pass-to-pass を“関係なさそう”として除外しがち / アウトカム= EQUIV 側へ寄りやすい（偽 EQUIV の温床）
+- 候補 B: デフォルト= 意味差を見つけても downstream まで追わず「影響なし」で打ち切りがち / アウトカム= 追加探索が発生せず EQUIV に倒れやすい（偽 EQUIV）
+- 候補 C: デフォルト= UNVERIFIED を注記しつつも結論自体は強く出しがち / アウトカム= CONFIDENCE の過大化（偽 EQUIV/偽 NOT_EQUIV の両方）
 
-この非対称を解消し、Guardrail #4（subtle differences を dismiss しない）
-が求める「differing code path を少なくとも 1 つのテストでトレース」という
-行動を、テンプレート記入段階から誘導するのが今回の改善対象である。
+Step 3 (選定)
+選ぶ分岐: 候補 B
+理由:
+- compare の誤り（特に偽 EQUIV）を生む代表的メカニズムである「subtle difference dismissal」を、行動レベル（追跡の到達点）で変えられる。
+- Before/After で観測可能アウトカム（追加探索の発生、最終 ANSWER の反転、CONFIDENCE 低下）が明確に変わりうる。
 
+カテゴリ F 内での具体的メカニズム選択理由
+- 原論文は patch equivalence を “per-test の証拠付き主張” と “counterexample 義務”で支える（証拠が test outcome へ接続されることが重要）。
+- 一方で SKILL.md の compare は「意味差を発見したが影響なし」を早めに言い切る余地が残る。ここに fault localization の発想（差分を downstream の観測点まで局在化する）と、explain の発想（データフロー上の最初の観測点へ追跡する）を移植するのが、カテゴリ F の “localize/explain の compare 応用”に該当する。
 
-## 改善仮説
+改善仮説 (1つ)
+- 意味差が見つかった時点で「影響なし」を許すと、差分がテストの観測点へ届くケースを見落として偽 EQUIV を出しやすい。差分影響を “最初の downstream 観測点”まで局在化してからでないと「影響なし」を出せないようにすると、偽 EQUIV を減らし、同時に根拠薄い NOT_EQUIV も抑制できる。
 
-`Searched for:` フィールドに「アサーション条件またはコード条件」という
-具体的な探索粒度を示すことで、モデルが実際のアサーション内容を
-確認してから EQUIVALENT を宣言する割合が増加し、
-subtle difference を見逃す誤判定（overall および equiv カテゴリの
-偽陽性 EQUIVALENT）が減少する。
+SKILL.md 該当箇所 (自己引用) と変更方針
+引用（Compare checklist より）:
+- "When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact"
+変更: “trace” の到達条件を localize/explain 的に具体化し、少なくとも 1 つの downstream 観測点（assertion / check / 例外の種別など）まで追ってからでないと「影響なし」を結論できない、という行動差を作る。
 
+Decision-point delta (IF/THEN)
+Before: IF 「意味差が見つかったが、手元の直観では影響が薄そう」 THEN 「差分経路の追跡を途中で止めて ‘no impact’ に進みがち」 because 根拠型= “局所差分の直観的軽視”
+After:  IF 「意味差が見つかり、downstream の観測点での同値がまだ示せない」 THEN 「観測点まで追跡して同値を示すか、示せない限り ‘no impact’ を保留して追加探索する」 because 根拠型= “局在化された観測点での同値/非同値”
 
-## 変更内容
+変更差分プレビュー (Before/After)
+Before:
+- Trace each test through both changes separately before comparing
+- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
-### 変更箇所
+After:
+- Trace each test through both changes separately before comparing
+- When a semantic difference is found, trace at least one relevant test through the differing path up to the first downstream observation point (assertion/check/exception) before concluding it has no impact
+- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
-SKILL.md の compare モード Certificate template 内の
-`NO COUNTEREXAMPLE EXISTS` ブロック、`Searched for:` 行。
+Trigger line (planned): "When a semantic difference is found, trace at least one relevant test through the differing path up to the first downstream observation point (assertion/check/exception) before concluding it has no impact"
 
-### 変更前
+Discriminative probe (抽象ケース)
+- Before: 2 つの変更が同じ仕様を狙うが、片方だけが入力正規化の順序/条件を変えている。差分が見つかるが、途中までの追跡で「テストはそこを見ていないはず」と判断して EQUIV に倒れ、実際にはテストの観測点で値が分岐して偽 EQUIV になりがち。
+- After: “最初の downstream 観測点”まで追うため、正規化結果が観測点へ流れ込む事実（あるいは同値性の成立条件）が明確になり、観測点で分岐するなら NOT_EQUIV、同値に再収束するなら EQUIV を根拠付きで出せる。
 
-```
-    Searched for: [specific pattern — test name, code path, or input type]
-```
+failed-approaches.md との照合（整合点）
+- 「特定の観測境界だけへ過度に還元」を避ける: 観測点を assertion に固定せず、check/例外など広い観測点概念として “局在化”を要求する（単一 witness 型への還元にしない）。
+- 「証拠種類の事前固定」を避ける: 追跡の到達点だけを規定し、どの種類の証拠（テスト/例外/チェック/データフロー）で局在化するかはケースに応じて選べる。
 
-### 変更後
+Payment
+- Payment: add MUST("…") ↔ demote/remove MUST("…") は発生しない（MUST の純増なし / 新規必須ゲート追加なし）。
 
-```
-    Searched for: [specific pattern — assertion text or condition, test name, code path, or input type]
-```
-
-### 変更の意図
-
-括弧内の列挙リストの先頭に "assertion text or condition," を追加する。
-これにより、モデルは「どのアサーション文言・条件式を探したか」を
-`Searched for:` に記述することが自然な行動として促される。
-
-`Found:` 側の "cite file:line" という既存指示と対になり、
-「探した観点（assertion text）→ 見つかった場所（file:line）」
-という一貫した探索ログとして機能する。
-
-
-## 期待効果
-
-### 減少が期待される失敗パターン
-
-1. **形式的充填による subtle difference スルー**
-   モデルが "no behavioral difference found" と抽象的に記述して
-   実際のアサーション内容を確認しないまま EQUIVALENT と宣言する
-   パターンを抑制する。
-   → Guardrail #4（"Do not dismiss subtle differences"）の
-     テンプレートレベルでの強化に相当。
-
-2. **`Searched for:` と `Found:` の粒度ミスマッチ**
-   `Searched for:` が「広い概念」で `Found:` が「具体的な file:line」
-   になるという構造的な矛盾が、推論ログとしての一貫性を損なっていた。
-   具体化により両フィールドの粒度が揃い、自己チェック時に
-   不整合が可視化されやすくなる。
-
-3. **overall および equiv での偽陽性 EQUIVALENT**
-   アサーション条件の相違が実際には存在するのに、
-   「コードパス上の差異」としか記述されずに見逃される
-   ケース（overall の損失パターン）を削減できる。
-
-
-## failed-approaches.md との照合
-
-| 汎用原則 | 抵触するか |
-|----------|-----------|
-| 探索を「特定シグナルの捜索」に固定しすぎない | **抵触しない** — 今回の変更はシグナルの種類を追加列挙しているが、削除・置換ではない。既存の "test name, code path, or input type" はそのまま残るため、探索の自由度は維持される。 |
-| 探索順序を半固定しない | **抵触しない** — `Searched for:` はすでに存在するフィールドであり、順序変更は行っていない。 |
-| 局所的な仮説更新を前提修正義務に直結させすぎない | **抵触しない** — 前提（Premises）セクションではなく、counterexample check の記述粒度を変えるだけ。 |
-| 結論前の自己監査に新しい必須判断を増やしすぎない | **抵触しない** — 新しいステップ・フィールド・セクションは追加していない。既存 `Searched for:` の括弧内文言の精緻化のみ。 |
-
-
-## 変更規模の宣言
-
-- 変更行数: **1行**（既存行への文言追加）
-- 削除行数: 0行
-- 合計 diff 行数: 1行（hard limit 5行以内に適合）
-- 新規ステップ・新規フィールド・新規セクション: **なし**
+変更規模の宣言
+- SKILL.md の変更は 1 行の置換（Compare checklist の 1 bullet を差し替え）のみ。

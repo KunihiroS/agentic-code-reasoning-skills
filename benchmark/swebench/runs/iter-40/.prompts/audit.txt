@@ -1,96 +1,82 @@
 あなたは SKILL.md の変更に対する監査役です。
 
-以下のファイルを参照してください:
-- Objective.md の Audit Rubric セクション
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
 - README.md
 - docs/design.md
 - docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
 
-以下の diff を Audit Rubric の 7 項目（R1〜R7）で採点し、
-Objective.md に定義された audit.md フォーマットに従って
-benchmark/swebench/runs/iter-40/audit.md を作成してください。
+この 6 ファイル以外を read / search / list してはいけません。
 
-合格基準: 全項目 2 以上、かつ合計 14/21 以上
+【出力先】
+benchmark/swebench/runs/iter-40/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
 
 diff:
 diff --git a/SKILL.md b/SKILL.md
-index 7f5f487..d7a5db8 100644
+index eb739ace..b8d21c93 100644
 --- a/SKILL.md
 +++ b/SKILL.md
-@@ -169,24 +169,23 @@ ANALYSIS OF TEST BEHAVIOR:
- For each relevant test:
-   Test: [name]
-   Claim C[N].1: With Change A, this test will [PASS/FAIL]
--                because [trace through code — cite file:line]
-+                because [trace through code — cite file:line;
-+                cover all branches this test actually exercises, not just the happy path]
-   Claim C[N].2: With Change B, this test will [PASS/FAIL]
--                because [trace through code — cite file:line]
-+                because [trace through code — cite file:line;
-+                cover all branches this test actually exercises, not just the happy path]
-   Comparison: SAME / DIFFERENT outcome
+@@ -261,7 +261,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- When a semantic difference is found, trace at least one relevant test through the differing path up to the first downstream observation point (assertion/check/exception) before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
  
- For pass-to-pass tests (if changes could affect them differently):
-   Test: [name]
-   Claim C[N].1: With Change A, behavior is [description]
-+                because [trace through code — cite file:line;
-+                cover all branches this test actually exercises, not just the happy path]
-   Claim C[N].2: With Change B, behavior is [description]
-+                because [trace through code — cite file:line;
-+                cover all branches this test actually exercises, not just the happy path]
-   Comparison: SAME / DIFFERENT outcome
- 
--EDGE CASES RELEVANT TO EXISTING TESTS:
--(Only analyze edge cases that the ACTUAL tests exercise)
--  E[N]: [edge case]
--    - Change A behavior: [specific output/behavior]
--    - Change B behavior: [specific output/behavior]
--    - Test outcome same: YES / NO
--
- COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
-   Test [name] will [PASS/FAIL] with Change A because [reason]
-   Test [name] will [FAIL/PASS] with Change B because [reason]
+ ---
 
 rationale:
 # Iteration 40 — 変更理由
 
 ## 前イテレーションの分析
 
-- 前回スコア: 75%（15/20）
-- 失敗ケース: 13821、15382、14787、11433、12663
-- 失敗原因の分析:
-  - 13821（EQUIV → NOT_EQ, 9ターン）: 早期誤結論。edge case の確認が Claim の外にある別欄（EDGE CASES）に後回しにされ、Comparison を書いた後に戻らなかった可能性がある。
-  - 15382（EQUIV → UNKNOWN, 31ターン）: ターン上限到達。EDGE CASES 別欄の処理が余分なターンを消費した。
-  - 14787（NOT_EQ → UNKNOWN, 31ターン）: 同上。
-  - 11433（NOT_EQ → EQUIV, 26ターン）: caller 伝播の確認漏れ。本イテレーションの直接的な変更対象ではない。
-  - 12663（NOT_EQ → UNKNOWN, 31ターン）: ターン上限到達。EDGE CASES 別欄の処理が余分なターンを消費した。
+- 前回スコア: N/A
+- 失敗ケース: （固有識別子を含めないため記載しない）
+- 失敗原因の分析: 「意味差が見つかったが影響なし」と直観で早期に打ち切ると、下流の観測点に届く差分影響を見落として誤って EQUIVALENT に寄りやすい。
 
 ## 改善仮説
 
-`EDGE CASES RELEVANT TO EXISTING TESTS` が持つ「ACTUAL tests が踏む edge case を再確認する」という anti-skip 義務を、Claim C[N].1 / C[N].2 の `because` 節に統合することで、
-
-1. **anti-skip 機能は維持**される（義務は消えず Claim 内で生きる）
-2. **別欄としての EDGE CASES を削除**でき、ターン予算を節約できる
-3. **Claim が証拠として完結**するため、エージェントはトレース中に edge case を処理する（後処理に先送りしない）
-
-この統合により、3件の UNKNOWN（15382、14787、12663）のターン枯渇を軽減しつつ、検証密度を落とさない。
-
-論文（Ugare & Chandra, arXiv:2603.01896）の設計思想では、certificate の各 Claim は**その証拠を完全に封じ込める**ことで anti-skip を実現する。現在の EDGE CASES セクションは Claim の**外側**にある後処理的な欄であり、Claim 内で完結するという本来の設計から逸脱していた。
+意味差が検出された時点で「影響なし」を許す前に、少なくとも1つの関連するテストを差分経路で追跡し、最初の下流の観測点（assertion/check/exception）まで同値性を局在化できた場合にのみ “no impact” を結論できるようにすると、偽 EQUIV を減らしつつ根拠薄い偽 NOT_EQUIV も抑制できる。
 
 ## 変更内容
 
-- **修正**: Claim C[N].1 と C[N].2 の `because` 節に `; cover all branches this test actually exercises, not just the happy path` を追加（fail-to-pass ブロックおよび pass-to-pass ブロックの両方）
-- **削除**: `EDGE CASES RELEVANT TO EXISTING TESTS:` 以下7行を削除
+Compare checklist の1項目を1行置換し、「trace」の到達条件を “最初の下流の観測点” まで明確化した。
+
+Trigger line (final): "When a semantic difference is found, trace at least one relevant test through the differing path up to the first downstream observation point (assertion/check/exception) before concluding it has no impact"
+
+上の Trigger line (final) は、proposal の差分プレビューにあった Trigger line と文言レベルで一致しており、意図した一般化（観測点を assertion に固定せず check/exception も含める）も同一である。
 
 ## 期待効果
 
-| ケース | 現状 | 本変更の作用 | 予測 |
-|--------|------|-------------|------|
-| 13821 | EQUIV → NOT_EQ（9ターン） | Claim に edge-case 義務があるため、DIFFERENT と書く前に「このテストが踏む分岐でも差が出るか」を確認する誘導が生まれる | 改善の可能性あり |
-| 15382 | EQUIV → UNKNOWN（31ターン） | EDGE CASES 別欄削除でターン節約 | +1 見込み |
-| 14787 | NOT_EQ → UNKNOWN（31ターン） | 同上 | +1 見込み |
-| 11433 | NOT_EQ → EQUIV（26ターン） | 本変更の直接的作用は限定的 | 変化なし〜微改善 |
-| 12663 | NOT_EQ → UNKNOWN（31ターン） | EDGE CASES 別欄削除でターン節約 | +1 見込み |
-
-- **現状**: 15/20（75%）
-- **期待**: 17〜18/20（85〜90%）
+「差分はあるが影響なし」という結論を出す前に、下流の観測点まで差分影響の有無を局在化する行動が入るため、直観的な軽視による早期 EQUIV を減らし、結論の根拠を観測可能な同値/非同値に接続できる。
