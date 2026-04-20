@@ -1811,3 +1811,49 @@ SKILL.md を iter-1 ベスト版に固定し、ベンチマークモデルを gp
 3. **Compare: EQUIV 判定が主な改善点** — gpt-5.4-mini は without で EQUIV を 10-30% しか正解できないが、with で 40-60% に改善
 4. **Audit: 性能飽和** — gpt-5.4-mini は without でも 93-96% と高く、スキルの付加価値がない。audit-improve モードの SKILL.md からの削除を検討すべき
 5. **このベースラインを meta-agent-2/auto-improve の iter-0 として使用する**
+
+### 19.5 Explain ベースライン結果と原論文との照合 (2026-04-20)
+
+#### 結果
+
+20 タスク × with/without を gpt-5.4-mini で実行、gpt-5.4 で Judge 評価（ルーブリック 5 軸 × 3 段階、計 15 点）。
+
+| | without skill | with skill | Delta |
+|---|---|---|---|
+| **平均スコア (19 ペア)** | 12.0/15 | 10.8/15 | **-1.2** |
+
+軸別では R4（不支持主張の不在: -1.00）と R5（簡潔性: -1.06）で大きく悪化。
+
+with_skill の出力は certificate テンプレート（FUNCTION TRACE TABLE, PREMISES 等）を埋めようとして、検証できない構造体やファイルを捏造する傾向が観察された。
+
+#### 原論文との照合
+
+原論文 (Ugare & Chandra, 2603.01896) の Code Question Answering 評価:
+- Opus-4.5: Standard 78.3% → Semi-formal **87.0% (+8.7pp)**
+- Sonnet-4.5: Standard 84.2% → Semi-formal **84.8% (+0.6pp)**
+
+論文の指摘:
+> "the benefit of structured reasoning varies by model capability and may plateau when the base model is already strong."
+> "semi-formal reasoning can fail when agents construct elaborate but incomplete reasoning chains"
+
+#### 構造化の効果モデル（タスク出力形式 × モデル能力）
+
+| | 二値判定 (compare) | 自由記述 (explain) |
+|---|---|---|
+| **強いモデル** | 小改善 (+5pp haiku) | 改善 (+8.7pp 論文 Opus) |
+| **弱いモデル** | 大改善 (+17pp mini) | 悪化 (-1.2pt mini) |
+
+- 二値判定: テンプレートは「証拠収集の過程」を構造化するだけで、埋められない欄があっても判断は出せる
+- 自由記述: テンプレートの全セクションが出力の一部になるため、埋められない = 捏造になる
+- 弱いモデルはテンプレートを埋める能力が不足し、ハルシネーションで補填する
+
+#### 対応: Guardrail #10 の追加
+
+SKILL.md に以下のガードレールを追加:
+> 10. **Do not fabricate to fill template sections.** If you cannot verify a claim, write "NOT VERIFIED" or "N/A" rather than inventing plausible-sounding content. An incomplete but honest certificate is more valuable than a complete but fabricated one.
+
+#### 今後の検討事項
+
+- explain モードのテンプレートを軽量化する（全セクション必須→結論+根拠のみ）可能性
+- activation gates でモデル能力に応じた適用制御
+- audit-improve モードの SKILL.md からの削除検討（飽和のため）
