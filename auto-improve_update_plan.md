@@ -1697,3 +1697,69 @@ README 記載の公式評価結果:
 **注意:**
 - ベースラインが変わるため、archive.jsonl をリセットし iter-0 からやり直す必要がある
 - 前ブランチの iter-1 (compare 75%, audit 92%) とは直接比較不可
+
+### 19.3 計画: explain モードのベンチマーク設計
+
+#### 背景
+
+SKILL.md の 4 モードのうち、ベンチマークが整備されているのは compare と audit-improve のみ。
+- compare: Compare Pro (20ペア) — gpt-5.4-mini で +16.7pp の効果を確認
+- audit-improve: Audit (28件) — gpt-5.4-mini では性能飽和で with/without 差なし
+- diagnose: 広範タスクで逆効果 (-20pp) が判明し評価停止。スコープ縮小後の再評価は未実施
+- explain: ベンチマーク自体が未設計
+
+explain は「正解」が一意に決まらないため、LLM-as-Judge によるルーブリック評価が必要。
+
+#### テストケースの構造
+
+```json
+{
+  "repo": "flipt-io/flipt",
+  "commit": "abc123",
+  "question": "What happens when a flag evaluation request has no matching rules?",
+  "context_files": ["internal/server/evaluation.go"],
+  "reference_answer": "..." 
+}
+```
+
+- 出典: SWE-bench Pro リポ（既にクローン済み）のバグ修正コミットを利用
+- 「この変更は何をしているか」「なぜこのバグが起きたか」等を質問
+- ground truth はコミットメッセージ + diff から作成可能
+
+#### ルーブリック (5 軸 × 3 段階、合計 15 点)
+
+| 軸 | 測りたいこと | SKILL.md が効くはずの部分 |
+|---|---|---|
+| R1: 正確性 | 説明が事実として正しいか | 手続き間トレースで誤推論を防ぐ |
+| R2: 証拠の具体性 | file:line の引用があるか | 番号付き前提 + VERIFIED/UNVERIFIED |
+| R3: 推論の追跡可能性 | 結論に至る過程を読者が再現できるか | certificate 構造 |
+| R4: 不支持主張の不在 | 根拠なく推測で済ませていないか | 必須反証 + 名前推測禁止 |
+| R5: 簡潔性 | 無関係な情報を詰め込んでいないか | 認知負荷（逆効果も測れる） |
+
+#### Judge の構成
+
+- **ブラインド評価**: Judge は with/without を知らない。回答を A/B として渡す
+- **順序ランダム化**: A/B の割り当てをケースごとにランダム化（位置バイアス防止）
+- **Judge モデル**: 被評価モデル (gpt-5.4-mini) より強いモデル (gpt-5.4 or Claude)
+- **安定性検証**: 同じ回答を 3 回採点させて Judge の一致率を測る
+
+#### 実行計画
+
+**Phase 1: Pilot (5 ケース)**
+1. SWE-bench Pro リポから 5 件の質問を手動作成
+2. gpt-5.4-mini で with/without の回答を生成
+3. Judge で採点し、以下を検証:
+   - Judge の採点安定性（3 回採点の一致率）
+   - with/without でスコア差が出るか
+   - ルーブリックの各軸が discriminative か（差がつかない軸は不要）
+
+**Phase 2: 本格評価 (15-20 ケース)**
+- Pilot の結果を踏まえてルーブリックを調整
+- ケース数を 15〜20 に拡大
+- 複数ラン実行して統計的信頼性を確保
+
+#### Compare/Audit との違いと対策
+
+- Compare は二値判定 → 機械採点可能。explain は自由文 → Judge 依存
+- Judge 自体の信頼性が結果の信頼性の上限になる
+- reference answer がある場合は Judge なしの自動指標（事実一致率等）も併用検討
