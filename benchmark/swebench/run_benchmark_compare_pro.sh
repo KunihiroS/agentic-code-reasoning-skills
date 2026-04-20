@@ -9,8 +9,8 @@ TEMPLATE="$REPO_ROOT/benchmark/swebench/data/prompt_template.md"
 RUNS_DIR="$REPO_ROOT/benchmark/swebench/runs/compare-pro-1"
 WORKSPACE="$HOME/bench_workspace"
 
-MODEL="claude-haiku-4.5"
-PROVIDER="github-copilot"
+MODEL="gpt-5.4-mini"
+PROVIDER="openai-codex"
 VARIANT_FILTER=""
 LIMIT=0
 OFFSET=0
