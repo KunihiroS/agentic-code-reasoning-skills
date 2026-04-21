@@ -1,0 +1,115 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/21/26 21:33:12] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📋 plan      5 task(s)  0.0s
+  ┊ 📖 read      failed-approaches.md  0.8s
+  ┊ 📖 read      Objective.md  0.8s
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      README.md  0.8s
+  ┊ 📖 read      docs/design.md  0.8s
+  ┊ 📋 plan      update 5 task(s)  0.0s
+  ┊ ✍️  write     benchmark/swebench/runs/iter-9/proposal.md  0.6s
+  ┊ review diff
+a/benchmark/swebench/runs/iter-9/proposal.md → b/benchmark/swebench/runs/iter-9/proposal.md
+@@ -0,0 +1,74 @@
++過去提案との差異: これは STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定の観測境界へ狭める案ではなく、詳細比較に入った後の「差異を何単位で test-level evidence に昇格させるか」という比較粒度の変更である。
++Target: 両方
++Mechanism (抽象): relevant path 上の差異をそのまま比較証拠にせず、まず「caller-visible な結果を変える差異か」を分類してから test-level comparison に昇格させる。
++Non-goal: structural gap だけで早期 NOT_EQUIV する条件の緩和・厳格化は行わない。
++
++## 禁止方向の整理
++- 構造差/早期 NOT_EQUIV の条件を test 依存・oracle 可視・verified 接続などの特定観測境界へ写像して狭める方向は不可。
++- 再収束を比較規則として前景化し、下流一致を既定の吸収根拠にする方向は不可。
++- relevance 未確定時の fallback を広く保留/UNVERIFIED 側へ倒す既定動作の追加は不可。
++
++## カテゴリ C 内の候補分岐
++1. 差異の昇格分岐
++   - 現在のデフォルト: relevant path 上で見つかった差異は、そのまま per-test comparison や counterexample 候補に乗りやすい。
++   - 変更後の観測アウトカム: 追加探索 / EQUIV / NOT_EQUIV / CONFIDENCE が変わる。
++2. pass-to-pass relevance 分岐
++   - 現在のデフォルト: changed code が call path に載るかの二値で関連テストを拾いがち。
++   - 変更後の観測アウトカム: 追加探索 / 保留 / CONFIDENCE が変わる。
++3. large-patch 比較分岐
++   - 現在のデフォルト: >200 lines なら structural/high-level semantic を優先し、詳細 tracing は縮退しやすい。
++   - 変更後の観測アウトカム: 追加探索 / 保留 / CONFIDENCE が変わる。
++
++## 選定理由
++- compare の停滞点は「差異を見つけた後に、それを test outcome の差へどう接続するか」の分岐であり、ここを変えると EQUIV/NOT_EQUIV/追加探索の全てが実際に変わる。
++- structural triage を触らずに、差異重要度の分類というカテゴリ C の本筋だけを変えられる。
++
++## 改善仮説
++仮説: compare は「relevant path 上の差異」ではなく「次の caller-visible commitment を変える差異」を基本比較単位にした方が、内部実装差を過大評価せず、かつ本当に outcome を分ける差異は test-level まで確実に持ち上げられる。
++
++## 該当箇所と変更方針
++該当箇所:
++- "For each relevant test:"
++- "EDGE CASES RELEVANT TO EXISTING TESTS:"
++- "When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact"
++
++変更方針:
++- EDGE CASES ブロックを、差異を outcome-shaping / internal-only に分類する短いブロックへ置換する。
++- Guardrail #4 の「semantic difference を見つけたら test を trace」を、「outcome-shaping と分類された差異を見つけたら test を trace」へ狭める。
++
++Decision-point delta:
++Before: IF any semantic difference is found on a relevant path THEN treat it as immediate comparison evidence and trace a test through that differing path because path membership is used as the relevance signal.
++After:  IF a semantic difference is found THEN first classify whether it changes a caller-visible branch predicate, return payload, raised exception, or persisted side effect; only outcome-shaping differences are promoted to test-level comparison evidence because caller-visible commitment is used as the relevance signal.
++
++Payment: add MUST("For each observed difference, first classify whether it changes a caller-visible branch predicate, return payload, raised exception, or persisted side effect before treating it as comparison evidence.") ↔ demote/remove MUST("EDGE CASES RELEVANT TO EXISTING TESTS:")
++
++## 変更差分プレビュー
++Before:
++```md
++EDGE CASES RELEVANT TO EXISTING TESTS:
++(Only analyze edge cases that the ACTUAL tests exercise)
++  E[N]: [edge case]
++    - Change A behavior: [specific output/behavior]
++    - Change B behavior: [specific output/behavior]
++```
++
++After:
++```md
++DIFFERENCE CLASSIFICATION:
++Trigger line (planned): "For each observed difference, first classify whether it changes a caller-visible branch predicate, return payload, raised exception, or persisted side effect before treating it as comparison evidence."
++  D[N]: [observed difference]
++    - Class: outcome-shaping / internal-only
++    - Next caller-visible effect: [predicate / return / exception / side effect / none yet]
++    - Promote to per-test comparison: YES / NO
++```
++
++## Discriminative probe
++抽象ケース: 2 つの変更が内部の正規化手順だけ異なるが、次の caller には同じ真偽値と同じ例外面しか渡さない。
++Before では内部差がそのまま比較証拠に昇格して偽 NOT_EQUIV または過度な保留が起きやすい。After では internal-only と分類されるため tracing は caller-visible commitment が変わる地点まで続き、EQUIV に収束する; 逆に返り値や例外面が分かれれば outcome-shaping として NOT_EQUIV の反証探索に直結する。
++
++## failed-approaches.md との照合
++- 再収束を既定規範にしていない: 差異を「後で吸収されるか」で扱うのでなく、「どの種類の caller-visible commitment を変えるか」で比較単位を決めている。
++- relevance 未確定時の広域 fallback を増やしていない: internal-only は即保留へ送らず、次の caller-visible effect まで tracing を続けるだけである。
++
++## 変更規模
++- 置換中心の 8-12 行想定。新規モードなし、必須ゲート純増なし、既存の EDGE CASES 必須スロットとの入替で総量不変。
+  ┊ 📖 read      benchmark/swebench/runs/iter-9/proposal.md  0.8s
+  ┊ 📋 plan      update 3 task(s)  0.0s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+proposal.md を作成して検証済みです。
+
+出力先:
+benchmark/swebench/runs/iter-9/proposal.md
+
+要点:
+- 却下済みの「STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定観測境界へ狭める」方向は避けました。
+- 代わりに、compare の詳細分析段階で「見つけた差異をいつ test-level evidence に昇格させるか」という比較粒度の分岐を変更する案にしています。
+- Payment 行も入れています。
+proposal.md を作成して検証済みです。
+
+出力先:
+benchmark/swebench/runs/iter-9/proposal.md
+
+要点:
+- 却下済みの「STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定観測境界へ狭める」方向は避けました。
+- 代わりに、compare の詳細分析段階で「見つけた差異をいつ test-level evidence に昇格させるか」という比較粒度の分岐を変更する案にしています。
+- Payment 行も入れています。
+- 変更規模は 8–12 行の置換想定で、15 行以内です。
+
+session_id: 20260421_213312_fa87ef

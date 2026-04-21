@@ -1,0 +1,107 @@
+# iter-9 discussion
+
+## 総評
+この提案は、STRUCTURAL TRIAGE を触らずに、詳細比較フェーズで「relevant path 上の差異」をそのまま比較証拠にせず、「caller-visible な結果を変える差異か」を先に分類するよう compare の分岐点を置き換える案として読める。変更対象も `compare` 内の比較粒度に局所化されており、研究コア（番号付き前提・仮説駆動探索・手続き間トレース・必須反証）を壊していない。
+
+Web 検索: 検索なし（理由: 一般原則の範囲で自己完結）
+
+## 1. 既存研究との整合性
+README / design の要旨は「証拠を先に集め、per-item iteration と trace によって premature conclusion を防ぐ」ことにある。この提案は結論を直接指示しておらず、差異発見後にどう trace を昇格させるかという推論プロセスの粒度を調整しているので、研究コアとは整合的。
+
+特に `docs/design.md` の「per-item iteration as the anti-skip mechanism」「interprocedural tracing as structure, not advice」とも矛盾しない。差異があったら無条件に重く扱うのではなく、caller-visible な commitment に接続する差異だけを per-test comparison へ昇格する、という整理は、trace の省略ではなく trace の焦点化として理解できる。
+
+## 2. Exploration Framework のカテゴリ選定
+カテゴリ C（比較の枠組みを変える）の選定は適切。これは探索順序や自己チェックの追加ではなく、「差異を何単位で比較証拠として扱うか」という比較単位の変更だから、B/D/E より C が自然。
+
+加えて、Objective.md のカテゴリ説明にある「差異の重要度を段階的に評価する」にかなり素直に当てはまる。structural triage や activation gate をいじっていない点も、変更範囲が比較フレームに留まっていてよい。
+
+## 3. EQUIVALENT / NOT_EQUIVALENT への作用
+片方向最適化ではなく両方向に作用する提案になっている。
+
+- EQUIVALENT 側:
+  relevant path 上の内部差分を即 comparison evidence と見なさないため、内部実装差だけで偽 NOT_EQUIV や過剰保留に倒れるケースを減らしうる。
+- NOT_EQUIVALENT 側:
+  caller-visible commitment を変える差異は outcome-shaping として明示的に test-level evidence へ昇格されるため、「差はあるが影響は曖昧」と流してしまう偽 EQUIV を減らしうる。
+
+重要なのは、提案が「差分を軽く見る」方向ではなく、「昇格条件を caller-visible impact に結び付ける」方向であること。したがって理論上は両側に効く。
+
+## 4. failed-approaches.md との照合
+本質的再演ではない可能性が高い。
+
+- 原則1「再収束を比較規則として前景化しすぎない」
+  提案文は「下流一致を既定の吸収根拠にする」のでなく、「caller-visible commitment を変える差異か」を起点にしている。再収束そのものを規範化していない点は区別できる。
+- 原則2「未確定 relevance を常に保留側へ倒す既定動作を増やしすぎない」
+  proposal でも internal-only は即保留でなく「次の caller-visible effect まで tracing を続ける」と明記されており、広域 fallback の追加ではない。
+
+ただし軽微な注意点はある。`caller-visible branch predicate / return payload / raised exception / persisted side effect` という列挙が閉じた必須分類に読まれると、「証拠種類の事前固定」に近く見える余地がある。ここは `e.g.` 化するか `such as` にして開集合であることを明示した方が安全。
+
+## 5. 汎化性チェック
+違反は見当たらない。
+
+- 具体的な数値 ID: なし
+- ベンチマーク対象リポジトリ名: なし
+- テスト名: なし
+- 実コード断片: なし（SKILL.md の自己引用のみ）
+
+また、提案は特定言語や特定フレームワークを暗黙前提にしていない。`caller-visible` という抽象レベルも十分高い。
+
+一方で、観測可能な差異の例示が return/exception/side effect 中心なので、非同期通知、イベント発火、ログ/メトリクスが仕様上の observable behavior になりうる系でも拾えるよう、列挙を閉じない書き方にした方がさらに汎用的。
+
+## 6. 推論品質の改善期待
+期待できる改善は明確。
+
+- 差異検出と test-level conclusion の間に、1段の意味づけ（difference classification）を入れることで、内部差の過大評価を減らせる。
+- 同時に、caller-visible impact を持つ差異は「何が次に変わるのか」を明示した上でテストへ接続するため、NOT_EQUIV の反証提示が具体化しやすい。
+- 変更量も小さく、既存の EDGE CASES スロットとの置換で総量不変という支払いが見えているため、認知負荷の純増を抑えている。
+
+## 停滞診断
+懸念は 1 点だけある。提案は audit rubric には刺さりやすいが、compare の実行時に本当に分岐が変わるかは Trigger line の実装文言しだいで、列挙カテゴリが閉じていると「分類ラベルを付けるだけで結局いつも trace する」運用に戻るおそれがある。
+
+failed-approaches 該当性:
+- 探索経路の半固定: NO
+- 必須ゲート増: NO
+- 証拠種類の事前固定: YES 寄り（原因候補: `caller-visible branch predicate, return payload, raised exception, or persisted side effect` が閉集合に読める文言）
+
+## compare 影響の実効性チェック
+- 0) 実行時アウトカム差:
+  - relevant path 上の差異を見つけた直後に、そのまま comparison evidence とせず、まず `outcome-shaping / internal-only` の分類が出る。
+  - internal-only と分類された差異では、即 NOT_EQUIV 根拠化せず、次の caller-visible effect まで trace を継続する挙動が観測可能に増える。
+  - outcome-shaping と分類された差異では、UNVERIFIED な「たぶん影響あり」ではなく、どの observable commitment が変わるかを伴って per-test comparison に昇格する。
+
+- 1) Decision-point delta:
+  - IF/THEN 形式で 2 行（Before/After）になっているか？ YES
+  - Before/After が理由の言い換えだけか？ NO。条件が `any semantic difference on a relevant path` から `outcome-shaping difference` へ変わり、行動も `immediate comparison evidence` から `classify first, then selectively promote` へ変わっている。
+  - Trigger line（発火する文言の自己引用）が差分プレビューにあるか？ YES
+
+- 2) Failure-mode target:
+  - 主対象: 両方
+  - 偽 NOT_EQUIV を減らす機構: internal-only 差異の過大評価を抑える。
+  - 偽 EQUIV を減らす機構: outcome-shaping 差異を caller-visible commitment に紐づけて test-level counterexample へ押し上げる。
+
+- 2.5) STRUCTURAL TRIAGE / 早期結論に触れる提案か？ NO
+  - `impact witness` 要求の有無確認は本件では必須論点ではないが、After 文言の `next caller-visible effect` は実質的に impact witness の簡易版として機能しうる。
+
+- 3) Non-goal:
+  - structural gap だけでの早期 NOT_EQUIV 条件は変更しない。
+  - relevance 未確定時に広く UNVERIFIED / 保留へ倒す既定動作は追加しない。
+  - 再収束や downstream absorption を既定の吸収根拠にはしない。
+
+追加チェック:
+- Discriminative probe:
+  - 抽象ケースとして、2変更が内部の正規化順序だけ異なるが caller には同一の真偽値と例外面しか渡さない場合、変更前は path 上の差だけで偽 NOT_EQUIV か過剰保留に寄りやすい。
+  - 変更後はその差が internal-only に留まり、caller-visible commitment が分岐しない限り per-test comparison へ昇格しないため、EQUIV 側の誤判定を避けやすい。
+  - 逆に return/exception が分岐するケースでは outcome-shaping として昇格され、NOT_EQUIV の具体的反証へ繋がる。
+
+追加チェック（停滞対策の検証）:
+- 支払い（必須ゲート総量不変）の A/B 対応付けは明示されているか？ YES
+  - `difference classification` の MUST 追加 ↔ `EDGE CASES RELEVANT TO EXISTING TESTS` の demote/remove
+
+## 最小修正指示
+1. Trigger line の列挙を閉集合にしないこと。`such as` / `e.g.` を入れ、caller-visible effect の種類を固定しすぎない。
+2. `internal-only` のときの動作を 1 句だけ補強し、「保留へ送る」のではなく「next caller-visible effect が見える地点まで trace 継続」と明記すること。
+3. 可能なら `Promote to per-test comparison: YES / NO` の判定根拠欄を 1 フレーズだけ足し、分類ラベル付けだけで終わらないようにすること。ただし総量不変を守るため、既存の EDGE CASES 説明文の削減で支払うこと。
+
+## 結論
+この proposal は、監査 PASS の下限を満たしたまま compare の実効的な分岐を変える提案として十分成立している。最大の懸念は「caller-visible effect の列挙が閉じて見えること」だが、これは failed-approaches の本質的再演というほどではなく、文言調整で解消可能な範囲。
+
+承認: YES

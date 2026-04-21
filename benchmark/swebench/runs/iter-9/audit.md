@@ -1,0 +1,19 @@
+# Iteration 9 — Overfitting 監査
+
+## 判定: PASS
+## 合計スコア: 16/18
+
+| # | 項目 | スコア | 根拠 |
+|---|------|--------|------|
+| R1 | 汎化性 | 3 | 変更内容は「観測した差異を caller-visible な影響の有無で分類してから比較証拠として扱う」という汎用的な推論規則であり、特定リポジトリ・特定ケース・特定テストへの依存がない。diff/rationale に含まれる引用も SKILL.md 自身の文言と一般概念に留まり、ベンチマーク対象リポジトリの固有識別子や実装コード引用は見当たらない。 |
+| R2 | 研究コアの踏襲 | 3 | README・design・原論文が強調するコアは、番号付き前提、仮説駆動探索、手続き間トレース、必須反証である。今回の変更は compare モード内の差異評価粒度を調整するもので、これらの骨格を削らず、むしろ「差異をどう test-level evidence に昇格するか」を明示して structured certificate を補強している。 |
+| R3 | 推論プロセスの改善 | 3 | 変更は結論を直接指示しておらず、semantic difference 発見後に「outcome-shaping / internal-only」を判定し、caller-visible な影響種別を記録してから per-test comparison に進むという手順を追加している。これは差異の扱い方という推論プロセス自体を明確化した改善である。 |
+| R4 | 反証可能性の維持 | 2 | 反証ステップそのもの（counterexample / no counterexample exists）は削除されておらず維持されている。また差異分類により、どの差が実際に test outcome を変えうるかを明示できる点は反証の焦点整理に寄与する。ただし internal-only と誤分類した場合に追加 tracing を省きやすくなるため、反証を明確に強化したとまでは言い切れず 2 点が妥当。 |
+| R5 | 複雑性の抑制 | 3 | 既存の「実テストが踏む edge case」を列挙するブロックを、より直接的な「差異分類」ブロックへ置換しており、追加された判断軸も caller-visible predicate / return / exception / side effect という少数の明快なカテゴリに整理されている。複雑さを不当に増やす変更ではなく、比較観点の明確化に近い。 |
+| R6 | 回帰リスク | 2 | 変更範囲は compare テンプレート、checklist、Guardrail #4 に限定されており広範な構造変更ではないため大きな回帰リスクは低い。一方で「outcome-shaping differences のみ tracing 強化」としたことで、境界的な差異を internal-only と早計に見なす運用が起きると既存の正答ケースを取りこぼす可能性は残る。改善期待はあるが無リスクではない。 |
+
+## 総合コメント
+
+この変更は、relevant path 上で見つかった差異を即座に test-level comparison evidence と見なさず、まず caller-visible な影響へ接続されるかを分類する、という比較フレームの改善として妥当である。研究のコア構造を壊さず、failed-approaches.md が警戒する「保留や再収束を既定動作として前景化しすぎる」方向にも直結していない。特に、return・exception・side effect・branch predicate という観測可能な差異へ焦点を当てた点は、内部実装差の過大評価を抑える汎用的な整理として評価できる。
+
+一方で、監査上の主な注意点は、internal-only 判定が実際には caller-visible な差の前段である可能性を見落とさないことにある。今回の文面は「first classify」を要求しており、分類自体を慎重に行う限りは有益だが、運用次第では tracing の打ち切り条件として誤用されうる。このため R4 と R6 は満点ではなく 2 点とした。それでも全項目 2 以上、合計 16/18 で、合格基準は満たしている。

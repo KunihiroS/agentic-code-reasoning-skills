@@ -1,0 +1,41 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..9296d903 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -191,12 +191,12 @@ For pass-to-pass tests (if changes could affect them differently):
+   Claim C[N].2: With Change B, behavior is [description]
+   Comparison: SAME / DIFFERENT outcome
+ 
+-EDGE CASES RELEVANT TO EXISTING TESTS:
+-(Only analyze edge cases that the ACTUAL tests exercise)
+-  E[N]: [edge case]
+-    - Change A behavior: [specific output/behavior]
+-    - Change B behavior: [specific output/behavior]
+-    - Test outcome same: YES / NO
++DIFFERENCE CLASSIFICATION:
++Trigger line (final): "For each observed difference, first classify whether it changes a caller-visible branch predicate, return payload, raised exception, or persisted side effect before treating it as comparison evidence."
++  D[N]: [observed difference]
++    - Class: outcome-shaping / internal-only
++    - Next caller-visible effect: [predicate / return / exception / side effect / none yet]
++    - Promote to per-test comparison: YES / NO
+ 
+ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+   Test [name] will [PASS/FAIL] with Change A because [reason]
+@@ -230,7 +230,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- When a semantic difference is found, first classify whether it is outcome-shaping or internal-only; trace at least one relevant test only for outcome-shaping differences before concluding they have no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+ ---
+@@ -242,7 +242,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ 1. **Do not assume behavior from names.** Read the actual function definition. The canonical failure: assuming Python's builtin `format()` when a module-level function with different semantics shadows it.
+ 2. **Do not claim test outcomes without tracing.** Trace each test through the relevant code path before asserting PASS or FAIL.
+ 3. **Do not confuse symptom with root cause.** A crash site (e.g., StackOverflowError in a recursive method) may not be the origin of incorrect state. Trace upstream to find where the bad state was created.
+-4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, trace at least one relevant test through the differing code path before concluding the difference has no impact.
++4. **Do not dismiss subtle differences.** If you find a semantic difference between compared items, first classify whether it changes a caller-visible branch predicate, return payload, raised exception, or persisted side effect; trace at least one relevant test through the differing code path only for outcome-shaping differences before concluding they have no impact.
+ 5. **Do not trust incomplete chains.** After building a reasoning chain, verify that downstream code does not already handle the edge case or condition you identified — e.g., via exception handlers, default values, or guard clauses. Confident-but-wrong answers often come from thorough-but-incomplete analysis.
+ 6. **Handle unavailable source explicitly.** When a function's source is not in the repository (third-party library), mark it UNVERIFIED in trace tables. Search for type signatures, documentation, or test usage as secondary evidence. Do not guess behavior from the function name.
+ 
