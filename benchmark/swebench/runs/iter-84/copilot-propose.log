@@ -1,9 +1,0 @@
-`benchmark/swebench/runs/iter-84/proposal.md` を作成しました。
-
-**要点**:
-- **カテゴリ B**（情報取得方法の改善）を選択
-- **仮説**: pass-to-pass テスト分析の開始条件を主観的判断 `"if changes could affect them differently"` → D2 の客観的基準 `"where the changed code lies in their call path, per D2"` に置き換える
-- **変更規模**: 1 行（hard limit 5 行以内）
-- **NOT_EQ 効果**: コールパスに変更関数が含まれる pass-to-pass テストのスキップを防ぎ、見落とされがちな差異を検出しやすくする
-- 全 26 の failed-approaches 原則に抵触なし
-

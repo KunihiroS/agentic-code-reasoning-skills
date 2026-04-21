@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/home/kunihiros/agentic-code-reasoning-skills/benchmark/swebench/generate_compare_pro_prompts.py", line 67, in <module>
-    prompt_file.write_text(prompt)
-    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
-  File "/usr/lib64/python3.14/pathlib/__init__.py", line 815, in write_text
-    return f.write(data)
-           ~~~~~~~^^^^^^
-OSError: [Errno 122] Disk quota exceeded

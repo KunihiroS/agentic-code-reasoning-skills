@@ -1,9 +1,0 @@
-Now I'll make both changes in parallel:
-
-完了しました。
-
-**SKILL.md の変更（1行のみ）:**
-- `observable test outcome by tracing through at least one test` → `PASS/FAIL result of at least one relevant test, not merely the internal execution path`
-
-**rationale.md** を `Objective.md` のフォーマットに従い作成しました（4セクション: 前イテレーションの分析 / 改善仮説 / 変更内容 / 期待効果）。
-

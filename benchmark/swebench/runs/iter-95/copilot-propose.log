@@ -1,9 +1,0 @@
-`benchmark/swebench/runs/iter-95/proposal.md` を作成しました。
-
-**提案の要旨**:
-
-- **カテゴリ E**（表現の精緻化）: Guardrail #4 に1行追記
-- **仮説**: トレースの「終点条件」を指定していないため、エージェントが中間ノードで打ち切りやすい。アサーション境界での observable effect を明示させることで不完全な因果連鎖を防ぐ
-- **変更**: Guardrail #4 末尾に `"In this trace, identify what observable effect at the test assertion boundary (return value, exception, or side effect) would change if the difference propagated — only dismiss the difference if this effect is absorbed before reaching that boundary."` を追記（1行）
-- **failed-approaches との照合**: #1(非対称)/#15(固定hop数)/#17(中間ノード義務化)/#22(具体物例示)などに抵触せず、#22 の「状態・性質で指示すべき」知見に直接対応
-

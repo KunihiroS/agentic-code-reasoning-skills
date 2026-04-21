@@ -1,6 +1,0 @@
-I have added the new entry (BL-23) to `failed-approaches.md` as well as a new common principle (#17). 
-
-**BL-23** explains how mandating the reading of the nearest consumer (downstream node) for every difference discovery caused the model to anchor too heavily on that intermediate local state rather than following the cause-and-effect chain all the way to the end observation points of a test (such as assertions). Also, applying this uniform analysis rule consumed excessive turns which led to multiple cases falling to `UNKNOWN`.
-
-The newly derived **principle #17** generalizes this lesson:
-> **中間ノードの局所的な分析義務化はエンドツーエンドの追跡を阻害する**: テストの最終的な観測点（assertion等）ではなく、差分が発生した直後の consumer など中間状態の挙動に焦点を当てて分析を義務付けると、エージェントの注意がその中間ノードに固定される。その結果、本来必要なエンドツーエンドの因果追跡（差分から最終的なテスト結果までの経路検証）が弱まり、中間状態の挙動のみに基づく推論ジャンプを招く（BL-23）。

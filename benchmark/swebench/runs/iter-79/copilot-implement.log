@@ -1,7 +1,0 @@
-完了しました。
-
-**SKILL.md の変更** (1行):
-- `Test outcome same: YES / NO` → `YES / NO — name the test assertion that determines PASS/FAIL under each change`
-
-**rationale.md** を `benchmark/swebench/runs/iter-79/` に作成しました。proposal.md の内容（因果連鎖断絶の問題・対称的アサーション引用・期待効果）を Objective.md のフォーマットに従い、具体的な数値ID・リポジトリ名・テスト名なしで記載しています。
-

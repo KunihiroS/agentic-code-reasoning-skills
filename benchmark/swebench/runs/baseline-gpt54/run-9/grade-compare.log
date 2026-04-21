@@ -1,0 +1,13 @@
+Graded 40 compare results → benchmark/swebench/runs/baseline-gpt54/run-9/compare/grades_compare.json
+
+without_skill:
+  Overall:        11/20 = 55.0%
+  EQUIVALENT:     1/10 = 10.0%
+  NOT_EQUIVALENT: 10/10 = 100.0%
+  Avg duration:   56s
+
+with_skill:
+  Overall:        14/20 = 70.0%
+  EQUIVALENT:     4/10 = 40.0%
+  NOT_EQUIVALENT: 10/10 = 100.0%
+  Avg duration:   192s

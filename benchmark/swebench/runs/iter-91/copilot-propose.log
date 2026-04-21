@@ -1,9 +1,0 @@
-`benchmark/swebench/runs/iter-91/proposal.md` を作成しました。
-
-**提案サマリー:**
-
-- **カテゴリ C** (比較の枠組みを変える) — 差異の重要度の段階的評価
-- **仮説**: D1 定義に「観察境界に伝播しない内部実装差異は等価判定と無関係」を明記することで、内部差異を即 NOT_EQUIV に短絡させる false NOT_EQUIVALENT を抑制
-- **変更**: Certificate template の D1 に 3 行追加（5 行 hard limit 以内）
-- **対称性**: どちらの判定にも同等に適用される定義の精緻化であり、Guardrail #4 との組み合わせで EQUIV・NOT_EQ 両方向のバランスを維持
-

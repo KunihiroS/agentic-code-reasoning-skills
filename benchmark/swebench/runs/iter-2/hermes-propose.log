@@ -1,98 +1,71 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/17/26 04:30:06] INFO     Processing request of type            server.py:727
+[04/21/26 10:50:06] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-  ┊ 📖 read      SKILL.md  0.9s
-  ┊ 📖 read      Objective.md  0.8s
   ┊ 📖 read      failed-approaches.md  0.8s
-  ┊ 📖 read      docs/design.md  0.8s
+  ┊ 📖 read      SKILL.md  0.8s
+  ┊ 📖 read      Objective.md  0.8s
   ┊ 📖 read      README.md  0.8s
+  ┊ 📖 read      docs/design.md  0.8s
+  ┊ 📖 read      docs/reference/agentic-code-reasoning.pdf  0.8s
   ┊ ✍️  write     benchmark/swebench/runs/iter-2/proposal.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-2/proposal.md → b/benchmark/swebench/runs/iter-2/proposal.md
-@@ -1,93 +1,97 @@
--# Iter-2 Proposal
-+# Iter-2 Proposal (focus_domain: overall)
- 
--## Exploration Framework カテゴリ: C (強制指定)
-+## Exploration Framework
-+- カテゴリ: C. 比較の枠組みを変える
-+- メカニズム選択理由:
-+  - `compare` の誤判定は「差分を見つけた」こと自体を“重要な差分”と取り違え、テストの観測点（oracle）に結び付かないまま EQUIV/NOT_EQUIV を早期確定しがち。
-+  - そこで「差異重要度（oracle可視性）」という比較分類を導入し、同じ証拠（file:line トレース）をより高い識別力で使えるようにする。
- 
--カテゴリ C は「比較の枠組みを変える」と定義されており、その具体的なメカニズムとして
--Objective.md は以下の 3 つを挙げている:
-+## 改善仮説（1つ）
-+差分を「テストの観測点に影響しうる差分（oracle-visible）」と「表現・構造の差（oracle-invisible）」に分類してから追跡優先度を決めると、差分探索が“重要度の低い差分”に吸い込まれにくくなり、全体の比較判断（overall）の安定性が上がる。
- 
--- テスト単位ではなく関数単位・モジュール単位で比較する
--- 差異の重要度を段階的に評価する
--- 変更のカテゴリ分類（リファクタリング/バグ修正/機能追加）を先に行う
-+## 現状ボトルネックの診断（SKILL.md 引用 + 誘発する失敗メカニズム 1つ）
-+該当箇所（Compare テンプレート）:
-+```
-+STRUCTURAL TRIAGE (required before detailed tracing):
-+Before tracing individual functions, compare the two changes structurally:
-+  S1: ...
-+  S2: ...
-+  S3: ...
-+```
-+診断:
-+- 構造差分（S1/S2）とスケール判断（S3）はあるが、「差分の重要度（テスト oracle に結び付くか）」の分類が明示されていない。
-+- その結果、差分発見→（oracle 連結の薄いまま）“重大差分扱い”となり、(a) NOT_EQUIV の過剰確定（偽 NOT_EQ）または (b) EQUIV 側の反証探索が表層差分に偏って反証が空回り、のどちらかを誘発しうる。
- 
--今回選択するメカニズムは「差異の重要度を段階的に評価する」である。
-+## 変更タイプ
-+- optional なガイド追加
-+- 理由: 新しい必須ゲートを増やさず、既存の STRUCTURAL TRIAGE の中で「比較分類（差異重要度）」を“任意の優先度付け”として添えるだけで、探索の自由度を落とさずに差分の扱いを改善できる。
- 
--理由: STRUCTURAL TRIAGE は既にファイルレベルの欠落を捕捉するが、
--同一ファイルを変更している場合の比較ループにおいて、発見した差異が
--テスト観測に到達するかどうかの優先度判断が曖昧なままである。
--差異を発見したのちに「その差異がテスト観測に到達しうるか」という
--重要度評価を明示的に行う仕組みを持たせることで、Guardrail #4 の適用精度を
--上げ、かつ無関係な差異に対する深掘りターンの浪費を防ぐことができる。
-+## SKILL.md のどこをどう変えるか（具体）
-+対象: `## Compare` → `### Certificate template` → `STRUCTURAL TRIAGE` と `### Compare checklist`
- 
--
--## 改善仮説
--
--compare モードにおいて、発見された差異の重要度を「テスト観測に到達しうるか否か」
--という軸で明示的に段階評価させることで、Guardrail #4（微細な差異を軽視しない）と
--探索予算の効率的な使用を両立させ、EQUIVALENT / NOT EQUIVALENT 双方の判定精度を
--汎用的に改善できる。
--
--
--## SKILL.md のどこをどう変えるか
--
--対象箇所: Compare チェックリスト (SKILL.md 258–259 行目付近)
--
--現行の Guardrail #4 の再文言化に当たる Compare checklist の既存行:
--
--```
--- When a semantic difference is found, trace at least one relevant test through the differing code path before concluding the difference has no impact
-+提案差分（追加は3行、削除なし）:
-+```diff
-+@@
-+ STRUCTURAL TRIAGE (required before detailed tracing):
-+ Before tracing individual functions, compare the two changes structurally:
-+   S1: Files modified — list files touched by each change. Flag any file
-+       modified in one change but absent from the other.
-+   S2: Completeness — does each change cover all the modules that the
-+       failing tests exercise? If Change B omits a file that Change A
-+       modifies and a test imports that file, the changes are NOT EQUIVALENT
-+       regardless of the detailed semantics.
-+   S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-+       prioritize structural differences (S1, S2) and high-level semantic
-+       comparison over exhaustive line-by-line tracing. Exhaustive tracing
-+       is infeasible for large patches and produces unreliable conclusions.
-++  OPTIONAL — S4: Difference importance — label each discovered difference as ORACLE-VISIBLE
-… omitted 97 diff line(s) across 1 additional file(s)/section(s)
+@@ -0,0 +1,39 @@
++過去提案との差異: 今回は STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を狭めず、意味差が見つかった後の「比較をどの粒度で続けるか」を変える提案である。
++Target: 両方
++Mechanism (抽象): 途中の経路差をそのまま差異扱いせず、次の共有されたテスト関連分岐/値状態での reconvergence を比較単位にする。
++Non-goal: 構造差を特定の観測境界へ写像して早期 NOT_EQUIV 条件を絞り込むことはしない。
++
++カテゴリ C 内での具体的メカニズム選択理由:
++- compare が停滞/誤判定しやすいのは「差が見えた瞬間」に比較粒度が patch-level/path-level のまま固定される分岐で、ここを変えると EQUIV/NOT_EQUIV/追加探索の挙動が実際に変わる。
++- docs/design.md の anti-skip は per-item iteration を要求しており、差異の重要度を「最初の差」ではなく「次の共有された判定点まで残る差」で分類するのはカテゴリ C の比較枠組み変更として自然。
++
++改善仮説:
++内部実装の差をいったん provisional に落とし、次の共有されたテスト関連判定点で再比較させると、早すぎる偽 NOT_EQUIV と、単一路 tracing からの偽 EQUIV の両方を減らせる。
++
++Payment: add MUST("none") ↔ demote/remove MUST("- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact")
++
++該当箇所と変更方針:
++現状引用: "- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact"
++変更: 「差がある経路を1本なぞる」から、「次の共有された test-relevant predicate / returned value / asserted state まで差が残るかを分類する」へ置換する。
++
++Decision-point delta:
++Before: IF relevant path 上で実装差を見つけた THEN その差を有力な判別材料として 1 本の関連テストを差分経路に通し、影響なし/ありへ進む because 最初の path divergence を比較粒度としている。
++After:  IF relevant path 上で実装差を見つけても次の共有された test-relevant predicate/value state で両者が一致する THEN その差を non-discriminative として比較を reconvergence 点から続行し、一致しないときだけ差分結論へ進む because downstream reconvergence の有無を比較粒度としている。
++
++変更差分プレビュー:
++Before:
++- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++After:
++- When a semantic difference is found, compare whether the divergence survives to the next shared test-relevant predicate, returned value, or asserted state; if the traces reconverge first, continue comparison from that reconvergence point.
++Trigger line (planned): "If two traces diverge internally but re-enter the same test-relevant predicate/value state, treat the earlier difference as non-discriminative and compare from that reconvergence point."
++- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
++
++Discriminative probe:
++抽象ケース: 2 つの変更が別々の正規化/補助関数を通るため途中状態は異なるが、その後に同じ branch predicate に同じ canonical value を渡す。変更前は「経路が違う」ことを差異の強い証拠として扱って偽 NOT_EQUIV になりやすく、逆に 1 本だけ traced して偽 EQUIV にも流れうる。変更後は reconvergence を確認した時点で追加探索を下流へ送るので、過度な早期結論を避けられる。
++
++failed-approaches.md との照合:
++- failed-approaches.md 自体に残存 blacklist はないが、与えられた却下履歴とは整合する。STRUCTURAL TRIAGE の S1/S2 も早期 NOT_EQUIV 条件も触らず、禁止された「特定観測境界への写像による狭窄」を再演しない。
++- 研究コアの番号付き前提・仮説駆動探索・手続き間トレース・必須反証は維持し、差異重要度の分類だけを差し替える。
++
++変更規模の宣言:
++1 箇所の置換中心、15 行以内の差分で収まる小変更。
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-benchmark/swebench/runs/iter-2/proposal.md に、カテゴリC（比較枠組み変更）として「差分の oracle 可視性（重要度）分類を optional ガイドとして導入する」提案を書き込みました。
+proposal.md を作成しました。
+出力先: benchmark/swebench/runs/iter-2/proposal.md
 
-session_id: 20260417_043006_66aa1e
+要点:
+- 直近却下案と違って、STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件は触っていません。
+- 比較粒度を「最初に見えた差」から「次の共有された test-relevant 判定点まで残る差」へ移す提案です。
+proposal.md を作成しました。
+出力先: benchmark/swebench/runs/iter-2/proposal.md
+
+要点:
+- 直近却下案と違って、STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件は触っていません。
+- 比較粒度を「最初に見えた差」から「次の共有された test-relevant 判定点まで残る差」へ移す提案です。
+- 偽 NOT_EQUIV と偽 EQUIV の両方を狙い、追加の必須ゲート純増は避ける形で書いています。
+
+session_id: 20260421_105006_13b56c

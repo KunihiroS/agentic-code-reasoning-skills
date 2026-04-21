@@ -1,5 +1,0 @@
-I have updated `failed-approaches.md` with the analysis of iter-51 as requested.
-
-The failure analysis identifies that although the iteration aimed to improve reasoning completeness by refining Guardrail 5 to require end-to-end trace verifications, the strong requirement ("verify") triggered exhaustive exploration attempts. This overloaded the agent's turn budget when dealing with complex frameworks and resulted in catastrophic failure (0% score, massive UNKNOWNs), similarly to iter-50.
-
-I've documented this failure under `### BL-26: Guardrail への双方向の因果連鎖完全性確認義務の追加` and expanded the corresponding shared principle (`#19 エンドツーエンドの完全な立証義務の付与は、フレームワークの複雑さに直面して探索予算を枯渇させる`) to include not just template-level citations (`file:line`) but also principle-level (Guardrail) strict verification mandates.

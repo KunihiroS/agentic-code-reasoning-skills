@@ -1,97 +1,39 @@
-# Iter-2 Proposal (focus_domain: overall)
+過去提案との差異: 今回は STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を狭めず、意味差が見つかった後の「比較をどの粒度で続けるか」を変える提案である。
+Target: 両方
+Mechanism (抽象): 途中の経路差をそのまま差異扱いせず、次の共有されたテスト関連分岐/値状態での reconvergence を比較単位にする。
+Non-goal: 構造差を特定の観測境界へ写像して早期 NOT_EQUIV 条件を絞り込むことはしない。
 
-## Exploration Framework
-- カテゴリ: C. 比較の枠組みを変える
-- メカニズム選択理由:
-  - `compare` の誤判定は「差分を見つけた」こと自体を“重要な差分”と取り違え、テストの観測点（oracle）に結び付かないまま EQUIV/NOT_EQUIV を早期確定しがち。
-  - そこで「差異重要度（oracle可視性）」という比較分類を導入し、同じ証拠（file:line トレース）をより高い識別力で使えるようにする。
+カテゴリ C 内での具体的メカニズム選択理由:
+- compare が停滞/誤判定しやすいのは「差が見えた瞬間」に比較粒度が patch-level/path-level のまま固定される分岐で、ここを変えると EQUIV/NOT_EQUIV/追加探索の挙動が実際に変わる。
+- docs/design.md の anti-skip は per-item iteration を要求しており、差異の重要度を「最初の差」ではなく「次の共有された判定点まで残る差」で分類するのはカテゴリ C の比較枠組み変更として自然。
 
-## 改善仮説（1つ）
-差分を「テストの観測点に影響しうる差分（oracle-visible）」と「表現・構造の差（oracle-invisible）」に分類してから追跡優先度を決めると、差分探索が“重要度の低い差分”に吸い込まれにくくなり、全体の比較判断（overall）の安定性が上がる。
+改善仮説:
+内部実装の差をいったん provisional に落とし、次の共有されたテスト関連判定点で再比較させると、早すぎる偽 NOT_EQUIV と、単一路 tracing からの偽 EQUIV の両方を減らせる。
 
-## 現状ボトルネックの診断（SKILL.md 引用 + 誘発する失敗メカニズム 1つ）
-該当箇所（Compare テンプレート）:
-```
-STRUCTURAL TRIAGE (required before detailed tracing):
-Before tracing individual functions, compare the two changes structurally:
-  S1: ...
-  S2: ...
-  S3: ...
-```
-診断:
-- 構造差分（S1/S2）とスケール判断（S3）はあるが、「差分の重要度（テスト oracle に結び付くか）」の分類が明示されていない。
-- その結果、差分発見→（oracle 連結の薄いまま）“重大差分扱い”となり、(a) NOT_EQUIV の過剰確定（偽 NOT_EQ）または (b) EQUIV 側の反証探索が表層差分に偏って反証が空回り、のどちらかを誘発しうる。
+Payment: add MUST("none") ↔ demote/remove MUST("- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact")
 
-## 変更タイプ
-- optional なガイド追加
-- 理由: 新しい必須ゲートを増やさず、既存の STRUCTURAL TRIAGE の中で「比較分類（差異重要度）」を“任意の優先度付け”として添えるだけで、探索の自由度を落とさずに差分の扱いを改善できる。
+該当箇所と変更方針:
+現状引用: "- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact"
+変更: 「差がある経路を1本なぞる」から、「次の共有された test-relevant predicate / returned value / asserted state まで差が残るかを分類する」へ置換する。
 
-## SKILL.md のどこをどう変えるか（具体）
-対象: `## Compare` → `### Certificate template` → `STRUCTURAL TRIAGE` と `### Compare checklist`
+Decision-point delta:
+Before: IF relevant path 上で実装差を見つけた THEN その差を有力な判別材料として 1 本の関連テストを差分経路に通し、影響なし/ありへ進む because 最初の path divergence を比較粒度としている。
+After:  IF relevant path 上で実装差を見つけても次の共有された test-relevant predicate/value state で両者が一致する THEN その差を non-discriminative として比較を reconvergence 点から続行し、一致しないときだけ差分結論へ進む because downstream reconvergence の有無を比較粒度としている。
 
-提案差分（追加は3行、削除なし）:
-```diff
-@@
- STRUCTURAL TRIAGE (required before detailed tracing):
- Before tracing individual functions, compare the two changes structurally:
-   S1: Files modified — list files touched by each change. Flag any file
-       modified in one change but absent from the other.
-   S2: Completeness — does each change cover all the modules that the
-       failing tests exercise? If Change B omits a file that Change A
-       modifies and a test imports that file, the changes are NOT EQUIVALENT
-       regardless of the detailed semantics.
-   S3: Scale assessment — if either patch exceeds ~200 lines of diff,
-       prioritize structural differences (S1, S2) and high-level semantic
-       comparison over exhaustive line-by-line tracing. Exhaustive tracing
-       is infeasible for large patches and produces unreliable conclusions.
-+  OPTIONAL — S4: Difference importance — label each discovered difference as ORACLE-VISIBLE
-+      (can change an asserted output/exception/externally visible state) vs ORACLE-INVISIBLE,
-+      and prioritize tracing ORACLE-VISIBLE differences to a concrete test oracle first.
-@@
- ### Compare checklist
-@@
- - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
-+ - Optional: classify differences by oracle-visibility to prioritize which ones must be traced to a concrete assertion
-```
+変更差分プレビュー:
+Before:
+- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+After:
+- When a semantic difference is found, compare whether the divergence survives to the next shared test-relevant predicate, returned value, or asserted state; if the traces reconverge first, continue comparison from that reconvergence point.
+Trigger line (planned): "If two traces diverge internally but re-enter the same test-relevant predicate/value state, treat the earlier difference as non-discriminative and compare from that reconvergence point."
+- Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
-## 期待される "挙動差"（compare に効く形）
-- 変更前に起きがちな誤り（一般形）:
-  - 「意味的に違う」ことを見つけた時点で NOT_EQUIV に寄せ、テストの assertion（oracle）まで結び付けるトレースが薄いまま結論を出す（偽 NOT_EQ を増やす）。
-- 変更後にその誤りが減るメカニズム:
-  - 差分を oracle-visible / oracle-invisible に分類することで、比較の焦点が「oracle に効く差分の実証（反証可能な形）」へ自動的に寄り、差分の“重要度取り違え”が減る。
-- その結果として減る見込みの誤判定（片方向最適化にならない形で）:
-  - 主に「偽 NOT_EQ（本当は EQUIV だが差分の存在だけで NOT_EQ と誤判定）」が減る。
-  - 同時に、oracle-visible を優先して結び付けるため「偽 EQUIV（本当は NOT_EQ だが差分を oracle まで持って行けず見落とす）」も減らしやすい（見落としが起きるのは“oracle 連結の不足”なので、優先度付けがそこを補う）。
+Discriminative probe:
+抽象ケース: 2 つの変更が別々の正規化/補助関数を通るため途中状態は異なるが、その後に同じ branch predicate に同じ canonical value を渡す。変更前は「経路が違う」ことを差異の強い証拠として扱って偽 NOT_EQUIV になりやすく、逆に 1 本だけ traced して偽 EQUIV にも流れうる。変更後は reconvergence を確認した時点で追加探索を下流へ送るので、過度な早期結論を避けられる。
 
-## 最小インパクト検証（思考実験で可）
-- ミニケース A（変更前は揺れる/誤るが、変更後は安定）:
-  - 2つの実装に、内部データ構造や表現の違い（順序・キャッシュ・補助関数の分割など）はあるが、テストが観測するのは戻り値・例外・外部状態の一部だけ。
-  - 変更前: 内部差分を見て NOT_EQ 寄りに判断が揺れる。
-  - 変更後: その差分を oracle-invisible とラベルし、oracle-visible に当たる差分（もしあれば）だけを assertion まで結び付けるため、結論が「テスト oracle ベース」に安定する。
-- ミニケース B（逆方向の誤判定を誘発しうる状況 + 悪化しない理由/回避策）:
-  - 内部差分が、間接的に外部観測へ影響する（例: 例外種別、ログ/メトリクス、順序、タイミング、グローバル状態の更新）タイプで、テストがそれを観測している可能性がある。
-  - 悪化しない理由/回避策:
-    - S4 の定義を「asserted output/exception/externally visible state」と広めに書き、例外・外部状態・順序等も oracle-visible に含めうるようにしている。
-    - さらに S4 は OPTIONAL であり、既存の「Trace each test…」「Provide a counterexample…」を置き換えないため、oracle 連結の要求（反証可能性）は弱まらない。
+failed-approaches.md との照合:
+- failed-approaches.md 自体に残存 blacklist はないが、与えられた却下履歴とは整合する。STRUCTURAL TRIAGE の S1/S2 も早期 NOT_EQUIV 条件も触らず、禁止された「特定観測境界への写像による狭窄」を再演しない。
+- 研究コアの番号付き前提・仮説駆動探索・手続き間トレース・必須反証は維持し、差異重要度の分類だけを差し替える。
 
-## 一般的な推論品質への期待効果
-- 「差分の存在」と「差分の重要度」を混同する失敗パターン（比較における salience バイアス）を減らす。
-- テスト oracle への結線を優先することで、根拠の薄い結論（特に NOT_EQ の断定）を抑制し、証拠駆動の比較が増える。
-
-## トレードオフ（overall 観点）
-- 悪化しうる経路（1つ）:
-  - oracle-visible を狭く解釈しすぎると、本来観測される差分（例外の型/メッセージ、外部状態更新、順序）を oracle-invisible と誤分類して偽 EQUIV を増やしうる。
-- 新しい必須手順を増やさずに避ける工夫:
-  - S4 の括弧書きを「output/exception/externally visible state」として広くし、分類の取りこぼしを減らす（“定義の精緻化”ではなく、optional ガイド内の表現で吸収）。
-  - OPTIONAL と明記し、探索の自由度を維持する（状況に応じて分類を更新できる）。
-
-## failed-approaches.md との整合（1〜2点だけ具体）
-- 「次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」に整合:
-  - S4 は“探す証拠”を固定せず、既に見つかった差分の扱い（重要度分類）だけを補助する。証拠探索を特定シグナル検索へ寄せない。
-- 「探索の自由度を削りすぎない」に整合:
-  - 追加は OPTIONAL で、読解順序や特定の追跡方向を半固定化しない。既存の手続き（テストごとのトレース/反証）を置換しない。
-
-## 変更規模の宣言
-- 追加: 4行（うち Compare テンプレートに3行、チェックリストに1行）
-- 削除: 0行
-- 追加行は hard limit（5行以内）を満たす。
+変更規模の宣言:
+1 箇所の置換中心、15 行以内の差分で収まる小変更。

@@ -2,20 +2,21 @@
 
 ## 前イテレーションの分析
 
-- 前回スコア: 不明（未提供）
-- 失敗ケース: 不明（未提供）
-- 失敗原因の分析: compare において「差分を見つけた」こと自体を重要差分と誤認し、テストの観測点（test oracle / assertion）への結線が弱いまま EQUIV/NOT_EQUIV を早期確定しがち、という失敗メカニズムを想定。
+- 前回スコア: 不明（この作業では参照対象外）
+- 失敗ケース: 個別識別子は未参照
+- 失敗原因の分析: 内部の経路差を見つけた直後に、その差を強い判別材料として扱いやすく、比較粒度が path-level のまま固定されることで、下流で再収束する差を過大評価しうる。
 
 ## 改善仮説
 
-差分を (1) テストの観測点に影響しうる差分（oracle-visible）と (2) 表現・構造の差（oracle-invisible）に分類してから追跡優先度を決めることで、表層差分に探索が吸い込まれにくくなり、比較判断（overall）の安定性が上がる。
+意味差を見つけた直後に結論へ寄せるのではなく、次の共有された test-relevant predicate / returned value / asserted state まで差が残るかで分類すれば、途中の実装差を provisional に扱え、早すぎる差分結論と見落としの両方を減らせる。
 
 ## 変更内容
 
-- Compare の STRUCTURAL TRIAGE に optional な S4（Difference importance: ORACLE-VISIBLE / ORACLE-INVISIBLE の分類と、oracle-visible を優先して concrete test oracle へ結線する指針）を 3 行追加。
-- Compare checklist に、差分を oracle-visibility で分類してトレース優先度を付ける optional ガイドを 1 行追加。
+- compare チェックリストの該当 bullet を、"差がある経路を 1 本なぞる" 指示から、次の共有された test-relevant predicate / returned value / asserted state まで divergence が残るかを比較する指示へ置換した。
+- 同じ判断規則を Guardrail 4 にも反映し、比較の意思決定点を reconvergence の有無へ揃えた。
+- Trigger line (final): "If two traces diverge internally but re-enter the same test-relevant predicate/value state, treat the earlier difference as non-discriminative and compare from that reconvergence point."
+- この Trigger line は proposal の差分プレビューにある planned trigger line と一致しており、分岐を発火させる比較手順の位置にも実際に入っている。
 
 ## 期待効果
 
-- 「差分の存在」と「差分の重要度（oracle 可視性）」の混同を減らし、根拠（具体的な assertion へのトレース）に結び付いた比較結論を増やす。
-- その結果として、oracle 連結が薄いままの NOT_EQUIV 断定（偽 NOT_EQ）と、重要差分の見落とし（偽 EQUIV）の双方を減らしやすくなることを期待する。
+途中経路の差をそのまま NOT EQUIVALENT 側の証拠として固定せず、共有された判定点での再収束を確認してから差分性を判断できるため、比較粒度が test-relevant な観測点に寄り、EQUIVALENT/NOT EQUIVALENT の両側で過早な結論を減らすことが期待される。

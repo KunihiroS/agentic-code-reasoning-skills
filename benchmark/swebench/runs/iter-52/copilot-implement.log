@@ -1,8 +1,0 @@
-完了しました。
-
-**SKILL.md**: Guardrail 5 の末尾に1文追記（変更規模: 1行以内）。
-
-> In `compare` mode, a common form of incomplete chain: a semantic difference exists in the changed code but is neutralized by intermediate callers before reaching the test assertion.
-
-**rationale.md**: Objective.md のフォーマット（前イテレーションの分析・改善仮説・変更内容・期待効果）に従い作成しました。
-

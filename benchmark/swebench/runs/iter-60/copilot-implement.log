@@ -1,8 +1,0 @@
-完了しました。
-
-**SKILL.md の変更（-2行）:**  
-`D2(b)` から `Verify this by tracing the test's execution; do not assume relevance from file proximity, shared module, or test-level changes such as deletion.` の 2 行を削除。
-
-**rationale.md の作成:**  
-`Objective.md` のフォーマット（前イテレーションの分析／改善仮説／変更内容／期待効果）に従い `benchmark/swebench/runs/iter-60/rationale.md` を作成。
-

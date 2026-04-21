@@ -1,9 +1,0 @@
-`benchmark/swebench/runs/iter-102/proposal.md` を作成しました。
-
-**要約:**
-
-- **カテゴリ A**（推論の順序・構造を変える）
-- **仮説**: Step 3 HYPOTHESIS UPDATE の `; if REFUTED, state H[M+1] targeting what the refutation exposed before reading the next file` を除去することで、反証直後のアンカリングバイアスを低減し全体推論精度が向上する
-- **変更**: 1行（既存行末の義務句を削除）、hard limit 遵守
-- **根拠**: failed-approaches.md 原則 #27 が「反証直後の次仮説即時確定の義務化は探索視野を狭窄させる」と明示しており、現SKILL.mdがまさにこのパターンを持っている。NEXT ACTION RATIONALE が探索先の正当化を既にカバーするため機能喪失なし
-

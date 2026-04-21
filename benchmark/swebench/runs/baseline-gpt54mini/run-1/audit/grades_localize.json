@@ -1,0 +1,1611 @@
+[
+  {
+    "instance_id": "instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/ansible/module_utils/urls.py",
+      "lib/ansible/modules/get_url.py",
+      "lib/ansible/modules/uri.py",
+      "changelogs/fragments/78512-uri-use-netrc-true-false-argument.yml",
+      "lib/ansible/plugins/lookup/url.py"
+    ],
+    "ground_truth_functions": [
+      "Request",
+      "open_url",
+      "url_argument_spec",
+      "main",
+      "url_get",
+      "open",
+      "fetch_url",
+      "run",
+      "__init__",
+      "form_urlencoded",
+      "uri",
+      "url_filename"
+    ],
+    "predicted_files": [
+      "lib/ansible/module_utils/urls.py"
+    ],
+    "predicted_functions": [
+      "Request.open"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/ansible/module_utils/urls.py",
+      "lib/ansible/modules/get_url.py",
+      "lib/ansible/modules/uri.py",
+      "changelogs/fragments/78512-uri-use-netrc-true-false-argument.yml",
+      "lib/ansible/plugins/lookup/url.py"
+    ],
+    "ground_truth_functions": [
+      "Request",
+      "open_url",
+      "url_argument_spec",
+      "main",
+      "url_get",
+      "open",
+      "fetch_url",
+      "run",
+      "__init__",
+      "form_urlencoded",
+      "uri",
+      "url_filename"
+    ],
+    "predicted_files": [
+      "lib/ansible/module_utils/urls.py",
+      "lib/ansible/module_utils/urls.py",
+      "lib/ansible/module_utils/urls.py",
+      "lib/ansible/modules/uri.py"
+    ],
+    "predicted_functions": [
+      "Request.open",
+      "open_url",
+      "fetch_url",
+      "uri"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-e6c0da61324a0c04026ffd1c031436ee2be9503a",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "scanner/scanner.go",
+      "oval/util.go",
+      "scanner/alpine.go"
+    ],
+    "ground_truth_functions": [
+      "isOvalDefAffected",
+      "ParseInstalledPkgs"
+    ],
+    "predicted_files": [
+      "scanner/alpine.go",
+      "scanner/alpine.go",
+      "scanner/alpine.go"
+    ],
+    "predicted_functions": [
+      "parseInstalledPackages",
+      "parseApkInfo",
+      "parseApkVersion"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-e6c0da61324a0c04026ffd1c031436ee2be9503a",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "scanner/scanner.go",
+      "oval/util.go",
+      "scanner/alpine.go"
+    ],
+    "ground_truth_functions": [
+      "isOvalDefAffected",
+      "ParseInstalledPkgs"
+    ],
+    "predicted_files": [
+      "scanner/alpine.go",
+      "scanner/alpine.go",
+      "scanner/alpine.go",
+      "scanner/alpine.go",
+      "scanner/alpine.go",
+      "scanner/alpine.go"
+    ],
+    "predicted_functions": [
+      "(*alpine).scanPackages",
+      "(*alpine).scanInstalledPackages",
+      "(*alpine).parseInstalledPackages",
+      "(*alpine).parseApkInfo",
+      "(*alpine).scanUpdatablePackages",
+      "(*alpine).parseApkVersion"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-e6d86299a855687b21970504fbf06f52a8f80c74-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/auth/apiserver.go",
+      "lib/auth/auth.go",
+      "lib/web/apiserver.go",
+      "lib/web/sessions.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "lib/auth/auth.go",
+      "lib/services/access_checker.go"
+    ],
+    "predicted_functions": [
+      "(*Server) ExtendWebSession",
+      "AccessInfoFromLocalIdentity"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-e6d86299a855687b21970504fbf06f52a8f80c74-vce94f93ad1030e3136852817f2423c1b3ac37bc4",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/auth/apiserver.go",
+      "lib/auth/auth.go",
+      "lib/web/apiserver.go",
+      "lib/web/sessions.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "lib/auth/auth.go",
+      "lib/auth/auth_with_roles.go",
+      "lib/web/sessions.go"
+    ],
+    "predicted_functions": [
+      "(*Server).ExtendWebSession",
+      "(*ServerWithRoles).ExtendWebSession",
+      "(*SessionContext).GetIdentity"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-3ff75e29fb2153a2637fe7f83e49dc04b1c99c9f",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/auth/grpcserver.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "lib/auth/grpcserver.go"
+    ],
+    "predicted_functions": [
+      "(*GRPCServer).DeleteMFADevice"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-3ff75e29fb2153a2637fe7f83e49dc04b1c99c9f",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/auth/grpcserver.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "lib/auth/grpcserver.go"
+    ],
+    "predicted_functions": [
+      "(*GRPCServer).DeleteMFADevice"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_ansible__ansible-a20a52701402a12f91396549df04ac55809f68e9-v1055803c3a812189a1133297f7f5468579283f86",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/ansible/galaxy/collection.py",
+      "changelogs/fragments/galaxy-install-tar-path-traversal.yaml"
+    ],
+    "ground_truth_functions": [
+      "install",
+      "_extract_tar_file"
+    ],
+    "predicted_files": [
+      "lib/ansible/galaxy/collection.py",
+      "lib/ansible/galaxy/collection.py"
+    ],
+    "predicted_functions": [
+      "_extract_tar_file",
+      "CollectionRequirement.install"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_ansible__ansible-a20a52701402a12f91396549df04ac55809f68e9-v1055803c3a812189a1133297f7f5468579283f86",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/ansible/galaxy/collection.py",
+      "changelogs/fragments/galaxy-install-tar-path-traversal.yaml"
+    ],
+    "ground_truth_functions": [
+      "install",
+      "_extract_tar_file"
+    ],
+    "predicted_files": [
+      "lib/ansible/galaxy/collection.py",
+      "lib/ansible/galaxy/collection.py"
+    ],
+    "predicted_functions": [
+      "CollectionRequirement.install",
+      "_extract_tar_file"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-b6cef5cdc0daff3ee99e5974ed60a1dc6b4b0d67",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "internal/server/auth/http.go",
+      "internal/cmd/auth.go"
+    ],
+    "ground_truth_functions": [
+      "authenticationHTTPMount"
+    ],
+    "predicted_files": [
+      "internal/server/auth/http.go",
+      "internal/cmd/auth.go"
+    ],
+    "predicted_functions": [
+      "Middleware.Handler",
+      "authenticationHTTPMount"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-b6cef5cdc0daff3ee99e5974ed60a1dc6b4b0d67",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "internal/server/auth/http.go",
+      "internal/cmd/auth.go"
+    ],
+    "ground_truth_functions": [
+      "authenticationHTTPMount"
+    ],
+    "predicted_files": [
+      "internal/cmd/auth.go",
+      "internal/server/auth/http.go",
+      "rpc/flipt/auth/auth.pb.gw.go"
+    ],
+    "predicted_functions": [
+      "authenticationHTTPMount",
+      "Middleware.Handler",
+      "RegisterAuthenticationServiceHandlerClient"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-e1df74cbc1a1d1889428b3333a3b2405c4651993",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "oval/util.go",
+      "scanner/redhatbase.go",
+      "oval/oval.go",
+      "config/os.go"
+    ],
+    "ground_truth_functions": [
+      "getDefsByPackNameViaHTTP",
+      "getDefsByPackNameFromOvalDB",
+      "majorDotMinor",
+      "detectRedhat"
+    ],
+    "predicted_files": [
+      "config/os.go",
+      "config/config.go"
+    ],
+    "predicted_functions": [
+      "getAmazonLinuxVersion",
+      "Distro.MajorVersion"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-e1df74cbc1a1d1889428b3333a3b2405c4651993",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "oval/util.go",
+      "scanner/redhatbase.go",
+      "oval/oval.go",
+      "config/os.go"
+    ],
+    "ground_truth_functions": [
+      "getDefsByPackNameViaHTTP",
+      "getDefsByPackNameFromOvalDB",
+      "majorDotMinor",
+      "detectRedhat"
+    ],
+    "predicted_files": [
+      "config/os.go",
+      "config/os.go",
+      "config/config.go"
+    ],
+    "predicted_functions": [
+      "getAmazonLinuxVersion",
+      "GetEOL",
+      "Distro.MajorVersion"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-82562bec444940608052f3e4149e0c61ec80bf3f-vd59a5728dfc977f44533186ace531248c2917516",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "public/src/client/topic/votes.js",
+      "src/socket.io/posts/votes.js"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/socket.io/posts/votes.js",
+      "src/posts/votes.js"
+    ],
+    "predicted_functions": [
+      "SocketPosts.getUpvoters",
+      "Posts.getUpvotedUidsByPids"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-82562bec444940608052f3e4149e0c61ec80bf3f-vd59a5728dfc977f44533186ace531248c2917516",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "public/src/client/topic/votes.js",
+      "src/socket.io/posts/votes.js"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/socket.io/posts/votes.js"
+    ],
+    "predicted_functions": [
+      "SocketPosts.getUpvoters"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_protonmail__webclients-bf2e89c0c488ae1a87d503e5b09fe9dd2f2a635f",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "packages/components/containers/calendar/settings/CalendarSubpageHeaderSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarEventDefaultsSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarShareSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarMemberAndInvitationList.tsx",
+      "packages/components/containers/calendar/shareURL/CalendarShareUrlSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarSubpage.tsx",
+      "packages/shared/lib/calendar/permissions.ts",
+      "packages/components/containers/calendar/settings/CalendarMemberRow.tsx"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "packages/components/containers/calendar/settings/CalendarSubpage.tsx",
+      "packages/components/containers/calendar/settings/CalendarEventDefaultsSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarShareSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarMemberRow.tsx"
+    ],
+    "predicted_functions": [
+      "CalendarSubpage",
+      "CalendarEventDefaultsSection",
+      "CalendarShareSection",
+      "CalendarMemberRow"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_protonmail__webclients-bf2e89c0c488ae1a87d503e5b09fe9dd2f2a635f",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "packages/components/containers/calendar/settings/CalendarSubpageHeaderSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarEventDefaultsSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarShareSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarMemberAndInvitationList.tsx",
+      "packages/components/containers/calendar/shareURL/CalendarShareUrlSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarSubpage.tsx",
+      "packages/shared/lib/calendar/permissions.ts",
+      "packages/components/containers/calendar/settings/CalendarMemberRow.tsx"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "packages/components/containers/calendar/settings/CalendarMemberRow.tsx",
+      "packages/components/containers/calendar/settings/CalendarEventDefaultsSection.tsx",
+      "packages/components/containers/calendar/settings/CalendarShareSection.tsx",
+      "packages/components/containers/calendar/shareURL/CalendarShareUrlSection.tsx"
+    ],
+    "predicted_functions": [
+      "CalendarMemberRow",
+      "CalendarEventDefaultsSection",
+      "CalendarShareSection",
+      "CalendarShareUrlSection"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_tutao__tutanota-de49d486feef842101506adf040a0f00ded59519-v10a26bfb45a064b93f4fc044a0254925037b88f1",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "src/api/worker/facades/DeviceEncryptionFacade.ts",
+      "src/misc/credentials/NativeCredentialsEncryption.ts"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/misc/credentials/NativeCredentialsEncryption.ts"
+    ],
+    "predicted_functions": [
+      "NativeCredentialsEncryption.decrypt"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_tutao__tutanota-de49d486feef842101506adf040a0f00ded59519-v10a26bfb45a064b93f4fc044a0254925037b88f1",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "src/api/worker/facades/DeviceEncryptionFacade.ts",
+      "src/misc/credentials/NativeCredentialsEncryption.ts"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/misc/credentials/CredentialsProvider.ts",
+      "src/misc/credentials/NativeCredentialsEncryption.ts",
+      "src/desktop/credentials/DektopCredentialsEncryption.ts",
+      "src/desktop/KeyStoreFacadeImpl.ts",
+      "src/desktop/sse/SecretStorage.ts"
+    ],
+    "predicted_functions": [
+      "CredentialsProvider.getCredentialsByUserId",
+      "NativeCredentialsEncryption.decrypt",
+      "DesktopCredentialsEncryptionImpl.decryptUsingKeychain",
+      "KeyStoreFacadeImpl.getCredentialsKey",
+      "KeytarSecretStorage.getPassword"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-97c8569a798075c50e93e585ac741ab55cb7c28b-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "src/user/data.js",
+      "src/controllers/write/users.js"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/controllers/write/users.js",
+      "src/routes/write/users.js"
+    ],
+    "predicted_functions": [
+      "Users.get",
+      "authenticatedRoutes"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-97c8569a798075c50e93e585ac741ab55cb7c28b-vf2cf3cbd463b7ad942381f1c6d077626485a1e9e",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "src/user/data.js",
+      "src/controllers/write/users.js"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/controllers/write/users.js",
+      "src/routes/write/users.js"
+    ],
+    "predicted_functions": [
+      "Users.get",
+      "authenticatedRoutes"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-b4e7cd3a5e246736d3fe8d6886af55030b232277",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/auth/trustedcluster.go",
+      "lib/backend/report.go",
+      "lib/services/local/usertoken.go",
+      "lib/services/local/provisioning.go",
+      "lib/auth/auth.go",
+      "lib/backend/backend.go"
+    ],
+    "ground_truth_functions": [
+      "NextPaginationKey"
+    ],
+    "predicted_files": [
+      "lib/auth/auth.go",
+      "lib/auth/trustedcluster.go",
+      "lib/auth/trustedcluster.go"
+    ],
+    "predicted_functions": [
+      "(*Server).RegisterUsingToken",
+      "(*Server).establishTrust",
+      "(*Server).validateTrustedCluster"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-b4e7cd3a5e246736d3fe8d6886af55030b232277",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/auth/trustedcluster.go",
+      "lib/backend/report.go",
+      "lib/services/local/usertoken.go",
+      "lib/services/local/provisioning.go",
+      "lib/auth/auth.go",
+      "lib/backend/backend.go"
+    ],
+    "ground_truth_functions": [
+      "NextPaginationKey"
+    ],
+    "predicted_files": [
+      "lib/auth/trustedcluster.go",
+      "lib/auth/trustedcluster.go",
+      "lib/auth/auth.go",
+      "lib/services/local/provisioning.go",
+      "lib/backend/memory/memory.go",
+      "lib/backend/lite/lite.go",
+      "lib/backend/etcdbk/etcd.go",
+      "lib/backend/dynamo/dynamodbbk.go"
+    ],
+    "predicted_functions": [
+      "(*Server).establishTrust",
+      "(*Server).validateTrustedCluster",
+      "(*Server).RegisterUsingToken",
+      "(*ProvisioningService).GetToken",
+      "(*Memory).Get",
+      "(*Backend).getInTransaction",
+      "(*EtcdBackend).Get",
+      "(*Backend).getKey"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-5af0757e96dec4962a076376d1bedc79de0d4249",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "internal/config/authentication.go",
+      "internal/config/testdata/authentication/session_domain_scheme_port.yml",
+      "internal/server/auth/method/oidc/server.go",
+      "internal/server/auth/method/oidc/http.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "internal/config/authentication.go",
+      "internal/server/auth/method/oidc/http.go",
+      "internal/server/auth/method/oidc/http.go",
+      "internal/server/auth/method/oidc/server.go"
+    ],
+    "predicted_functions": [
+      "(*AuthenticationConfig).validate",
+      "Middleware.ForwardResponseOption",
+      "Middleware.Handler",
+      "callbackURL"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-5af0757e96dec4962a076376d1bedc79de0d4249",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "internal/config/authentication.go",
+      "internal/config/testdata/authentication/session_domain_scheme_port.yml",
+      "internal/server/auth/method/oidc/server.go",
+      "internal/server/auth/method/oidc/http.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "internal/config/authentication.go",
+      "internal/server/auth/method/oidc/http.go",
+      "internal/server/auth/method/oidc/server.go"
+    ],
+    "predicted_functions": [
+      "(*AuthenticationConfig).validate",
+      "(*Middleware).ForwardResponseOption",
+      "(*Middleware).Handler",
+      "callbackURL"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-17ae386d1e185ba742eea4668ca77642e22b54c4",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "oval/util.go"
+    ],
+    "ground_truth_functions": [
+      "getDefsByPackNameViaHTTP",
+      "isOvalDefAffected",
+      "getDefsByPackNameFromOvalDB"
+    ],
+    "predicted_files": [
+      "oval/util.go"
+    ],
+    "predicted_functions": [
+      "isOvalDefAffected"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-17ae386d1e185ba742eea4668ca77642e22b54c4",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "oval/util.go"
+    ],
+    "ground_truth_functions": [
+      "getDefsByPackNameViaHTTP",
+      "isOvalDefAffected",
+      "getDefsByPackNameFromOvalDB"
+    ],
+    "predicted_files": [
+      "oval/util.go"
+    ],
+    "predicted_functions": [
+      "isOvalDefAffected"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-46aa81b1ce96ebb4ebed2ae53fd78cd44a05da6c-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/asciitable/table.go",
+      "tool/tctl/common/access_request_command.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "tool/tctl/common/access_request_command.go",
+      "lib/asciitable/table.go"
+    ],
+    "predicted_functions": [
+      "(*AccessRequestCommand).PrintAccessRequests",
+      "(*Table).AsBuffer"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-46aa81b1ce96ebb4ebed2ae53fd78cd44a05da6c-vee9b09fb20c43af7e520f57e9239bbcf46b7113d",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/asciitable/table.go",
+      "tool/tctl/common/access_request_command.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "tool/tctl/common/access_request_command.go",
+      "lib/asciitable/table.go"
+    ],
+    "predicted_functions": [
+      "(*AccessRequestCommand).PrintAccessRequests",
+      "(*Table).AsBuffer"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-09ae41a2da66264c60ef307882362d2e2d8d8b89",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "persistence/user_repository.go",
+      "server/auth.go",
+      "server/subsonic/middlewares.go"
+    ],
+    "ground_truth_functions": [
+      "authenticate",
+      "validateIPAgainstList"
+    ],
+    "predicted_files": [
+      "server/subsonic/middlewares.go",
+      "server/subsonic/middlewares.go"
+    ],
+    "predicted_functions": [
+      "authenticate",
+      "validateCredentials"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-09ae41a2da66264c60ef307882362d2e2d8d8b89",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "persistence/user_repository.go",
+      "server/auth.go",
+      "server/subsonic/middlewares.go"
+    ],
+    "ground_truth_functions": [
+      "authenticate",
+      "validateIPAgainstList"
+    ],
+    "predicted_files": [
+      "server/subsonic/middlewares.go",
+      "server/auth.go"
+    ],
+    "predicted_functions": [
+      "authenticate",
+      "UsernameFromReverseProxyHeader"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-31799662706fedddf5bcc1a76b50409d1f91d327",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "scanner/scanner.go",
+      "cmd/wire_gen.go",
+      "server/server.go",
+      "cmd/root.go",
+      "cmd/wire_injectors.go",
+      "server/auth.go",
+      "core/metrics/prometheus.go",
+      "conf/configuration.go",
+      "consts/consts.go"
+    ],
+    "ground_truth_functions": [
+      "startServer",
+      "newPrometheusMetrics",
+      "GetPlaybackServer",
+      "init",
+      "GetScanner",
+      "validateLogin",
+      "CreateInsights",
+      "GetInstance",
+      "CreateSubsonicAPIRouter"
+    ],
+    "predicted_files": [
+      "cmd/root.go",
+      "server/auth.go"
+    ],
+    "predicted_functions": [
+      "startInsightsCollector",
+      "authHeaderMapper"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-31799662706fedddf5bcc1a76b50409d1f91d327",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "scanner/scanner.go",
+      "cmd/wire_gen.go",
+      "server/server.go",
+      "cmd/root.go",
+      "cmd/wire_injectors.go",
+      "server/auth.go",
+      "core/metrics/prometheus.go",
+      "conf/configuration.go",
+      "consts/consts.go"
+    ],
+    "ground_truth_functions": [
+      "startServer",
+      "newPrometheusMetrics",
+      "GetPlaybackServer",
+      "init",
+      "GetScanner",
+      "validateLogin",
+      "CreateInsights",
+      "GetInstance",
+      "CreateSubsonicAPIRouter"
+    ],
+    "predicted_files": [
+      "server/auth.go"
+    ],
+    "predicted_functions": [
+      "authHeaderMapper"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_tutao__tutanota-40e94dee2bcec2b63f362da283123e9df1874cc1-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "src/api/worker/facades/BlobFacade.ts",
+      "src/api/worker/facades/LoginFacade.ts",
+      "src/api/worker/facades/UserFacade.ts",
+      "src/api/worker/rest/ServiceExecutor.ts",
+      "src/api/worker/rest/EntityRestClient.ts"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/gui/base/List.ts",
+      "src/mail/view/MailListView.ts",
+      "src/api/worker/rest/EntityRestClient.ts",
+      "src/api/worker/rest/ServiceExecutor.ts"
+    ],
+    "predicted_functions": [
+      "retryLoading",
+      "loadMailRange",
+      "loadRange",
+      "_decryptMapAndMigrate",
+      "executeServiceRequest",
+      "decryptResponse"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_tutao__tutanota-40e94dee2bcec2b63f362da283123e9df1874cc1-vc4e41fd0029957297843cb9dec4a25c7c756f029",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "src/api/worker/facades/BlobFacade.ts",
+      "src/api/worker/facades/LoginFacade.ts",
+      "src/api/worker/facades/UserFacade.ts",
+      "src/api/worker/rest/ServiceExecutor.ts",
+      "src/api/worker/rest/EntityRestClient.ts"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/api/worker/rest/EntityRestClient.ts",
+      "src/api/worker/rest/EntityRestClient.ts",
+      "src/api/worker/rest/ServiceExecutor.ts",
+      "src/api/worker/rest/ServiceExecutor.ts",
+      "src/api/worker/crypto/CryptoFacade.ts",
+      "src/api/worker/crypto/CryptoFacade.ts"
+    ],
+    "predicted_functions": [
+      "load",
+      "_decryptMapAndMigrate",
+      "executeServiceRequest",
+      "decryptResponse",
+      "resolveSessionKey",
+      "resolveServiceSessionKey"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-b68b8960b8a08540d5198d78c665a7eb0bea4008",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "internal/storage/unmodifiable/store.go",
+      "internal/cmd/grpc.go"
+    ],
+    "ground_truth_functions": [
+      "NewGRPCServer"
+    ],
+    "predicted_files": [
+      "internal/cmd/grpc.go",
+      "internal/storage/sql/common/storage.go",
+      "internal/storage/sql/common/namespace.go",
+      "internal/storage/sql/common/flag.go",
+      "internal/storage/sql/common/segment.go",
+      "internal/storage/sql/common/rule.go",
+      "internal/storage/sql/common/rollout.go"
+    ],
+    "predicted_functions": [
+      "NewGRPCServer",
+      "setVersion",
+      "CreateNamespace, UpdateNamespace, DeleteNamespace",
+      "CreateFlag, UpdateFlag, DeleteFlag, CreateVariant, UpdateVariant, DeleteVariant",
+      "CreateSegment, UpdateSegment, DeleteSegment, CreateConstraint, UpdateConstraint, DeleteConstraint",
+      "CreateRule, UpdateRule, DeleteRule, OrderRules, CreateDistribution, UpdateDistribution, DeleteDistribution",
+      "CreateRollout, UpdateRollout, DeleteRollout, OrderRollouts"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-b68b8960b8a08540d5198d78c665a7eb0bea4008",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "internal/storage/unmodifiable/store.go",
+      "internal/cmd/grpc.go"
+    ],
+    "ground_truth_functions": [
+      "NewGRPCServer"
+    ],
+    "predicted_files": [
+      "internal/storage/sql/common/flag.go",
+      "internal/storage/sql/common/namespace.go",
+      "internal/storage/sql/common/segment.go",
+      "internal/storage/sql/common/rule.go",
+      "internal/storage/sql/common/rollout.go"
+    ],
+    "predicted_functions": [
+      "CreateFlag, UpdateFlag, DeleteFlag, CreateVariant, UpdateVariant, DeleteVariant",
+      "CreateNamespace, UpdateNamespace, DeleteNamespace",
+      "CreateSegment, UpdateSegment, DeleteSegment, CreateConstraint, UpdateConstraint, DeleteConstraint",
+      "CreateRule, UpdateRule, DeleteRule, OrderRules, CreateDistribution, UpdateDistribution, DeleteDistribution",
+      "CreateRollout, UpdateRollout, DeleteRollout, OrderRollouts"
+    ],
+    "file_match": false,
+    "function_match": false,
+    "correct": false,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/srv/alpnproxy/local_proxy.go",
+      "lib/client/keyagent.go",
+      "tool/tsh/proxy.go"
+    ],
+    "ground_truth_functions": [
+      "NewLocalProxy"
+    ],
+    "predicted_files": [
+      "tool/tsh/proxy.go",
+      "lib/srv/alpnproxy/local_proxy.go"
+    ],
+    "predicted_functions": [
+      "onProxyCommandSSH",
+      "(*LocalProxy).SSHProxy"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-c335534e02de143508ebebc7341021d7f8656e8f",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/srv/alpnproxy/local_proxy.go",
+      "lib/client/keyagent.go",
+      "tool/tsh/proxy.go"
+    ],
+    "ground_truth_functions": [
+      "NewLocalProxy"
+    ],
+    "predicted_files": [
+      "tool/tsh/proxy.go",
+      "lib/srv/alpnproxy/local_proxy.go"
+    ],
+    "predicted_functions": [
+      "onProxyCommandSSH",
+      "SSHProxy"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-66b74c81f115c78cb69910b0472eeb376750efc4",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "persistence/user_repository.go",
+      "db/migration/20210616150710_encrypt_all_passwords.go",
+      "log/log.go",
+      "server/auth.go",
+      "server/subsonic/middlewares.go",
+      "utils/encrypt.go",
+      "model/user.go",
+      "conf/configuration.go",
+      "consts/consts.go"
+    ],
+    "ground_truth_functions": [
+      "authenticate",
+      "init",
+      "createAdminUser"
+    ],
+    "predicted_files": [
+      "persistence/user_repository.go",
+      "persistence/user_repository.go",
+      "persistence/user_repository.go",
+      "persistence/user_repository.go",
+      "server/auth.go",
+      "server/auth.go",
+      "server/subsonic/middlewares.go"
+    ],
+    "predicted_functions": [
+      "Put",
+      "Get",
+      "FindByUsername",
+      "validatePasswordChange",
+      "validateLogin",
+      "buildAuthPayload",
+      "validateUser"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-66b74c81f115c78cb69910b0472eeb376750efc4",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "persistence/user_repository.go",
+      "db/migration/20210616150710_encrypt_all_passwords.go",
+      "log/log.go",
+      "server/auth.go",
+      "server/subsonic/middlewares.go",
+      "utils/encrypt.go",
+      "model/user.go",
+      "conf/configuration.go",
+      "consts/consts.go"
+    ],
+    "ground_truth_functions": [
+      "authenticate",
+      "init",
+      "createAdminUser"
+    ],
+    "predicted_files": [
+      "persistence/helpers.go",
+      "persistence/user_repository.go",
+      "persistence/user_repository.go",
+      "persistence/user_repository.go",
+      "persistence/user_repository.go",
+      "server/auth.go",
+      "server/auth.go",
+      "server/subsonic/middlewares.go"
+    ],
+    "predicted_functions": [
+      "toSqlArgs",
+      "Put",
+      "Get",
+      "FindByUsername",
+      "validatePasswordChange",
+      "validateLogin",
+      "buildAuthPayload",
+      "validateUser"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-c1fd7a81ef9f23e742501bfb26d914eb683262aa",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "go.work.sum",
+      "internal/config/testdata/authentication/github_missing_client_secret.yml",
+      "internal/config/testdata/authentication/oidc_missing_client_id.yml",
+      "internal/config/testdata/authentication/github_missing_org_scope.yml",
+      "internal/config/authentication.go",
+      "internal/config/testdata/authentication/oidc_missing_redirect_address.yml",
+      "internal/config/testdata/authentication/github_no_org_scope.yml",
+      "internal/config/testdata/authentication/github_missing_client_id.yml",
+      "internal/config/testdata/authentication/oidc_missing_client_secret.yml"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "internal/config/authentication.go",
+      "internal/config/authentication.go"
+    ],
+    "predicted_functions": [
+      "AuthenticationMethodOIDCConfig.validate",
+      "AuthenticationMethodGithubConfig.validate"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-c1fd7a81ef9f23e742501bfb26d914eb683262aa",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "go.work.sum",
+      "internal/config/testdata/authentication/github_missing_client_secret.yml",
+      "internal/config/testdata/authentication/oidc_missing_client_id.yml",
+      "internal/config/testdata/authentication/github_missing_org_scope.yml",
+      "internal/config/authentication.go",
+      "internal/config/testdata/authentication/oidc_missing_redirect_address.yml",
+      "internal/config/testdata/authentication/github_no_org_scope.yml",
+      "internal/config/testdata/authentication/github_missing_client_id.yml",
+      "internal/config/testdata/authentication/oidc_missing_client_secret.yml"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "internal/config/authentication.go",
+      "internal/config/authentication.go"
+    ],
+    "predicted_functions": [
+      "AuthenticationMethodGithubConfig.validate",
+      "AuthenticationMethodOIDCConfig.validate"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_ansible__ansible-5260527c4a71bfed99d803e687dd19619423b134-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/ansible/module_utils/common/file.py",
+      "docs/docsite/rst/porting_guides/porting_guide_2.11.rst",
+      "changelogs/fragments/67794-atomic_move-default-perms.yml",
+      "lib/ansible/module_utils/basic.py"
+    ],
+    "ground_truth_functions": [
+      "set_directory_attributes_if_different",
+      "set_group_if_different",
+      "atomic_move",
+      "__init__",
+      "do_cleanup_files"
+    ],
+    "predicted_files": [
+      "lib/ansible/module_utils/basic.py",
+      "lib/ansible/module_utils/common/file.py"
+    ],
+    "predicted_functions": [
+      "atomic_move",
+      "_DEFAULT_PERM"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_ansible__ansible-5260527c4a71bfed99d803e687dd19619423b134-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/ansible/module_utils/common/file.py",
+      "docs/docsite/rst/porting_guides/porting_guide_2.11.rst",
+      "changelogs/fragments/67794-atomic_move-default-perms.yml",
+      "lib/ansible/module_utils/basic.py"
+    ],
+    "ground_truth_functions": [
+      "set_directory_attributes_if_different",
+      "set_group_if_different",
+      "atomic_move",
+      "__init__",
+      "do_cleanup_files"
+    ],
+    "predicted_files": [
+      "lib/ansible/module_utils/basic.py",
+      "lib/ansible/module_utils/common/file.py"
+    ],
+    "predicted_functions": [
+      "AnsibleModule.atomic_move",
+      "module-level constant _DEFAULT_PERM"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_tutao__tutanota-4b4e45949096bb288f2b522f657610e480efa3e8-vee878bb72091875e912c52fc32bc60ec3760227b",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "src/misc/HtmlSanitizer.ts",
+      "src/mail/view/MailGuiUtils.ts"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/file/FileController.ts",
+      "src/gui/base/Dialog.ts"
+    ],
+    "predicted_functions": [
+      "openDataFileInBrowser",
+      "legacyDownload"
+    ],
+    "file_match": false,
+    "function_match": true,
+    "correct": false,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_tutao__tutanota-4b4e45949096bb288f2b522f657610e480efa3e8-vee878bb72091875e912c52fc32bc60ec3760227b",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "src/misc/HtmlSanitizer.ts",
+      "src/mail/view/MailGuiUtils.ts"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "src/mail/view/MailGuiUtils.ts",
+      "src/mail/view/MailGuiUtils.ts",
+      "src/file/FileController.ts"
+    ],
+    "predicted_functions": [
+      "createInlineImageReference",
+      "replaceCidsWithInlineImages",
+      "openDataFileInBrowser"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/auth/oidc.go",
+      "lib/services/saml.go",
+      "lib/httplib/httplib.go",
+      "constants.go",
+      "lib/utils/utils.go",
+      "lib/auth/github.go"
+    ],
+    "ground_truth_functions": [
+      "ValidateSAMLConnector",
+      "FileExists",
+      "WithCSRFProtection"
+    ],
+    "predicted_files": [
+      "lib/httplib/httplib.go",
+      "lib/auth/github.go",
+      "lib/auth/oidc.go",
+      "lib/services/saml.go"
+    ],
+    "predicted_functions": [
+      "ReadJSON",
+      "(githubAPIClient).get",
+      "(gsuiteClient).fetchGroupsPage",
+      "ValidateSAMLConnector"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/auth/oidc.go",
+      "lib/services/saml.go",
+      "lib/httplib/httplib.go",
+      "constants.go",
+      "lib/utils/utils.go",
+      "lib/auth/github.go"
+    ],
+    "ground_truth_functions": [
+      "ValidateSAMLConnector",
+      "FileExists",
+      "WithCSRFProtection"
+    ],
+    "predicted_files": [
+      "lib/httplib/httplib.go",
+      "lib/auth/apiserver.go",
+      "vendor/github.com/gravitational/roundtrip/client.go",
+      "lib/auth/clt.go"
+    ],
+    "predicted_functions": [
+      "ReadJSON",
+      "(*APIServer).postSessionSlice",
+      "(*Client).RoundTrip",
+      "(*Client).PostSessionSlice"
+    ],
+    "file_match": true,
+    "function_match": false,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-86906cbfc3a5d3629a583f98e6301142f5f14bdb-v6bea0cc3a6fc532d7da914314f2944fc1cd04dee",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "go.work.sum",
+      ".gitignore",
+      "config/flipt.schema.json",
+      "config/flipt.schema.cue",
+      "internal/cmd/http.go",
+      "internal/config/authentication.go",
+      "internal/config/config.go"
+    ],
+    "ground_truth_functions": [
+      "stringToEnvsubstHookFunc",
+      "Default",
+      "NewHTTPServer",
+      "experimentalFieldSkipHookFunc",
+      "stringToSliceHookFunc",
+      "stringToEnumHookFunc"
+    ],
+    "predicted_files": [
+      "internal/storage/fs/cache.go",
+      "internal/storage/fs/cache.go",
+      "internal/storage/fs/git/store.go"
+    ],
+    "predicted_functions": [
+      "SnapshotCache.AddOrBuild",
+      "SnapshotCache.References",
+      "SnapshotStore.update"
+    ],
+    "file_match": false,
+    "function_match": false,
+    "correct": false,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-86906cbfc3a5d3629a583f98e6301142f5f14bdb-v6bea0cc3a6fc532d7da914314f2944fc1cd04dee",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "go.work.sum",
+      ".gitignore",
+      "config/flipt.schema.json",
+      "config/flipt.schema.cue",
+      "internal/cmd/http.go",
+      "internal/config/authentication.go",
+      "internal/config/config.go"
+    ],
+    "ground_truth_functions": [
+      "stringToEnvsubstHookFunc",
+      "Default",
+      "NewHTTPServer",
+      "experimentalFieldSkipHookFunc",
+      "stringToSliceHookFunc",
+      "stringToEnumHookFunc"
+    ],
+    "predicted_files": [
+      "internal/storage/fs/cache.go",
+      "internal/storage/fs/git/store.go",
+      "internal/storage/fs/cache.go",
+      "internal/storage/fs/git/store.go",
+      "internal/storage/fs/cache.go",
+      "internal/storage/fs/git/store.go"
+    ],
+    "predicted_functions": [
+      "SnapshotCache` methods (`AddFixed`, `AddOrBuild`, `References`, `evict`) \u2014 the cache only supported add/get/list and had no explicit delete path for non-fixed refs in the vulnerable revision.",
+      "SnapshotStore.update` and `SnapshotStore.fetch` \u2014 update iterated `s.snaps.References()` and rebuilt snapshots but never removed refs that disappeared on the remote.",
+      "SnapshotCache.AddFixed / SnapshotCache.AddOrBuild / SnapshotCache.References / SnapshotCache.evict",
+      "SnapshotStore.View / SnapshotStore.update / SnapshotStore.fetch",
+      "SnapshotCache.AddFixed / SnapshotCache.AddOrBuild / SnapshotCache.References / SnapshotCache.evict",
+      "SnapshotStore.update / SnapshotStore.fetch"
+    ],
+    "file_match": false,
+    "function_match": false,
+    "correct": false,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-5dca072bb4301f4579a15364fcf37cc0c39f7f6c",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "lib/auth/auth.go",
+      "lib/kube/proxy/server.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "lib/kube/proxy/server.go"
+    ],
+    "predicted_functions": [
+      "(*TLSServer).GetConfigForClient"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-5dca072bb4301f4579a15364fcf37cc0c39f7f6c",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "lib/auth/auth.go",
+      "lib/kube/proxy/server.go"
+    ],
+    "ground_truth_functions": [],
+    "predicted_files": [
+      "lib/kube/proxy/server.go",
+      "lib/srv/app/server.go"
+    ],
+    "predicted_functions": [
+      "(*TLSServer).GetConfigForClient",
+      "(*Server).getConfigForClient"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-82185f232ae8974258397e121b3bc2ed0c3729ed-v626ec2a48416b10a88641359a169d99e935ff037",
+    "variant": "without_skill",
+    "ground_truth_files": [
+      "tool/tsh/kube.go",
+      "CHANGELOG.md",
+      "tool/tsh/tsh.go",
+      "lib/kube/kubeconfig/kubeconfig.go"
+    ],
+    "ground_truth_functions": [
+      "onLogin",
+      "fetchKubeClusters",
+      "reissueWithRequests"
+    ],
+    "predicted_files": [
+      "tool/tsh/tsh.go",
+      "lib/kube/kubeconfig/kubeconfig.go",
+      "lib/kube/kubeconfig/kubeconfig.go"
+    ],
+    "predicted_functions": [
+      "onLogin",
+      "UpdateWithClient",
+      "Update"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-82185f232ae8974258397e121b3bc2ed0c3729ed-v626ec2a48416b10a88641359a169d99e935ff037",
+    "variant": "with_skill",
+    "ground_truth_files": [
+      "tool/tsh/kube.go",
+      "CHANGELOG.md",
+      "tool/tsh/tsh.go",
+      "lib/kube/kubeconfig/kubeconfig.go"
+    ],
+    "ground_truth_functions": [
+      "onLogin",
+      "fetchKubeClusters",
+      "reissueWithRequests"
+    ],
+    "predicted_files": [
+      "tool/tsh/tsh.go",
+      "lib/kube/kubeconfig/kubeconfig.go",
+      "lib/kube/kubeconfig/kubeconfig.go",
+      "lib/kube/utils/utils.go"
+    ],
+    "predicted_functions": [
+      "onLogin",
+      "UpdateWithClient",
+      "Update",
+      "CheckOrSetKubeCluster"
+    ],
+    "file_match": true,
+    "function_match": true,
+    "correct": true,
+    "cost_usd": 0,
+    "turns": 0
+  }
+]

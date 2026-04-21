@@ -1,0 +1,43 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/21/26 12:26:21] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 read      benchmark/swebench/runs/iter-2/proposal.md  0.8s
+  ┊ 📖 read      benchmark/swebench/runs/iter-2/rationale.md  0.8s
+  ┊ 📖 read      benchmark/swebench/runs/iter-2/diff.patch  0.8s
+  ┊ 📖 read      failed-approaches.md  0.8s
+  ┊ 🔧 patch     failed-approaches.md  0.6s
+  ┊ review diff
+a/failed-approaches.md → b/failed-approaches.md
+@@ -4,3 +4,10 @@
+ 具体的なベンチマークケース ID、特定 iter 番号、特定の失敗ケースに関する記述は含まれない。
+ 
+ （meta-agent-2/auto-improve ブランチ開始に伴いリセット。旧原則は failed-approaches-v1.md に保存。）
++
++## 原則
++
++1. 再収束を比較規則として前景化しすぎない
++- 内部の経路差を「次の共有観測点で再収束するか」で扱う規則を強化すると、比較が下流の一致に過度に引っ張られ、途中の差分シグナルを弱めすぎることがある。
++- 特に Guardrail へ追加すると、局所的な差を provisional 扱いする方向に過剰適応し、判別力よりも保守性が先行しやすい。
++- 失敗は「比較粒度の精密化」そのものではなく、「再収束を優先する規範を新たな既定動作にしたこと」で起きる。
+  ┊ 📖 read      failed-approaches.md  0.8s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+failed-approaches.md に、今回の変更を抽象化した原則を 1 件追記しました。
+
+追記内容の要点:
+- 「再収束を比較規則として前景化しすぎない」
+- 失敗メカニズムを、再収束優先の規範化による過剰適応として一般化
+- 具体 ID・iter 番号・ケース詳細・コード断片は未記載
+
+failed-approaches.md に、今回の変更を抽象化した原則を 1 件追記しました。
+
+追記内容の要点:
+- 「再収束を比較規則として前景化しすぎない」
+- 失敗メカニズムを、再収束優先の規範化による過剰適応として一般化
+- 具体 ID・iter 番号・ケース詳細・コード断片は未記載
+
+この作業では、指定された 4 ファイルのみを read し、編集対象の failed-approaches.md のみを更新しました。
+
+session_id: 20260421_122621_ab5d27

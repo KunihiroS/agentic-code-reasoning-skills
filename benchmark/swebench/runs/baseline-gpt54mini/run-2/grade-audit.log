@@ -1,0 +1,11 @@
+Graded 56 localize results → benchmark/swebench/runs/baseline-gpt54mini/run-2/audit/grades_localize.json
+
+without_skill:
+  Overall (file+func): 27/28 = 96.4%
+  File match:          27/28 = 96.4%
+  Function match:      21/28 = 75.0%
+
+with_skill:
+  Overall (file+func): 26/28 = 92.9%
+  File match:          26/28 = 92.9%
+  Function match:      22/28 = 78.6%

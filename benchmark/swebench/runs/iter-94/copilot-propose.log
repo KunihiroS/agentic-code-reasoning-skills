@@ -1,9 +1,0 @@
-Proposal written to `benchmark/swebench/runs/iter-94/proposal.md`.
-
-**要約:**
-
-- **カテゴリ**: B（情報の取得方法を改善する）
-- **仮説**: 伝播トレースの停止条件を「テストアサーション到達 or 確認済み吸収点到達」と明示することで、差異発見後の途中打ち切りを防ぎ NOT_EQ の見落としを減らす
-- **変更箇所**: Compare checklist の5番目の箇条書きに `— continuing until the trace reaches a test assertion or a confirmed absorption point —` を追加（1行のみ）
-- **failed-approaches 照合**: 原則 #1〜#27 すべてと非抵触（#18/19 に軽微なリスクあるが既存方向と同じで限定的）
-
