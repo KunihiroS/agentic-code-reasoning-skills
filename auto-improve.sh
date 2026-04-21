@@ -8,7 +8,7 @@ set -euo pipefail
 #
 # 実装者: GitHub Copilot CLI (claude-sonnet-4.6)
 # 監査役: Pi (pi-coding-agent, github-copilot/gemini-3.1-pro-preview)
-# ベンチ: Pi (github-copilot/claude-haiku-4.5)
+# ベンチ: Pi (openai-codex/gpt-5.4) — Compare Pro のみ
 # 親選択: HyperAgents (arXiv:2603.19461) の score_prop アルゴリズム
 #
 # Usage:
@@ -30,7 +30,7 @@ MAX_AUDIT_RETRY=1        # Phase 2 H2: 3 → 1 (再試行は 1 回のみ)
 GOAL_WINDOW=5
 GOAL_PERFECT_COUNT=2
 START_ITER=1
-export MAX_ADDED_LINES=5        # H1: 5行 hard limit (Phase 1)
+export MAX_ADDED_LINES=15       # meta-agent-2: 15行に緩和
 STAGED_GATE_THRESHOLD=3  # Phase 2: Staged Eval で 5ケース中 3 以上正答なら Full 実行
 ESCAPE_MODE=0            # Phase 2: 構造改革エスケープハッチ
 META_MODE=0              # Phase 3: メタエージェント強制トリガー
@@ -48,7 +48,7 @@ HERMES_MODEL="gpt-5.4"
 # propose/implement は Hermes 経由 openai-codex/gpt-5.2 を使う。
 # 監査役/メタエージェントは openai-codex/gpt-5.4。
 HERMES_PROPOSER_PROVIDER="openai-codex"
-HERMES_PROPOSER_MODEL="gpt-5.2"
+HERMES_PROPOSER_MODEL="gpt-5.4"
 
 # オプション解析
 PARSED_OPTS=()
@@ -622,33 +622,40 @@ for r in rejections[-5:]:
   cp SKILL.md "$ITER_DIR/SKILL.md.snapshot"
   cd "$REPO_DIR"
 
-  # 5a. Compare Pro (20ペア)
+  # 5a. Compare Pro (20ペア) — API エラー検知付き
   log "Compare Pro ベンチ実行中..."
   COMPARE_RUN_DIR="$ITER_DIR/compare"
-  bash benchmark/swebench/run_benchmark_compare_pro.sh --runs-dir "$COMPARE_RUN_DIR" 2>&1 | tee "$ITER_DIR/benchmark-compare.log" || true
+  for _bench_attempt in 1 2; do
+    bash benchmark/swebench/run_benchmark_compare_pro.sh --runs-dir "$COMPARE_RUN_DIR" 2>&1 | tee "$ITER_DIR/benchmark-compare.log" || true
+    # API エラー検知: ベンチ全体が異常に短い（5分未満 = 全件エラー）場合はリトライ
+    _bench_duration=$(grep -c "DONE\]" "$ITER_DIR/benchmark-compare.log" 2>/dev/null || echo 0)
+    _bench_fast=$(grep "DONE\]" "$ITER_DIR/benchmark-compare.log" 2>/dev/null | awk -F'  ' '{print $NF}' | sed 's/s$//' | awk '$1 < 15 {c++} END {print c+0}')
+    if [ "$_bench_fast" -gt 10 ]; then
+      log "API エラー検知: ${_bench_fast}/${_bench_duration} 件が 15 秒未満。リトライ (attempt $_bench_attempt)..."
+      rm -rf "$COMPARE_RUN_DIR"
+      sleep 30
+    else
+      break
+    fi
+  done
   python3 benchmark/swebench/grade_compare_pro.py "$COMPARE_RUN_DIR" benchmark/swebench/data/pro_compare/pairs_pro.json 2>&1 | tee "$ITER_DIR/grade-compare.log" || true
 
-  # 5b. Audit (security_bug 28件)
-  log "Audit ベンチ実行中..."
-  AUDIT_RUN_DIR="$ITER_DIR/audit"
-  bash benchmark/swebench/run_benchmark_audit.sh --runs-dir "$AUDIT_RUN_DIR" 2>&1 | tee "$ITER_DIR/benchmark-audit.log" || true
-  python3 benchmark/swebench/grade_localize.py "$AUDIT_RUN_DIR" benchmark/swebench/data/audit_tasks_security.json 2>&1 | tee "$ITER_DIR/grade-audit.log" || true
+  # 5b. Audit — meta-agent-2 では除外 (Compare のみ)
 
   # === 6. 結果評価 (独立スコア) ===
   compare_score=$(get_score_from_json "$COMPARE_RUN_DIR/grades_compare.json")
-  audit_score=$(get_score_from_json "$AUDIT_RUN_DIR/grades_localize.json")
+  audit_score=0  # meta-agent-2: Audit は除外
   prev_compare=$(get_parent_score "$parent_genid" compare)
-  prev_audit=$(get_parent_score "$parent_genid" audit)
-  log "Compare: ${compare_score}% (親: ${prev_compare}%) / Audit: ${audit_score}% (親: ${prev_audit}%)"
+  log "Compare: ${compare_score}% (親: ${prev_compare}%)"
 
   # archive に追加
-  append_archive "$current_iter" "$parent_genid" "$COMPARE_RUN_DIR/grades_compare.json" "$AUDIT_RUN_DIR/grades_localize.json" "true"
+  append_archive "$current_iter" "$parent_genid" "$COMPARE_RUN_DIR/grades_compare.json" "" "true"
 
-  # いずれかのスコアが親より低下した場合は failed-approaches.md に追記
-  if [ "$compare_score" -lt "$prev_compare" ] || [ "$audit_score" -lt "$prev_audit" ]; then
+  # スコアが親より低下した場合は failed-approaches.md に追記
+  if [ "$compare_score" -lt "$prev_compare" ]; then
     log "スコア低下 — failed-approaches.md 更新中..."
     export DIFF_PATH="benchmark/swebench/runs/iter-${current_iter}/diff.patch"
-    export prev_compare compare_score prev_audit audit_score
+    export prev_compare compare_score prev_audit=0 audit_score=0
     render_template "update-bl" > "$PROMPT_DIR/update-bl.txt"
     run_hermes "$PROMPT_DIR/update-bl.txt" "$ITER_DIR/hermes-bl-update.log" || log "BL 更新失敗（続行）"
     log "BL 更新完了"
@@ -657,7 +664,7 @@ for r in rejections[-5:]:
   # === 7. コミット・プッシュ ===
   log "コミット・プッシュ..."
   git add -A
-  git commit -m "iter-${current_iter}: compare=${compare_score}% audit=${audit_score}% (parent=iter-${parent_genid})" || true
+  git commit -m "iter-${current_iter}: compare=${compare_score}% (parent=iter-${parent_genid})" || true
   git push || true
 
   # === 7.5. Worktree クリーンアップ ===
