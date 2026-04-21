@@ -9,7 +9,7 @@ TEMPLATE="$REPO_ROOT/benchmark/swebench/data/prompt_template.md"
 RUNS_DIR="$REPO_ROOT/benchmark/swebench/runs/compare-pro-1"
 WORKSPACE="$HOME/bench_workspace"
 
-MODEL="gpt-5.4-mini"
+MODEL="gpt-5.4"
 PROVIDER="openai-codex"
 VARIANT_FILTER=""
 LIMIT=0
