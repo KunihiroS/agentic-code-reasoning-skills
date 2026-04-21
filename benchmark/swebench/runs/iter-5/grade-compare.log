@@ -1,0 +1,13 @@
+Graded 40 compare results → /home/kunihiros/agentic-code-reasoning-skills/benchmark/swebench/runs/iter-5/compare/grades_compare.json
+
+without_skill:
+  Overall:        11/20 = 55.0%
+  EQUIVALENT:     1/10 = 10.0%
+  NOT_EQUIVALENT: 10/10 = 100.0%
+  Avg duration:   59s
+
+with_skill:
+  Overall:        13/20 = 65.0%
+  EQUIVALENT:     4/10 = 40.0%
+  NOT_EQUIVALENT: 9/10 = 90.0%
+  Avg duration:   232s

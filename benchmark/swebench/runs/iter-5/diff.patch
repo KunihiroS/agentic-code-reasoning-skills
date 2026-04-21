@@ -1,0 +1,23 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..a3e8a4b9 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -205,8 +205,9 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+   Therefore changes produce DIFFERENT test outcomes.
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
++  Trigger line (planned): "If the two traces diverge before reaching the same observed outcome, name the earliest behavioral divergence and the downstream handler/normalizer that makes the outcomes match."
+   If NOT EQUIVALENT were true, a counterexample would look like:
+-    [describe concretely: what test, what input, what diverging behavior]
++    [what test, what input, what earliest divergence, and whether a downstream handler erases it]
+   I searched for exactly that pattern:
+     Searched for: [specific pattern — test name, code path, or input type]
+     Found: [result — cite file:line, or NONE FOUND with search details]
+@@ -230,7 +231,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+ ---
