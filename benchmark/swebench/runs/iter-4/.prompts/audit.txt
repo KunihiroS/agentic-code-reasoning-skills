@@ -1,0 +1,91 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-4/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..12b7a179 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -137,7 +137,7 @@ Goal: determine whether two changes produce the same relevant behavior.
+ 
+ ### Certificate template
+ 
+-Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
++Complete every applicable section; if STRUCTURAL TRIAGE already establishes the outcome, skip only the sections it makes unnecessary.
+ 
+ ```
+ DEFINITIONS:
+@@ -148,6 +148,7 @@ D2: The relevant tests are:
+         expected to pass after the fix — always relevant.
+     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
+         only if the changed code lies in their call path.
++    If call-path relevance of a pass-to-pass test is unresolved, keep it provisionally relevant until tracing excludes it, or mark the scope UNVERIFIED instead of omitting it.
+     To identify them: search for tests referencing the changed function, class,
+     or variable. If the test suite is not provided, state this as a constraint
+     in P[N] and restrict the scope of D1 accordingly.
+
+rationale:
+# Iteration 4 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 未参照
+- 失敗ケース: 未参照
+- 失敗原因の分析: pass-to-pass test の call-path relevance が未検証でも分析対象から黙って外れやすく、その結果として早計な EQUIVALENT / NOT EQUIVALENT に寄りうる。また、compare テンプレート内の「全セクション完遂」と structural triage による早期結論許可が併存し、保留ではなく省略範囲の解釈でぶれを生みうる。
+
+## 改善仮説
+
+pass-to-pass test の relevance 未確定時の既定分岐を明示し、「除外して結論」ではなく「trace して除外 / できなければ UNVERIFIED」に寄せると、未確認のまま silent exclusion する誤りを減らせる。同時に、全セクション完遂の強い文言を structural triage と両立する形へ圧縮すれば、必須ゲート総量を増やさずに判断の安定性を上げられる。
+
+## 変更内容
+
+- compare テンプレートの pass-to-pass tests 定義に、call-path relevance 未解決時は provisional relevant として保持し、trace で除外できない場合は scope を UNVERIFIED にする trigger line を 1 行追加した。
+- compare テンプレート冒頭の「全セクション完遂」指示を、「適用可能なセクションを完了し、STRUCTURAL TRIAGE が結論を確立した場合のみ不要な節を省略できる」という文言へ置換した。
+
+Trigger line (final): "If call-path relevance of a pass-to-pass test is unresolved, keep it provisionally relevant until tracing excludes it, or mark the scope UNVERIFIED instead of omitting it."
+
+この Trigger line は提案時の差分プレビューにある planned trigger line と一致しており、未確定時の条件と行動の両方を実際の分岐点に反映している。
+
+## 期待効果
+
+pass-to-pass coverage が曖昧な比較で、未検証の relevance を理由なく落としてしまう誤判定を減らし、必要な追加 tracing か UNVERIFIED への保留へ分岐しやすくなる。あわせて、structural triage が十分な場面では不要な ANALYSIS 強制を避けられるため、比較判断の総量を増やさずに認知負荷と分岐のぶれを抑えられる。
