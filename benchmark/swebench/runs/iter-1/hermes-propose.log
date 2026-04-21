@@ -1,98 +1,91 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/16/26 23:14:48] INFO     Processing request of type            server.py:727
+[04/21/26 10:46:40] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
-  ┊ 📖 read      Objective.md  0.8s
+  ┊ 📋 plan      3 task(s)  0.0s
+  ┊ 📖 read      failed-approaches.md  0.8s
   ┊ 📖 read      SKILL.md  0.8s
-  ┊ 📖 read      failed-approaches.md  0.9s
-  ┊ 📖 read      README.md  0.9s
+  ┊ 📖 read      Objective.md  0.8s
+  ┊ 📖 read      README.md  0.8s
   ┊ 📖 read      docs/design.md  0.8s
   ┊ ✍️  write     benchmark/swebench/runs/iter-1/proposal.md  0.6s
   ┊ review diff
 a/benchmark/swebench/runs/iter-1/proposal.md → b/benchmark/swebench/runs/iter-1/proposal.md
-@@ -1,100 +1,58 @@
--# Iteration 1 — Proposal
-+# Iter-1 Proposal (focus_domain: overall)
- 
--## Exploration Framework カテゴリ: B (強制指定)
-+## Exploration Framework のカテゴリ
-+- カテゴリ: **B. 情報の取得方法を改善する**（強制指定）
-+- メカニズム選択: **「次に何を読む/探すか」の正当化を、情報利得（どの不確実性を減らすか）として具体化**
-+  - 理由: 既存フレームワークは仮説駆動探索を要求する一方で、「次の探索行動の選び方」が抽象的なため、低シグナルな箇所を長く追って探索が漂流しやすい。情報利得の言語化は、読む順序の半固定（失敗原則で警戒される）ではなく、**選択基準**を与えるだけで探索幅を保ちつつ効率を上げられる。
- 
--カテゴリ B の定義は「情報の取得方法を改善する」であり、具体的には
--「コードの読み方の指示を具体化する」「何を探すかではなく、どう探すかを
--改善する」「探索の優先順位付けを変える」の3つのメカニズムを含む。
-+## 改善仮説（1つだけ）
-+探索の各ステップで「この次の読解/検索がどの仮説差分を判別するか」を短く明示させると、探索行動が高判別力の証拠取得に寄り、全体的な推論品質（見落とし/早合点/漂流）が下がる。
- 
--今回はこのうち **探索の優先順位付けを変える** を選択する。
--
--理由: 残る2つ（読み方の具体化・何を探すか）は既存の Guardrail、
--VERIFIED マーキング、テンプレートのフィールド群で概ねカバーされている。
--一方、「どの情報源を先に読むか」の優先基準は Step 3 の NEXT ACTION
--RATIONALE に委ねられているが、現在の文言はただ「次のファイルを読む
--理由を書け」という自由記述に留まっており、優先原則が埋め込まれていない。
--この空白が、エージェントが確証バイアス（仮説に都合のよいファイルを先に
--読む）に陥る主要な入口となっており、全体的な推論品質の低下を招いている。
--
--
--## 改善仮説
--
--NEXT ACTION RATIONALE の指示に「現在の最弱仮説を最も直接的に確認または
--棄却できる情報源を優先せよ」という原則を埋め込むことで、探索が確証バイアス
--ではなく反証優先の順序で行われるようになり、全モードにわたる推論品質が
--向上する。
--
--
--## 変更内容
--
--### 変更箇所
--
--SKILL.md の Step 3 (Hypothesis-driven exploration) に含まれる
--NEXT ACTION RATIONALE フィールドの指示文を精緻化する。
--
--### 変更前 (既存行)
-+## 現状ボトルネックの診断（SKILL.md 引用 + 失敗メカニズム 1つ）
-+SKILL.md Step 3 の探索ログは、次アクションをこう書くよう求めているが基準が抽象的:
- 
- ```
- NEXT ACTION RATIONALE: [why the next file or step is justified]
- ```
- 
--### 変更後 (精緻化、既存行への追記)
-+誘発される失敗メカニズム（1つ）:
-+- 「正当化」の解釈が曖昧なため、(a) 直近で目に入った低情報の箇所の深掘り、または (b) 既に強い仮説を補強するだけの探索（確認バイアス）に寄って、**未解決の分岐（反証・代替仮説）を判別する証拠取得が後回し**になる。
- 
--```
--NEXT ACTION RATIONALE: [why the next file or step is justified — prefer sources that can most directly confirm or refute the weakest current hypothesis]
-+## 変更タイプ
-+- **optional なガイド追加**
-+- なぜ効くか: 既存の研究コア（仮説駆動探索・手続き間トレース・必須反証）を増設せずに、探索の「次手」の選択基準だけを最小限具体化できる。必須ゲート追加ではなく、ログの書き方の補助として認知負荷を小さく保てる。
+@@ -0,0 +1,45 @@
++過去提案との差異: これは STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定の観測境界へ狭める案ではなく、relevant test の見つけ方そのものを identifier-hit 依存から shared control point 探索へ広げる案である。
++Target: 両方
++Mechanism (抽象): 直接参照の少ない変更では、結論前に「どのテストがその経路を踏むか」の取得順序を outward search に切り替える。
++Non-goal: 構造差から NOT_EQUIV を出す条件を assertion boundary や oracle 可視性へ写像して狭めることはしない。
 +
-+## SKILL.md のどこをどう変えるか（具体）
-+対象: **Core Method → Step 3: Hypothesis-driven exploration** のテンプレート部分。
++カテゴリ B 内での具体的メカニズム選択理由:
++- compare の停滞点は「どのテストを relevant とみなすか」の取得であり、ここを誤るとその後の per-test tracing が正しくても偽 EQUIV / 偽 NOT_EQUIV の両方が起こる。
++- 現行 D2 は changed function/class/variable への test 参照検索を出発点にしており、wrapper・dispatch table・registration・config key・exception translation のような間接経路を通る pass-to-pass 面を拾い損ねやすい。
 +
-+提案変更（追加は最大 3 行想定）:
-+1) Step 3 のログテンプレート内で、`NEXT ACTION RATIONALE` の直後に 1 行だけ追加（optional と明記）:
++改善仮説:
++直接の test-reference 検索が疎または空のとき、changed symbol から最寄りの shared control point へ outward に探索してから relevant tests を確定すると、探索の優先順位が「文字列一致」から「到達性を分ける結節点」へ移り、過少なテスト集合に基づく premature conclusion を減らせる。
 +
-+```diff
-+ OBSERVATIONS from [filename]:
-+   O[N]: ...
-+ ...
-+ NEXT ACTION RATIONALE: [why the next file or step is justified]
-++OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
- ```
- 
--### 変更規模の宣言
-+2) テンプレート外の短い追記（1–2 行）として、「探索の優先順位は固定順ではなく、判別力（どの未解決を最短で潰すか）で決める」旨を Step 3 直前/直後に添える。
- 
--変更行数: 1行 (既存行への文言追加)
--削除行: 0行
-… omitted 65 diff line(s) across 1 additional file(s)/section(s)
++該当箇所と変更方針:
++- 現行引用: "To identify them: search for tests referencing the changed function, class, or variable."
++- 変更方針: この 1 文を、direct reference search を初手として残しつつ、疎/空なら shared control point を辿る outward search を要求する文へ置換する。
++
++Decision-point delta:
++Before: IF 変更箇所を直接参照する test が少ない/見つからない THEN その sparse hit を relevant tests の主集合として tracing を進めやすい because identifier reference を relevance の主要 proxy にしている。
++After:  IF direct hit が sparse/absent かつ変更が wrapper/dispatch/registration/config/error-translation の内側にある THEN 最寄りの shared control point を先に探し、その control point を踏む test を candidate relevant tests に昇格させる because call-path coverage を分ける取得単位で relevance を決める。
++
++Payment: add MUST("If direct test-reference search is sparse or absent, search outward to the nearest shared control point before concluding pass-to-pass tests are irrelevant.") ↔ demote/remove MUST("Structural triage first: compare modified file lists, check for missing modules or test data before any detailed tracing")
++
++変更差分プレビュー:
++Before:
++- To identify them: search for tests referencing the changed function, class,
++-   or variable.
++- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
++
++After:
++- To identify them: start with tests referencing the changed function, class,
++-   or variable; if hits are sparse or absent, search outward to the nearest
++-   shared control point (exported wrapper, dispatch table, registration,
++-   config key, or exception translation site) and use tests exercising that
++-   point as candidate relevant tests.
++Trigger line (planned): "If direct test-reference search is sparse or absent, search outward to the nearest shared control point before concluding pass-to-pass tests are irrelevant."
++
++Discriminative probe:
++抽象ケース: 2 つの変更が同じ内部 helper を直すが、片方だけ registration/update を合わせており、既存の pass-to-pass test は helper 名ではなく public wrapper だけを呼ぶ。Before では helper 名ベースの検索が fail-to-pass 側しか拾えず偽 EQUIV になりやすい。After では sparse-hit が trigger となって wrapper/registration を shared control point として辿るため、その wrapper を踏む既存 test を relevant に含め、NOT_EQUIV か少なくとも premature EQUIV を避けられる。
++
++failed-approaches.md との照合:
++- failed-approaches.md 自体には現在ブラックリスト項目がないが、却下履歴の「構造差→NOT_EQUIV を特定観測境界へ狭める」案とは別物である。今回は結論条件ではなく test discovery の取得順序を変える。
++- 研究コア（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）は維持され、むしろ per-test iteration の入力集合を改善するので design.md の anti-skip 方針と整合する。
++
++変更規模の宣言:
++8 行前後の置換で収まる想定。新規モード追加なし、必須ゲート純増なし。
+  ┊ 📖 read      benchmark/swebench/runs/iter-1/proposal.md  0.8s
+  ┊ 📋 plan      update 3 task(s)  0.0s
 
 ╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
-benchmark/swebench/runs/iter-1/proposal.md に提案を書き込みました。
+完了しました。
+proposal を以下に書き込み、内容も確認済みです。
 
-session_id: 20260416_231448_0c3ee4
+benchmark/swebench/runs/iter-1/proposal.md
+
+要点:
+- 禁止済みの「STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定観測境界へ狭める」方向は回避
+- カテゴリ B として、relevant test の取得方法を identifier-hit 中心から shared control point 探索へ切り替える案
+- compare の実行時アウトカムが変わる decision point を Before/After で明示
+- Payment も明記
+- 変更規模は 15 行以内想定に収めています
+
+完了しました。
+proposal を以下に書き込み、内容も確認済みです。
+
+benchmark/swebench/runs/iter-1/proposal.md
+
+要点:
+- 禁止済みの「STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定観測境界へ狭める」方向は回避
+- カテゴリ B として、relevant test の取得方法を identifier-hit 中心から shared control point 探索へ切り替える案
+- compare の実行時アウトカムが変わる decision point を Before/After で明示
+- Payment も明記
+- 変更規模は 15 行以内想定に収めています
+
+必要なら次に、この proposal をもとに実際の SKILL.md 差分案まで起こせます。
+
+session_id: 20260421_104640_602f7d

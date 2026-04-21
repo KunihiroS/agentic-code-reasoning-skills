@@ -1,149 +1,87 @@
-# Iter-1 Discussion
+# Iteration 1 Discussion
 
-## 総評
-提案の方向性は概ね妥当です。既存の Step 3 が要求している `NEXT ACTION RATIONALE` は「次に何を見るかの正当化」までは求めていますが、その正当化が「どの未解決分岐を潰すのか」まで具体化されていないため、探索が惰性・近接性・直近仮説の補強に流れやすい、という診断には説得力があります。
+## 監査コメント
 
-今回の変更は、研究コアである「番号付き前提」「仮説駆動探索」「手続き間トレース」「必須反証」を壊さず、Step 3 の探索ログの粒度だけを少し上げるものです。その意味で Objective.md の「推論品質の汎用的向上」「元研究コアの維持」とは整合しています。
+### 1. 既存研究との整合性
+- 検索なし（理由: 本提案は「relevant test の探索順序を、直接 identifier hit 依存から call-path 上の共有結節点探索へ広げる」という一般的な探索戦略の話であり、README.md / docs/design.md / SKILL.md の範囲で自己完結に評価できる）
+- 研究コアとの整合性は概ね良い。提案は結論ラベルの直指定ではなく、D2 の relevant test 発見手順を改善するもので、番号付き前提・仮説駆動探索・手続き間トレース・反証を削っていない。
+- 特に docs/design.md の「per-item iteration as the anti-skip mechanism」とは整合する。pass-to-pass 側で relevant tests の拾い漏れを減らす方向だから、per-test tracing の入力集合を改善する提案として理解できる。
 
-ただし、failed-approaches.md との距離はかなり近いです。通すなら、文言を慎重に削って「探索順序の半固定」や「探す証拠の型の事前固定」に見えない形に寄せる必要があります。
+### 2. Exploration Framework のカテゴリ選定
+- カテゴリ B「情報の取得方法を改善する」は適切。
+- 提案の実体は、何を結論するかではなく「relevant tests をどう見つけるか」「探索の優先順位をどう切り替えるか」の変更だから、A や C より B が最も自然。
+- ただし payment で STRUCTURAL TRIAGE を demote/remove しているため、B 単独というより「B を主、A に軽く接触」という性質はある。ここが副作用評価の中心になる。
 
-## 1. 既存研究との整合性
+### 3. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+- EQUIVALENT 側: 直接参照が薄い変更でも outward search により candidate relevant tests が増えうるので、過少探索のまま premature EQUIV に倒れる偽 EQUIV を減らす効果は期待できる。
+- NOT_EQUIVALENT 側: 間接経路の relevant tests を拾えるようになれば、本当に差が出る assertion へ到達しやすくなる点はプラス。
+- ただし proposal は payment として「Structural triage first」を demote/remove しており、従来の早期 NOT_EQUIV 側の安全装置を外す一方、その代替として `impact witness` を要求していない。結果として、EQUIV 側の取りこぼし補正には効いても、NOT_EQUIV 側で何をもって早期に差ありとするかの分岐が弱くなり、片方向最適化の懸念が残る。
+- よって「両方向に作用しうる」こと自体は示せているが、逆方向悪化を防ぐ回避策が不足している。
 
-### 整合する点
-1. Agentic Code Reasoning 自体の設計思想とは整合します。
-   - README.md / docs/design.md では、コアは「証拠を先に集め、判断を後にする」「反証可能性を保つ」ことです。
-   - 提案は結論を直接誘導せず、探索中の次手選択の基準を少し具体化するだけなので、研究コアの外挿として自然です。
+### 4. failed-approaches.md との照合
+- failed-approaches.md 自体には現時点で具体ブラックリストは未記載。
+- ただし運用上の汎用失敗原則との照合では以下の通り。
+  - 探索経路の半固定: NO（`if direct hit is sparse/absent` という条件付きで発火しており、常時固定ルートではない）
+  - 必須ゲート増: NO（proposal 上は payment が明示され、必須ゲート総量不変を意識している）
+  - 証拠種類の事前固定: NO寄り。ただし `shared control point (exported wrapper, dispatch table, registration, config key, or exception translation site)` の列挙が実装時に閉じたチェックリストとして読まれると危ない。例示であって exhaustiveness ではない旨は補強した方がよい。
+- 本質的な再演とは言いにくいが、STRUCTURAL TRIAGE を外す側の修正なので、停滞ではなく回帰を生まないための補助条件が必要。
 
-2. 仮説駆動デバッグの一般原則とも整合します。
-   - URL: https://eikmeier.sites.grinnell.edu/csc-151-spring-2026/readings/hypothesis-driven-debugging.html
-   - 要点: デバッグを ad-hoc ではなく scientific process として扱い、「Gather data → State assumptions → Predict → Verify/refute → Analyze」の流れを明示している。
-   - 本提案の「次の読解/検索がどの仮説差分を判別するかを明示する」は、この verify/refute を探索選択に前倒しで意識させる方向で、仮説駆動の強化として理解できる。
+### 5. 汎化性チェック
+- 明示的な固有識別子違反は見当たらない。具体的な数値 ID、ベンチマークのケース ID、特定リポジトリ名、特定テスト名、実コード断片は含まれていない。
+- `wrapper / dispatch table / registration / config key / exception translation` は一般概念の例示として許容範囲。
+- ただし暗黙には「参照探索可能な call-path / control-point が存在する典型的アプリ構造」を想定している。十分に汎用ではあるが、動的ディスパッチが強い言語や宣言的構成が中心の環境では control point の見つけ方が曖昧になりうる。
 
-3. 能動的情報収集における確認バイアス研究とも整合します。
-   - URL: https://pmc.ncbi.nlm.nih.gov/articles/PMC9038198/
-   - 要点: 人は既に選んだ選択肢を支持する情報をより多くサンプリングしやすく、初期判断への確信が高いほどその偏りが強くなると報告している。
-   - 本提案が狙う「直近仮説の補強ばかりではなく、未解決分岐を減らす行動を選ばせる」は、この種の偏りへの対抗策として筋が通っている。
+### 6. 全体の推論品質の改善期待
+- 改善余地の本丸は明確。現行 D2 の「changed symbol への test 参照検索」だけでは間接経路の pass-to-pass tests を漏らしやすく、そこが compare の精度劣化点になる、という問題設定は妥当。
+- 提案はそのボトルネックに直接当たっているため、relevant test の想起精度は上がりうる。
+- ただし compare の実行時アウトカム差を安定化するには、「outward search で見つけた candidate が本当に outcome に効くか」を確認する witness 条件まで必要。そこが抜けると、監査説明としては強いが compare の意思決定差が不均一になる。
 
-4. ソフトウェア開発における認知バイアス研究とも方向は一致します。
-   - URL: https://cacm.acm.org/research/cognitive-biases-in-software-development/
-   - DuckDuckGo 検索要約の要点: 開発時には confirmation bias を含む認知バイアスが情報の探索・評価・記憶に影響する。
-   - 取得元は検索要約レベルだが、探索行動そのものの質を改善対象にすること自体は既存知見と整合的。
+## 停滞診断
+- 懸念点: 提案は「sparse/absent direct hit のとき outward search する」という監査受けの良い説明を持っている一方、compare 実行で最終的に「追加探索する」「結論保留する」「NOT_EQUIV に倒す」をどう切り替えるかの witness 条件が弱く、説明強化に比べて意思決定差の定義が薄い。
+- 探索経路の半固定: NO
+- 必須ゲート増: NO
+- 証拠種類の事前固定: NO
 
-### 研究整合性の留保
-ただし、上の PMC 論文が示すのは「人は能動的サンプリングで自説支持に寄りやすい」という点です。したがって proposal の文言が `which hypothesis/claim it would confirm vs refute` のように「いま持っている仮説」を中心に書かれすぎると、逆に failed-approaches.md が警戒する「特定シグナルの捜索」に寄る危険もあります。研究整合性はあるが、文言設計を誤ると逆効果です。
+## compare 影響の実効性チェック
+- 0) 実行時アウトカム差:
+  - direct reference hit が sparse/absent なケースで、compare はそのまま tracing を始めず、shared control point 探索を追加要求するようになる。
+  - その結果、premature EQUIV を出す条件は厳しくなる一方、現 proposal だけでは NOT_EQUIV を早期に出す条件の置換先が弱い。
 
-## 2. Exploration Framework のカテゴリ選定は適切か
-カテゴリ B「情報の取得方法を改善する」は適切です。
+- 1) Decision-point delta:
+  - IF/THEN 形式で 2 行（Before/After）になっているか: YES
+  - Trigger line（発火する文言の自己引用）が差分プレビューに含まれているか: YES
+  - 評価: 条件と行動の両方が変わっており、単なる理由の言い換えではない点は良い。
 
-理由:
-- 変更対象は Step 3 の探索ログであり、結論形式や比較定義そのものではない。
-- やっていることは「何を結論せよ」ではなく「次に何を読むかの選び方の粒度を上げる」ことで、まさに情報取得方針の改善。
-- Category D の自己チェック強化にも少し接していますが、提案は結論直前の監査追加ではなく探索中の次手選択を対象にしているので、主分類は B でよいです。
+- 2) Failure-mode target:
+  - 主標的は偽 EQUIV。メカニズムは、indirect path 上の pass-to-pass tests を relevant set に昇格できず、観測すべき差を未探索のまま EQUIV としてしまう失敗を減らすこと。
+  - 副次的には真の NOT_EQUIV の取りこぼしも減らせる。
+  - ただし outward search の候補拡張だけでは、偽 NOT_EQUIV を抑える制御は増えない。
 
-一方で、B の中でも failed-approaches.md と最も衝突しやすい帯域です。つまりカテゴリ選定は正しいが、同カテゴリ内で危険なメカニズムに近い、という評価です。
+- 2.5) STRUCTURAL TRIAGE / 早期結論に触れる提案か？ YES
+  - NOT_EQUIV の根拠が「ファイル差がある」だけに退化していないか: 現 proposal はそこを強化するのではなく、むしろ既存 triage を demote/remove する方向。
+  - `impact witness`（PASS/FAIL に結びつく具体的な assertion boundary を 1 つ目撃する要求）を提案が要求しているか？ NO
+  - 評価: ここが最大の弱点。STRUCTURAL TRIAGE を触るなら、早期 NOT_EQUIV を弱めた後の置換先として「shared control point から少なくとも 1 つの assertion boundary まで tracing して relevance を確定する」程度の witness が必要。
 
-## 3. EQUIVALENT / NOT_EQUIVALENT の両方への作用
+- 3) Non-goal:
+  - 常に outward search を必須化しないこと。
+  - shared control point の例示を閉じた証拠種別リストにしないこと。
+  - 既存の per-test tracing / refutation を置き換えず、relevant test discovery の入口だけを差し替えること。
 
-### 変更前との実効的差分
-変更前:
-- `NEXT ACTION RATIONALE` は「なぜ次のファイル/ステップが妥当か」を書かせる。
-- ただし、妥当性の基準が抽象的で、近い場所・見慣れた場所・今の仮説を補強する場所を読むことでも簡単に満たせる。
+- 追加チェック: Discriminative probe
+  - 提案文の probe 自体はある程度よくできている。helper 名に direct hit がなく public wrapper 経由でのみ既存 test が踏む抽象ケースは、変更前に偽 EQUIV を生みやすく、変更後に避けられる筋が見える。
+  - ただし probe は「candidate relevant tests に昇格する」までで止まっており、その candidate が実際に assertion boundary を変えるかの witness まで結んでいない。ここが compare 実効差の最後の一歩として不足。
 
-変更後:
-- 「その次手がどの不確実性を減らすか」を明示するので、探索の justification が proximity ベースから discrimination ベースへ少し寄る。
-- 結果として、低情報な深掘りや片方向の補強読みに歯止めがかかる可能性がある。
+- 追加チェック（停滞対策の検証）:
+  - 支払い（必須ゲート総量不変）の A/B 対応付けが proposal 内で明示されているか: YES
+  - その点は良い。ただし支払い先に選んだのが STRUCTURAL TRIAGE なので、副作用を相殺する置換条件が必要。
 
-### NOT_EQUIVALENT への作用
-プラスに働きやすいです。
-- NOT_EQUIVALENT では、最終的に「どのテスト/経路/条件で差が顕在化するか」という反例探索が重要です。
-- 情報利得ベースの次手選択は、「差が出そうな条件を最短で判別する」方向に寄るため、差分の顕在化を早めやすいです。
-- 特に compare テンプレートの COUNTEREXAMPLE 義務と相性がよく、反例候補を絞る探索を促進します。
+## 総合判断
+- 良い点は明確で、B カテゴリとして筋も良い。direct identifier hit 依存の relevant test 発見を緩める発想は compare の弱点に直接効く。
+- しかし現案は、EQUIV 側の取りこぼし補正に比重が寄り、payment として STRUCTURAL TRIAGE を demote/remove するのに、その代わりとなる `impact witness` を置いていない。これは reverse side、特に NOT_EQUIVALENT 側の分岐条件を弱めるので、片方向最適化の懸念が解消していない。
 
-### EQUIVALENT への作用
-プラスにもマイナスにもなりえます。
-- プラス面: EQUIVALENT では「差がない」ことを急いで言うのが危険で、潜在的反例の探索が重要です。未解決分岐を明示すると、「まだ潰していない反例筋」を認識しやすくなります。
-- マイナス面: 「判別力」を強く出しすぎると、常に差分が出そうな方向ばかりを優先し、広く安定に同等性を確認する探索を圧迫するおそれがあります。結果として、EQUIVALENT 側で必要な“十分なカバレッジの確認”が細る可能性があります。
+## 修正指示（2〜3点）
+1. `Structural triage first` を丸ごと demote/remove するのではなく、早期結論部分だけを弱め、置換として「shared control point から少なくとも 1 つの assertion boundary まで tracing して relevance を確定する」必須 1 行を入れてください。追加するなら、既存 triage の早期直行文を optional 化する形で支払ってください。
+2. `shared control point` の列挙は exhaustive な証拠種別に見えないよう、`for example` 相当の但し書きを入れてください。証拠種類の事前固定に読まれるリスクを避けられます。
+3. Decision-point delta の After 側に、「control point を見つけた後、どの条件で追加探索を止めて relevance を確定するか」を 1 行だけ足してください。理由説明ではなく、分岐条件として書いてください。
 
-### 片方向最適化か
-現状案は「片方向にしか作用しない」わけではありません。両方向に作用します。
-ただし、文言次第では NOT_EQUIVALENT 側にやや強く寄ります。
-
-特に次の表現は NOT_EQUIVALENT 側へバイアスしやすいです。
-- `which hypothesis/claim it would confirm vs refute`
-- `どの未解決を最短で潰すか`
-
-これらは「差が出る筋を最短で探す」読みを誘発しやすく、EQUIVALENT 側では探索の幅を狭める危険があります。したがって、承認するなら「反例探索にも同等性確認にも使える、方向非依存の判別」という言い回しへ修正した方がよいです。
-
-## 4. failed-approaches.md の汎用原則との照合
-
-### 抵触しない点
-- MUST や新しいゲートを増やしていない。
-- 証拠の種類を明示的に列挙していない。
-- 読むファイル順を固定していない。
-
-### 危険な点
-failed-approaches.md には次の警告があります。
-- 「次の探索で探すべき証拠の種類をテンプレートで事前固定しすぎる変更は避ける」
-- 「探索ドリフト対策を追加する際は、探索の自由度を削りすぎない」
-- 「読解順序の半固定は避ける」
-- 「反証が見つからなかった場合の記録様式を細かく規定しすぎると、形式的な探索報告への過剰適応を招く」
-
-今回の proposal は、その再演ではないと言い切るには少し危ういです。理由は2つです。
-
-1. `INFO GAIN` 欄が、実質的に「次に探すべき証拠の型」を書かせる欄として機能しうる。
-   - 提案者は「証拠タイプを規定していない」と述べていますが、`what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute` は、十分に具体的な“探索ターゲットの規定”です。
-
-2. 「判別力で優先順位を決める」という補足が、読解順序の半固定に近づく。
-   - もちろん固定順ではないが、常に判別力最大の枝を選ぶように読めると、構造差分・周辺文脈・広いカバレッジ確認の価値を下げやすい。
-
-結論として、failed-approaches.md の本質的再演とまでは断定しないが、かなり近接しています。PASS にするなら、文言を「探索の自由度を縛らない局所ヒント」に抑えることが必要です。
-
-## 5. 汎化性チェック
-
-### ルール違反の有無
-proposal.md 自体には、以下の禁止要素は見当たりません。
-- 具体的な数値 ID
-- 特定リポジトリ名
-- 特定テスト名
-- ベンチマーク対象コード断片
-
-含まれているのは SKILL.md 自身の文言引用と抽象的説明であり、Objective.md の R1 の減点対象外に当たります。したがって、明示的な汎化性違反はありません。
-
-### 暗黙のドメイン前提
-大きなドメイン依存も薄いです。
-- 「次の行動がどの不確実性を減らすか」を言語化する発想は、言語・フレームワーク非依存です。
-- compare に限定されず explain / diagnose / audit-improve にも流用可能な原理です。
-
-ただし、暗黙に「仮説差分が比較的はっきり定義できる課題」を想定している傾向はあります。大規模で曖昧な探索や、まだ仮説の軸自体が粗い序盤では、`which uncertainty this action resolves` が過度に早い形式化になる可能性があります。なので optional を強く保つのは重要です。
-
-## 6. 全体の推論品質への期待効果
-期待できる改善はあります。
-
-- 低シグナル追跡の抑制
-  - 「何を減らす行動か」を書かせることで、なんとなく近いファイルを読む惰性が減る可能性が高いです。
-
-- 仮説分岐の明示化
-  - compare / diagnose では、どの枝をまだ潰していないかが可視化されやすくなります。
-
-- 反証ステップへの接続改善
-  - Step 5 の refutation が“最後だけの儀式”にならず、Step 3 から反証候補を意識しやすくなります。
-
-一方、期待効果は「大幅改善」より「探索の局所品質の底上げ」です。
-この種の小変更としては妥当ですが、効果の上限も大きくはないはずです。
-
-## PASS に近づけるための具体的な修正指示
-1. `which hypothesis/claim it would confirm vs refute` は削るか弱めること。
-   - 代わりに `which unresolved branch/question this would discriminate among` 程度にして、特定仮説の補強探索に見えないようにする。
-
-2. 「判別力で優先順位を決める」は、グローバルな優先戦略に見えるので弱めること。
-   - `next action can optionally note what uncertainty it reduces, without fixing search order or evidence type` のように、局所的ヒントであって探索順序規則ではないと明示した方がよい。
-
-3. `INFO GAIN` というラベル自体が強すぎるなら、`UNCERTAINTY REDUCED (optional)` などへ置き換えること。
-   - 目的を「最適化」ではなく「未解決の可視化」に寄せた方が、failed-approaches.md との衝突が弱くなる。
-
-## 結論
-現状案は、研究コアを壊さず、汎化性違反もなく、compare 改善に結びつく見込みがあります。したがって「過度に保守的な拒否は避ける」という運用ルールに照らすと、修正前提で前向きに扱うのが妥当です。
-
-ただし、そのまま入れると failed-approaches.md が禁じる「探索ターゲットの半固定」「判別力を名目にした探索順序の細り」にかなり接近しています。承認するなら、文言を方向非依存・順序非固定・証拠型非固定に寄せることが条件です。
-
-承認: YES
+承認: NO（理由: focus_domain の片方向最適化で逆方向の悪化が明白で、STRUCTURAL TRIAGE を触るのに impact witness がない）
