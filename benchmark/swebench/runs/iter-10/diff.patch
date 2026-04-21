@@ -1,0 +1,17 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..67ea7486 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -116,9 +116,10 @@ If the opposite answer were true, what evidence would exist?
+ Before writing the formal conclusion, check each item below. If any answer is **NO**, fix it before Step 6.
+ 
+ - [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
+-- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
++- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption.
+ - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+-- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
++- [ ] Weakest-link check: identify the most fragile **UNVERIFIED** assumption on the decisive path.
++- [ ] If reversing that assumption could change the verdict, do not finalize the verdict as settled; continue tracing or mark the conclusion UNVERIFIED / lower CONFIDENCE.
+ 
+ ### Step 6: Formal conclusion
+ Write a conclusion that:
