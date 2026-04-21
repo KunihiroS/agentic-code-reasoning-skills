@@ -1,0 +1,29 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..8c04a940 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -178,11 +178,11 @@ P4: The pass-to-pass tests check [specific behavior, if relevant]
+ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
++  Trigger line: "For each relevant test, first anchor the verdict-setting assertion/check and backtrace the nearest upstream decision that could make Change A and Change B disagree."
+   Test: [name]
+-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
+-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
++  Pivot: [assertion/check and the nearest decision or state transition that can flip it]
++  Claim C[N].1: With Change A, this pivot resolves to [value/branch], so the test will [PASS/FAIL]
++  Claim C[N].2: With Change B, this pivot resolves to [value/branch], so the test will [PASS/FAIL]
+   Comparison: SAME / DIFFERENT outcome
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+@@ -229,7 +229,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+-- Trace each test through both changes separately before comparing
++- For each relevant test, first anchor the verdict-setting assertion/check and backtrace the nearest upstream decision that could make Change A and Change B disagree; expand downstream only if the pivot remains unresolved
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 

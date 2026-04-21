@@ -1,0 +1,98 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-14/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..8c04a940 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -178,11 +178,11 @@ P4: The pass-to-pass tests check [specific behavior, if relevant]
+ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
++  Trigger line: "For each relevant test, first anchor the verdict-setting assertion/check and backtrace the nearest upstream decision that could make Change A and Change B disagree."
+   Test: [name]
+-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
+-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
++  Pivot: [assertion/check and the nearest decision or state transition that can flip it]
++  Claim C[N].1: With Change A, this pivot resolves to [value/branch], so the test will [PASS/FAIL]
++  Claim C[N].2: With Change B, this pivot resolves to [value/branch], so the test will [PASS/FAIL]
+   Comparison: SAME / DIFFERENT outcome
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+@@ -229,7 +229,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+-- Trace each test through both changes separately before comparing
++- For each relevant test, first anchor the verdict-setting assertion/check and backtrace the nearest upstream decision that could make Change A and Change B disagree; expand downstream only if the pivot remains unresolved
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+
+rationale:
+# Iteration 14 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: N/A（この作業では参照対象外）
+- 失敗ケース: N/A（この作業では参照対象外）
+- 失敗原因の分析: compare の per-test analysis が各 change の前向き個別 trace を既定にしており、同じ test outcome を説明できる複数 path がある場合に、verdict を直接左右する判定ピボットよりも下流の再収束や上流の構造差を先に見てしまう余地があった。
+
+## 改善仮説
+
+relevant test ごとに、まず verdict-setting assertion/check とそれを反転させうる最短の upstream decision を両 change で並べる順序へ置換すると、EQUIV と NOT EQUIV の判定が test verdict を分ける条件により直接結びつき、前向き全追跡由来の偽 EQUIV / 偽 NOT_EQUIV を減らせる。
+
+## 変更内容
+
+ANALYSIS OF TEST BEHAVIOR の relevant test テンプレートを、前向き trace の because 節から、Trigger line・Pivot・pivot resolves to [value/branch] 形式へ置換した。あわせて checklist の "Trace each test through both changes separately before comparing" を、assertion/check 起点で backtrace し未解決時のみ下流へ展開する指示へ置換した。追加の必須ゲートは増やさず、既存の per-test tracing の開始点だけを差し替えた。
+
+Trigger line (final): "For each relevant test, first anchor the verdict-setting assertion/check and backtrace the nearest upstream decision that could make Change A and Change B disagree."
+
+この Trigger line は proposal の差分プレビューにある planned trigger line と一致しており、意図した一般化の範囲でも同等である。
+
+## 期待効果
+
+relevant test ごとの比較が、changed path の網羅量ではなく test verdict を分ける判定ピボットの識別に先に集中するため、同じ outcome に見えるケースでは EQUIV の根拠を、分岐するケースでは NOT EQUIV の根拠を、より少ない寄り道で確定しやすくなる。研究コアである番号付き前提、仮説駆動探索、手続き間トレース、必須反証は維持される。
