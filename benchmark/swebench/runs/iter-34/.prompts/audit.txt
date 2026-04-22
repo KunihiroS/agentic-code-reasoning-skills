@@ -1,0 +1,91 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-34/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..8bf009c4 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -111,16 +111,8 @@ If the opposite answer were true, what evidence would exist?
+ - Conclusion: REFUTED / SUPPORTED
+ ```
+ 
+-### Step 5.5: Pre-conclusion self-check (required)
+-
+-Before writing the formal conclusion, check each item below. If any answer is **NO**, fix it before Step 6.
+-
+-- [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
+-- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
+-- [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+-- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+-
+ ### Step 6: Formal conclusion
++If the compare certificate already establishes identical or different test outcomes, conclude and carry any remaining non-decisive uncertainty into CONFIDENCE rather than reopening analysis.
+ Write a conclusion that:
+ - References specific numbered premises and claims (e.g., "By P1 and C2…")
+ - States what was established
+
+rationale:
+# Iteration 34 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 未参照（この作業ではスコア記録を参照していない）
+- 失敗ケース: 未参照
+- 失敗原因の分析: compare の結論直前に独立した self-check gate があり、既に verdict に必要な per-test trace と counterexample / no-counterexample が揃っていても、非決定的な未解決事項を理由に追加探索や保留へ戻りやすい構造だった。
+
+## 改善仮説
+
+独立した pre-conclusion self-check は、既存の compare certificate がすでに要求している証拠を終盤で再度 mandatory な別ゲートとして課していた。これを削除し、verdict を左右しない未解決事項は CONFIDENCE に送るよう結論規則へ統合すれば、研究コアを維持したまま compare の最終分岐を軽くし、過度な保留や不要な再探索を減らせる。
+
+## 変更内容
+
+- 独立した「Pre-conclusion self-check (required)」セクションを削除した。
+- Formal conclusion の直下に、compare certificate が既に test outcome を確立している場合は、非決定的な未解決事項を CONFIDENCE に持ち込んで結論してよい、という 1 行を追加した。
+- これにより、Decision-point delta は「checklist の NO で Step 6 を止める」から「verdict 非決定の不確実性だけを CONFIDENCE に残して Step 6 に進む」へ変わった。
+- Trigger line (final): "If the compare certificate already establishes identical or different test outcomes, conclude and carry any remaining non-decisive uncertainty into CONFIDENCE rather than reopening analysis."
+- この Trigger line は proposal の差分プレビューにあった planned trigger line と一致しており、compare 直前の分岐を発火させる位置にそのまま入っている。
+
+## 期待効果
+
+既に verdict を支える証拠が揃っている場面で、周辺の未検証要素だけを理由に結論を引き延ばす挙動が減ることを期待する。特に EQUIV / NOT_EQUIV のどちらでも、非決定的な未解決事項を保留トリガではなく confidence 調整として扱えるため、compare の実効差を保ったまま停滞を抑えやすくなる。
