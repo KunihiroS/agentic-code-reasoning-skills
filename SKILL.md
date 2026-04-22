@@ -111,10 +111,14 @@ If the opposite answer were true, what evidence would exist?
 - Conclusion: REFUTED / SUPPORTED
 ```
 
-### Step 5.5: Pre-conclusion note
+### Step 5.5: Pre-conclusion self-check (required)
 
-If Step 5 is complete, carry bounded non-decisive uncertainty into Step 6 as explicit UNVERIFIED scope instead of reopening exploration solely to satisfy a duplicate checklist.
-Do not use a second checklist as a separate gate; report remaining limits in Step 6.
+Before writing the formal conclusion, check each item below. If any answer is **NO**, fix it before Step 6.
+
+- [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
+- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
+- [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
 
 ### Step 6: Formal conclusion
 Write a conclusion that:
