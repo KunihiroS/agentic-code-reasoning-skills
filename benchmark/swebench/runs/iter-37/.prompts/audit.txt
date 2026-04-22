@@ -1,0 +1,99 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-37/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..9d21ed3b 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -191,12 +191,10 @@ For pass-to-pass tests (if changes could affect them differently):
+   Claim C[N].2: With Change B, behavior is [description]
+   Comparison: SAME / DIFFERENT outcome
+ 
+-EDGE CASES RELEVANT TO EXISTING TESTS:
+-(Only analyze edge cases that the ACTUAL tests exercise)
+-  E[N]: [edge case]
+-    - Change A behavior: [specific output/behavior]
+-    - Change B behavior: [specific output/behavior]
+-    - Test outcome same: YES / NO
++DIFFERENCE CLASSIFICATION:
++  Δ[N]: [difference]
++    - Kind: PARTITION-CHANGING / REPRESENTATIVE-ONLY
++    - Compare scope: [all relevant tests touching that partition / current traced test]
+ 
+ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+   Test [name] will [PASS/FAIL] with Change A because [reason]
+@@ -230,7 +228,8 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- When a semantic difference is found, first decide whether it changes the tested input/state partition or only the representative computation within a shared partition
++- Treat partition-changing differences as scope expanders for comparison, not as immediate verdicts.
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+ ---
+
+rationale:
+# Iteration 37 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: N/A（今回の作業範囲では未参照）
+- 失敗ケース: N/A（今回の作業範囲では未参照）
+- 失敗原因の分析: compare で差分を見つけた後の比較粒度が単一の traced test に寄りやすく、同一の assertion outcome を見た時点で比較を局所化しすぎる停滞がある、という仮説を採用した。
+
+## 改善仮説
+
+見つかった semantic difference を「tested input/state partition 自体を変える差分」か「同一 partition 内の representative computation 差分」かで分類し、その分類で compare scope を決めるようにすると、単一テスト経路の一致を過大評価せず、false EQUIV と false NOT EQUIV の両方を減らせると考えた。
+
+## 変更内容
+
+- compare テンプレートの "EDGE CASES RELEVANT TO EXISTING TESTS" を、差分ごとに Kind と Compare scope を書く "DIFFERENCE CLASSIFICATION" に置換した。
+- compare checklist の "trace at least one relevant test" を、まず partition-changing か representative-only かを判定する指示へ置換した。
+- Trigger line (final): "Treat partition-changing differences as scope expanders for comparison, not as immediate verdicts."
+- この Trigger line は proposal の差分プレビューにある planned trigger line と一致しており、差分を即時 verdict ではなく比較範囲拡張の分岐として扱う一般化をそのまま反映している。
+
+## 期待効果
+
+差分発見後の意思決定点で、単一 traced path の一致だけを根拠に比較を閉じず、tested partition に触れる関連テスト群へ比較を広げるべき場合を明示できる。これにより、局所一致による premature EQUIV を避けつつ、partition を変えない差分では current traced test に比較を留められるため、必須判定手順の総量を増やさずに compare の分岐精度を上げられる。
