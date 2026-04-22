@@ -191,10 +191,12 @@ For pass-to-pass tests (if changes could affect them differently):
   Claim C[N].2: With Change B, behavior is [description]
   Comparison: SAME / DIFFERENT outcome
 
-DIFFERENCE CLASSIFICATION:
-  Δ[N]: [difference]
-    - Kind: PARTITION-CHANGING / REPRESENTATIVE-ONLY
-    - Compare scope: [all relevant tests touching that partition / current traced test]
+EDGE CASES RELEVANT TO EXISTING TESTS:
+(Only analyze edge cases that the ACTUAL tests exercise)
+  E[N]: [edge case]
+    - Change A behavior: [specific output/behavior]
+    - Change B behavior: [specific output/behavior]
+    - Test outcome same: YES / NO
 
 COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Test [name] will [PASS/FAIL] with Change A because [reason]
@@ -228,8 +230,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- When a semantic difference is found, first decide whether it changes the tested input/state partition or only the representative computation within a shared partition
-- Treat partition-changing differences as scope expanders for comparison, not as immediate verdicts.
+- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
