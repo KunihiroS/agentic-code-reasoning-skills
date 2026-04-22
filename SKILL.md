@@ -137,7 +137,7 @@ Goal: determine whether two changes produce the same relevant behavior.
 
 ### Certificate template
 
-Complete every section.
+Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
 
 ```
 DEFINITIONS:
@@ -193,16 +193,6 @@ For pass-to-pass tests (if changes could affect them differently):
 
 EDGE CASES RELEVANT TO EXISTING TESTS:
 (Only analyze edge cases that the ACTUAL tests exercise)
-If a semantic difference survives tracing, restate it as CLAIM D[N] against a specific test premise/assertion before classifying it.
-For each semantic difference that survives tracing:
-  CLAIM D[N]: at [file:line], Change A vs B differs in a way that would [preserve / violate / unresolved] PREMISE P[N] or a cited assertion because [...]
-  VERDICT-FLIP PROBE:
-    Trigger line: "Before finalizing a compare verdict, name the smallest concrete witness that would make the opposite verdict true, and search for that witness next."
-    Tentative verdict: EQUIVALENT / NOT EQUIVALENT
-    Required flip witness: [specific test/assertion/path that would reverse the verdict]
-  TRACE TARGET: [test/assertion line reached from that premise]
-  Status: PRESERVED BY BOTH / BROKEN IN ONE CHANGE / UNRESOLVED
-  Only PRESERVED BY BOTH differences may be absorbed into an EQUIVALENT argument.
   E[N]: [edge case]
     - Change A behavior: [specific output/behavior]
     - Change B behavior: [specific output/behavior]
@@ -240,7 +230,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- If a semantic difference survives tracing, restate it as CLAIM D[N] against a specific test premise/assertion before classifying it.
+- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
