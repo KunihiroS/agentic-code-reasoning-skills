@@ -78,6 +78,13 @@
         "META_RATIONALE_PATH"
       ],
       "role": "proposer"
+    },
+    "meta-audit": {
+      "file": "meta-audit.txt",
+      "vars": [
+        "META_RATIONALE_PATH"
+      ],
+      "role": "auditor"
     }
   }
 }

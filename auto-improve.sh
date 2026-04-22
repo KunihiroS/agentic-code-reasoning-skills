@@ -293,6 +293,22 @@ for e in scored[-10:]:
     fi
   done
 
+  # メタ監査: テンプレート変更の安全性審査
+  log "メタ監査実行中..."
+  render_template "meta-audit" > "$meta_dir/meta-audit-prompt.txt"
+  local meta_audit_result
+  meta_audit_result=$(run_hermes "$meta_dir/meta-audit-prompt.txt" "$meta_dir/hermes-meta-audit.log" | grep -oP '\{[^}]*"overall"[^}]*\}' | head -1)
+  local meta_audit_overall
+  meta_audit_overall=$(echo "$meta_audit_result" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('overall','UNKNOWN'))" 2>/dev/null || echo "UNKNOWN")
+  log "メタ監査結果: $meta_audit_overall"
+
+  if [ "$meta_audit_overall" != "PASS" ]; then
+    log "メタ監査 FAIL — テンプレート変更をロールバック"
+    git checkout -- prompts/
+    echo "$TEMPLATE_VERSION" > "$TEMPLATE_VERSION_FILE"
+    return 1
+  fi
+
   # バージョンインクリメント（スクリプト側で管理）
   local new_version=$((TEMPLATE_VERSION + 1))
   echo "$new_version" > "$TEMPLATE_VERSION_FILE"
