@@ -148,11 +148,9 @@ D2: The relevant tests are:
         expected to pass after the fix — always relevant.
     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
         only if the changed code lies in their call path.
-    To identify them: start with tests that reference the changed symbol; if
-    that does not settle relevance, read the nearest candidate test assertion
-    or test-side call entry that could observe the difference. If the test suite
-    is not provided, state this as a constraint in P[N] and restrict the scope
-    of D1 accordingly.
+    To identify them: search for tests referencing the changed function, class,
+    or variable. If the test suite is not provided, state this as a constraint
+    in P[N] and restrict the scope of D1 accordingly.
 
 STRUCTURAL TRIAGE (required before detailed tracing):
 Before tracing individual functions, compare the two changes structurally:
@@ -195,13 +193,6 @@ For pass-to-pass tests (if changes could affect them differently):
 
 EDGE CASES RELEVANT TO EXISTING TESTS:
 (Only analyze edge cases that the ACTUAL tests exercise)
-When a semantic difference is found but its test impact is unclear, inspect the nearest candidate test assertion or test-side call entry before classifying the difference.
-If a semantic difference survives tracing, restate it as CLAIM D[N] against a specific test premise/assertion before classifying it.
-For each semantic difference that survives tracing:
-  CLAIM D[N]: at [file:line], Change A vs B differs in a way that would [preserve / violate / unresolved] PREMISE P[N] or a cited assertion because [...]
-  TRACE TARGET: [test/assertion line reached from that premise]
-  Status: PRESERVED BY BOTH / BROKEN IN ONE CHANGE / UNRESOLVED
-  Only PRESERVED BY BOTH differences may be absorbed into an EQUIVALENT argument.
   E[N]: [edge case]
     - Change A behavior: [specific output/behavior]
     - Change B behavior: [specific output/behavior]
@@ -239,7 +230,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- If a semantic difference survives tracing, restate it as CLAIM D[N] against a specific test premise/assertion before classifying it.
+- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
