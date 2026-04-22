@@ -1,0 +1,98 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-29/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 2aff6cb0..5041c107 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -148,9 +148,11 @@ D2: The relevant tests are:
+         expected to pass after the fix — always relevant.
+     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
+         only if the changed code lies in their call path.
+-    To identify them: search for tests referencing the changed function, class,
+-    or variable. If the test suite is not provided, state this as a constraint
+-    in P[N] and restrict the scope of D1 accordingly.
++    To identify them: start with tests that reference the changed symbol; if
++    that does not settle relevance, read the nearest candidate test assertion
++    or test-side call entry that could observe the difference. If the test suite
++    is not provided, state this as a constraint in P[N] and restrict the scope
++    of D1 accordingly.
+ 
+ STRUCTURAL TRIAGE (required before detailed tracing):
+ Before tracing individual functions, compare the two changes structurally:
+@@ -193,6 +195,7 @@ For pass-to-pass tests (if changes could affect them differently):
+ 
+ EDGE CASES RELEVANT TO EXISTING TESTS:
+ (Only analyze edge cases that the ACTUAL tests exercise)
++When a semantic difference is found but its test impact is unclear, inspect the nearest candidate test assertion or test-side call entry before classifying the difference.
+ If a semantic difference survives tracing, restate it as CLAIM D[N] against a specific test premise/assertion before classifying it.
+ For each semantic difference that survives tracing:
+   CLAIM D[N]: at [file:line], Change A vs B differs in a way that would [preserve / violate / unresolved] PREMISE P[N] or a cited assertion because [...]
+
+rationale:
+# Iteration 29 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: N/A（この作業では与えられていない）
+- 失敗ケース: N/A（この作業では与えられていない）
+- 失敗原因の分析: compare で semantic difference は見つかっているのに test impact が未確定な場面で、差分側の実装深掘りを先に続けると relevance 判定が遅れ、観測点ベースでの切り分けが弱くなるおそれがある。
+
+## 改善仮説
+
+relevance 未確定時の次読取先を、差分側の実装深掘りよりも、その差分を最初に観測しうる test assertion / test-side call entry の確認へ寄せると、観測証拠に基づいて relevance を早く確定でき、EQUIVALENT / NOT EQUIVALENT の誤判定を減らせる。
+
+## 変更内容
+
+- relevant tests の同定指示を、changed symbol 参照から始めつつ、それで relevance が確定しない場合は nearest candidate test assertion または test-side call entry を読む優先順位に置換した。
+- semantic difference 周辺に、test impact が unclear な場合は classifying より前に nearest candidate test assertion または test-side call entry を確認する trigger line を追加した。
+- CLAIM D[N] への再記述義務は維持し、判定前の読取順だけを変更した。
+
+Trigger line (final): "When a semantic difference is found but its test impact is unclear, inspect the nearest candidate test assertion or test-side call entry before classifying the difference."
+
+この Trigger line は、差分プレビューで意図された trigger line と一致しており、relevance 未確定時に観測側の分岐を先に発火させる一般化された指示として機能する。
+
+## 期待効果
+
+差分の存在だけで relevance を早合点せず、どの test が実際にその差分を観測するかを先に確認するようになるため、観測されない差分の過大評価と、観測される差分の見落としの両方を減らせると期待する。変更は compare 内の局所的な読取順の置換に留めており、研究コアや既存の CLAIM D ベースの反証可能性は維持される。

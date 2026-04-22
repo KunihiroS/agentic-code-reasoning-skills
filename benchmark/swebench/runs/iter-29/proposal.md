@@ -1,0 +1,64 @@
+過去提案との差異: これは「構造差から早期 NOT_EQUIV へ進む条件」を特定の観測境界へ狭める案ではなく、relevance が未確定なときの読み始める場所を変える案である。
+Target: 両方
+Mechanism (抽象): compare で relevance 未確定の差分を見つけたら、差分側を掘り下げる前に、その差分を最初に観測しうる test assertion / call-site を先に読むよう探索優先順位を入れ替える。
+Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を境界依存に再定義しない。
+
+カテゴリ B 内での具体的メカニズム選択理由:
+- 今回は「何を結論するか」ではなく「未確定な差分 relevance をどう取りに行くか」を変えるので、探索の優先順位変更として B に属する。
+- compare の停滞は、差分を見つけた後に test 側の観測点を読む前に relevance を推定してしまう分岐で起きやすい。
+
+禁止方向の整理:
+- 構造差/早期 NOT_EQUIV の条件を特定の観測境界へ写像して狭める案は不可。
+- 未検証な最弱リンクや relevance 未解決を既定で保留/UNVERIFIED に倒す追加ガードは不可。
+- 差分を新しい抽象ラベルや必須の言い換え形式で強く昇格ゲートする案は不可。
+
+意思決定ポイント候補:
+1) Relevant tests の同定
+   現在のデフォルト: changed symbol 参照検索から pass-to-pass relevance を見積もりがち。
+   変更後の観測アウトカム: 追加探索先と relevance 判定が変わり、EQUIV/NOT_EQUIV/保留のいずれかが変わりうる。
+2) semantic difference 発見後の次読取先
+   現在のデフォルト: 差分側の実装をさらに追ってから test 影響を後で結びがち。
+   変更後の観測アウトカム: 追加探索が test assertion 側へ切り替わり、偽 EQUIV / 偽 NOT_EQUIV の両方を減らせる。
+3) UNVERIFIED source に遭遇したときの補助探索
+   現在のデフォルト: type signature / docs / test usage を補助証拠として探す。
+   変更後の観測アウトカム: CONFIDENCE や保留率は変わるが、compare の主要分岐変化としては弱い。
+
+選ぶ分岐: 2) semantic difference 発見後の次読取先
+選定理由:
+- 差分発見後にどこを次に読むかは、そのまま「結論へ進む / 追加探索する / relevance を保留する」の分岐を変える。
+- IF 条件は「差分はあるが test impact が未確定」、THEN 行動は「差分深掘り」から「最初の観測点の確認」へ実際に変わる。
+
+改善仮説:
+- compare では、差分そのものを先に精密化するより、差分を最初に観測しうる test assertion / call-site を先に固定した方が、relevance の誤推定が減り、EQUIV/NOT_EQUIV の双方で誤判定が減る。
+
+SKILL.md の該当箇所と変更方針:
+- 現行引用: "To identify them: search for tests referencing the changed function, class, or variable."
+- 現行引用: "If a semantic difference survives tracing, restate it as CLAIM D[N] against a specific test premise/assertion before classifying it."
+- 変更方針: test 候補の見つけ方を lexical-reference 起点だけに寄せず、relevance 未確定時は assertion/call-site を先に読む優先順位へ置換する。CLAIM D の再記述義務は維持しつつ、その前段の読取順だけを変える。
+
+Decision-point delta:
+Before: IF semantic difference is found but its test impact is still uncertain THEN continue tracing the differing implementation and classify relevance later because code-side divergence is treated as the highest-information next step.
+After:  IF semantic difference is found but its test impact is still uncertain THEN read the nearest candidate test assertion or test-side call entry that could observe that difference before further implementation tracing because observation-side evidence resolves relevance earlier than deeper code-side tracing.
+
+Payment: add MUST("When a semantic difference is found but its test impact is unclear, inspect the nearest candidate test assertion or test-side call entry before classifying the difference.") ↔ demote/remove MUST("To identify them: search for tests referencing the changed function, class, or variable.")
+
+変更差分プレビュー:
+Before:
+- To identify them: search for tests referencing the changed function, class,
+- or variable.
+- If a semantic difference survives tracing, restate it as CLAIM D[N] against a specific test premise/assertion before classifying it.
+After:
+- To identify them: start with tests that reference the changed symbol; if that does not settle relevance, read the nearest candidate test assertion or test-side call entry that could observe the difference.
+- Trigger line (planned): "When a semantic difference is found but its test impact is unclear, inspect the nearest candidate test assertion or test-side call entry before classifying the difference."
+- If a semantic difference survives tracing, restate it as CLAIM D[N] against a specific test premise/assertion before classifying it.
+
+Discriminative probe:
+- 抽象ケース: 2 つの変更が内部の分岐や例外処理で異なるが、ある test 群ではその差分が assertion 前に吸収され、別の test 群では return 値比較で露出する。
+- Before は changed symbol 参照や差分側の深掘りだけで relevance を早合点し、偽 EQUIV または偽 NOT_EQUIV を起こしうる。After は最初の観測点を先に読み、どの test が本当に差分を観測するかで探索を分けるため、その誤判定を避けやすい。
+
+failed-approaches.md との照合:
+- 原則 1 回避: 再収束を既定化して差分を吸収する案ではなく、relevance 未確定時の情報取得順を変えるだけ。
+- 原則 2/3 回避: 未確定性を保留トリガーへ昇格せず、新しい抽象ラベル必須化もしない。CLAIM D は既存のまま保持し、前段の読取優先順位だけを置換する。
+
+変更規模の宣言:
+- 想定 diff は 6-9 行。Compare セクションの relevant test 同定文と semantic difference 周辺の 1-2 文を置換するだけで、研究コアと既存モードは維持する。
