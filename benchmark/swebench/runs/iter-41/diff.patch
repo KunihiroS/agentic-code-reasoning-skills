@@ -1,0 +1,28 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..0f6585ed 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -86,7 +86,6 @@ For every function or method encountered on a relevant code path, record:
+ - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
+ 
+ ### Step 5: Refutation check (required)
+-This step is **mandatory**, not optional.
+ 
+ **Scope**: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim — especially:
+ - "No test exercises this difference" — before asserting this, describe what such a test would look like and show you searched for exactly that pattern.
+@@ -176,6 +175,7 @@ P3: The fail-to-pass tests check [specific behavior]
+ P4: The pass-to-pass tests check [specific behavior, if relevant]
+ 
+ ANALYSIS OF TEST BEHAVIOR:
++When a semantic difference is observed before a test-outcome difference is shown, immediately trace one relevant test through that differing branch before any verdict.
+ 
+ For each relevant test:
+   Test: [name]
+@@ -230,7 +230,6 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+ ---
