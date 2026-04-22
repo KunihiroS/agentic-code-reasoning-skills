@@ -1,0 +1,29 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/22/26 16:01:05] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 read      benchmark/swebench/runs/iter-23/proposal.md  0.9s
+  ┊ 📖 read      benchmark/swebench/runs/iter-23/rationale.md  0.9s
+  ┊ 📖 read      benchmark/swebench/runs/iter-23/diff.patch  0.9s
+  ┊ 📖 read      failed-approaches.md  0.9s
+⚠️  API call failed (attempt 1/3): APIError
+   🔌 Provider: openai-codex  Model: gpt-5.4
+   🌐 Endpoint: https://chatgpt.com/backend-api/codex
+   📝 Error: An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID b6eba92f-a6d1-45ed-92a0-9a32d7c14e18 in your message.
+⏳ Retrying in 2.1945841635320535s (attempt 1/3)...
+⚠️  API call failed (attempt 2/3): APIError
+   🔌 Provider: openai-codex  Model: gpt-5.4
+   🌐 Endpoint: https://chatgpt.com/backend-api/codex
+   📝 Error: An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID c0fd1bef-24bc-4375-9e57-353ecde822d3 in your message.
+⏳ Retrying in 5.372173128678284s (attempt 2/3)...
+⚠️  API call failed (attempt 3/3): APIError
+   🔌 Provider: openai-codex  Model: gpt-5.4
+   🌐 Endpoint: https://chatgpt.com/backend-api/codex
+   📝 Error: An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID f5778a8c-143f-47d8-a222-400ad4865633 in your message.
+⚠️ Max retries (3) exhausted — trying fallback...
+❌ API failed after 3 retries — An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID f5778a8c-143f-47d8-a222-400ad4865633 in your message.
+   💀 Final error: An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID f5778a8c-143f-47d8-a222-400ad4865633 in your message.
+API call failed after 3 retries: An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID f5778a8c-143f-47d8-a222-400ad4865633 in your message.
+
+session_id: 20260422_160105_fcdfe0

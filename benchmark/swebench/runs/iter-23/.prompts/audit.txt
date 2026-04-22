@@ -1,0 +1,97 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-23/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..afdee964 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -147,7 +147,9 @@ D2: The relevant tests are:
+     (a) Fail-to-pass tests: tests that fail on the unpatched code and are
+         expected to pass after the fix — always relevant.
+     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
+-        only if the changed code lies in their call path.
++        if the changed code is on their traced execution path or determines the
++        inputs, fixtures, configuration, or lookup data that the traced path consumes.
++    When a change only affects test-exposed setup/config/data selection, do not exclude the pass-to-pass test as "off-path"; trace it as a relevance candidate.
+     To identify them: search for tests referencing the changed function, class,
+     or variable. If the test suite is not provided, state this as a constraint
+     in P[N] and restrict the scope of D1 accordingly.
+@@ -191,7 +193,7 @@ For pass-to-pass tests (if changes could affect them differently):
+   Claim C[N].2: With Change B, behavior is [description]
+   Comparison: SAME / DIFFERENT outcome
+ 
+-EDGE CASES RELEVANT TO EXISTING TESTS:
++EDGE CASES RELEVANT TO EXISTING TESTS (optional when the same dependency is already covered by per-test tracing):
+ (Only analyze edge cases that the ACTUAL tests exercise)
+   E[N]: [edge case]
+     - Change A behavior: [specific output/behavior]
+
+rationale:
+# Iteration 23 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 未記載
+- 失敗ケース: 非記載（固有識別子制約のため）
+- 失敗原因の分析: pass-to-pass relevance を direct call-path membership に寄せすぎると、編集が最終 callee 本体の外でテスト入力・fixture・config・lookup data を決める場合に relevant test から除外され、compare が偽 EQUIVALENT になりうる。
+
+## 改善仮説
+
+pass-to-pass relevance の判定単位を「直接 call path にあるか」から「テストに露出する入力依存を編集が決めるか」へ置き換えると、実行本体の外にある差分でも assertion outcome に届く候補を tracing 対象へ残せる。
+
+## 変更内容
+
+- compare の D2(b) を、pass-to-pass test が relevant になる条件として traced execution path に加えて inputs / fixtures / configuration / lookup data を決める編集も含む文言へ置換した。
+- pass-to-pass test を off-path として早期除外しないための Trigger line を D2(b) 直下に追加した。
+- 同じ依存差分が per-test tracing で既に扱われる場合は、edge-case 節を optional と明記して必須ゲート総量を増やさない形にした。
+
+Trigger line (final): "When a change only affects test-exposed setup/config/data selection, do not exclude the pass-to-pass test as \"off-path\"; trace it as a relevance candidate."
+
+This matches the proposed trigger line verbatim, so the intended branching point remains the same after the final edit.
+
+Observed runtime delta: a pass-to-pass test is no longer excluded solely because the edited line is outside the final callee body; if the edit determines consumed setup/config/data, the decision now shifts from early exclusion toward additional tracing before the final equivalence conclusion.
+
+## 期待効果
+
+pass-to-pass test の relevant set が広がることで、入力依存の差がある比較では追加探索または NOT EQUIVALENT に分岐しやすくなり、除外起因の見落としを減らせる。一方で、同じ依存を per-test tracing で既に扱える場合は edge-case 節を optional 化したため、結論前の判定手順の総量は増えにくい。
