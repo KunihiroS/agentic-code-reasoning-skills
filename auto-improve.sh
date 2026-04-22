@@ -195,7 +195,7 @@ entries = [json.loads(l) for l in open('$ARCHIVE_FILE')]
 recent = [e for e in entries[-$GOAL_WINDOW:] if e.get('valid_parent')]
 if len(recent) < $GOAL_PERFECT_COUNT:
     exit(1)
-good = sum(1 for e in recent if e['scores'].get('compare', 0) >= 70 and e['scores'].get('audit', 0) >= 90)
+good = sum(1 for e in recent if e['scores'].get('compare', 0) >= 75)
 exit(0 if good >= $GOAL_PERFECT_COUNT else 1)
 " 2>/dev/null
 }
@@ -246,7 +246,7 @@ run_meta_agent() {
   SCORE_SUMMARY=$(python3 -c "
 import json
 entries = [json.loads(l) for l in open('$ARCHIVE_FILE') if l.strip()]
-scored = [e for e in entries if e.get('valid_parent') and e['scores'].get('audit', 0) > 0]
+scored = [e for e in entries if e.get('valid_parent') and e['scores'].get('compare', 0) > 0]
 for e in scored[-10:]:
     g = e['genid']
     c = e['scores'].get('compare', 0)
@@ -333,11 +333,11 @@ prev_entries = [e for e in entries if e.get('template_version', 0) == current_v 
 if not prev_entries:
     print('wait')
     exit(0)
-prev_best_audit = max(e['scores'].get('audit', 0) for e in prev_entries)
+prev_best_compare = max(e['scores'].get('compare', 0) for e in prev_entries)
 # 現バージョンの直近 3 エントリの平均
-recent_audits = [e['scores'].get('audit', 0) for e in ver_entries[-3:]]
-avg_recent = sum(recent_audits) / len(recent_audits)
-if avg_recent < prev_best_audit - 5:  # 5pp 以上の退行
+recent_compares = [e['scores'].get('compare', 0) for e in ver_entries[-3:]]
+avg_recent = sum(recent_compares) / len(recent_compares)
+if avg_recent < prev_best_compare - 5:  # 5pp 以上の退行
     print('rollback')
 else:
     print('ok')
