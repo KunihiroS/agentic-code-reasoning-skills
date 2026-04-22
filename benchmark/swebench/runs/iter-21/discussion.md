@@ -1,0 +1,114 @@
+# iter-21 discussion
+
+## 総評
+提案の主眼は、compare 終盤でその時点の優勢 verdict に沿って整理・要約へ入る代わりに、いったん暫定 verdict を置き、それを反転させる最小 witness を次の探索対象にする、という探索順の置換です。結論テンプレートそのものを変えるのではなく、結論に入る直前の意思決定ポイントを変える案になっており、監査適合だけでなく compare 実行時の分岐にも実効差があります。
+
+## 1. 既存研究との整合性
+検索なし（理由: 一般原則の範囲で自己完結）。
+
+補足: この提案は README.md / docs/design.md にある semi-formal reasoning のコア（前提→探索→トレース→反証→結論）を維持したまま、反証可能性を「最終節」だけでなく compare の終盤の探索順に前倒しする調整として読めるため、外部概念の追加裏付けが必須なタイプではありません。
+
+## 2. Exploration Framework のカテゴリ選定
+判定: 適切
+
+理由:
+- 選定カテゴリ A「推論の順序・構造を変える」と整合的です。
+- 実際に変えているのは、surviving semantic difference の後で「列挙してから結論」へ進む順序を、「暫定 verdict → 反対 verdict を成立させる witness を先に探索」に入れ替える点です。
+- これは情報取得手段そのものの変更ではなく、探索の局面遷移と停止条件の変更なので、B より A が自然です。
+- また、結論の直接指示ではなく decision point の再配置なので、E（表現改善）単独よりも A として扱うのが妥当です。
+
+## 3. EQUIVALENT / NOT_EQUIVALENT の両方向への作用
+判定: 両方向に作用する
+
+### EQUIVALENT 側への作用
+- 変更前は、見えている failing test の一致や traced difference の「今のところ無害そう」という整理から、generic な no-counterexample へ早く収束しやすい。
+- 変更後は、tentative EQUIVALENT を置いても「それを壊す最小 witness」を先に探すため、未探索の pass-to-pass path や別 assertion への追加探索要求が増える。
+- 実効差として、偽 EQUIVALENT を減らす方向に働く。
+
+### NOT_EQUIVALENT 側への作用
+- 変更前は、一度 semantic difference が見えたあと、その差分を D[N] 化して結論側へ進み、下流で吸収される可能性の確認が薄くなりうる。
+- 変更後は、tentative NOT_EQUIVALENT に対して「同じ assertion outcome に戻す最小 witness」を先に探すため、downstream handling や guard による差分吸収の確認が促進される。
+- 実効差として、偽 NOT_EQUIVALENT を減らす方向に働く。
+
+### 片方向最適化の懸念
+- 現時点では明白な片方向最適化ではありません。
+- 理由は、flip-witness という規則が「今の優勢 verdict の逆を成立させる証拠」を探す対称形だからです。
+- ただし運用上は、EQUIVALENT 側では「未探索経路の掘り起こし」、NOT_EQUIVALENT 側では「差分吸収の再確認」として現れやすく、見た目の使われ方が非対称になる可能性はあります。これは原理的な片寄りというより、対象ケースの違いによるものです。
+
+## 4. failed-approaches.md との照合
+判定: 本質的再演ではない
+
+- 原則1「再収束を比較規則として前景化しすぎない」:
+  - 今回は再収束を既定化していません。むしろ「現在の verdict を壊す証拠を先に探す」ので、下流一致の物語を先に組む方向とは逆です。
+- 原則2「未確定性を常に保留側へ倒す既定動作にしすぎない」:
+  - 保留そのものを新しい既定 fallback として増やしてはいません。追加探索の要求は増えうるが、未確定なら常に non-committal にする規則ではありません。
+- 原則3「差分の昇格条件を新しい抽象ラベルや必須の言い換え形式で強くゲートしすぎない」:
+  - ここは軽微な注意点があります。提案は新ラベル追加というより探索順の変更ですが、「smallest concrete witness」を埋めることが、実装次第では新しい再記述ゲートとして硬化する余地はあります。
+  - ただし proposal 上は既存の counterexample / no-counterexample 節を保持し、その前の探索順のみを変える構成で、CLAIM D[N] の強制をさらに増やす案ではないため、failed-approaches の本質的再演とはまでは言えません。
+
+## 5. 汎化性チェック
+判定: 重大な違反なし
+
+- proposal 内に具体的な数値 ID、ベンチマーク対象リポジトリ名、テスト名、実コード断片の引用はありません。
+- 「helper」「assertion」「pass-to-pass path」等は一般的な説明語で、特定ドメインへのロックインではありません。
+- 抽象ケースも特定言語や特定テストフレームワークを前提にしていません。
+- 暗黙の前提として test/assertion vocabulary には寄っていますが、compare モード自体が test outcome equivalence を定義に含むため、これは許容範囲です。
+
+## 6. 全体の推論品質への期待効果
+- premature closure を減らせる点が最大の利点です。
+- 既存テンプレートの「counterexample / no counterexample」を残したまま、そこへ入る前に「反対側を成立させる最小証拠」を一度探させることで、反証の粒度が上がります。
+- 特に compare の難所である「差分は見えたが test outcome 差に届くか不明」「見えている test では一致だが他経路が怪しい」という局面に効きやすいです。
+- 変更規模も小さく、研究コアを崩さずに decision quality を改善するタイプの提案です。
+
+## 停滞診断
+- 懸念点を 1 点だけ挙げると、「flip-witness」という説明は監査ルーブリック上は魅力的でも、compare 実行時に単なる自己説明で終わると、結局は従来どおり既存証拠の要約に戻る危険があります。したがって、今回の提案価値は trigger line と Before/After の分岐が実際に exploration order を変えるかに依存します。
+
+### failed-approaches 該当性チェック
+- 探索経路の半固定: NO
+- 必須ゲート増: NO
+- 証拠種類の事前固定: NO
+
+理由:
+- 「search for that witness next」はローカルな次手指定であり、全探索経路の半固定ではない。
+- Payment で既存 MUST の demote/remove を明示しており、必須ゲート総量不変の意図が示されている。
+- witness の型も test / assertion / path と幅があり、単一の証拠形式に固定していない。
+
+## compare 影響の実効性チェック
+- 0) 実行時アウトカム差:
+  - 結論直行前に追加探索が 1 回以上発生しやすくなる。
+  - EQUIVALENT / NOT_EQUIVALENT の即断条件が厳しくなり、UNRESOLVED や追加探索要求の出方、最終 CONFIDENCE が観測可能に変わる。
+- 1) Decision-point delta:
+  - IF/THEN 形式で 2 行（Before/After）になっているか: YES
+  - Trigger line（発火する文言の自己引用）が差分プレビューに含まれているか: YES
+  - 評価: 条件も行動も変わっており、理由の言い換えだけではない。Before は「優勢 verdict なら matching conclusion block へ進む」、After は「flip-witness 未探索ならそちらを先に探す」で、分岐差が明確。
+- 2) Failure-mode target:
+  - 対象は両方。
+  - 偽 EQUIV: 局所一致から generic no-counterexample に早収束する誤りを減らす。
+  - 偽 NOT_EQUIV: 局所差分から downstream 吸収確認前に結論化する誤りを減らす。
+- 2.5) STRUCTURAL TRIAGE / 早期結論に触れる提案か？: NO
+  - したがって impact witness 要件はこの提案の主対象ではない。
+- 3) Non-goal:
+  - structural gap の意味づけ変更はしない。
+  - NOT_EQUIV の観測境界を「ファイル差がある」だけへ退化させない。
+  - 新しい必須ラベル体系を増やさず、結論テンプレート本体より探索順の置換に留める。
+
+## 追加チェック
+### Discriminative probe
+- 抽象ケース: 2 つの変更が failing test では同じ結果に見える一方、片方だけが既存の正規化処理位置を変えており、別の既存 pass-to-pass path でのみ assertion outcome が変わる。
+- 変更前は、見えている failing test の一致から EQUIVALENT に寄りやすい。
+- 変更後は、「tentative EQUIVALENT を壊す最小 witness = その pass-to-pass assertion」を先に探すため、追加の既存テスト経路を掘って誤判定を避けられる。これは新ゲート追加ではなく、結論前の探索順の置換として説明できている。
+
+### 停滞対策の検証
+- Payment（必須ゲート総量不変）の A/B 対応付けは proposal 内で明示されている: YES
+- add MUST(...) ↔ demote/remove MUST("Complete every section...") の形で支払いが見えているため、この点は通せる。
+
+## 最小修正指示
+1. 「smallest concrete witness」の定義を 1 行だけ補足し、test / assertion / path のうち“最小”とは「最短で verdict を反転できる具体観測境界」を指すと明記してください。追加ではなく Trigger line の直下に統合する形がよいです。
+2. payment 対象の既存 MUST を完全削除するのか optional 化するのかを明確にしてください。compare への実効差は十分ありますが、実装時のズレ防止のためここだけは曖昧にしない方がよいです。
+
+## 結論
+- 監査ルーブリック上、安全側に寄りすぎた説明強化だけではなく、compare の decision point を実際に変える提案になっています。
+- failed-approaches.md の本質的再演でもなく、汎化性違反も見当たりません。
+- 小さな懸念は「smallest concrete witness」が曖昧語のまま実装されると空文化しうる点ですが、これは却下理由というより最小修正で十分です。
+
+承認: YES
