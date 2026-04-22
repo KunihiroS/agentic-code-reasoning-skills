@@ -1,0 +1,37 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..7f3e202b 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -89,7 +89,6 @@ For every function or method encountered on a relevant code path, record:
+ This step is **mandatory**, not optional.
+ 
+ **Scope**: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim — especially:
+-- "No test exercises this difference" — before asserting this, describe what such a test would look like and show you searched for exactly that pattern.
+ - "This behavior is X" for a non-trivial control flow — before asserting this, ask what evidence would exist if the behavior were not X.
+ - "These test outcomes are identical/different" — before asserting this, state what evidence would refute it.
+ 
+@@ -205,11 +204,12 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+   Therefore changes produce DIFFERENT test outcomes.
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
++  If an intermediate step differs but you claim the same test outcome, localize the first diverging step and explain the downstream absorber before writing Comparison: SAME.
+   If NOT EQUIVALENT were true, a counterexample would look like:
+     [describe concretely: what test, what input, what diverging behavior]
+-  I searched for exactly that pattern:
+-    Searched for: [specific pattern — test name, code path, or input type]
+-    Found: [result — cite file:line, or NONE FOUND with search details]
++  Localize/explain note for the traced test:
++    First divergence: [step where behavior first differs — cite file:line]
++    Downstream absorber: [handler/guard/default/assertion path that reconciles it — cite file:line, or UNVERIFIED]
+   Conclusion: no counterexample exists because [brief reason]
+ 
+ FORMAL CONCLUSION:
+@@ -230,7 +230,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- If an intermediate step differs but you claim the same test outcome, localize the first diverging step and explain the downstream absorber before writing Comparison: SAME.
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+ ---
