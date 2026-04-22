@@ -438,7 +438,7 @@ for current_iter in $(seq "$START_ITER" $((START_ITER + MAX_ITER - 1))); do
   meta_scored_since_last=$(python3 -c "
 import json
 entries = [json.loads(l) for l in open('$ARCHIVE_FILE') if l.strip()]
-new_entries = [e for e in entries if 'template_version' in e and e.get('valid_parent') and e['scores'].get('audit',0) > 0]
+new_entries = [e for e in entries if 'template_version' in e and e.get('valid_parent') and e['scores'].get('compare',0) > 0]
 if not new_entries:
     print(0)
 else:

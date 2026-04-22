@@ -17,7 +17,7 @@ scored = [
     e for e in entries
     if "template_version" in e
     and e.get("valid_parent")
-    and e["scores"].get("audit", 0) > 0
+    and e["scores"].get("compare", 0) > 0
 ]
 
 if len(scored) < window:
@@ -27,17 +27,12 @@ if len(scored) < window:
 recent = scored[-window:]
 
 # Best scores across all new-format scored entries
-best_audit_ever = max(e["scores"].get("audit", 0) for e in scored)
 best_compare_ever = max(e["scores"].get("compare", 0) for e in scored)
-
-# Best scores in recent window
-best_audit_recent = max(e["scores"].get("audit", 0) for e in recent)
 best_compare_recent = max(e["scores"].get("compare", 0) for e in recent)
 
-# Stagnation: neither metric improved in the recent window
+# Stagnation: compare has not improved in the recent window
 stagnant = (
-    best_audit_recent < best_audit_ever
-    and best_compare_recent < best_compare_ever
+    best_compare_recent < best_compare_ever
     and len(scored) > window
 )
 
