@@ -1,0 +1,109 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-20/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..a83f1869 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -111,15 +111,6 @@ If the opposite answer were true, what evidence would exist?
+ - Conclusion: REFUTED / SUPPORTED
+ ```
+ 
+-### Step 5.5: Pre-conclusion self-check (required)
+-
+-Before writing the formal conclusion, check each item below. If any answer is **NO**, fix it before Step 6.
+-
+-- [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
+-- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
+-- [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+-- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+-
+ ### Step 6: Formal conclusion
+ Write a conclusion that:
+ - References specific numbered premises and claims (e.g., "By P1 and C2…")
+@@ -213,6 +204,7 @@ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+   Conclusion: no counterexample exists because [brief reason]
+ 
+ FORMAL CONCLUSION:
++If unverified items remain, state them in the conclusion and lower CONFIDENCE unless they can change the compared test outcomes.
+ By Definition D1:
+   - Test outcomes with Change A: [PASS/FAIL for each test]
+   - Test outcomes with Change B: [PASS/FAIL for each test]
+@@ -224,6 +216,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ ```
+ 
+ ### Compare checklist
++Treat the Compare checklist as a recap of obligations already satisfied in the certificate, not an extra pre-answer gate.
+ - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+ - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+ - Identify changed files for both sides
+
+rationale:
+# Iteration 20 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: N/A（この作業ではスコア記録を参照していない）
+- 失敗ケース: N/A（この作業ではケース一覧を参照していない）
+- 失敗原因の分析: compare では、証拠収集後に独立した必須自己監査ゲートがもう一度結論を止めやすく、未検証点を局所的に明示して結論へ進む代わりに、追加探索や保留へ寄りやすい構成になっていた。
+
+## 改善仮説
+
+独立した pre-conclusion self-check を削除し、その役割を FORMAL CONCLUSION 内の不確実性明示へ統合すれば、番号付き前提・手続き間トレース・必須反証を維持したまま、重複ゲートによる保留過多を減らせる。
+
+## 変更内容
+
+- compare の直前にあった独立の Step 5.5 を削除した。
+- FORMAL CONCLUSION に、未検証項目が残る場合は結論内で明示し、比較対象のテスト結果を変えうる場合にだけ CONFIDENCE を下げる trigger line を追加した。
+- Compare checklist には、ANSWER 前の追加ゲートではなく、certificate 内で既に満たした義務の recap であることを明記した。
+
+Trigger line (final): "If unverified items remain, state them in the conclusion and lower CONFIDENCE unless they can change the compared test outcomes."
+
+この Trigger line は proposal の差分プレビューにあった planned trigger line と一致しており、独立ゲートではなく FORMAL CONCLUSION で分岐を発火させる一般化として同等である。
+
+## 期待効果
+
+- per-test trace と refutation が揃っている場面では、未検証点が結論を変えないことを明示したうえで ANSWER と CONFIDENCE に進みやすくなる。
+- 追加の必須ゲートを増やさず、むしろ独立ゲートを統合したため、結論前の判定手順の総量を増やさずに compare の停滞を減らせる。
+- 変更は compare の終端付近に限定されており、研究コアを保ったまま回帰リスクを抑えられる。

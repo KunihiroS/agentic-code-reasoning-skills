@@ -1,0 +1,44 @@
+過去提案との差異: 直近却下案のように STRUCTURAL TRIAGE の NOT_EQUIV 条件を特定観測境界へ写像して狭めるのではなく、compare の末尾に重複している自己監査ゲートを統合して保留過多を減らす提案である。
+Target: 両方
+Mechanism (抽象): 証拠収集後にもう一度発火する重複ゲートを、結論を止めるチェックリストから「既存 certificate の要約」に圧縮し、未検証の明示は維持したまま余計な修復ループを減らす。
+Non-goal: STRUCTURAL TRIAGE の結論条件、relevant tests 規則、早期 NOT_EQUIV の根拠境界は変更しない。
+
+カテゴリ G 内での具体的メカニズム選択理由
+- 候補1: Step 5.5 の pre-conclusion self-check。現在のデフォルトは、証拠が揃っていても NO 項目を潰す追加修復へ寄りがち。変更後は「保留/追加探索」ではなく「結論+明示的不確実性/CONFIDENCE」に落ちやすくなる。
+- 候補2: Compare checklist の重複 bullets。現在のデフォルトは、template 完了後も checklist を別ゲートとして再消化しがち。変更後は追加探索要求の減少が観測可能。
+- 候補3: Guardrails 8-10 と Core Method の重複。現在のデフォルトは、UNVERIFIED 明示や refutation を複数箇所で再確認し、監査向け再記述に流れやすい。変更後は結論保留の減少が観測可能。
+- 選定: 候補1。理由は 2 点だけ。1) compare の実行時アウトカムを直接止める唯一の明示ゲートだから。2) 削除ではなく Compare template へ統合でき、研究コアを残したまま保留過多だけを下げられるから。
+
+改善仮説
+- 「template を完了した後に別個の必須自己監査ゲートを置く構成」は、証拠不足の検出よりも再点検そのものを学習させ、EQUIV/NOT_EQUIV のどちらでも過度な保留や不必要な追加探索を増やす。これを certificate 内の終端注意書きへ統合すると、判定品質を落とさず認知負荷だけ下げられる。
+
+該当箇所と変更
+- 現行引用1: "### Step 5.5: Pre-conclusion self-check (required)" / "If any answer is NO, fix it before Step 6."
+- 現行引用2: Compare template 末尾の "FORMAL CONCLUSION" と、末尾の "### Compare checklist"
+- 変更方針: Step 5.5 の独立セクションを削除し、その要点を Compare template の FORMAL CONCLUSION 直前に 2-3 行の非ゲート注記として統合する。Compare checklist は「追加ゲートではなく recap」と明示して重複解釈を防ぐ。
+- Payment: add MUST("Treat the Compare checklist as a recap of obligations already satisfied in the certificate, not as an extra gate before ANSWER.") ↔ remove MUST("Before writing the formal conclusion, check each item below. If any answer is NO, fix it before Step 6.")
+
+Decision-point delta
+Before: IF template を埋めても self-check のどれかが NO/曖昧 THEN 結論を止めて追加探索 or 保留へ寄る because 独立した必須ゲート
+After:  IF per-test trace と refutation が揃い、未検証点が結論を変えないと certificate 内で明示できる THEN ANSWER と CONFIDENCE へ進む because template 内完結の証拠要約
+
+変更差分プレビュー
+Before:
+- ### Step 5.5: Pre-conclusion self-check (required)
+- Before writing the formal conclusion, check each item below. If any answer is NO, fix it before Step 6.
+- [4-item checklist]
+After:
+- In compare, integrate the final evidence check into FORMAL CONCLUSION rather than a separate gate.
+- Trigger line (planned): "If unverified items remain, state them in the conclusion and lower CONFIDENCE unless they can change the compared test outcomes."
+- Treat the Compare checklist as a recap of obligations already discharged by the certificate, not an extra pre-answer gate.
+
+Discriminative probe
+- 抽象ケース: 両変更とも relevant tests の traced path では同じ PASS/FAIL に到達するが、trace table に source unavailable の補助関数が 1 つ残る。
+- Before は Step 5.5 が追加修復を促し、過度な保留/低すぎる確信に倒れやすい。After はその未検証点を結論内で明示しつつ、relevant outcomes が変わらないなら EQUIV あるいは NOT_EQUIV を出せる。
+
+failed-approaches.md との照合
+- 原則2に反しない: 未確定性を常に保留側へ倒す既定動作をむしろ弱め、曖昧さ対応を局所注記へ戻す。
+- 原則3に反しない: 新しい抽象ラベルや再記述形式を増やさず、既存 certificate の重複ゲートを圧縮するだけ。
+
+変更規模の宣言
+- 予定 diff は 10-13 行程度。独立セクション 1 つ削除 + Compare 末尾へ 2-3 行統合で、研究コア（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）は維持する。
