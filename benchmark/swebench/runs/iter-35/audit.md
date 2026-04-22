@@ -1,0 +1,21 @@
+# Iteration 35 — Overfitting 監査
+
+## 判定: PASS
+## 合計スコア: 16/18
+
+| # | 項目 | スコア | 根拠 |
+|---|------|--------|------|
+| R1 | 汎化性 | 3 | 変更内容は compare における per-test tracing の開始点を「具体的な assertion/check」に寄せる手順上の改善であり、特定言語・特定フレームワーク・特定ベンチマーク事例に依存していない。diff/rationale に含まれるのは SKILL.md 自身の文言引用と一般概念名のみで、ベンチマーク対象リポジトリの固有識別子は見当たらない。 |
+| R2 | 研究コアの踏襲 | 3 | README.md・docs/design.md・原論文はいずれも、明示的 premises、per-item tracing、interprocedural reasoning、formal conclusion、certificate 的制約をコアとしている。本変更は compare の tracing 手順を具体化するだけで、番号付き前提・手続き間トレース・必須反証・形式的結論を削っていない。むしろ test assertion を起点に changed branch へ結び付けることで、証拠に基づく tracing を強めている。 |
+| R3 | 推論プロセスの改善 | 3 | 変更は結論を指示するものではなく、「どこから trace を始めると判定に効く証拠へ最短で到達できるか」という推論手順を改善している。各 test について assertion/check → nearest changed branch → 必要に応じて outward という探索順序が明示され、判定に無関係な上流差分の過大評価を減らす設計になっている。 |
+| R4 | 反証可能性の維持 | 2 | refutation / counterexample の必須構造自体は維持されており、弱体化は見られない。一方で、追加された文言の主眼は tracing 開始点の最適化であり、反証ステップそのものを新たに強化したわけではないため、評価は維持寄りの 2 点が妥当。 |
+| R5 | 複雑性の抑制 | 3 | 追加より置換が中心で、既存テンプレートの枠組みを保ったまま tracing 指示だけを具体化している。厳密な section 順序強制を緩めつつ、compare 内の必要動作を短い trigger line に集約しており、不当なチェック項目増加や深い条件分岐はない。 |
+| R6 | 回帰リスク | 2 | 影響範囲は compare モードの per-test tracing 開始点に限定されており、大規模な構造変更ではないため高リスクではない。ただし Core Method の順序制約をやや緩めているため、運用次第では section completion の解釈が広がる可能性があり、回帰リスクは低いがゼロではない。 |
+
+## 総合コメント
+
+この変更は、研究のコアである certificate-based reasoning を保ったまま、compare における「証拠へどう到達するか」の経路を改善する小さく妥当な調整である。原論文の patch equivalence は per-test tracing を要求し、fault localization 側では test semantics の explicit assertions からコード経路へ入る構造も見られるため、assertion/check 起点の tracing は研究の方向性と整合的である。
+
+また、failed-approaches.md にある失敗原則のうち、「再収束を既定化しすぎる」「未確定性を保留側へ倒す guardrail を増やす」「新しい抽象ラベルで差分昇格を強くゲートする」といった方向には該当しない。今回は比較規則そのものを保守化するのではなく、relevant test の観測境界に anchor することで tracing の焦点を改善している点が健全である。
+
+懸念点は、Core Method の文言変更により「section を順に書く」制約が緩み、実装者が compare 以外でも順序を緩く解釈する余地がわずかに増えたことである。ただし diff 全体を見る限り、FORMAL CONCLUSION 前に required section 完了を引き続き要求しており、致命的な逸脱ではない。総合的には、汎用的で、研究コアを守り、推論プロセスを改善する変更として PASS が妥当である。

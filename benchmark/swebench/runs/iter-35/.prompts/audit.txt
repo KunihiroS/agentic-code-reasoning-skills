@@ -1,0 +1,113 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-35/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..5c898fd7 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -22,7 +22,7 @@ Activate this skill when asked to compare two patches, implementations, or chang
+ ---
+ 
+ ## Core Method
+-Apply this process in every mode. **Complete each section in order. Do not write a later section before completing earlier ones.**
++Apply this process in every mode. **Complete every required section before FORMAL CONCLUSION; within compare, per-test tracing may begin from the test assertion/check when that is the shortest path to discriminative evidence.**
+ 
+ When a certificate template exists for your selected mode (see the mode sections below), **use that template as your primary guide** — it is the concrete implementation of Steps 1–6 for that mode.
+ 
+@@ -178,11 +178,12 @@ P4: The pass-to-pass tests check [specific behavior, if relevant]
+ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
++  Start from the concrete assertion/check for this test, trace backward to the nearest changed branch, then expand only as needed to determine A/B outcome.
+   Test: [name]
+   Claim C[N].1: With Change A, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
++                because [trace from the concrete assertion/check to the nearest changed branch, then outward only as needed — cite file:line]
+   Claim C[N].2: With Change B, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
++                because [trace from the concrete assertion/check to the nearest changed branch, then outward only as needed — cite file:line]
+   Comparison: SAME / DIFFERENT outcome
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+@@ -229,7 +230,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+-- Trace each test through both changes separately before comparing
++- Anchor each test on its concrete assertion/check before expanding outward through A and B
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+
+rationale:
+# Iteration 35 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 不明（この作業では参照対象外）
+- 失敗ケース: 不明（この作業では参照対象外）
+- 失敗原因の分析: compare における詳細 tracing の開始点が変更側に寄りやすく、relevant test の verdict を実際に決める assertion/check へ到達する前に、上流の差分を過大評価して判定がぶれる余地がある。
+
+## 改善仮説
+
+relevant test ごとの詳細 tracing を「変更側から前向きに広く追う」よりも、「具体的な assertion/check から最寄りの changed branch へ逆向きに入る」形へ寄せると、判定に効く証拠へ短く到達しやすくなる。これにより、判定に無関係な上流差分の影響を受けにくくしつつ、EQUIVALENT / NOT EQUIVALENT のどちらにも必要な観測境界ベースの比較をしやすくする。
+
+## 変更内容
+
+- Core Method の順序制約を、「各 section を順番どおりに書く」から「FORMAL CONCLUSION 前に required section を完了する。ただし compare の per-test tracing では、判定に効く証拠への最短経路として assertion/check 起点を許す」へ置換した。
+- Compare の per-test テンプレートに、assertion/check から最寄りの changed branch へ逆向きに辿ってから必要分だけ外側へ広げる Trigger line を追加した。
+- 各 Claim の説明文を、changed code 起点ではなく assertion/check 起点の tracing を要求する文言へ置換した。
+- Compare checklist の該当項目を、各 test を concrete assertion/check に anchor してから A/B へ広げる指示へ置換した。
+- 追加より置換を優先し、必須ゲート総量が増えないよう、既存の厳密な section 順序強制を緩める形で相殺した。
+
+Trigger line (final): "Start from the concrete assertion/check for this test, trace backward to the nearest changed branch, then expand only as needed to determine A/B outcome."
+
+この Trigger line は proposal の差分プレビューにある planned trigger line と一致しており、意図した一般化ではなく同一の分岐開始文言として反映されている。
+
+## 期待効果
+
+- relevant test の verdict を担う枝が未確定な場面で、どこから tracing を始めるかという意思決定点が変わり、判定に効かない差分の先読みを減らせる。
+- NOT EQUIVALENT 側では、実際に diverging assertion を生む枝へ早く到達しやすくなる。
+- EQUIVALENT 側では、上流の表現差や補助的差分を verdict 差と誤認するリスクを下げられる。
+- 変更は compare の per-test tracing 開始点に限定され、STRUCTURAL TRIAGE や必須反証など研究コアは維持されるため、回帰リスクを抑えながら比較の実効差を出しやすい。
