@@ -1,0 +1,59 @@
+過去提案との差異: 直近却下案のように STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定境界へ狭めるのではなく、結論直前に verdict-critical な弱い環を明示して CONFIDENCE/UNVERIFIED 表示を変える提案である。
+Target: 両方
+Mechanism (抽象): 重複した自己チェック 1 項目を、結論を支える最弱リンクの特定と confidence 上限化に置換し、過信だけを減らす。
+Non-goal: STRUCTURAL TRIAGE の結論条件や early NOT_EQUIV の観測境界は変更しない。
+
+禁止方向の整理:
+- 再収束を比較規則として前景化しない。
+- relevance/未検証性を広い既定動作として保留側へ倒す guardrail を足さない。
+- 差分の昇格を新しい抽象ラベル・claim 形式・観測境界への写像で強くゲートしない。
+- とくに「構造差/早期 NOT_EQUIV を特定の観測境界だけへ狭める」再演はしない。
+
+カテゴリ D 内での候補分岐:
+1) Pre-conclusion self-check の UNVERIFIED 扱い
+- 現在のデフォルト: 「assumption that does not alter the conclusion」と書ければ verdict をそのまま先に進めがち。
+- 変更後の観測アウトカム: UNVERIFIED 明示と CONFIDENCE 低下、必要なら追加探索。
+2) Step 6 の CONFIDENCE 付与
+- 現在のデフォルト: confidence が独立ラベル化しやすく、最弱根拠との対応が弱い。
+- 変更後の観測アウトカム: HIGH/MEDIUM/LOW が weakest-link に拘束され、偽 EQUIV/偽 NOT_EQ の過信が減る。
+3) NOT_EQUIVALENT 結論時の counterexample path の弱い環チェック
+- 現在のデフォルト: assertion line まで届く反例が 1 本見えると、途中の未検証依存を見落として NOT_EQ に進みがち。
+- 変更後の観測アウトカム: NOT_EQ の保留ではなく confidence 抑制か追加探索が起きる。
+
+選定: 2) Step 6 の CONFIDENCE 付与
+- compare の最終アウトカムは ANSWER だけでなく CONFIDENCE/UNVERIFIED 明示でも変わるため、誤判定のまま過信する失敗を直接減らせる。
+- IF 条件を「最弱リンクが verdict-critical か」に変え、THEN 行動を「confidence cap と弱い環の明示」に変えるので、理由の言い換えで終わらない。
+
+改善仮説:
+結論直前に「verdict を支える最弱リンク」を 1 つ明示し、その検証状態で confidence を上限化すると、探索経路や structural triage を固定せずに overconfident な偽 EQUIV / 偽 NOT_EQUIV を同時に減らせる。
+
+該当箇所と変更方針:
+- SKILL.md Step 5.5: "The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection"
+- SKILL.md Step 6: "Assigns a confidence level: HIGH / MEDIUM / LOW"
+重複している self-check 1 項目を外し、その支払いで「weakest verdict-critical link を明示し、confidence をその検証状態に従属させる」文言へ置換する。
+
+Payment: add MUST("Name the weakest verdict-critical link and cap confidence by its verification status.") ↔ demote/remove MUST("The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.")
+
+Decision-point delta:
+Before: IF no concrete counterexample has been found and the checklist is otherwise complete THEN emit EQUIV/NOT_EQUIV with a free-form confidence label because confidence is not tied to the weakest verdict-critical support.
+After:  IF the verdict still depends on an UNVERIFIED or single-assumption weakest link THEN emit the same provisional verdict only with explicit UNVERIFIED dependence and capped confidence because the conclusion must be bounded by the weakest verified support.
+
+変更差分プレビュー:
+Before:
+- [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+- Assigns a confidence level: HIGH / MEDIUM / LOW
+After:
+- [ ] I have named the weakest verdict-critical link; if it is UNVERIFIED or assumption-dependent, I will say so in the conclusion.
+- Trigger line (planned): "Confidence may not exceed the verification status of the weakest verdict-critical link."
+- Assigns a confidence level bounded by the weakest verdict-critical link: HIGH / MEDIUM / LOW
+
+Discriminative probe:
+抽象ケース: 2 変更は同じテスト結果に見えるが、等価性の判断は一つの外部 helper の未検証挙動に乗っている。Before では「反例未発見」だけで HIGH-confidence EQUIV に進み、偽 EQUIV を過信しやすい。
+After ではその helper が weakest link として結論に露出し、EQUIV のままでも LOW/MEDIUM か UNVERIFIED 依存を明示するため、追加探索の余地が残り、逆向きに未検証反例で NOT_EQ を過信する場合も同様に抑えられる。
+
+failed-approaches.md との照合:
+- 原則2に反しない: 未検証なら常に保留へ倒す既定動作は足さず、confidence 校正に限定する。
+- 原則3に反しない: 差分昇格を新しい観測境界や抽象ラベルでゲートせず、結論時の自己監査対象を weakest-link に置き換えるだけである。
+
+変更規模の宣言:
+Step 5.5 と Step 6 の近接 2 箇所を合わせて 8-10 行程度の置換で収める。
