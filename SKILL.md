@@ -137,7 +137,7 @@ Goal: determine whether two changes produce the same relevant behavior.
 
 ### Certificate template
 
-Complete every applicable section; if STRUCTURAL TRIAGE already establishes the outcome, skip only the sections it makes unnecessary.
+Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
 
 ```
 DEFINITIONS:
@@ -148,7 +148,6 @@ D2: The relevant tests are:
         expected to pass after the fix — always relevant.
     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
         only if the changed code lies in their call path.
-    If call-path relevance of a pass-to-pass test is unresolved, keep it provisionally relevant until tracing excludes it, or mark the scope UNVERIFIED instead of omitting it.
     To identify them: search for tests referencing the changed function, class,
     or variable. If the test suite is not provided, state this as a constraint
     in P[N] and restrict the scope of D1 accordingly.
