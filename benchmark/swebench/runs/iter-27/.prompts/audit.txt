@@ -1,0 +1,93 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-27/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..ae6c1995 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -111,14 +111,10 @@ If the opposite answer were true, what evidence would exist?
+ - Conclusion: REFUTED / SUPPORTED
+ ```
+ 
+-### Step 5.5: Pre-conclusion self-check (required)
++### Step 5.5: Pre-conclusion note
+ 
+-Before writing the formal conclusion, check each item below. If any answer is **NO**, fix it before Step 6.
+-
+-- [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
+-- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
+-- [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+-- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
++If Step 5 is complete, carry bounded non-decisive uncertainty into Step 6 as explicit UNVERIFIED scope instead of reopening exploration solely to satisfy a duplicate checklist.
++Do not use a second checklist as a separate gate; report remaining limits in Step 6.
+ 
+ ### Step 6: Formal conclusion
+ Write a conclusion that:
+
+rationale:
+# Iteration 27 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 未提供
+- 失敗ケース: 未提供
+- 失敗原因の分析: 結論直前の重複 mandatory gate が、反証完了後でも checklist 未充足を理由に追加探索や結論保留へ戻しやすく、bounded な未検証事項を明示付き結論へ持ち込む分岐を弱めていた。
+
+## 改善仮説
+
+結論前の第二 mandatory gate を削り、反証完了を唯一の結論前ゲートに戻せば、偽 EQUIV や偽 NOT_EQUIV を増やさずに、結論非依存で局所化された未確実性を UNVERIFIED として明示したまま結論へ進める。これにより、追加探索の既定化を減らし、compare の停止点をより直接に変えられる。
+
+## 変更内容
+
+Step 5.5 を required self-check から note に置換し、checklist 全体を削除した。最終文言では、Step 5 完了後は bounded non-decisive uncertainty を explicit UNVERIFIED scope として Step 6 に持ち込み、duplicate checklist を満たすためだけの再探索を禁止するようにした。
+
+Trigger line (final): "If Step 5 is complete, carry bounded non-decisive uncertainty into Step 6 as explicit UNVERIFIED scope instead of reopening exploration solely to satisfy a duplicate checklist."
+
+この Trigger line は提案の差分プレビューにあった Trigger line と一致しており、意図した一般化ではなく同一の分岐条件と行動を維持している。
+
+Observed runtime delta: 結論条件は「Step 5 完了かつ残余不確実性が結論非依存で局所化できるなら Step 6 へ進む」に変わり、保留条件は「checklist に NO があるだけで差し戻す」から外れ、追加探索条件は「重複 checklist 充足のため」ではなく「結論依存の未解決性が残る場合」に限定された。
+
+## 期待効果
+
+重複 gate による過度な保留や再探索が減り、反証済みの主要分岐を維持したまま、局所的で非決定的な未検証事項を明示して compare の結論まで到達しやすくなる。特に、結論を変えない未検証要素が一部残る状況で、追加探索より明示付き結論を選べるようになることを期待する。
