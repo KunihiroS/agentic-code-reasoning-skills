@@ -1,0 +1,32 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..83cdd788 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -152,22 +152,21 @@ D2: The relevant tests are:
+     or variable. If the test suite is not provided, state this as a constraint
+     in P[N] and restrict the scope of D1 accordingly.
+ 
+-STRUCTURAL TRIAGE (required before detailed tracing):
++STRUCTURAL TRIAGE: use S1/S2 to choose the first discriminative trace before broad analysis.
+ Before tracing individual functions, compare the two changes structurally:
+   S1: Files modified — list files touched by each change. Flag any file
+       modified in one change but absent from the other.
+   S2: Completeness — does each change cover all the modules that the
+       failing tests exercise? If Change B omits a file that Change A
+-      modifies and a test imports that file, the changes are NOT EQUIVALENT
+-      regardless of the detailed semantics.
++      modifies and a test imports that file, use that gap to select the
++      first relevant test trace rather than concluding immediately.
+   S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+       prioritize structural differences (S1, S2) and high-level semantic
+       comparison over exhaustive line-by-line tracing. Exhaustive tracing
+       is infeasible for large patches and produces unreliable conclusions.
+ 
+-If S1 or S2 reveals a clear structural gap (missing file, missing module
+-update, missing test data), you may proceed directly to FORMAL CONCLUSION
+-with NOT EQUIVALENT without completing the full ANALYSIS section.
++When S1/S2 finds a structural gap, trace the most relevant test through that gap before any NOT EQUIVALENT conclusion.
++A structural gap is decisive only if that trace reaches a diverging assertion or other explicit PASS/FAIL split.
+ 
+ PREMISES:
+ P1: Change A modifies [file(s)] by [specific description]

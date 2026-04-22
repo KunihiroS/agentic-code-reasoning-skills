@@ -1,0 +1,101 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-28/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..83cdd788 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -152,22 +152,21 @@ D2: The relevant tests are:
+     or variable. If the test suite is not provided, state this as a constraint
+     in P[N] and restrict the scope of D1 accordingly.
+ 
+-STRUCTURAL TRIAGE (required before detailed tracing):
++STRUCTURAL TRIAGE: use S1/S2 to choose the first discriminative trace before broad analysis.
+ Before tracing individual functions, compare the two changes structurally:
+   S1: Files modified — list files touched by each change. Flag any file
+       modified in one change but absent from the other.
+   S2: Completeness — does each change cover all the modules that the
+       failing tests exercise? If Change B omits a file that Change A
+-      modifies and a test imports that file, the changes are NOT EQUIVALENT
+-      regardless of the detailed semantics.
++      modifies and a test imports that file, use that gap to select the
++      first relevant test trace rather than concluding immediately.
+   S3: Scale assessment — if either patch exceeds ~200 lines of diff,
+       prioritize structural differences (S1, S2) and high-level semantic
+       comparison over exhaustive line-by-line tracing. Exhaustive tracing
+       is infeasible for large patches and produces unreliable conclusions.
+ 
+-If S1 or S2 reveals a clear structural gap (missing file, missing module
+-update, missing test data), you may proceed directly to FORMAL CONCLUSION
+-with NOT EQUIVALENT without completing the full ANALYSIS section.
++When S1/S2 finds a structural gap, trace the most relevant test through that gap before any NOT EQUIVALENT conclusion.
++A structural gap is decisive only if that trace reaches a diverging assertion or other explicit PASS/FAIL split.
+ 
+ PREMISES:
+ P1: Change A modifies [file(s)] by [specific description]
+
+rationale:
+# Iteration 28 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 未提供
+- 失敗ケース: 未提供
+- 失敗原因の分析: compare において structural gap を見つけた時点で即座に NOT EQUIVALENT へ短絡できる分岐があり、観測されるべき traced test divergence より先に結論へ進みうることが不安定要因だと分析した。
+
+## 改善仮説
+
+構造差は有力な手掛かりとして維持しつつ、その役割を verdict shortcut から first-trace selector に置き換える。これにより、構造差がある場合でも最初の relevant test trace を通して explicit な PASS/FAIL split を確認するまでは NOT EQUIVALENT を確定しない、という比較上の意思決定点を変えられる。
+
+## 変更内容
+
+- Compare セクションの structural triage 見出しを、S1/S2 を broad analysis 前の最初の discriminative trace 選択に使う文言へ置換した。
+- S2 の説明から、構造差のみで即時に NOT EQUIVALENT とする分岐を外し、最初の relevant test trace を選ぶための条件へ統合した。
+- 直接結論へ進める文を削除し、以下の trigger line と判定条件へ置換した。
+- Trigger line (final): "When S1/S2 finds a structural gap, trace the most relevant test through that gap before any NOT EQUIVALENT conclusion."
+- 上の Trigger line は proposal の差分プレビューにある planned trigger line と一致し、構造差を結論短絡ではなく分岐発火用の trace-first 指示として一般化なしに反映している。
+
+## 期待効果
+
+構造差だけで偽の NOT EQUIVALENT に倒れるリスクを減らしつつ、真に差がある場合は最初の traced test で diverging assertion を示せるため、compare の結論がより観測境界に接続された形で安定することを期待する。EQUIVALENT 側では shortcut による早計な否定を避け、NOT EQUIVALENT 側では assertion-level divergence を伴うより具体的な根拠を早く確立できる。
