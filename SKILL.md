@@ -137,7 +137,7 @@ Goal: determine whether two changes produce the same relevant behavior.
 
 ### Certificate template
 
-Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
+Complete every applicable section; if STRUCTURAL TRIAGE already establishes the outcome, skip only the sections it makes unnecessary.
 
 ```
 DEFINITIONS:
@@ -147,9 +147,8 @@ D2: The relevant tests are:
     (a) Fail-to-pass tests: tests that fail on the unpatched code and are
         expected to pass after the fix — always relevant.
     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
-        if the changed code is on their traced execution path or determines the
-        inputs, fixtures, configuration, or lookup data that the traced path consumes.
-    When a change only affects test-exposed setup/config/data selection, do not exclude the pass-to-pass test as "off-path"; trace it as a relevance candidate.
+        only if the changed code lies in their call path.
+    If call-path relevance of a pass-to-pass test is unresolved, keep it provisionally relevant until tracing excludes it, or mark the scope UNVERIFIED instead of omitting it.
     To identify them: search for tests referencing the changed function, class,
     or variable. If the test suite is not provided, state this as a constraint
     in P[N] and restrict the scope of D1 accordingly.
@@ -193,7 +192,7 @@ For pass-to-pass tests (if changes could affect them differently):
   Claim C[N].2: With Change B, behavior is [description]
   Comparison: SAME / DIFFERENT outcome
 
-EDGE CASES RELEVANT TO EXISTING TESTS (optional when the same dependency is already covered by per-test tracing):
+EDGE CASES RELEVANT TO EXISTING TESTS:
 (Only analyze edge cases that the ACTUAL tests exercise)
   E[N]: [edge case]
     - Change A behavior: [specific output/behavior]
