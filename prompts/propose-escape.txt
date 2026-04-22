@@ -2,13 +2,9 @@
 
 【参照してよいファイルの完全なリスト】
 - SKILL.md
-- Objective.md
-- README.md
 - failed-approaches.md
-- docs/design.md
-- docs/reference/agentic-code-reasoning.pdf
 
-この 6 ファイル以外を read / search / list してはいけません。
+この 2 ファイル以外を read / search / list してはいけません。
 現在のディレクトリ構造を ls / find / grep で探索する必要もありません。
 
 【出力先】
@@ -41,12 +37,14 @@ ${PROPOSAL_PATH}
 - “構造改革”に見せかけた説明の増量で、意思決定（結論/保留/追加探索）が実質的に変わらない。
 - 新しい必須ゲートの増設や、探索経路（読む順序）・証拠種類の半固定化で、自由度と反証能力を落とす。
 - 大きく変えすぎて diff が散らかり、監査で「汎用性が弱い/過剰適合」に見える。
+- セクション構造だけを変えて、既存の IF/THEN 分岐文が不変のまま残る改革。構造変更は、少なくとも 1 つの既定分岐の条件または行動が変わる場合に限る。
 
 【proposal で必ず明記（最小限でよいが、曖昧にしない）】
 - 変更で生まれる "挙動差"（どの誤判定/誤診断が減るか）
 - Decision-point delta（IF/THEN の Before/After 2 行）: どの条件で、結論を出す/保留する/追加で探す がどう変わるか
 - Trigger line (planned): 変更後に SKILL.md に入る予定の文言を 1 行だけ "..." で自己引用
 - Discriminative probe（2〜3 行）: 抽象ケース 1 つで Before/After の挙動差を示す（新しい必須ゲート増設ではなく、置換・再配置・必須↔optional の入替で）
+- Runtime delta check（1〜2 行）: 変更前と変更後で同じ結論・同じ追加探索になるならこの案は失敗である、と自分で検査する
 - 逆方向を悪化させうる経路と、その回避（新しい必須手順の追加なし）
 - failed-approaches.md のどの原則を踏まえ、どう回避しているか
 - Non-goal boundary: 読解順序の半固定・証拠種類の事前固定・必須ゲート増 をしないための境界条件（1 文）

@@ -2,13 +2,9 @@
 
 【参照してよいファイルの完全なリスト】
 - SKILL.md
-- Objective.md
-- README.md
 - failed-approaches.md
-- docs/design.md
-- docs/reference/agentic-code-reasoning.pdf
 
-この 6 ファイル以外を read / search / list してはいけません。
+この 2 ファイル以外を read / search / list してはいけません。
 
 【出力先】
 ${PROPOSAL_PATH}
@@ -82,7 +78,7 @@ ${focus_domain}
 
 【強制カテゴリ (今回の提案はこのカテゴリに従うこと)】
 ${FORCED_CAT}. ${FORCED_CAT_DESC}
-カテゴリの定義は Objective.md の Exploration Framework セクションを参照。
+カテゴリの定義は外部参照せず、`${FORCED_CAT}. ${FORCED_CAT_DESC}` をそのまま今回の探索境界として扱う。
 
 【提案ルール】
 - SKILL.md は汎用フレームワーク。改善案も汎用原則として正当化できること。
@@ -90,6 +86,7 @@ ${FORCED_CAT}. ${FORCED_CAT_DESC}
 - failed-approaches.md の汎用原則に抵触する変更は提案しない。
 - 研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を維持。
 - 改善仮説は 1 つだけ。
+- 提案は、SKILL.md 内の既存文言を実際の分岐としてどう変えるかを中心に書く。説明の追加だけで、EQUIV / NOT_EQUIV / 保留 / UNVERIFIED / 追加探索 / CONFIDENCE のいずれも変わらない案は不可。
 - 変更規模は ${MAX_ADDED_LINES} 行以内 (hard limit)。置換・圧縮を積極活用。
 - 新しい"必須ゲート"の純増（MUST/必須/required の追加で判定手順を増やすこと）は禁止。
   必須化するなら既存の必須 1 箇所を optional 化・統合・削除して総量を不変に保つ。
@@ -118,13 +115,15 @@ ${FORCED_CAT}. ${FORCED_CAT_DESC}
 - Discriminative probe（必須、2〜3 行）:
   - 抽象ケース 1 つで、変更前は誤判定/誤診断が起きがちだが、変更後は避けられることを説明。
   - 新しい必須ゲートの増設ではなく、既存文言の置換・再配置・必須↔optional の入替（総量不変）の範囲で説明。
+- Runtime delta check（必須、1〜2 行）:
+  - 「変更前でも変更後でも同じ結論・同じ追加探索になるなら、この案は無効」と明記し、何が変わるから無効でないのかを書く。
 - failed-approaches.md との照合 (どの原則とどう整合するか 1-2 点)
 - 変更規模の宣言
 
 【読解コスト節約（ただし停滞回避のため最低限は読む）】
 - SKILL.md は「意思決定ポイントの候補抽出」が目的。全文精読は不要だが、${focus_domain} に直結するモード節（特に compare なら Compare セクション全体）を最低 1 回は通読し、候補がどこに位置するかを把握してから選ぶ。
 - overall のときは Core Method（特に Step 3〜6）と Compare を優先して読む。
-- docs/* と PDF は正当化に必要なときだけ参照。
+- 外部説明資料の引用で提案を飾るより、SKILL.md のどの分岐文を置換すると実行時アウトカムが変わるかを優先して特定する。
 
 【禁止パターン（これまでの失敗から）】
 - 「構造差→NOT_EQUIV」の条件を「テスト依存」「オラクル可視」「VERIFIED な接続」等の“特定の観測境界”へ写像して狭める → 全て却下済み

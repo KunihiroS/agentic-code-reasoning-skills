@@ -7,8 +7,8 @@ ${PROPOSAL_PATH} の改善案に従い、以下を順番に実行してくださ
 - 追加よりも置換/統合/削除を優先し、${MAX_ADDED_LINES} の範囲内で compare に効く意思決定点を変える。
 - 「必須ゲート」を増やす変更を proposal が含む場合、同時に別の必須要素の optional 化/統合/削除が入っているか確認し、
   結論前の判定手順の総量が増えていない形にする。
-- 変更は proposal の差分プレビューに可能な限り一致させ、関係ない整形・言い換え・並べ替えで diff を広げない。
-  （diff が散ると audit の“汎化性/過剰適合”疑いが増え、compare の実効差も見えにくくなる）
+- 変更は proposal の差分プレビューに概ね一致させる。ただし、literal な文面一致よりも、Decision-point delta が SKILL.md 上で実際の分岐として読めることを優先する。
+  関係ない整形・言い換え・並べ替えで diff を広げない一方、分岐が曖昧になるなら wording を最小限で補正してよい。
 - 仕上げチェック: 編集後に、proposal の Decision-point delta（Before/After IF/THEN 2 行）が、
   SKILL.md の該当箇所に **実際に反映** されているかを再読で確認する。
   - 特に、Before/After の差が「理由の言い換え」だけになっていないこと（条件 or 行動が変わっていること）。
@@ -19,6 +19,7 @@ ${PROPOSAL_PATH} の改善案に従い、以下を順番に実行してくださ
   - rationale.md に、Decision-point delta を発火させる **Trigger line（最終的に SKILL.md に入った文言）** を 1 行だけ自己引用して載せる。
     - 形式: `Trigger line (final): "..."`（引用は SKILL.md の自己引用のみ。ベンチマーク対象リポジトリの固有識別子は書かない）
   - 上の Trigger line が proposal の差分プレビューにあった Trigger line と一致する（または意図した一般化として同等）ことを 1 文で確認する。
+  - さらに rationale.md に、`Observed runtime delta:` で始まる 1 行を入れ、何の結論条件/保留条件/追加探索条件が変わったかを明示する。
 
 【参照してよいファイルの完全なリスト】
 - ${PROPOSAL_PATH}
