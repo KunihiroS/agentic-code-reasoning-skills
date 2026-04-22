@@ -230,9 +230,8 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
-- If a semantic difference has no traced assertion boundary yet, keep it provisional: continue tracing or name the decisive link UNVERIFIED; do not conclude EQUIVALENT or NOT EQUIVALENT from the difference alone.
+- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
-- A verdict may use the difference only after the trace reaches a concrete test outcome or an explicitly named decisive UNVERIFIED link.
 
 ---
 
