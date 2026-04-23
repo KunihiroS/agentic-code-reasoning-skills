@@ -1,0 +1,24 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..e9725009 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -148,9 +148,7 @@ D2: The relevant tests are:
+         expected to pass after the fix — always relevant.
+     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
+         only if the changed code lies in their call path.
+-    To identify them: search for tests referencing the changed function, class,
+-    or variable. If the test suite is not provided, state this as a constraint
+-    in P[N] and restrict the scope of D1 accordingly.
++    To identify them: start with tests that directly reference the changed entrypoints; if those hits are sparse or absent, expand outward through repository callers/importers/re-exports before treating pass-to-pass tests as irrelevant or N/A. If the test suite is not provided, state this as a constraint in P[N] and restrict the scope of D1 accordingly.
+ 
+ STRUCTURAL TRIAGE (required before detailed tracing):
+ Before tracing individual functions, compare the two changes structurally:
+@@ -227,7 +225,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+ - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+ - Identify changed files for both sides
+-- Identify fail-to-pass AND pass-to-pass tests
++- Identify fail-to-pass tests first, then keep pass-to-pass relevance open until direct-reference or caller/importer search is exhausted
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
