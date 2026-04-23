@@ -1,0 +1,89 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-46/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..22dea8b9 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -205,10 +205,11 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+   Therefore changes produce DIFFERENT test outcomes.
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+-  If NOT EQUIVALENT were true, a counterexample would look like:
+-    [describe concretely: what test, what input, what diverging behavior]
+-  I searched for exactly that pattern:
+-    Searched for: [specific pattern — test name, code path, or input type]
++  If you already observed a semantic difference, name that difference first and test whether one concrete relevant test/input reaches the same assertion outcome on both sides.
++  When claiming EQUIVALENT after observing a semantic difference, anchor the no-counterexample argument to that exact difference with one concrete relevant test/input and the same traced assertion outcome on both sides; otherwise mark the impact UNVERIFIED.
++  If NOT EQUIVALENT were true, a counterexample would be this specific test/input diverging at [assert/check:file:line].
++  I searched for exactly that anchored pattern:
++    Searched for: [specific pattern — the observed difference, relevant test/input, and assertion/check]
+     Found: [result — cite file:line, or NONE FOUND with search details]
+   Conclusion: no counterexample exists because [brief reason]
+ 
+
+rationale:
+# Iteration 46 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 未確認
+- 失敗ケース: semantic difference を観測した後も generic な no-counterexample で EQUIVALENT に閉じやすい compare ケース群
+- 失敗原因の分析: EQUIV 側の `NO COUNTEREXAMPLE EXISTS` が自由形式の不在証明を許しており、観測済み差分と最終的な assertion outcome の対応づけが弱いまま結論できてしまう。
+
+## 改善仮説
+
+EQUIV 主張時の no-counterexample 記述を、観測済みの semantic difference に anchored な 1 つの具体テスト/入力と同一 assertion outcome の確認へ置き換えると、差分を汎用的な不在証明だけで吸収する偽 EQUIV を減らしつつ、必要なときだけ UNVERIFIED を明示できる。
+
+## 変更内容
+
+`NO COUNTEREXAMPLE EXISTS` 節だけを置換し、generic な counterexample search の書き方を、観測済み差分の明示 → その差分に対する concrete relevant test/input の確認 → 同一 assertion outcome の確認、という順に寄せた。新しいモードや追加ゲートは増やさず、既存の EQUIV 側テンプレート文言を差し替える範囲に留めた。
+
+Trigger line (final): "When claiming EQUIVALENT after observing a semantic difference, anchor the no-counterexample argument to that exact difference with one concrete relevant test/input and the same traced assertion outcome on both sides; otherwise mark the impact UNVERIFIED."
+
+この Trigger line は proposal の差分プレビューにあった planned trigger line と一致しており、Decision-point delta の分岐を `NO COUNTEREXAMPLE EXISTS` 節の先頭で実際に発火させる配置になっている。
+
+## 期待効果
+
+semantic difference 発見後の EQUIV 判定で、条件が「一般に反例が見つからない」から「その差分に対する具体的な equality witness を示せる」へ変わるため、偽 EQUIV が減り、必要な追加探索または impact の UNVERIFIED 明示が増えると期待する。特に compare における差分発見後の吸収ミスを抑えつつ、既存の NOT EQUIVALENT 側や structural triage 側の判断量は増やさない。
