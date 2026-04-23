@@ -1,0 +1,52 @@
+過去提案との差異: これは STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定の観測境界へ狭める案ではなく、compare における「relevant test」の比較単位を direct call path から changed contract consumption へ広げる案である。
+Target: 両方
+Mechanism (抽象): 差分比較の単位を「どのファイルを通るか」ではなく「どの return/state/exception contract をテストが消費するか」に置き換え、EQUIV 判定前の追加探索対象を変える。
+Non-goal: 早期 NOT_EQUIV の結論条件を assertion boundary や特定テスト境界へ写像して狭めることはしない。
+
+カテゴリ C 内での具体的メカニズム選択理由:
+- compare の現行分岐には「pass-to-pass tests を direct call path で relevance 判定する」箇所があり、ここは EQUIV/保留/追加探索 を直接変えうる意思決定ポイントである。
+- これは structural gap の結論条件ではなく、何を同値性比較の母集団に入れるかという比較枠組みそのものなので、却下済みの早期 NOT_EQUIV 狭窄とは別メカニズムである。
+
+ステップ1-2.5要約:
+- 禁止方向: 再収束を既定化する案、未検証なら既定で保留へ倒す案、新しい抽象ラベルや固定アンカーで差分昇格を強くゲートする案、終盤チェックを confidence へ吸収する案、最初の差分から単一追跡経路を固定する案。
+- 候補A: D2(b) の pass-to-pass relevance。現在: direct call path に無ければ除外しがち。変更後アウトカム: 追加探索 / 保留 / EQUIV が変わる。
+- 候補B: 「When a semantic difference is found...」の無影響結論条件。現在: relevant test 1本の trace で無影響化しがち。変更後アウトカム: 追加探索 / NOT_EQUIV / 保留 が変わる。
+- 候補C: S3 の large patch 比較粒度。現在: high-level semantic analysis へ寄りやすい。変更後アウトカム: CONFIDENCE / 保留 / 追加探索 が変わる。
+
+選定: 候補A
+- 理由1: 「どのテストを relevant とみなすか」は compare の分母を変えるので、同じ証拠量でも ANSWER と CONFIDENCE が実際に変わる。
+- 理由2: structural triage をいじらずに false EQUIV を減らせ、かつ contract 非依存な差分では余計な NOT_EQUIV を増やしにくい。
+
+改善仮説:
+pass-to-pass relevance を「changed code が直に call path にあるか」ではなく「テストが最終的に消費する return/state/exception contract が changed interface で変わりうるか」で判定すると、direct path 偏重で見落としていた regression-sensitive tests を比較対象へ戻せるため、偽 EQUIV を減らしつつ、契約非依存な構造差を過大評価する偽 NOT_EQUIV も増やしにくい。
+
+該当箇所と変更方針:
+- 現行引用1: "Pass-to-pass tests: tests that already pass before the fix — relevant only if the changed code lies in their call path."
+- 現行引用2: "Identify fail-to-pass AND pass-to-pass tests"
+- 変更方針: relevance 判定の基準を direct call-path presence から changed contract consumption へ置換し、チェックリストも同じ粒度に揃える。
+
+Decision-point delta:
+Before: IF a pass-to-pass test does not traverse the edited code directly THEN omit it from comparison because direct call-path membership is the relevance criterion.
+After:  IF a pass-to-pass test consumes a value/state/exception contract produced by a changed interface, even via wrappers or indirection, THEN include it in comparison because contract-consumption is the relevance criterion.
+
+変更差分プレビュー:
+Before:
+- "(b) Pass-to-pass tests: tests that already pass before the fix — relevant only if the changed code lies in their call path."
+- "- Identify fail-to-pass AND pass-to-pass tests"
+After:
+- "(b) Pass-to-pass tests: tests that already pass before the fix — relevant if their checked behavior consumes a return/state/exception contract produced by changed code, even through wrappers or indirection."
+- Trigger line (planned): "When direct call-path overlap is absent, compare changed-contract consumers before excluding pass-to-pass tests as irrelevant."
+- "- Identify fail-to-pass tests, plus pass-to-pass tests whose checked behavior consumes a changed contract."
+
+Discriminative probe:
+抽象ケース: A は helper の return contract を変え、B は caller 側で同じ failing case だけを吸収する。現行は fail-to-pass が両方 PASS で、他の pass-to-pass tests を helper 非直通として外し、偽 EQUIV になりやすい。
+変更後はその helper contract を消費する別 caller の pass-to-pass tests を relevant に含めるため、追加探索で regression を拾って NOT_EQUIV に進むか、未確認なら EQUIV を保留できる。新ゲート追加ではなく、既存 relevance 文言の置換で実現する。
+
+failed-approaches.md との照合:
+- 原則1とは整合: 再収束の既定化ではなく、比較前に何を relevant set に入れるかの基準変更である。
+- 原則2/3とも整合: 未検証なら既定で UNVERIFIED へ送る案でも、新しい抽象ラベルで差分昇格をゲートする案でもなく、既存 D2(b) の relevance 規則を具体化するだけである。
+
+Payment: add MUST("Identify fail-to-pass tests, plus pass-to-pass tests whose checked behavior consumes a changed contract.") ↔ demote/remove MUST("Identify fail-to-pass AND pass-to-pass tests")
+
+変更規模の宣言:
+置換中心で 6-8 行。新規モードなし、既存 compare 定義と checklist のみを局所変更する。
