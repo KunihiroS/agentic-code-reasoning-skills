@@ -1,0 +1,68 @@
+過去提案との差異: 今回は STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件や観測境界を狭めず、結論直前の自己チェックで「どの弱い環が verdict を支えているか」を明示させる点が iter-39/40 と本質的に異なる。
+Target: 両方
+Mechanism (抽象): verdict を左右する最弱リンクを 1 つ特定し、その否定で verdict が反転する場合だけ局所検証へ戻し、反転しない場合は verdict ではなく CONFIDENCE に吸収する。
+Non-goal: 構造差から NOT_EQUIV へ進む条件を特定の assertion boundary や test-visible 境界へ写像して狭めることはしない。
+
+カテゴリ D 内での具体的メカニズム選択理由
+- Objective.md のカテゴリ D は「思い込み検査」「弱い環の特定」「確信度と根拠の対応」を求めている。現行 SKILL.md には Step 5.5 の一般チェックと Step 6 の CONFIDENCE はあるが、「どの未検証/弱証拠が verdict を支えているか」を 1 本に絞って stress-test する分岐がない。
+- README.md / docs/design.md のコアは certificate-based reasoning と per-item tracing であり、今回の変更はその外側に新モードや新分類ラベルを足さず、既存の pre-conclusion self-check を verdict-sensitive に置換するだけで compare の停止条件を改善できる。
+
+禁止方向の確認
+- failed-approaches 原則1: 再収束を既定化しない。今回は「差分が後段で吸収されるはず」を先に組み立てる規則ではない。
+- failed-approaches 原則2: 未確定性を既定で保留へ倒さない。今回は weakest link が verdict を反転させないなら CONFIDENCE に送るので、広い UNVERIFIED 既定分岐にはしない。
+- failed-approaches 原則3/5: 差分を特定観測境界や単一アンカーへ固定しない。今回は structural gap の昇格条件を変えず、結論直前の weakest-link stress test だけを変える。
+
+Decision-point candidates
+1. Step 5.5 の UNVERIFIED/assumption チェック
+   - 現在のデフォルト挙動: 「assumption that does not alter the conclusion」と書けると、その非影響性を stress-test しないまま結論に進みがち。
+   - 変更後に変わるアウトカム: verdict-sensitive な追加探索、または CONFIDENCE 低下。
+2. Step 5 の counterexample / no-counterexample の打ち切り
+   - 現在のデフォルト挙動: 1 回の search/inspection を満たすと、最も弱い claim が未点検でも refutation 済みとして閉じがち。
+   - 変更後に変わるアウトカム: 追加探索 or 結論保留。
+3. Step 6 の CONFIDENCE 付与
+   - 現在のデフォルト挙動: CONFIDENCE が verdict 後の総評になりやすく、どの弱い環に由来するかが曖昧なまま高めに置かれがち。
+   - 変更後に変わるアウトカム: CONFIDENCE の低下、または weakest link を埋める追加探索。
+
+選ぶ分岐: 1. Step 5.5 の UNVERIFIED/assumption チェック
+選定理由:
+- compare の誤りは「意味差を見た直後」よりも「その差が test outcome に届く/届かないという最終リンクの未検証」で起きやすく、ここを verdict-sensitive にすると EQUIV / NOT_EQUIV の両側の premature closure を動かせる。
+- IF 条件と THEN 行動を両方変えられる。現状は「assumption を書けたら通過」だが、変更後は「その assumption を否定すると verdict が反転するか」で、追加探索か confidence 調整かが分岐する。
+
+改善仮説
+- 事前結論チェックで「最弱リンクの否定が verdict を反転させるか」を 1 回だけ明示させると、広い保留化なしに verdict-critical な思い込みだけを局所再検証でき、偽 EQUIV と偽 NOT_EQUIV の両方を減らせる。
+
+SKILL.md の該当箇所と変更方針
+現行の Step 5.5 には次がある:
+- "Every function in the trace table is marked VERIFIED, or explicitly UNVERIFIED with a stated assumption that does not alter the conclusion."
+- "The conclusion I am about to write asserts nothing beyond what the traced evidence supports."
+ここで前者を、UNVERIFIED の列挙ではなく weakest-link stress test に置換する。Step 4 と Guardrail 6 に VERIFIED/UNVERIFIED の一般原則は残るため、研究コアは維持される。
+
+Decision-point delta
+Before: IF an assumption is written as "does not alter the conclusion" THEN proceed to verdict because assumption non-impact is accepted by declaration.
+After:  IF the single weakest traced claim/assumption would flip EQUIVALENT ↔ NOT EQUIVALENT when negated THEN do one targeted downstream verification; otherwise keep the verdict and lower CONFIDENCE because verdict-sensitivity, not uncertainty alone, determines escalation.
+
+Payment: add MUST("Weakest-link check: identify the single least-certain traced claim/assumption. If negating it would flip EQUIVALENT ↔ NOT EQUIVALENT, perform one targeted verification on the nearest downstream handler/guard/consumer before Step 6; otherwise reflect the weakness in CONFIDENCE, not verdict.") ↔ demote/remove MUST("Every function in the trace table is marked VERIFIED, or explicitly UNVERIFIED with a stated assumption that does not alter the conclusion.")
+
+変更差分プレビュー
+Before:
+- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
+- [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+
+After:
+- [ ] Weakest-link check: identify the single least-certain traced claim/assumption. If negating it would flip **EQUIVALENT ↔ NOT EQUIVALENT**, perform one targeted verification on the nearest downstream handler/guard/consumer before Step 6; otherwise reflect the weakness in **CONFIDENCE**, not verdict.
+- [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+Trigger line (planned): "Weakest-link check: identify the single least-certain traced claim/assumption... otherwise reflect the weakness in CONFIDENCE, not verdict."
+
+Discriminative probe
+- 抽象ケース: A と B に局所的な意味差があるが、その値が下流の normalizer / guard で吸収されるか未確認のまま最終 assert へ届くかが verdict を決める。
+- Before では「UNVERIFIED だが結論は変わらない」と自己申告して偽 NOT_EQUIV か偽 EQUIV に閉じやすい。After では、その weakest link を否定すると verdict が反転するため 1 回だけ下流を確認し、吸収ありなら偽 NOT_EQUIV を避け、吸収なしなら偽 EQUIV を避ける。
+- これは新ゲート純増ではなく、既存の Step 5.5 must 項目の置換で実現する。
+
+failed-approaches.md との照合
+- 原則2と整合: 未確定性そのものを広い保留トリガーにせず、「verdict を反転させる weakest link」だけを局所再検証し、それ以外は CONFIDENCE に落とす。
+- 原則3/5と整合: 差分を新しい抽象ラベルや特定の観測境界へ写像せず、既に traced された鎖の中の weakest link に対してのみ結論前自己チェックを具体化する。
+
+変更規模の宣言
+- 置換中心で 3 行前後、hard limit 15 行以内。新規モードなし、必須ゲート総量は Payment のとおり不変。

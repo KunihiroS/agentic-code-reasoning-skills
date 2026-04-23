@@ -147,10 +147,7 @@ D2: The relevant tests are:
     (a) Fail-to-pass tests: tests that fail on the unpatched code and are
         expected to pass after the fix — always relevant.
     (b) Pass-to-pass tests: tests that already pass before the fix — relevant
-        if their checked behavior consumes a return/state/exception contract
-        produced by changed code, even through wrappers or indirection.
-    When direct call-path overlap is absent, compare changed-contract consumers
-    before excluding pass-to-pass tests as irrelevant.
+        only if the changed code lies in their call path.
     To identify them: search for tests referencing the changed function, class,
     or variable. If the test suite is not provided, state this as a constraint
     in P[N] and restrict the scope of D1 accordingly.
@@ -230,7 +227,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
 - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
 - Identify changed files for both sides
-- Identify fail-to-pass tests, plus pass-to-pass tests whose checked behavior consumes a changed contract.
+- Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
 - Trace each test through both changes separately before comparing
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
