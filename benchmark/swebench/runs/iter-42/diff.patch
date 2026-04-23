@@ -1,0 +1,38 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..754dfd8f 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -152,7 +152,7 @@ D2: The relevant tests are:
+     or variable. If the test suite is not provided, state this as a constraint
+     in P[N] and restrict the scope of D1 accordingly.
+ 
+-STRUCTURAL TRIAGE (required before detailed tracing):
++STRUCTURAL TRIAGE (perform early to map scope; it need not precede the first targeted test trace):
+ Before tracing individual functions, compare the two changes structurally:
+   S1: Files modified — list files touched by each change. Flag any file
+       modified in one change but absent from the other.
+@@ -169,6 +169,8 @@ If S1 or S2 reveals a clear structural gap (missing file, missing module
+ update, missing test data), you may proceed directly to FORMAL CONCLUSION
+ with NOT EQUIVALENT without completing the full ANALYSIS section.
+ 
++When a semantic difference is observed before a divergent test outcome is established, pause broad comparison and trace one shared relevant test through that differing path on both changes before resuming wider analysis.
++
+ PREMISES:
+ P1: Change A modifies [file(s)] by [specific description]
+ P2: Change B modifies [file(s)] by [specific description]
+@@ -224,13 +226,13 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ ```
+ 
+ ### Compare checklist
+-- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
++- Perform structural triage early to map scope, but do not delay the first targeted paired test trace when a semantic difference is already visible
+ - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+ - Trace each test through both changes separately before comparing
+-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
++- When a semantic difference is found, use the trigger above before any further high-level comparison or equivalence claim
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+ ---
