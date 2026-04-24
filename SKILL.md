@@ -41,7 +41,7 @@ P3: ...
 Do not treat guesses as premises. Every later claim must reference a premise by number.
 
 ### Step 3: Hypothesis-driven exploration
-Exploration priority is not a fixed reading order; choose the next action by discriminative power — which unresolved EQUIV/NOT_EQUIV claim it could change.
+Exploration priority is not a fixed reading order; choose the next action by discriminative power — what unresolved uncertainty it resolves.
 Before opening any file, write:
 
 ```
@@ -64,8 +64,8 @@ UNRESOLVED:
   - [remaining questions]
 
 NEXT ACTION RATIONALE: [why the next file or step is justified]
-Trigger line (planned): "MUST name VERDICT-FLIP TARGET: the unresolved EQUIV/NOT_EQUIV claim this action could change, or 'confidence only'."
-If the target is confidence-only, prefer concluding with explicit uncertainty/CONFIDENCE over more browsing unless a required trace or refutation item is still missing.
+Trigger line (planned): "After observing a semantic difference, the next read should identify the nearest branch predicate or data source that selects the differing behavior before widening to callers/tests."
+OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
 ```
 
 Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
@@ -118,7 +118,7 @@ Before writing the formal conclusion, check each item below. If any answer is **
 
 - [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
 - [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
-- [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+- [ ] Any semantic difference used for the verdict changes a traced assert/check result; otherwise the impact is marked UNVERIFIED.
 - [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
 
 ### Step 6: Formal conclusion
@@ -138,7 +138,7 @@ Goal: determine whether two changes produce the same relevant behavior.
 
 ### Certificate template
 
-Use the certificate sections as the guide for the evidence needed before conclusion; do not add unrelated browsing once the verdict-bearing claims are resolved.
+Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
 
 ```
 DEFINITIONS:
@@ -180,11 +180,10 @@ ANALYSIS OF TEST BEHAVIOR:
 
 For each relevant test:
   Test: [name]
-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
-                because [trace from changed code to test assertion outcome — cite file:line]
-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
-                because [trace from changed code to test assertion outcome — cite file:line]
-  Comparison: SAME / DIFFERENT outcome
+  Claim C[N].1: With Change A, this test reaches assert/check [file:line] with result [PASS/FAIL/UNVERIFIED].
+  Claim C[N].2: With Change B, this test reaches the same assert/check with result [PASS/FAIL/UNVERIFIED].
+  Comparison: SAME / DIFFERENT assertion-result outcome; note any internal semantic difference separately.
+  Trigger line (planned): "For each relevant test, compare the traced assert/check result, not merely the internal semantic behavior; semantic differences are verdict-bearing only when they change that result."
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
@@ -231,8 +230,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
-- Trace each test through both changes separately before comparing
-- When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+- When a semantic difference is found, first identify the nearest branch predicate or data source that selects the differing behavior, then trace one relevant test/input through that selection before deciding impact.
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---

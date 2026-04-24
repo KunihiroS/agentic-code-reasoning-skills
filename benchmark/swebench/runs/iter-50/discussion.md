@@ -1,125 +1,125 @@
-# iter-50 proposal discussion
+# Iteration 50 — proposal discussion
 
 ## 1. 既存研究との整合性
 
-検索なし（理由: 提案は「次の探索を、未解決 claim を confirm/refute できる情報利得で選ぶ」という一般的な仮説駆動探索・反証可能性の明確化であり、特定の外部概念や固有用語に強く依拠していないため）。
+検索なし（理由: 提案は「semantic difference を観測した後、実行経路上でそれを選ぶ条件・データ源を先に読む」という一般的な静的コード推論・仮説駆動探索の範囲で自己完結している。特定の外部概念や新規用語へ強く依拠していない）。
 
-README.md / docs/design.md との整合性は概ね高い。既存設計の中核は、premise、hypothesis-driven exploration、interprocedural tracing、mandatory refutation、formal conclusion によって unsupported claim を減らすことにある。今回の変更はそのうち Step 3 の探索前記録を、単なる confidence ラベルから「どの EQUIV/NOT_EQUIV claim を左右する読解か」へ寄せるもので、研究コアの削除ではなく、証拠収集前の反証可能性を強める変更と見なせる。
+README.md / docs/design.md が述べるコアは、番号付き前提、仮説駆動探索、手続き間トレース、必須反証である。提案はこのコアを削らず、Step 3 の探索優先順位と Compare checklist の既存 bullet を置換する形なので、研究コアとの整合性は概ね高い。
 
 ## 2. Exploration Framework のカテゴリ選定
 
-カテゴリ B「情報の取得方法を改善する」は適切。
+カテゴリ B「情報の取得方法を改善する」として妥当。
 
 理由:
-- 提案は結論規則そのものを変えるのではなく、次に読む情報の優先順位を変える。
-- 「何を探すか」を特定ファイル・特定テスト・特定パターンに固定せず、「この読解がどの未解決 verdict claim を反転しうるか」という探索基準を変えている。
-- カテゴリ D の自己チェック強化やカテゴリ E の単なる表現改善ではなく、実行時の探索分岐に作用するため、B としての説明は妥当。
+- 変更は verdict ルールそのものではなく、semantic difference 観測後に次に読む対象を「広い caller/test」から「差分を選択する直近の branch predicate / data source」へ優先付けるもの。
+- 「何を探すか」を新しい証拠種類として固定するより、「既に見えた差分の到達条件をどう確認するか」を調整している。
+- 新モード追加や大きな手順追加ではなく、既存 checklist 内の置換として扱っている点もカテゴリ B と合う。
 
-## 3. EQUIVALENT / NOT_EQUIVALENT 双方への作用
+軽微な注意点として、"nearest branch predicate or data source" が常に唯一の次探索に見えすぎると failed-approaches.md 原則 5 の「単一の追跡経路の既定化」に近づく。ただし proposal は「結論ゲート」ではなく「探索優先順位」として説明しており、before widening to callers/tests として後続探索を否定していないため、現状では許容範囲。
 
-EQUIVALENT への作用:
-- 変更前は plausible hypothesis と confidence があるだけで近いファイルを読み続け、NO COUNTEREXAMPLE EXISTS の検索対象が verdict 反転条件と弱く結びつく可能性がある。
-- 変更後は「どの反対 outcome を検出する読解か」を言えない場合、別探索・UNVERIFIED/LOW に倒すため、偽 EQUIV を減らす方向に働く。
+## 3. EQUIVALENT / NOT_EQUIVALENT への作用
 
-NOT_EQUIVALENT への作用:
-- 変更前は目立つ構造差・局所差に confidence を付けて読み進め、実際の test outcome への接続が弱いまま NOT_EQUIV へ進む危険がある。
-- 変更後は差分読解にも EQUIV/NOT_EQUIV claim の confirm/refute 関係を要求するため、outcome に効かない差分だけで偽 NOT_EQUIV に進む圧力を下げる。
+EQUIVALENT 側:
+- 内部 semantic difference を見つけた時点で即 NOT_EQUIV に寄るのではなく、その差分が実際に選ばれる入力条件・状態・データ源を確認するため、到達不能または既存テストで選ばれない差分による偽 NOT_EQUIV を減らす効果が期待できる。
+- NO COUNTEREXAMPLE EXISTS の議論も、単に「同じ assertion outcome」ではなく「観測済み差分が選択される条件を通っても同じ outcome か」に近づく。
 
-片方向最適化か:
-- 片方向ではない。EQUIV 側では反例探索の焦点化、NOT_EQUIV 側では差分から outcome divergence への接続確認として働く。
-- ただし、discriminative query が形式的な言い換えだけになると、監査説明は強くても compare の探索分岐は変わらない。この懸念は Trigger line と Decision-point delta が明示されているため、現提案では許容範囲。
+NOT_EQUIVALENT 側:
+- semantic difference を confidence-only や UNVERIFIED に流す前に、その差分を選ぶ条件を読むため、到達可能な差分を見落として偽 EQUIV にするリスクを減らす。
+- 差分が実行経路上で選ばれることを確認してから relevant test/input へ接続するので、NOT_EQUIV の根拠が単なる内部差分ではなく outcome divergence へ近づく。
+
+片方向性:
+- 片方向のみの最適化ではない。差分の「存在」ではなく「選択条件」を読むため、差分の過大評価（偽 NOT_EQUIV）と過小評価（偽 EQUIV）の両方に作用する。
+- ただし、実装時に "first identify" が硬い必須ゲートとして強調されすぎると、広い構造差や別経路の高情報量シグナルを拾う前に局所条件へ固定される危険がある。提案どおり checklist の置換範囲に留めることが重要。
 
 ## 4. failed-approaches.md との照合
 
-本質的再演ではないと判断する。
-
-- 原則 1「再収束を比較規則として前景化しすぎない」: 該当しない。再収束や共有観測点を優先する規則ではない。
-- 原則 2「未確定 relevance や脆い仮定を常に保留側へ倒す」: 該当しない。未検証なら常に保留ではなく、verdict-discriminative な探索が言えるかで次行動を選ぶ。
-- 原則 3「新しい抽象ラベルや必須の言い換え形式で強くゲート」: 軽微な注意はある。DISCRIMINATIVE QUERY という新しい欄は追加されるが、差分の抽象分類ラベルではなく、既存の hypothesis exploration の confidence 行を置換するため、分類整合の目的化までは行っていない。
-- 原則 4「証拠十分性を confidence 調整へ吸収」: むしろ confidence 行を削り、探索時の反証可能性に置換するため逆方向。
-- 原則 5「最初の差分から単一追跡経路を既定化」: 該当しない。別探索を許容しており、単一路線への固定ではない。
-- 原則 6「探索理由と情報利得を潰す」: 該当しない。NEXT ACTION RATIONALE と DISCRIMINATIVE QUERY を分けており、optional info gain の消滅分を独立必須行へ移している。
+- 原則 1（再収束の前景化）: NO。再収束を既定動作にしていない。差分を吸収する後段処理の説明を優先する提案ではない。
+- 原則 2（未確定 relevance を常に保留へ）: NO。未検証なら保留、ではなく、差分を選ぶ条件・データ源を読みに行く探索優先順位の変更である。
+- 原則 3（差分昇格条件の抽象ラベル化・必須言い換え）: NO。新しい分類ラベルや CLAIM 形式を追加していない。
+- 原則 4（証拠十分性を confidence 調整へ吸収）: NO。むしろ semantic difference を CONFIDENCE だけに逃がさず、到達条件つき証拠へ寄せる。
+- 原則 5（最初の差分から単一追跡経路を即座に既定化）: NO。ただし境界に近い。"nearest branch predicate or data source" という近傍観測を優先するが、proposal は「before widening to callers/tests」として広い探索を排除せず、特定 assertion boundary へ固定もしないため、本質的再演とは判断しない。
+- 原則 6（探索理由と情報利得の圧縮）: NO。NEXT ACTION RATIONALE の近辺に 1 文を足す/置換するだけで、INFO GAIN 欄や反証可能性を潰していない。
 
 ## 5. 汎化性チェック
 
-固有識別子の有無:
-- 具体的な数値 ID: なし。
-- リポジトリ名: なし。
-- テスト名: なし。
-- 実コード断片: なし。
-- SKILL.md 自身の文言引用: あり。ただし Objective.md の R1 減点対象外に該当する自己引用であり問題なし。
+固有識別子:
+- 具体的な数値 ID、リポジトリ名、ベンチマーク対象のファイルパス、関数名、クラス名、テスト名、実装コード断片は含まれていない。
+- proposal 内の行番号的な Step 番号、カテゴリ B、SKILL.md 自己引用、"Trigger line" は手続き・文書構造の引用であり、汎化性違反ではない。
 
-暗黙のドメイン前提:
-- 「同じ関数名」「caller」は一般的な抽象例として許容範囲。特定言語・フレームワーク・テストパターンには依存していない。
-- 「caller/outcome」を例にしているが、呼び出し関係を持たない宣言的設定やデータ変換比較にも「verdict claim を反転する証拠」という形で適用できる。
+ドメイン偏り:
+- "branch predicate / data source" は多くの言語・フレームワークで成立する一般概念。
+- Discriminative probe の "configuration / input shape / feature flag / normalizer" は具体例だが、特定リポジトリや特定言語の実装断片ではなく抽象例なので許容できる。
+- 暗黙に Web、Django、特定テストフレームワーク、特定言語を前提にしていない。
 
 ## 6. compare 影響の実効性チェック
 
 0) 実行時アウトカム差:
-- Step 3 で次ファイルを読む前に、ANSWER を左右する未解決 EQUIV/NOT_EQUIV claim と confirm/refute 条件を言えない読解が後回しになる。
-- その結果、追加探索の要求、UNVERIFIED 明示、LOW confidence への倒し方が観測可能に変わる。
-- NO COUNTEREXAMPLE EXISTS でも、検索対象が反対 outcome の検出条件と結びつかない場合に、そのまま EQUIV へ進みにくくなる。
+- semantic difference を見つけた直後の追加探索対象が変わる。変更前は relevant test/caller へ広く飛ぶ、または観測済み差分から impact を早く判断しがちだった。変更後は、ANSWER / CONFIDENCE の前に「その差分を選ぶ branch predicate / data source を読んだか」が観測可能に残る。
+- UNVERIFIED の扱いも、verdict claim を支える差分なら追加探索へ寄り、支えないなら明示したうえで結論可能になる。
 
 1) Decision-point delta:
 - IF/THEN 形式で 2 行（Before/After）になっているか？ YES。
-- Before: IF a plausible hypothesis and supporting evidence can be stated THEN open the next file because confidence is labeled high/medium/low.
-- After: IF the next read can name an unsettled EQUIV/NOT_EQUIV claim and evidence that would confirm vs refute it THEN open that file; otherwise choose a different query or mark the claim UNVERIFIED/LOW.
-- これは条件も行動も同じ言い換えではない。条件は「plausible hypothesis」から「verdict-discriminative evidence を予告できる」へ変わり、行動も「読む」から「読む / 別探索 / UNVERIFIED/LOW」へ分岐している。
-- Trigger line が差分プレビュー内に含まれているか？ YES。`DISCRIMINATIVE QUERY: [which unsettled EQUIV/NOT_EQUIV claim this read can confirm vs refute]` が自己引用されている。
+  - Before: IF a semantic difference is observed but its selecting condition is unread THEN trace a relevant test or decide impact from the observed behavior...
+  - After: IF a semantic difference is observed but its selecting condition is unread THEN first read the nearest branch predicate/data source...
+- 条件も行動も同じで理由だけ言い換えか？ NO。行動が「test/caller tracing または observed behavior から判断」から「まず selection condition / data source を読む」へ変わっている。
+- Trigger line が差分プレビュー内に含まれているか？ YES。proposal line 63 に予定文言が自己引用されている。
 
 2) Failure-mode target:
 - 対象は両方。
-- 偽 EQUIV: 反対 outcome を検出する探索条件が曖昧なまま no counterexample を主張することを減らす。
-- 偽 NOT_EQUIV: outcome に効かない構造差・局所差だけで divergence と見なすことを減らす。
-- メカニズムは、次の読解を verdict claim の confirm/refute に結びつけることで、単なる plausible exploration を判別的 exploration に変えること。
+- 偽 EQUIV: 到達可能な semantic difference を、選択条件未読のまま SAME outcome / no counterexample に流す誤りを減らす。
+- 偽 NOT_EQUIV: 到達不能・非選択の内部差分を、実行時 outcome 差として過大評価する誤りを減らす。
+- メカニズムは「差分そのもの」ではなく「差分を選ぶ条件・データ源」を先に検証し、test/input trace を reachability-conditioned semantic difference にすること。
 
 2.5) STRUCTURAL TRIAGE / 早期結論に触れる提案か？ NO。
-- Structural triage の早期 NOT_EQUIV 条件を直接変更していない。
-- したがって impact witness 要求の有無はこの proposal の承認ブロッカーではない。
-- ただし実装時に Structural triage へ波及させるなら、「ファイル差がある」だけではなく、test outcome / assertion boundary に効く witness を要求する形に限定すべき。
+- 構造差から早期 NOT_EQUIV を追加する提案ではない。
+- impact witness 要求の追加は対象外。ただし既存 SKILL.md には COUNTEREXAMPLE の diverging assertion と Step 5.5 の assert/check 接続が残っているため、NOT_EQUIV 根拠が単なるファイル差へ退化する変更ではない。
 
 3) Non-goal:
-- 探索経路を最初の差分・単一 caller・単一 assertion へ固定しない。
-- 新しい証拠種類を事前固定しない。confirm/refute される claim を求めるだけで、証拠が test、call path、configuration、data mapping のどれであるかは固定しない。
-- 必須ゲート総量は増やさない。CONFIDENCE 行を demote/remove する支払いで DISCRIMINATIVE QUERY を置く。
+- 探索経路の半固定を避ける: branch predicate / data source は「semantic difference 観測後」の優先候補であり、唯一の探索経路や結論条件ではない。
+- 必須ゲート増を避ける: proposal は Payment として既存 Compare checklist の test tracing 必須 bullet を弱める/置換すると明記しており、必須総量不変を意識している。
+- 証拠種類の事前固定を避ける: 特定 assertion boundary、テスト ID、リポジトリ構造、構造差の早期 NOT_EQUIV 条件を追加しないと明記している。
 
-## 7. Discriminative probe
-
-抽象ケース:
-- 2 つの変更が同じ表面差分を持つが、片方だけ既存の assertion outcome に到達する経路へ接続され、もう片方は到達不能な補助経路に閉じている。
-- 変更前は、表面差分への confidence が高いだけで偽 NOT_EQUIV、または近い定義だけを読んで到達経路を見落とし偽 EQUIV が起きうる。
-- 変更後は「この読解が到達可能な assertion outcome の同一/差異 claim を confirm/refute するか」を言えない探索を後回しにするため、追加探索または LOW/UNVERIFIED に留まり誤判定を避けやすい。
-
-これは新しい必須ゲートを純増する提案ではなく、CONFIDENCE 行を DISCRIMINATIVE QUERY に置換し、optional info gain の役割を独立欄として再配置する提案なので、支払いは明示されている。
-
-## 8. 停滞診断
+## 7. 停滞診断
 
 監査 rubric に刺さる説明強化へ偏り、compare の意思決定を変えていない懸念:
-- 懸念は小さい。提案は単に「反証可能性が大事」と説明するだけでなく、Step 3 の次アクション選択を「confidence 付き仮説があるか」から「verdict claim を反転しうる証拠を予告できるか」へ変えているため、実行時の探索分岐が観測可能に変わる。
+- 懸念は小さい。proposal は説明だけでなく、Decision-point delta と Trigger line により「semantic difference 観測後、選択条件未読なら最初に読む対象を変える」という実行時分岐を明示している。
 
 failed-approaches.md 該当性:
-- 探索経路の半固定: NO。理由: 最初の差分や単一経路への固定ではなく、別探索を明示的に許す。
-- 必須ゲート増: NO。理由: DISCRIMINATIVE QUERY は追加されるが、CONFIDENCE 行の demote/remove と対応しており、必須行の純増ではない。
-- 証拠種類の事前固定: NO。理由: evidence that would confirm vs refute を求めるだけで、証拠種類やアンカーを固定していない。
+- 探索経路の半固定: NO。ただし "first identify the nearest branch predicate or data source" が強くなりすぎると YES に近づくため、実装では「before widening」で後続探索を残す表現を維持すること。
+- 必須ゲート増: NO。Payment により既存必須 bullet の置換が示されている。
+- 証拠種類の事前固定: NO。branch predicate / data source は semantic difference の到達条件を読む汎用対象であり、特定の assertion boundary や test oracle だけへ固定していない。
 
 支払い（必須ゲート総量不変）:
-- A/B 対応は proposal 内で明示されている。`add MUST("DISCRIMINATIVE QUERY...") ↔ demote/remove MUST("CONFIDENCE...")` があり、必須ゲート総量不変の説明として十分。
+- A/B 対応付けは明示されている。add MUST("After observing...") と demote/remove MUST("Trace each test through both changes separately before comparing") の対応が proposal line 49-50 にある。
+- ただし実装では、per-test tracing の研究コアまで弱めないよう、Compare checklist の独立 bullet を置換するだけに留め、ANALYSIS OF TEST BEHAVIOR と Step 5 の per-test obligation は維持すること。
+
+## 8. Discriminative probe
+
+抽象ケース:
+- 2 つの変更に内部の semantic difference があるが、その差分は特定の入力状態または設定由来の分岐でのみ選ばれる。
+- 変更前は、差分の存在だけで偽 NOT_EQUIV に寄るか、広い relevant test 探索で分岐条件を読まず偽 EQUIV / 過度な保留に寄りやすい。
+- 変更後は、既存 checklist の置換範囲で selection condition / data source を先に読むため、差分が実際に選ばれるかを確認してから test outcome を比較できる。これは新しい必須ゲートの増設ではなく、既存の test tracing 優先 bullet との置換で説明されている。
 
 ## 9. 全体の推論品質への期待効果
 
-期待できる改善:
-- 読む前の hypothesis が単なる予想ではなく、verdict を動かす claim と結びつく。
-- CONFIDENCE の主観ラベルに早く寄りかかる傾向を抑え、探索段階で confirm/refute 条件を持たせられる。
-- EQUIV では no counterexample の検索対象が具体化し、NOT_EQUIV では差分から test outcome divergence への接続が強くなる。
-- Optional info gain が使われないまま流れる問題を、必須の探索クエリとして前段に移すことで、証拠収集の順序が改善する。
+期待される改善:
+- semantic difference を見つけた後の premature verdict を減らせる。
+- 「差分がある」から「その差分が relevant input/test で選ばれる」への橋渡しが明確になる。
+- EQUIV の no-counterexample 論証と NOT_EQUIV の counterexample 論証の両方で、到達条件つきの根拠が増える。
+- 読む量やテンプレート総量を増やさず、既存の探索優先順位を入れ替えるため、複雑性増加は限定的。
 
-軽微な実装注意:
-- DISCRIMINATIVE QUERY が長い説明欄になりすぎると原則 3 の「言い換え形式の目的化」に近づくため、実装は 1 行の探索分岐条件に留めるべき。
-- NEXT ACTION RATIONALE と統合せず、proposal どおり独立欄にすること。
-- Structural triage の早期 NOT_EQUIV 条件へ追加変更しないこと。触る場合は別 proposal として impact witness を明示させるべき。
+回帰リスク:
+- 主なリスクは、branch predicate / data source の確認が過度に義務化され、最初の差分近傍へ探索が固定されること。
+- このリスクは、提案の Non-goal と Payment を実装時に守り、「唯一の経路」ではなく「semantic difference 観測後、選択条件が未読の場合の次読みに関する優先順位」として書けば抑えられる。
 
-## 結論
+## 10. 修正指示（最小限）
 
-この proposal は、汎化性違反がなく、failed-approaches.md の本質的再演でもなく、EQUIVALENT / NOT_EQUIVALENT の両方に対して観測可能な compare 実行時差分を持つ。Decision-point delta、Trigger line、Discriminative probe、支払い対応も明示されているため、監査 PASS の下限を満たす。
+1. 実装時は Compare checklist の置換に限定し、ANALYSIS OF TEST BEHAVIOR / Step 5 / Step 5.5 の per-test trace と assertion/check 接続は弱めないこと。
+2. 追加文は proposal の Trigger line をほぼそのまま使い、"before widening to callers/tests" を残して、単一近傍探索への固定に見えないようにすること。
+3. "Trace each test through both changes separately before comparing" を完全削除する場合は、同等の per-test obligation が template 本体に残っていることを rationale で明記すること。削除が不安なら checklist 上では optional 化ではなく、semantic-difference bullet に統合して総量不変を保つこと。
+
+## 11. 結論
 
 承認: YES
+
+理由: 提案は汎化性違反を含まず、failed-approaches.md の本質的再演でもなく、EQUIVALENT / NOT_EQUIVALENT の両方向に対して実行時アウトカム差が具体的である。Decision-point delta は IF/THEN の Before/After として成立し、Trigger line と Payment も proposal 内に明示されている。実装時は per-test tracing の研究コアを削らず、semantic difference 観測後の探索優先順位の置換として最小 diff に留めること。

@@ -1,19 +1,21 @@
 # Iteration 50 — Overfitting 監査
 
 ## 判定: PASS
-## 合計スコア: 17/18
+## 合計スコア: 15/18
 
 | # | 項目 | スコア | 根拠 |
 |---|------|--------|------|
-| R1 | 汎化性 | 3 | diff/rationale にはベンチマーク対象リポジトリの固有識別子（リポジトリ名、対象ファイルパス、関数名、クラス名、テスト名、テスト ID、実装コード引用）は含まれていない。変更は SKILL.md 自身の探索テンプレート文言と、EQUIV/NOT_EQUIV claim という一般概念に限られており、任意の言語・フレームワークのコード比較に適用可能である。 |
-| R2 | 研究コアの踏襲 | 3 | README.md と docs/design.md が示すコア（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）を削らず、Step 3 の仮説駆動探索を「未解決 claim を confirm/refute できる読解」に寄せている。これは証拠収集前に期待と検証観点を明示する certificate-based reasoning を強化する変更である。 |
-| R3 | 推論プロセスの改善 | 3 | 結論を直接誘導するのではなく、次に読むファイルを選ぶ基準を confidence ラベルから判別的な情報利得へ変更している。探索順を「どの EQUIV/NOT_EQUIV claim を確定または反転できるか」に結びつけるため、コード解析の手順・観点を明確に改善している。 |
-| R4 | 反証可能性の維持 | 3 | `confirm vs refute` を読解前テンプレートに必須化しており、各 read が反対結果をどう検出できるかを明示させる。Step 5 の必須反証も維持されているため、反証可能性は弱まらず、むしろ探索段階から強化されている。 |
-| R5 | 複雑性の抑制 | 3 | 行数・チェック項目数を増やさず、`CONFIDENCE` を `DISCRIMINATIVE QUERY` に置換し、optional な情報利得行を `NEXT ACTION RATIONALE` に整理している。必須ゲートの総量を増やさない最小 diff であり、不当な複雑化は見られない。 |
-| R6 | 回帰リスク | 2 | 変更範囲は Step 3 の探索テンプレートに限定され、既存の構造的 triage、per-test analysis、counterexample/no-counterexample、pre-conclusion self-check は維持されている。一方で、failed-approaches.md の原則 6 が警告する「情報利得欄の圧縮」に近い面があり、optional 行の削除が一部のケースで確認・反証観点を短い rationale に潰すリスクは残る。ただし読解前に `DISCRIMINATIVE QUERY` を追加しているため、改善見込みが回帰リスクを上回る。 |
+| R1 | 汎化性 | 3 | diff/rationale にはベンチマーク対象リポジトリの固有識別子（リポジトリ名、対象ファイルパス、関数名、クラス名、テスト名、テスト ID、実装コード引用）は含まれていない。変更内容は「semantic difference を観測した後、直近の branch predicate / data source を確認してから関連 test/input に通す」という一般的な探索順制御であり、言語・フレームワーク非依存である。SKILL.md 自身の文言引用や一般概念名は R1 の減点対象外。 |
+| R2 | 研究コアの踏襲 | 2 | 番号付き前提、仮説駆動探索、手続き間トレース、per-test analysis、反証、formal conclusion という README/design に示された certificate-based reasoning の骨格は維持されている。semantic difference 後の探索を branch predicate / data source に向ける点は、仮説駆動探索と interprocedural tracing を補強する。一方で、Step 5.5 から「Step 5 refutation が actual file search/code inspection を伴う」ことを確認する bullet が削除され、研究コアのうち mandatory refutation の検証床がやや弱まる懸念があるため 3 ではなく 2。 |
+| R3 | 推論プロセスの改善 | 3 | 変更は結論ラベルを直接指示するものではなく、差分発見後に何を読むべきか、また test comparison では内部差分そのものではなく traced assert/check result を比較する、という推論手順・観点・粒度を明確化している。到達条件を選ぶ branch predicate / data source を先に確認するため、到達不能差分の過大評価と到達可能差分の見落としの双方を減らすプロセス改善になっている。 |
+| R4 | 反証可能性の維持 | 2 | semantic difference を verdict に使うには traced assert/check result の変化が必要、そうでなければ UNVERIFIED とするため、主張と反証対象の対応は明確になる。また関連 test/input を selection 条件に通す指示は反例確認に有益である。ただし、旧 self-check の「refutation or alternative-hypothesis check involved at least one actual file search or code inspection」を削除しているため、反証が実探索を伴ったかを結論直前に再確認する力はやや低下する。Step 5 本体の search/found 形式は残るため 1 ではない。 |
+| R5 | 複雑性の抑制 | 2 | 変更規模は小さく、既存 bullet の統合・置換が中心で、大量のチェック項目や深いネストは追加していない。新しい Trigger line が Step 3 と per-test analysis に追加され、文言上の重複とテンプレート内の認知負荷は少し増えるが、semantic difference 後の探索優先順位を明示する効果に見合う範囲である。 |
+| R6 | 回帰リスク | 2 | 影響範囲は compare mode の semantic difference 処理と per-test comparison に限定され、全体構造を大きく変えてはいない。assert/check result に結びつける方向は D1 の「test outcome」定義と整合し、EQUIVALENT/NOT_EQUIVALENT 双方で証拠の質を上げる見込みがある。一方で failed-approaches.md には、最初に見えた差分から単一の追跡経路へ強く固定しすぎる失敗や、assert/check など単一アンカーへの過度な固定の失敗が記録されている。本変更は branch predicate/data source の特定を挟むためそれらと完全同一ではないが、探索を一つの relevant test/input に早く狭めるリスクは残る。 |
 
 ## 総合コメント
 
-本変更は、特定ケースや特定リポジトリへの適合ではなく、探索行動を verdict-discriminative な証拠収集へ寄せる汎用的な改善である。研究コアである仮説駆動探索と必須反証を維持しつつ、読解前に「何を確認し、何を反証できるか」を明示させる点は、無関係な読解や早すぎる結論を抑える効果が期待できる。
+本変更は、ベンチマーク固有識別子を含まず、semantic difference の扱いを「差分の存在」から「その差分がどの条件で選択され、実際の assert/check result を変えるか」へ寄せる汎用的な推論プロセス改善である。README.md と docs/design.md が説明する certificate-based reasoning、特に hypothesis-driven exploration、per-item tracing、unsupported claim の抑制とは概ね整合している。
 
-主な懸念は、optional な情報利得欄を削除して `NEXT ACTION RATIONALE` に統合した部分が、過去の失敗原則 6 に部分的に近いことである。ただし今回の diff は単なる圧縮ではなく、読解前の必須欄として `DISCRIMINATIVE QUERY` を追加しているため、反証可能な情報利得の明示はむしろ前倒しされている。全項目 2 点以上かつ合計 17/18 のため、合格と判定する。
+主な懸念は 2 点ある。第一に、Step 5.5 から actual file search / code inspection を要求する self-check が削除されており、mandatory refutation の実探索性を最後に検査する力がやや弱まる。第二に、failed-approaches.md の「単一追跡経路への早期固定」や「assert/check アンカーへの過度な固定」に近づく可能性がある。ただし、本 diff は branch predicate / data source をまず確認するという探索上の中間証拠を要求しており、単なる結論固定やケース狙い撃ちではない。
+
+合格基準は「全項目 2 以上、かつ合計 12/18 以上」であり、本監査では全項目 2 以上、合計 15/18 のため PASS と判定する。
