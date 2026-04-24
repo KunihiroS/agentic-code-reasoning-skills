@@ -1,0 +1,8 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/25/26 05:39:32] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 read      benchmark/swebench/runs/iter-51/proposal.md  0.9s
+  ┊ 📖 read      SKILL.md  0.9s
+  ┊ 📖 read      Objective.md  0.9s

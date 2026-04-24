@@ -118,3 +118,6 @@ Generated 20 prompt files in /tmp/tmp.dqvNhsYCkQ
 [START] instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / without_skill  05:33:06
 [DONE]  instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / without_skill  69s
 [START] instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / with_skill  05:34:15
+[DONE]  instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904 / with_skill  301s
+
+=== Compare Pro Benchmark complete: 20 instances, 5475s total ===
