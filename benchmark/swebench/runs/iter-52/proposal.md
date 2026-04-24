@@ -1,0 +1,74 @@
+過去提案との差異: 直近却下案のように早期 NOT_EQUIV 条件を特定の観測境界へ写像せず、結論直前の弱い環と CONFIDENCE/UNVERIFIED の対応だけを変える。
+Target: 両方
+Mechanism (抽象): verdict 直前に、最弱の verdict-bearing link が ANSWER・CONFIDENCE・UNVERIFIED のどれへ影響するかを明示させる。
+Non-goal: 構造差を NOT_EQUIV へ昇格する条件を狭めたり、探索開始点を特定の assertion/check に固定したりしない。
+
+カテゴリ D 内での具体的メカニズム選択理由:
+- D の「結論に至った推論チェーンの弱い環を特定」「確信度と根拠の対応」を、Step 5.5 と Step 6 の既存結論分岐へ直接接続する。
+- compare の挙動差は ANSWER そのものだけでなく、同じ ANSWER でも CONFIDENCE 低下、impact UNVERIFIED 明示、または追加探索要求として観測できる。
+
+Step 1 — 禁止方向の列挙:
+- 再収束を比較規則として前景化し、差分シグナルを弱める方向は禁止。
+- 未確定 relevance や脆い仮定を常に保留側へ倒す既定動作は禁止。
+- 差分昇格条件を新しい抽象ラベルや必須言い換え形式で強くゲートする方向は禁止。
+- 終盤の証拠十分性チェックを単なる confidence 調整へ吸収し、検証フロアを下げる方向は禁止。
+- 最初に見えた差分から単一の追跡経路を即座に既定化する方向は禁止。
+- 探索理由と反証可能な情報利得を短く潰し、中間表現を失う方向は禁止。
+- 早期 NOT_EQUIV の STRUCTURAL TRIAGE 条件を特定の観測境界だけへ写像して狭める方向は禁止。
+
+Step 2 / 2.5 — overall に直結する意思決定ポイント候補:
+1. Pre-conclusion self-check の最終項目
+   - 現在のデフォルト挙動: 「結論が証拠を超えない」だけを確認し、弱い環が ANSWER/CONFIDENCE/UNVERIFIED のどれを変えるかは暗黙に処理しがち。
+   - 変更後の観測可能アウトカム: 同じ証拠でも HIGH から MEDIUM/LOW へ落ちる、impact UNVERIFIED を明示する、または 1 つの追加探索へ戻る。
+2. NO COUNTEREXAMPLE EXISTS のアンカー要求
+   - 現在のデフォルト挙動: semantic difference を見た後、具体入力と同じ assertion outcome の提示へ寄り、EQUIV 側の根拠は強くなるが探索起点が局所化しがち。
+   - 変更後の観測可能アウトカム: EQUIV の no-counterexample 証明が強くなる一方、過度な保留や単一アンカー固定のリスクがある。
+3. STRUCTURAL TRIAGE の直接 NOT EQUIVALENT 許可
+   - 現在のデフォルト挙動: missing file/module/test data が clear structural gap に見えると full analysis 前に NOT EQUIVALENT へ進みがち。
+   - 変更後の観測可能アウトカム: 偽 NOT_EQUIV は減りうるが、特定観測境界への写像に近づくため今回は選ばない。
+
+Step 3 — 選定:
+選ぶ分岐: 1. Pre-conclusion self-check の最終項目。
+理由:
+- 結論直前の IF/THEN を変えるため、ANSWER、CONFIDENCE、UNVERIFIED、追加探索要求のいずれかに実行時差分が出る。
+- structural triage や assertion boundary 固定ではなく、既に集めた証拠の最弱リンクを結論形式へ写像するメタ認知なので、EQUIV/NOT_EQUIV の片側へ過剰最適化しにくい。
+
+改善仮説:
+結論直前に「最弱の verdict-bearing link が出力のどの部分を変えるか」を明示させると、証拠はあるが一部が脆いケースで、偽の高信頼 EQUIV/NOT_EQUIV と不要な全面保留の両方を減らせる。
+
+SKILL.md の該当箇所と変更方針:
+短い引用:
+- 「The conclusion I am about to write asserts nothing beyond what the traced evidence supports.」
+- 「Assigns a confidence level: HIGH / MEDIUM / LOW」
+変更方針:
+この広い自己確認を、最弱リンクと出力差分を結びつける 1 行へ置換し、Step 6 の confidence もそのリンクに紐づく表現へ圧縮する。新しい必須ゲートの純増ではなく、既存必須チェック 1 行の置換で総量を保つ。
+
+Payment: add MUST("Before ANSWER/CONFIDENCE, name the weakest verdict-bearing link and state whether the evidence supports the verdict, lowers confidence, or leaves impact UNVERIFIED.") ↔ remove MUST("The conclusion I am about to write asserts nothing beyond what the traced evidence supports.")
+
+Decision-point delta:
+Before: IF traced evidence appears sufficient but one verdict-bearing assumption is weaker than the rest THEN proceed to FORMAL CONCLUSION and assign a global confidence because the checklist only asks whether the conclusion overclaims the evidence.
+After:  IF traced evidence appears sufficient but one verdict-bearing assumption is weaker than the rest THEN name that weakest link and choose whether it supports the verdict, lowers CONFIDENCE, leaves impact UNVERIFIED, or requires one targeted follow-up because confidence must correspond to the weakest verdict-bearing support.
+
+変更差分プレビュー:
+Before:
+- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
+...
+- Assigns a confidence level: HIGH / MEDIUM / LOW
+After:
+- [ ] Before ANSWER/CONFIDENCE, name the weakest verdict-bearing link and state whether the evidence supports the verdict, lowers confidence, or leaves impact UNVERIFIED.
+Trigger line (planned): "Before ANSWER/CONFIDENCE, name the weakest verdict-bearing link and state whether the evidence supports the verdict, lowers confidence, or leaves impact UNVERIFIED."
+...
+- Assigns a confidence level tied to the weakest verdict-bearing link: HIGH / MEDIUM / LOW
+
+Discriminative probe:
+抽象ケース: 両変更の主要 trace は同じ outcome を示すが、片方だけ third-party/library behavior または indirect dispatch の仮定に依存している。
+Before では「証拠を超えていない」と判断して偽の高信頼 EQUIV または偽の高信頼 NOT_EQUIV へ進みがちだが、After ではその仮定を最弱リンクとして明示し、ANSWER を保つなら CONFIDENCE を下げ、impact が結論を左右するなら UNVERIFIED または一点追加探索へ戻す。
+これは新しい必須ゲートの増設ではなく、既存の結論直前チェック 1 行を置換して、同じ手順量で出力分岐を変える。
+
+failed-approaches.md との照合:
+- 原則 2 に反しない: 未確定性を常に保留へ倒す既定動作ではなく、supports verdict / lowers confidence / leaves impact UNVERIFIED / targeted follow-up の分岐を明示するだけである。
+- 原則 4 に反しない: 終盤チェックを confidence-only へ吸収せず、最弱リンクが ANSWER や UNVERIFIED を変える場合を残すため、最低限の検証フロアを維持する。
+- 原則 5 に反しない: semantic difference 後の探索経路を単一アンカーへ固定せず、結論チェーン全体の弱点を対象にする。
+
+変更規模の宣言:
+想定差分は Step 5.5 の 1 行置換と Step 6 の 1 行置換のみ、合計 2 行程度。hard limit 15 行以内に収める。

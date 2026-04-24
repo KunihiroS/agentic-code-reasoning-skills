@@ -1,0 +1,21 @@
+diff --git a/SKILL.md b/SKILL.md
+index 45ad3891..4ff08457 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -119,14 +119,14 @@ Before writing the formal conclusion, check each item below. If any answer is **
+ - [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
+ - [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
+ - [ ] Any semantic difference used for the verdict changes a traced assert/check result; otherwise the impact is marked UNVERIFIED.
+-- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
++- [ ] Before ANSWER/CONFIDENCE, name the weakest verdict-bearing link and state whether the evidence supports the verdict, lowers confidence, or leaves impact UNVERIFIED.
+ 
+ ### Step 6: Formal conclusion
+ Write a conclusion that:
+ - References specific numbered premises and claims (e.g., "By P1 and C2…")
+ - States what was established
+ - States what remains uncertain or unverified
+-- Assigns a confidence level: HIGH / MEDIUM / LOW
++- Assigns a confidence level tied to the weakest verdict-bearing link: HIGH / MEDIUM / LOW
+ 
+ ---
+ 
