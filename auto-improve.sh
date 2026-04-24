@@ -195,7 +195,7 @@ entries = [json.loads(l) for l in open('$ARCHIVE_FILE')]
 recent = [e for e in entries[-$GOAL_WINDOW:] if e.get('valid_parent')]
 if len(recent) < $GOAL_PERFECT_COUNT:
     exit(1)
-good = sum(1 for e in recent if e['scores'].get('compare', 0) >= 75)
+good = sum(1 for e in recent if e['scores'].get('compare', 0) >= 100)
 exit(0 if good >= $GOAL_PERFECT_COUNT else 1)
 " 2>/dev/null
 }
