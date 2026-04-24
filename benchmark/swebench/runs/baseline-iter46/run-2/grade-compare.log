@@ -1,0 +1,14 @@
+Graded 40 compare results → benchmark/swebench/runs/baseline-iter46/run-2/compare/grades_compare.json
+
+without_skill:
+  Overall:        12/20 = 60.0%
+  EQUIVALENT:     2/10 = 20.0%
+  NOT_EQUIVALENT: 10/10 = 100.0%
+  Avg duration:   93s
+
+with_skill:
+  Overall:        12/20 = 60.0%
+  EQUIVALENT:     4/10 = 40.0%
+  NOT_EQUIVALENT: 8/10 = 80.0%
+  UNKNOWN:        1
+  Avg duration:   448s

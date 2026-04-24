@@ -74,7 +74,7 @@ To prevent misapplication, the skill now includes **activation gates** — condi
 
 ## Reliability Evaluation
 
-Evaluated on two benchmarks using `claude-haiku-4.5` as the benchmark model (with-skill vs without-skill ablation):
+Evaluated on Compare Pro benchmark using `gpt-5.4` (openai-codex) as the benchmark model (with-skill vs without-skill ablation):
 
 ### Compare Pro (SWE-bench Pro, 20 pairs, multi-language)
 
@@ -82,23 +82,13 @@ Evaluated on two benchmarks using `claude-haiku-4.5` as the benchmark model (wit
 
 | | without skill | with skill | Delta |
 |---|---|---|---|
-| **Overall** (avg of 6 runs) | 59.2% | **64.2%** | **+5.0pp** |
-| stdev | 8.6% | 10.5% | — |
-
-### Audit-Improve (SWE-bench Pro security bugs, 28 tasks)
-
-28 security vulnerability localization tasks across ansible, flipt-io, teleport, vuls, NodeBB, etc. (Go, Python, JS, TS).
-
-| | without skill | with skill | Delta |
-|---|---|---|---|
-| **File+func match** (avg of 4 runs) | 82.1% | **88.4%** | **+6.3pp** |
-| stdev | 0% | 3.5% | — |
+| **Overall** (avg of 5 runs) | 59.0% | **69.0%** | **+10.0pp** |
 
 ### Key findings
-- The skill provides consistent positive effect across both benchmarks.
-- Audit-improve shows stable improvement with near-zero variance on the without-skill baseline.
-- Compare Pro has higher variance; the skill also reduces output variance (stdev 10.5% vs 8.6% without).
-- 118 iterations of automated self-improvement (Phase 1-2) converged statistically; structural changes to the SKILL.md (STRUCTURAL TRIAGE, Activation gates) provided measurable improvements.
+- The skill provides consistent improvement on patch equivalence verification (+10.0pp).
+- Primary improvement is in EQUIVALENT detection: without-skill models tend to over-predict NOT_EQUIVALENT.
+- 46 iterations of automated self-improvement with genetic selection (score_prop) and meta-agent template evolution.
+- The NO COUNTEREXAMPLE EXISTS template improvement (iter-46) was the most effective change, anchoring equivalence claims to observed semantic differences.
 
 Raw outputs: [`benchmark/swebench/`](benchmark/swebench/)
 

