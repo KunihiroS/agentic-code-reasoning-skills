@@ -42,13 +42,13 @@ PI_MODEL="gemini-3.1-pro-preview"
 
 # 8.8: 監査役を Hermes Agent に置換 (旧 Pi)
 HERMES_PROVIDER="openai-codex"
-HERMES_MODEL="gpt-5.4"
+HERMES_MODEL="gpt-5.5"
 
 # Phase 3 (2026-04-16): copilot → openai-codex に移行 (copilot 使用上限対策)。
 # propose/implement は Hermes 経由 openai-codex/gpt-5.2 を使う。
 # 監査役/メタエージェントは openai-codex/gpt-5.4。
 HERMES_PROPOSER_PROVIDER="openai-codex"
-HERMES_PROPOSER_MODEL="gpt-5.4"
+HERMES_PROPOSER_MODEL="gpt-5.5"
 
 # オプション解析
 PARSED_OPTS=()
