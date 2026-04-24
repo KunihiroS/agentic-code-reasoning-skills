@@ -63,7 +63,8 @@ HYPOTHESIS UPDATE:
 UNRESOLVED:
   - [remaining questions]
 
-NEXT ACTION RATIONALE: [what uncertainty this action resolves and what claim/verdict could change]
+NEXT ACTION RATIONALE: [why the next file or step is justified]
+OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
 ```
 
 Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.

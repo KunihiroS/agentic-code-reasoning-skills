@@ -1,0 +1,8 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/25/26 04:00:04] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 read      failed-approaches.md  0.9s
+  ┊ 📖 read      Objective.md  0.9s
+  ┊ 📖 read      SKILL.md  0.9s
