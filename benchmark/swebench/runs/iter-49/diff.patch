@@ -1,0 +1,32 @@
+diff --git a/SKILL.md b/SKILL.md
+index 22dea8b9..6436582f 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -41,7 +41,7 @@ P3: ...
+ Do not treat guesses as premises. Every later claim must reference a premise by number.
+ 
+ ### Step 3: Hypothesis-driven exploration
+-Exploration priority is not a fixed reading order; choose the next action by discriminative power — what unresolved uncertainty it resolves.
++Exploration priority is not a fixed reading order; choose the next action by discriminative power — which unresolved EQUIV/NOT_EQUIV claim it could change.
+ Before opening any file, write:
+ 
+ ```
+@@ -64,7 +64,8 @@ UNRESOLVED:
+   - [remaining questions]
+ 
+ NEXT ACTION RATIONALE: [why the next file or step is justified]
+-OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
++Trigger line (planned): "MUST name VERDICT-FLIP TARGET: the unresolved EQUIV/NOT_EQUIV claim this action could change, or 'confidence only'."
++If the target is confidence-only, prefer concluding with explicit uncertainty/CONFIDENCE over more browsing unless a required trace or refutation item is still missing.
+ ```
+ 
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
+@@ -137,7 +138,7 @@ Goal: determine whether two changes produce the same relevant behavior.
+ 
+ ### Certificate template
+ 
+-Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
++Use the certificate sections as the guide for the evidence needed before conclusion; do not add unrelated browsing once the verdict-bearing claims are resolved.
+ 
+ ```
+ DEFINITIONS:

@@ -1,71 +1,81 @@
-過去提案との差異: 直近却下案のように特定の観測境界へ構造差を写像して狭めるのではなく、早期結論の順序を「構造差の発見→最短の影響トレース→結論」に並べ替える。
+過去提案との差異: 直近の却下案のように構造差を特定の観測境界へ写像して早期 NOT_EQUIV 条件を狭めるのではなく、探索順を「次の行動がどの verdict claim を反転しうるか」で選ばせる。
 Target: 両方
-Mechanism (抽象): 構造差を見つけた直後の直接結論を、verdict に効く最短トレースを先に作る順序へ置換する。
-Non-goal: 特定のテスト種別、言語、リポジトリ、または固定された観測境界を新しい判定条件にしない。
-
-禁止方向の確認:
-- 再収束を比較規則として前景化しすぎる変更は避ける。
-- 未確定 relevance を常に保留へ倒す既定動作は避ける。
-- 差分を新しい抽象ラベルや固定アンカーで強くゲートする変更は避ける。
-- 終盤の証拠十分性チェックを confidence 調整だけへ吸収しない。
-- 最初に見えた差分から単一の追跡経路を既定化しない。
-- 近接欄を統合して探索理由と反証可能性を潰さない。
-- 直近却下案と同じ、具体的なイテレーション識別子や特定ケース識別子に依存する記述はしない。
+Mechanism (抽象): 固定順・網羅順の探索を、ANSWER を変えうる未解決 claim を先に解く順序へ置換する。
+Non-goal: 特定の assertion boundary、テスト種別、構造差パターンを新しい判定ゲートにしない。
 
 カテゴリ A 内での具体的メカニズム選択理由:
-1. Compare の現在の強い分岐は STRUCTURAL TRIAGE 後に直接 FORMAL CONCLUSION へ進める点で、ここを「結論前に最短影響トレースを挟む」順序へ変えると、ANSWER と CONFIDENCE が実際に変わりうる。
-2. これは結論条件を特定の境界へ狭めるのではなく、構造差を発見した後の処理順を変えるため、探索経路の半固定ではなく偽 EQUIV/偽 NOT_EQUIV の両方に効く。
+- Exploration Framework の A「結論から逆算して必要な証拠を特定する」に沿い、次に読む対象を固定リスト順ではなく verdict 反転可能性から逆算して決める。
+- compare の実行時アウトカムに直結する。ANSWER を変えない探索なら追加探索を抑え、変える探索なら EQUIV/NOT_EQUIV の結論前に優先されるため、結論・保留・CONFIDENCE が変わりうる。
 
-意思決定ポイント候補と Step 2.5:
-- 候補1: STRUCTURAL TRIAGE の clear structural gap。現在は証拠が薄くても直接 NOT EQUIVALENT に進みがち。変更後は追加探索または CONFIDENCE 低下を伴う最短影響トレースにアウトカムが変わる。
-- 候補2: UNVERIFIED third-party/library behavior。現在は仮定を注記して結論へ進みがち。変更後は ANSWER より UNVERIFIED/CONFIDENCE の明示が変わる。
-- 候補3: semantic difference 発見後の relevance 判断。現在は関連テストを一つ辿って影響なしとしがち。変更後は反証探索の継続/打ち切り条件が変わる。
+Step 1 — 禁止された方向の列挙:
+- 再収束を比較規則として前景化し、途中差分を弱める方向。
+- 未確定 relevance や脆い仮定を広く保留側へ倒す既定動作。
+- 差分昇格を新しい抽象ラベルや必須の言い換え形式で強くゲートする方向。
+- 終盤の証拠十分性を単なる confidence 調整へ吸収し、早期 closure を増やす方向。
+- 最初に見えた差分から単一の追跡経路を即座に固定する方向。
+- 探索理由と反証可能な情報利得を一つの短い要求へ潰し、判定との接続を弱める方向。
+- 直近の却下理由に従い、proposal 本文には具体的な過去イテレーション ID を入れない。
+- 特に、STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定の観測境界へ狭める変更は採用しない。
 
-選択: 候補1。
-選定理由:
-- 早期 NOT EQUIVALENT の直接分岐は、詳細 ANALYSIS を省略できるため、誤った構造差の過大評価が ANSWER に直結する。
-- 一方で構造差を弱めすぎると偽 EQUIV が増えるため、構造差は保ちつつ結論前の順序だけを最短トレースへ変えるのが overall に向く。
+Step 2 / 2.5 — overall に直結する意思決定ポイント候補:
+1. Next-action selection in Step 3
+   - 現在のデフォルト挙動: NEXT ACTION RATIONALE は理由を述べるが、証拠不足時に「次に何が ANSWER を変えるか」よりテンプレート順・読みやすい順へ流れやすい。
+   - 変更後の観測可能アウトカム: ANSWER を変えうる claim なら追加探索、confidence only なら過度な追加探索を抑えて CONFIDENCE 調整へ回る。
+2. Step 5.5 の NO 発生時の扱い
+   - 現在のデフォルト挙動: どの NO も一律に「fix it before Step 6」となり、局所的な不足と結論反転級の不足が同じ追加探索へ見えやすい。
+   - 変更後の観測可能アウトカム: 反転可能な不足は追加探索、結論を変えない不足は UNVERIFIED 明示または CONFIDENCE 低下に分岐できる。
+3. NO COUNTEREXAMPLE EXISTS の探索停止条件
+   - 現在のデフォルト挙動: observed semantic difference がある場合は anchored pattern を探すが、見つからない後にどの時点で十分とするかは広く解釈されやすい。
+   - 変更後の観測可能アウトカム: 反証候補が ANSWER を変えるものか confidence only かで、EQUIV 結論・保留・追加探索の切り分けが明確になる。
+
+Step 3 — 選択する分岐:
+選ぶのは 1. Next-action selection in Step 3。
+理由は 2 点以内:
+- compare の全探索順を決める上流分岐なので、偽 EQUIV と偽 NOT_EQUIV のどちらにも作用し、片側だけの判定規則にならない。
+- IF 条件を「未解決 uncertainty」から「次の行動が verdict claim を反転しうる unresolved claim か」へ変えるため、単なる説明強化ではなく追加探索/結論/CONFIDENCE の実行時アウトカムが変わる。
 
 改善仮説:
-構造差を verdict として即時消費せず、まず「その差が少なくとも一つの関連テスト結果へ到達する最短経路」を構成してから結論へ進ませると、構造差の判別力を維持しながら、根拠の薄い早期 NOT_EQUIV と差分見落としによる偽 EQUIV の両方を減らせる。
+次に読む対象を「情報量があるか」ではなく「どの EQUIV/NOT_EQUIV claim を反転しうるか」で選ばせると、固定順の網羅探索と早すぎる結論の両方を減らし、overall の判定品質が上がる。
 
 SKILL.md の該当箇所と変更方針:
-現在の自己引用:
-"If S1 or S2 reveals a clear structural gap (missing file, missing module
-update, missing test data), you may proceed directly to FORMAL CONCLUSION
-with NOT EQUIVALENT without completing the full ANALYSIS section."
+短い引用:
+- "NEXT ACTION RATIONALE: [why the next file or step is justified]"
+- "OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]"
+- "Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS."
 
 変更方針:
-この直接ジャンプを、STRUCTURAL TRIAGE で見つけた gap を最短の verdict-affecting trace として ANALYSIS に先に記録する指示へ置換する。full ANALYSIS の完全実施を増やすのではなく、直接結論の前に最短経路だけを置く順序変更にする。
+- Optional な INFO GAIN を、次の行動が verdict を反転しうる claim を名指す短い行へ置換する。
+- その支払いとして、Compare template 冒頭の重い全セクション完遂命令を、構造上必要な証拠を満たす certificate として使う表現へ弱める。Core Method と Step 5.5 は維持するため、研究コアは削らない。
 
-Payment: add MUST("Before using a structural gap for NOT EQUIVALENT, record the shortest trace from the gap to a relevant PASS/FAIL outcome, or mark the verdict LOW confidence if that trace is unavailable.") ↔ demote/remove MUST("Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.")
+Payment: add MUST("Before the next read/trace, name the VERDICT-FLIP TARGET: the unresolved EQUIV/NOT_EQUIV claim this action could change, or 'confidence only'.") ↔ demote/remove MUST("Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.")
 
 Decision-point delta:
-Before: IF S1 or S2 reveals a clear structural gap THEN proceed directly to FORMAL CONCLUSION with NOT EQUIVALENT because structural absence is treated as sufficient evidence.
-After:  IF S1 or S2 reveals a clear structural gap THEN first record the shortest trace from that gap to a relevant PASS/FAIL outcome, and only then conclude or lower confidence because the gap is used as verdict-affecting evidence rather than a standalone shortcut.
+Before: IF an uncertainty remains after reading THEN choose a next file/step justified by rationale and optional info gain because it may resolve a hypothesis or claim.
+After:  IF an uncertainty remains after reading THEN choose the next file/step only if it names an unresolved EQUIV/NOT_EQUIV claim it could change; otherwise conclude with stated uncertainty or lower CONFIDENCE because the action is confidence-only.
 
 変更差分プレビュー:
 Before:
-"If S1 or S2 reveals a clear structural gap (missing file, missing module
-update, missing test data), you may proceed directly to FORMAL CONCLUSION
-with NOT EQUIVALENT without completing the full ANALYSIS section."
-
+```
+Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
+NEXT ACTION RATIONALE: [why the next file or step is justified]
+OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
+```
 After:
-"If S1 or S2 reveals a clear structural gap (missing file, missing module
-update, missing test data), treat it as the first ANALYSIS item, not as a
-standalone verdict."
-Trigger line (planned): "Before using a structural gap for NOT EQUIVALENT, record the shortest trace from the gap to a relevant PASS/FAIL outcome, or mark the verdict LOW confidence if that trace is unavailable."
-"You may keep the remaining ANALYSIS minimal when this trace already decides
-all relevant outcomes."
+```
+Use the certificate sections as the guide for the evidence needed before conclusion; do not add unrelated browsing once the verdict-bearing claims are resolved.
+NEXT ACTION RATIONALE: [why the next file or step is justified]
+Trigger line (planned): "MUST name VERDICT-FLIP TARGET: the unresolved EQUIV/NOT_EQUIV claim this action could change, or 'confidence only'."
+If the target is confidence-only, prefer concluding with explicit uncertainty/CONFIDENCE over more browsing unless a required trace or refutation item is still missing.
+```
 
 Discriminative probe:
-抽象ケース: 片方の変更だけが補助ファイルを編集しているが、その補助ファイルが関連テストの実行経路に入るかは未確認。
-Before では「片方にだけファイル差がある」ことから偽 NOT_EQUIV へ進みがち。After では最短影響トレースが作れなければ LOW confidence/保留寄りになり、作れれば正しい NOT_EQUIV として強化される。
-これは新しい必須ゲートの純増ではなく、既存の直接ジャンプ文言を置換し、full ANALYSIS 必須の圧を一部支払いとして下げる範囲に留める。
+抽象ケース: 2 つの変更は同じ fail-to-pass outcome を示すが、片方に補助関数の内部差分があり、その差分が relevant test の assertion に届くか未確認。
+Before では、テンプレート順で周辺ファイルを読み続けて過度な保留になるか、逆に補助差分を見ただけで偽 NOT_EQUIV に寄りやすい。After では、次の trace が「その差分が assertion outcome を変える claim」を反転できる場合だけ優先し、反転できない場合は confidence-only として EQUIV/低 CONFIDENCE/UNVERIFIED 明示に分岐する。
+これは新しい必須ゲートの純増ではなく、既存の optional info-gain 行を verdict-flip 行へ置換し、重複気味の全セクション完遂命令を弱める支払いで総量を不変にする。
 
 failed-approaches.md との照合:
-- 原則3の「差分昇格条件を抽象ラベルや固定アンカーで強くゲートしすぎる」失敗を避けるため、missing file 等を新ラベル分類せず、既存の構造差から最短の影響トレースへ順序だけを変える。
-- 原則2の「未確定 relevance を常に保留へ倒す」失敗を避けるため、未確認なら必ず保留ではなく、trace が取れた場合は NOT_EQUIV へ進める。
+- 原則 5 と整合する。最初に見えた差分から単一の追跡経路を固定せず、複数の未解決 claim のうち verdict を変えうるものを選ぶ。
+- 原則 2 と 4 を避ける。未検証性を常に保留へ倒さず、また証拠十分性を単なる confidence に吸収せず、verdict-bearing claim と confidence-only を分ける。
 
 変更規模の宣言:
-SKILL.md の変更は STRUCTURAL TRIAGE 直後の 3 行を 5 行程度へ置換する想定で、差分は 15 行以内。研究のコア構造である番号付き前提、仮説駆動探索、手続き間トレース、必須反証は維持する。
+SKILL.md の変更は 4〜6 行程度の置換・圧縮に限定し、15 行以内に収める。新規モードは追加しない。番号付き前提、仮説駆動探索、手続き間トレース、必須反証は維持する。

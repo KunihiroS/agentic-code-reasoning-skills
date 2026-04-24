@@ -1,0 +1,23 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..79115938 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -47,7 +47,7 @@ Before opening any file, write:
+ ```
+ HYPOTHESIS H[N]: [what you expect to find and why]
+ EVIDENCE: [what supports this hypothesis — cite premises or prior observations]
+-CONFIDENCE: high / medium / low
++DISCRIMINATIVE QUERY: [which unsettled EQUIV/NOT_EQUIV claim this read can confirm vs refute]
+ ```
+ 
+ After reading, record:
+@@ -63,8 +63,7 @@ HYPOTHESIS UPDATE:
+ UNRESOLVED:
+   - [remaining questions]
+ 
+-NEXT ACTION RATIONALE: [why the next file or step is justified]
+-OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
++NEXT ACTION RATIONALE: [why this query is the next highest-information read]
+ ```
+ 
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.

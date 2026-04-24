@@ -1,8 +1,104 @@
 DuckDuckGo MCP Server initialized:
   SafeSearch: MODERATE (kp=-1)
   Default Region: none
-[04/25/26 04:00:04] INFO     Processing request of type            server.py:727
+[04/25/26 04:04:45] INFO     Processing request of type            server.py:727
                              ListToolsRequest                                   
   ┊ 📖 read      failed-approaches.md  0.9s
   ┊ 📖 read      Objective.md  0.9s
   ┊ 📖 read      SKILL.md  0.9s
+  ┊ 📖 read      README.md  0.8s
+  ┊ 📖 read      docs/design.md  0.8s
+  ┊ ✍️  write     benchmark/swebench/runs/iter-49/proposal.md  0.6s
+  ┊ review diff
+a/benchmark/swebench/runs/iter-49/proposal.md → b/benchmark/swebench/runs/iter-49/proposal.md
+@@ -0,0 +1,81 @@
++過去提案との差異: 直近の却下案のように構造差を特定の観測境界へ写像して早期 NOT_EQUIV 条件を狭めるのではなく、探索順を「次の行動がどの verdict claim を反転しうるか」で選ばせる。
++Target: 両方
++Mechanism (抽象): 固定順・網羅順の探索を、ANSWER を変えうる未解決 claim を先に解く順序へ置換する。
++Non-goal: 特定の assertion boundary、テスト種別、構造差パターンを新しい判定ゲートにしない。
++
++カテゴリ A 内での具体的メカニズム選択理由:
++- Exploration Framework の A「結論から逆算して必要な証拠を特定する」に沿い、次に読む対象を固定リスト順ではなく verdict 反転可能性から逆算して決める。
++- compare の実行時アウトカムに直結する。ANSWER を変えない探索なら追加探索を抑え、変える探索なら EQUIV/NOT_EQUIV の結論前に優先されるため、結論・保留・CONFIDENCE が変わりうる。
++
++Step 1 — 禁止された方向の列挙:
++- 再収束を比較規則として前景化し、途中差分を弱める方向。
++- 未確定 relevance や脆い仮定を広く保留側へ倒す既定動作。
++- 差分昇格を新しい抽象ラベルや必須の言い換え形式で強くゲートする方向。
++- 終盤の証拠十分性を単なる confidence 調整へ吸収し、早期 closure を増やす方向。
++- 最初に見えた差分から単一の追跡経路を即座に固定する方向。
++- 探索理由と反証可能な情報利得を一つの短い要求へ潰し、判定との接続を弱める方向。
++- 直近の却下理由に従い、proposal 本文には具体的な過去イテレーション ID を入れない。
++- 特に、STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を特定の観測境界へ狭める変更は採用しない。
++
++Step 2 / 2.5 — overall に直結する意思決定ポイント候補:
++1. Next-action selection in Step 3
++   - 現在のデフォルト挙動: NEXT ACTION RATIONALE は理由を述べるが、証拠不足時に「次に何が ANSWER を変えるか」よりテンプレート順・読みやすい順へ流れやすい。
++   - 変更後の観測可能アウトカム: ANSWER を変えうる claim なら追加探索、confidence only なら過度な追加探索を抑えて CONFIDENCE 調整へ回る。
++2. Step 5.5 の NO 発生時の扱い
++   - 現在のデフォルト挙動: どの NO も一律に「fix it before Step 6」となり、局所的な不足と結論反転級の不足が同じ追加探索へ見えやすい。
++   - 変更後の観測可能アウトカム: 反転可能な不足は追加探索、結論を変えない不足は UNVERIFIED 明示または CONFIDENCE 低下に分岐できる。
++3. NO COUNTEREXAMPLE EXISTS の探索停止条件
++   - 現在のデフォルト挙動: observed semantic difference がある場合は anchored pattern を探すが、見つからない後にどの時点で十分とするかは広く解釈されやすい。
++   - 変更後の観測可能アウトカム: 反証候補が ANSWER を変えるものか confidence only かで、EQUIV 結論・保留・追加探索の切り分けが明確になる。
++
++Step 3 — 選択する分岐:
++選ぶのは 1. Next-action selection in Step 3。
++理由は 2 点以内:
++- compare の全探索順を決める上流分岐なので、偽 EQUIV と偽 NOT_EQUIV のどちらにも作用し、片側だけの判定規則にならない。
++- IF 条件を「未解決 uncertainty」から「次の行動が verdict claim を反転しうる unresolved claim か」へ変えるため、単なる説明強化ではなく追加探索/結論/CONFIDENCE の実行時アウトカムが変わる。
++
++改善仮説:
++次に読む対象を「情報量があるか」ではなく「どの EQUIV/NOT_EQUIV claim を反転しうるか」で選ばせると、固定順の網羅探索と早すぎる結論の両方を減らし、overall の判定品質が上がる。
++
++SKILL.md の該当箇所と変更方針:
++短い引用:
++- "NEXT ACTION RATIONALE: [why the next file or step is justified]"
++- "OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]"
++- "Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS."
++
++変更方針:
++- Optional な INFO GAIN を、次の行動が verdict を反転しうる claim を名指す短い行へ置換する。
++- その支払いとして、Compare template 冒頭の重い全セクション完遂命令を、構造上必要な証拠を満たす certificate として使う表現へ弱める。Core Method と Step 5.5 は維持するため、研究コアは削らない。
++
++Payment: add MUST("Before the next read/trace, name the VERDICT-FLIP TARGET: the unresolved EQUIV/NOT_EQUIV claim this action could change, or 'confidence only'.") ↔ demote/remove MUST("Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.")
++
++Decision-point delta:
++Before: IF an uncertainty remains after reading THEN choose a next file/step justified by rationale and optional info gain because it may resolve a hypothesis or claim.
++After:  IF an uncertainty remains after reading THEN choose the next file/step only if it names an unresolved EQUIV/NOT_EQUIV claim it could change; otherwise conclude with stated uncertainty or lower CONFIDENCE because the action is confidence-only.
++
++変更差分プレビュー:
++Before:
++```
++Complete every section. Do not skip to FORMAL CONCLUSION without completing ANALYSIS.
++NEXT ACTION RATIONALE: [why the next file or step is justified]
++OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
++```
++After:
++```
++Use the certificate sections as the guide for the evidence needed before conclusion; do not add unrelated browsing once the verdict-bearing claims are resolved.
++NEXT ACTION RATIONALE: [why the next file or step is justified]
++Trigger line (planned): "MUST name VERDICT-FLIP TARGET: the unresolved EQUIV/NOT_EQUIV claim this action could change, or 'confidence only'."
++If the target is confidence-only, prefer concluding with explicit uncertainty/CONFIDENCE over more browsing unless a required trace or refutation item is still missing.
++```
++
++Discriminative probe:
++抽象ケース: 2 つの変更は同じ fail-to-pass outcome を示すが、片方に補助関数の内部差分があり、その差分が relevant test の assertion に届くか未確認。
++Before では、テンプレート順で周辺ファイルを読み続けて過度な保留になるか、逆に補助差分を見ただけで偽 NOT_EQUIV に寄りやすい。After では、次の trace が「その差分が assertion outcome を変える claim」を反転できる場合だけ優先し、反転できない場合は confidence-only として EQUIV/低 CONFIDENCE/UNVERIFIED 明示に分岐する。
++これは新しい必須ゲートの純増ではなく、既存の optional info-gain 行を verdict-flip 行へ置換し、重複気味の全セクション完遂命令を弱める支払いで総量を不変にする。
++
++failed-approaches.md との照合:
++- 原則 5 と整合する。最初に見えた差分から単一の追跡経路を固定せず、複数の未解決 claim のうち verdict を変えうるものを選ぶ。
++- 原則 2 と 4 を避ける。未検証性を常に保留へ倒さず、また証拠十分性を単なる confidence に吸収せず、verdict-bearing claim と confidence-only を分ける。
+… omitted 3 diff line(s) across 1 additional file(s)/section(s)
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+proposal.md を作成しました。
+
+出力先:
+proposal.md を作成しました。
+
+出力先:
+benchmark/swebench/runs/iter-49/proposal.md
+
+session_id: 20260425_040445_203022
