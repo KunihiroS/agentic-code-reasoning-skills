@@ -60,7 +60,7 @@ entry = {
     "scores": {
         "compare": compare_score,
         "audit": audit_score,
-        "overall": min(compare_score, audit_score),
+        "overall": compare_score if audit_score == 0 else min(compare_score, audit_score),
     },
     "valid_parent": (valid_parent == "true") and snap_exists,
     "template_version": template_version,
