@@ -2007,3 +2007,27 @@ meta-propose → 即適用 → (次のスコアで事後判定のみ)
 #### 次のアクション
 
 メタエージェントのテンプレート改善に監査プロセスを導入する。具体的なパイプライン設計は次節で検討。
+
+### 19.9 参考文献・関連プロジェクト (2026-04-24)
+
+#### AutoAgent (kevinrgu/autoagent)
+- URL: https://github.com/kevinrgu/autoagent
+- 概要: メタエージェントが agent.py を自動修正→ベンチ→keep/discard を繰り返す自己改善フレームワーク
+- 我々との類似: ベンチマーク駆動の自己改善ループ、`program.md` による目標定義（我々の Objective.md に相当）
+- 我々の優位: 遺伝的選択 (score_prop)、メタ監査、failed-approaches による失敗知識蓄積、引き算探索 (カテゴリ G)
+- AutoAgent の優位: Docker 隔離、シンプルな single-file 設計、agent.py 全体を修正可能
+
+#### SGS - Scaling Self-Play with Self-Guidance (LukeBailey181/sgs)
+- URL: https://github.com/LukeBailey181/sgs
+- 論文: 非対称 self-play で 7B モデルが 671B モデルの性能を超える
+- 核心: 1 つのモデルが Solver / Conjecturer / Guide の 3 役を演じる自己改善ループ
+- 我々への示唆:
+  - **Conjecturer（ベンチマーク自動生成）の欠如**: 我々のベンチは固定 20 ペア。SGS のように「解ける限界の問題を自動生成」すれば局所最適を避けられる
+  - **Guide の重要性**: SGS でも Guide を外すと性能低下。我々の meta-audit 導入（v16 崩壊→回復）と同じ知見
+  - **難易度カリキュラム**: without でも解ける簡単なケースではなく、with_skill でも失敗するケースを重点的に増やす方向
+- 差分: SGS は形式証明（Lean 4 で自動検証可能）、我々はコード推論（検証に LLM Judge が必要でコストが高い）
+
+#### smolvm (smol-machines/smolvm)
+- URL: https://github.com/smol-machines/smolvm
+- 概要: 200ms 起動の軽量 VM。ハードウェアレベル隔離、ネットワーク opt-in、`.smolmachine` パッケージング
+- フレームワーク化への活用: auto-improve ループを `.smolmachine` にパッケージングして配布可能。Docker daemon 不要、依存ゼロ
