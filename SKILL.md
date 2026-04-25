@@ -64,7 +64,7 @@ UNRESOLVED:
   - [remaining questions]
 
 NEXT ACTION RATIONALE: [why the next file or step is justified]
-DISCRIMINATIVE READ TARGET: [smallest source/test artifact likely to separate at least two live hypotheses; if none exists, write NOT FOUND and broaden one step]
+OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
 ```
 
 Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
@@ -86,6 +86,7 @@ For every function or method encountered on a relevant code path, record:
 - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
 
 ### Step 5: Refutation check (required)
+This step is **mandatory**, not optional.
 
 **Scope**: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim — especially:
 - "No test exercises this difference" — before asserting this, describe what such a test would look like and show you searched for exactly that pattern.
@@ -182,15 +183,13 @@ For each relevant test:
                 because [trace from changed code to test assertion outcome — cite file:line]
   Claim C[N].2: With Change B, this test will [PASS/FAIL]
                 because [trace from changed code to test assertion outcome — cite file:line]
-  Behavior relation: SAME / DIFFERENT mechanism
-  Outcome relation: SAME / DIFFERENT / UNVERIFIED pass/fail result
+  Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
   Claim C[N].1: With Change A, behavior is [description]
   Claim C[N].2: With Change B, behavior is [description]
-  Behavior relation: SAME / DIFFERENT mechanism
-  Outcome relation: SAME / DIFFERENT / UNVERIFIED pass/fail result
+  Comparison: SAME / DIFFERENT outcome
 
 EDGE CASES RELEVANT TO EXISTING TESTS:
 (Only analyze edge cases that the ACTUAL tests exercise)
@@ -206,11 +205,10 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
-  If you already observed a semantic difference, name that difference first and test whether one concrete relevant test/input reaches the same assertion outcome on both sides.
-  When claiming EQUIVALENT after observing a semantic difference, anchor the no-counterexample argument to that exact difference with one concrete relevant test/input and the same traced assertion outcome on both sides; otherwise mark the impact UNVERIFIED.
-  If NOT EQUIVALENT were true, a counterexample would be this specific test/input diverging at [assert/check:file:line].
-  I searched for exactly that anchored pattern:
-    Searched for: [specific pattern — the observed difference, relevant test/input, and assertion/check]
+  If NOT EQUIVALENT were true, a counterexample would look like:
+    [describe concretely: what test, what input, what diverging behavior]
+  I searched for exactly that pattern:
+    Searched for: [specific pattern — test name, code path, or input type]
     Found: [result — cite file:line, or NONE FOUND with search details]
   Conclusion: no counterexample exists because [brief reason]
 
