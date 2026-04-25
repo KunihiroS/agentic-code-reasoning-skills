@@ -110,10 +110,10 @@ Benchmark scripts and compact input data are included under [`benchmark/swebench
 |---|---|---|
 | `archive/script-auto-improve-final` | `script/auto-improve` | Early automation/script development branch for the benchmark and patch-equivalence workflow. |
 | `archive/meta-agent-1-final` | `meta-agent/auto-improve` | First long-running meta-agent self-improvement branch; useful as historical evidence, not the release source. |
-| `archive/meta-agent-2-final` | `meta-agent-2/auto-improve` | Phase 1-2 convergence branch and source of the iter-46 `SKILL.md` release candidate. |
-| `archive/meta-agent-3-final` | `meta-agent-3/auto-improve` | Later GPT-5.5/meta-agent-3 exploration branch; retained for analysis, but its HEAD did not supersede iter-46. |
+| `archive/meta-agent-2-final` | `meta-agent-2/auto-improve` | Phase 1-2 compare-mode convergence branch. Its iter-46 `SKILL.md` is useful evidence for compare-mode improvements, but it is not the canonical full multi-mode skill by itself. |
+| `archive/meta-agent-3-final` | `meta-agent-3/auto-improve` | Later GPT-5.5/meta-agent-3 compare-mode exploration branch; retained for analysis, but its HEAD did not supersede the iter-46 compare evidence. |
 
-The release marker `v1.1.0-iter46` points to the iter-46 release candidate commit. Future experiments should use short-lived `experiment/*` branches and should only be promoted to `main` after a release candidate is explicitly selected.
+The marker `v1.1.0-iter46` points to the iter-46 compare-mode candidate commit for historical/reproducibility purposes. `main` preserves the full multi-mode skill (`compare`, `diagnose`, `explain`, and `audit-improve`) rather than publishing a compare-only auto-improvement artifact. Future experiments should use short-lived `experiment/*` branches and should only be promoted to `main` after checking that non-targeted modes have not been dropped.
 
 ## Repository Structure
 
