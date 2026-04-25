@@ -1,0 +1,80 @@
+過去提案との差異: 構造差を特定の観測境界へ狭めるのではなく、既存の NOT_EQUIV counterexample 内で「どこで初めて実行トレースが分岐したか」を示すよう置換する。
+Target: 両方
+Mechanism (抽象): NOT_EQUIV の証拠を終端 assertion だけでなく、localize/explain 由来の divergence-origin 付き trace に変える。
+Non-goal: structural triage の早期 NOT_EQUIV 条件をテスト依存・オラクル可視・VERIFIED 接続などへ再写像しない。
+
+カテゴリ F 内での具体的メカニズム選択理由:
+- docs/design.md は原論文の Fault Localization が「Code Path Tracing → Divergence Analysis」を持ち、エラー分析が「symptom と root cause の混同」「incomplete reasoning chains」を防ぐと整理している。SKILL.md には一般 Guardrail としては存在するが、compare の NOT_EQUIV counterexample 欄では終端の diverging assertion だけが強く前景化され、最初の分岐点を certificate に残す要求が薄い。
+- compare では assertion は結果の観測点であり、原因ではない。localize/explain の divergence-origin 発想を counterexample の既存行へ圧縮して移植すると、偽 NOT_EQUIV は「終端症状だけの差分」を減らし、偽 EQUIV は「同じように見える終端の背後にある実際の分岐」を追いやすくなる。
+
+Step 1 — 禁止された方向の列挙:
+- 再収束を比較規則として前景化しすぎること。
+- 未確定 relevance や脆い仮定を常に保留/UNVERIFIED 側へ倒すこと。
+- 差分昇格を新しい抽象ラベルや必須の言い換え形式で強くゲートすること。
+- 終盤の証拠十分性を confidence 調整へ吸収して premature closure を招くこと。
+- 最初に見えた差分から単一追跡経路を即座に固定すること。
+- 探索理由と情報利得を過度に統合して反証可能性を弱めること。
+- 直近却下方向: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を、特定の観測境界だけへ写像して狭めること。
+
+Step 2 / 2.5 — overall に直結する意思決定ポイント候補:
+1. NOT_EQUIV counterexample の結論条件
+   - 現在のデフォルト挙動: 終端の PASS/FAIL と diverging assertion が書けると、原因側の最初の分岐が薄くても結論へ進みがち。
+   - 変更後アウトカム: NOT_EQUIV 結論前に divergence origin が明示され、偽 NOT_EQUIV と CONFIDENCE 過大化が減る。
+2. EQUIV の NO COUNTEREXAMPLE EXISTS
+   - 現在のデフォルト挙動: 観測済み semantic difference を同じ assertion outcome に結び付ければ EQUIV へ進みがち。
+   - 変更後アウトカム: 差分の値/状態が同一 outcome に到達する trace が強くなり、追加探索または UNVERIFIED 明示が増える可能性がある。
+3. Step 3 の NEXT ACTION RATIONALE / VERDICT-FLIP TARGET
+   - 現在のデフォルト挙動: confidence-only と名付けた探索は早めに結論へ送られ、未確認の原因差が残る場合がある。
+   - 変更後アウトカム: 追加探索の対象が verdict 反転 claim に寄るが、保留側へ倒れすぎるリスクがある。
+
+Step 3 — 選定:
+候補 1 を選ぶ。
+- compare の実行時アウトカムである ANSWER/CONFIDENCE に直結する counterexample 欄の THEN 行動が変わるため。
+- structural triage の探索入口ではなく、すでに NOT_EQUIV を主張する場面の証拠形を置換するだけなので、探索経路の半固定になりにくい。
+
+改善仮説:
+NOT_EQUIV の counterexample が「終端 assertion の差」だけを根拠にできると、症状と原因を混同した偽 NOT_EQUIV が増える。既存の diverging assertion 行を「first divergent trace point + assertion」に置換すれば、原論文の divergence analysis を compare に移植しつつ、EQUIV/NOT_EQUIV 双方で因果的な証拠品質が上がる。
+
+SKILL.md の該当箇所と変更方針:
+現在の引用:
+"Diverging assertion: [test_file:line — the specific assert/check that produces a different result]"
+
+変更方針:
+この 1 行を、終端 assertion だけでなく「最初に異なる状態/分岐/値」と「そこから assertion outcome へ至る短い trace」を同じ行で要求する文へ置換する。
+
+Payment: add MUST("Divergence origin + assertion: name the first trace point where A and B differ, then the assert/check it reaches differently") ↔ demote/remove MUST("Diverging assertion: [test_file:line — the specific assert/check that produces a different result]")
+
+Decision-point delta:
+Before: IF Change A/B の test outcome が異なると主張でき、終端の diverging assertion を示せる THEN NOT_EQUIV へ進む because assertion-level counterexample.
+After:  IF Change A/B の test outcome が異なると主張でき、最初の divergent trace point から diverging assertion までを示せる THEN NOT_EQUIV へ進む because divergence-origin counterexample.
+
+変更差分プレビュー:
+Before:
+```md
+COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+  Test [name] will [PASS/FAIL] with Change A because [reason]
+  Test [name] will [FAIL/PASS] with Change B because [reason]
+  Diverging assertion: [test_file:line — the specific assert/check that produces a different result]
+  Therefore changes produce DIFFERENT test outcomes.
+```
+After:
+```md
+COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+  Test [name] will [PASS/FAIL] with Change A because [reason]
+  Test [name] will [FAIL/PASS] with Change B because [reason]
+  Divergence origin + assertion: [first differing branch/state/value — cite file:line] reaches [assert/check:file:line] differently.
+  Therefore changes produce DIFFERENT test outcomes.
+```
+Trigger line (planned): "Divergence origin + assertion: [first differing branch/state/value — cite file:line] reaches [assert/check:file:line] differently."
+
+Discriminative probe:
+抽象ケース: 2 つの変更が同じ test assertion に到達するが、中間で片方だけ別 branch を通るように見える。Before は終端 assertion 付近の説明だけで branch 差を結果差と誤読し、偽 NOT_EQUIV に寄りがち。
+After は最初の divergent trace point から assertion outcome までを 1 本で示せない限り counterexample が完成せず、同じ outcome へ合流するなら NOT_EQUIV を避け、必要なら CONFIDENCE を下げて EQUIV/UNVERIFIED を明示する。
+これは新しい必須ゲートの純増ではなく、既存の diverging assertion 行の置換であり、必須量は不変。
+
+failed-approaches.md との照合:
+- 原則 3/5 に反しない: 差分を新ラベルへ分類したり、最初の差分から単一アンカーへ探索順を固定したりしない。NOT_EQUIV を既に主張する counterexample の証拠行を、原因点と終端点のペアに置換するだけ。
+- 原則 2/4 に反しない: 未検証なら一律保留へ倒す規則ではなく、counterexample の因果 chain が示せた場合は結論へ進む。終盤チェックを confidence-only に吸収する変更でもない。
+
+変更規模の宣言:
+SKILL.md の変更は 1 行置換のみ、最大 3 行以内。15 行 hard limit を満たす。

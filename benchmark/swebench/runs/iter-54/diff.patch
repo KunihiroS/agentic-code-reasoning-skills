@@ -1,0 +1,13 @@
+diff --git a/SKILL.md b/SKILL.md
+index 6436582f..d011b1e0 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -202,7 +202,7 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
+ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+   Test [name] will [PASS/FAIL] with Change A because [reason]
+   Test [name] will [FAIL/PASS] with Change B because [reason]
+-  Diverging assertion: [test_file:line — the specific assert/check that produces a different result]
++  Divergence origin + assertion: [first differing branch/state/value — cite file:line] reaches [assert/check:file:line] differently.
+   Therefore changes produce DIFFERENT test outcomes.
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
