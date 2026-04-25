@@ -1,0 +1,14 @@
+diff --git a/SKILL.md b/SKILL.md
+index d011b1e0..6cbacb3c 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -226,8 +226,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ ```
+ 
+ ### Compare checklist
+-- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+-- For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
++- Structural/scale triage is defined above; do not repeat it as a second checklist gate.
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)

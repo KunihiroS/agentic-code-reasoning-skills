@@ -1,0 +1,86 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-55/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index d011b1e0..6cbacb3c 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -226,8 +226,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ ```
+ 
+ ### Compare checklist
+-- **Structural triage first**: compare modified file lists, check for missing modules or test data before any detailed tracing
+-- For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
++- Structural/scale triage is defined above; do not repeat it as a second checklist gate.
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+
+rationale:
+# Iteration 55 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 未記載（今回の参照範囲内では確認対象外）
+- 失敗ケース: 未記載（今回の参照範囲内では確認対象外）
+- 失敗原因の分析: 構造・規模判断が STRUCTURAL TRIAGE 本体と Compare checklist で二重に提示され、チェックリスト到達時に構造差を二度目の結論ゲートとして扱いやすい。これにより、未解決の verdict-bearing claim、テスト挙動、反証への作業記憶配分が弱まり、構造差の過剰重み付けや詳細 trace の早期省略につながりうる。
+
+## 改善仮説
+
+Compare checklist から STRUCTURAL TRIAGE 本体の重複再掲を 1 行の参照へ圧縮すれば、構造・規模判断は既存の triage に一元化される。その後は changed files、relevant tests、per-side traces、counterexample/no-counterexample evidence に進みやすくなり、EQUIV/NOT_EQUIV の両方向で premature closure を減らせる。
+
+Trigger line (final): "Structural/scale triage is defined above; do not repeat it as a second checklist gate."
+
+この Trigger line は proposal の差分プレビューにあった Trigger line と一致しており、分岐を発火させる Compare checklist の先頭に配置されている。
+
+## 変更内容
+
+- Compare checklist の先頭にあった構造 triage と大規模 patch triage の 2 行を削除した。
+- 同じ位置に、構造・規模 triage は上で定義済みであり二度目の checklist gate として繰り返さない、という 1 行を置いた。
+- STRUCTURAL TRIAGE 本体、clear structural gap の早期結論条件、assertion boundary、test oracle、VERIFIED 接続条件、反証要件は変更していない。
+- 新しい必須ゲートは追加しておらず、必須判定手順の総量は増えていない。
+
+## 期待効果
+
+構造差があるが、その差が relevant tests に直接到達するか未確定な場面で、checklist が構造・規模判断を再ゲート化することを避けられる。これにより、結論前の作業は未解決の test-behavior claim と具体的な counterexample/no-counterexample evidence に向き、構造差だけによる偽 NOT_EQUIV と、高レベル比較だけによる偽 EQUIV の両方を抑制できると期待する。
