@@ -1,0 +1,91 @@
+過去提案との差異: 構造差を特定の観測境界へ写像して早期 NOT_EQUIV を狭めるのではなく、per-test 分析の順序を「結論ラベル先行」から「assert/check 先行の両側トレース」へ入れ替える。
+Target: 両方
+Mechanism (抽象): 各テストで PASS/FAIL を予測する前に、そのテストが観測する assert/check を先に固定し、A/B の trace を同じ観測対象へ直列化する。
+Non-goal: STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件を、テスト依存・oracle 可視・VERIFIED 接続などへ狭めない。
+
+カテゴリ A 内での具体的メカニズム選択理由
+- カテゴリ A は「ステップの実行順序を入れ替える」「並列に行っていた分析を直列にする」に該当する。今回の変更は Compare の per-test 分析で、A の PASS/FAIL、B の PASS/FAIL、Comparison を書く前に、先に当該 test の assert/check を読む順序へ変える。
+- compare の挙動が変わる理由は 2 点だけに絞る。
+  1. 現在は各 side の PASS/FAIL claim を先に作れるため、片側の内部意味差や欠落だけで偽 NOT_EQUIV へ進む、または両側の表面ラベル一致だけで偽 EQUIV へ進む余地がある。
+  2. After では同じ assert/check へ到達する trace を先に要求するため、ANSWER / CONFIDENCE / UNVERIFIED 明示 / 追加探索のいずれかが変わりうる。
+
+Step 1: 禁止された方向の列挙
+- 再収束を比較規則として前景化し、途中差分を弱める方向は禁止。
+- 未確定 relevance や脆い仮定を広く保留・UNVERIFIED 側へ倒す既定動作は禁止。
+- 差分の昇格条件を新しい抽象ラベルや必須の言い換え形式で強く gate する方向は禁止。
+- 終盤の証拠十分性チェックを confidence 調整へ吸収しすぎる方向は禁止。
+- 最初に見えた差分から単一の追跡経路を即座に既定化する方向は禁止。
+- 探索理由と反証可能な情報利得を短い一欄へ潰しすぎる方向は禁止。
+- 直近却下履歴より、「構造差→NOT_EQUIV」の条件を特定の観測境界へ写像して狭める方向は禁止。
+
+Step 2: overall に直結する意思決定ポイント候補 3 つ
+1. Per-test claim ordering:
+   IF relevant test を分析する THEN 先に A/B の PASS/FAIL claim を書くか、先に assert/check を特定してから両側を trace するか。
+2. UNVERIFIED dependency handling:
+   IF trace に unavailable source が混じる THEN assumption が結論を変えないとして進むか、same opaque dependency / side-specific opaque dependency を区別して confidence と追加探索へ回すか。
+3. Refutation stopping point:
+   IF counterexample search が NOT FOUND になった THEN ただちに EQUIV へ進むか、観測済み semantic difference に紐づく具体 test/input で no-counterexample を閉じるか。
+
+Step 2.5: 各候補の現在デフォルト挙動と観測アウトカム
+1. Per-test claim ordering: 現在は Test 名の下で Change A PASS/FAIL、Change B PASS/FAIL を先に埋めがち; After では assert/check が先に出るため、追加探索・UNVERIFIED 明示・ANSWER が変わる。
+2. UNVERIFIED dependency handling: 現在は source unavailable を assumption として記録し、結論を変えないなら進みがち; After では side-specific opaque dependency なら CONFIDENCE 低下または追加探索へ変わる。
+3. Refutation stopping point: 現在は searched/found が空でも no counterexample の形式を満たして EQUIV へ進みがち; After では観測差に紐づく反証探索がない場合 UNVERIFIED または追加探索へ変わる。
+
+Step 3: 選択する分岐
+選ぶ分岐: 1. Per-test claim ordering.
+選定理由:
+- Compare の中心である per-test PASS/FAIL claim の生成順を変えるため、結論に進む条件と追加探索の起点が直接変わる。
+- Structural triage ではなく ANALYSIS OF TEST BEHAVIOR の順序変更なので、却下済みの「構造差を特定境界へ写像する」機構ではない。
+
+改善仮説
+テストごとの観測対象を A/B の PASS/FAIL 予測より先に置くと、内部差分・表面一致・未検証依存のいずれも同じ assert/check への到達性で比較され、偽 EQUIV と偽 NOT_EQUIV の両方が減る。
+
+SKILL.md の該当箇所と変更案
+短い引用:
+- 現在の Compare template: "For each relevant test:" の直下で "Claim C[N].1: With Change A, this test will [PASS/FAIL]" と "Claim C[N].2: With Change B, this test will [PASS/FAIL]" を先に書く。
+- 現在の checklist: "Trace each test through both changes separately before comparing"
+
+変更案:
+- ANALYSIS OF TEST BEHAVIOR の per-test ブロックを、先に "Observed assert/check" と "Expected observable" を書く形へ置換する。
+- checklist の既存 1 行を同じ意図の順序指定に置換し、必須ゲート総量を増やさない。
+
+Payment: add MUST("For each relevant test, identify the observed assert/check before predicting either side") ↔ demote/remove MUST("Trace each test through both changes separately before comparing")
+
+Decision-point delta
+Before: IF a relevant test is selected THEN predict Change A PASS/FAIL and Change B PASS/FAIL before naming the observed assert/check because the template orders side claims before comparison.
+After:  IF a relevant test is selected THEN name the observed assert/check and expected observable first, then trace Change A and Change B to that same check before PASS/FAIL because the template orders observation target before side claims.
+
+変更差分プレビュー
+Before:
+```
+For each relevant test:
+  Test: [name]
+  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+  Comparison: SAME / DIFFERENT outcome
+```
+After:
+```
+For each relevant test:
+  Test: [name]
+  Observed assert/check: [file:line and expected observable]
+  Claim C[N].1: Trace Change A to that check, then state [PASS/FAIL]
+  Claim C[N].2: Trace Change B to that same check, then state [PASS/FAIL]
+  Comparison: SAME / DIFFERENT outcome
+```
+Trigger line (planned): "Observed assert/check: [file:line and expected observable]"
+
+Discriminative probe
+抽象ケース: 2 つの変更は内部の分岐名・補助関数・中間値が違うが、実テストは最終的な error flag だけを assert する。Before では内部差分を先に A/B の PASS/FAIL claim へ投影して偽 NOT_EQUIV、または表面ラベル一致で偽 EQUIV が起きがち。
+After では先に error flag の assert/check を固定し、両側 trace がそこへ到達するかを比較するため、差分が観測結果へ出る場合だけ NOT_EQUIV、出ない場合は EQUIV または impact UNVERIFIED へ分岐する。
+これは新しい必須ゲートの増設ではなく、既存の per-test trace 要求を同じ行数内で順序入替・置換するだけである。
+
+failed-approaches.md との照合
+- 原則 3 には抵触しない。差分を新しい抽象ラベルへ分類して昇格 gate にするのではなく、既存の test claim を書く順序を assert/check 先行へ変えるだけである。
+- 原則 5 には抵触しない。最初に見えた差分から単一追跡経路を固定せず、各 relevant test ごとに実際の観測対象を先に読む順序へ変える。
+- 直近却下履歴にも抵触しない。STRUCTURAL TRIAGE の早期 NOT_EQUIV 条件は変更せず、構造差の扱いを観測境界へ狭めない。
+
+変更規模の宣言
+- SKILL.md の変更は 15 行以内。
+- 想定差分は ANALYSIS OF TEST BEHAVIOR の per-test ブロック 4〜5 行の置換と Compare checklist 1 行の置換のみ。
+- 新規モードは追加しない。研究のコア構造（番号付き前提、仮説駆動探索、手続き間トレース、必須反証）は維持する。

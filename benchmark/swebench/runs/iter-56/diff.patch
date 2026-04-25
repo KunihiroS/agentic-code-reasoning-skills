@@ -1,0 +1,26 @@
+diff --git a/SKILL.md b/SKILL.md
+index 22dea8b9..c5f0453d 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -179,9 +179,10 @@ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
+   Test: [name]
+-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
++  Observed assert/check: [file:line and expected observable]
++  Claim C[N].1: Trace Change A to that check, then state [PASS/FAIL]
+                 because [trace from changed code to test assertion outcome — cite file:line]
+-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
++  Claim C[N].2: Trace Change B to that same check, then state [PASS/FAIL]
+                 because [trace from changed code to test assertion outcome — cite file:line]
+   Comparison: SAME / DIFFERENT outcome
+ 
+@@ -230,7 +231,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+-- Trace each test through both changes separately before comparing
++- For each relevant test, identify the observed assert/check before predicting either side
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 

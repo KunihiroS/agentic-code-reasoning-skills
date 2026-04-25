@@ -1,0 +1,95 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-56/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 22dea8b9..c5f0453d 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -179,9 +179,10 @@ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
+   Test: [name]
+-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
++  Observed assert/check: [file:line and expected observable]
++  Claim C[N].1: Trace Change A to that check, then state [PASS/FAIL]
+                 because [trace from changed code to test assertion outcome — cite file:line]
+-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
++  Claim C[N].2: Trace Change B to that same check, then state [PASS/FAIL]
+                 because [trace from changed code to test assertion outcome — cite file:line]
+   Comparison: SAME / DIFFERENT outcome
+ 
+@@ -230,7 +231,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+-- Trace each test through both changes separately before comparing
++- For each relevant test, identify the observed assert/check before predicting either side
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+
+rationale:
+# Iteration 56 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 未参照（今回許可された参照範囲外のため）
+- 失敗ケース: 固有識別子の記載を避けるため省略
+- 失敗原因の分析: per-test 分析で観測対象を固定する前に両側の PASS/FAIL claim を先に作ると、内部差分だけを過大評価して偽の差分結論へ進む、または表面上の PASS/FAIL 一致だけで偽の同値結論へ進む余地がある。
+
+## 改善仮説
+
+各 relevant test について、まず observed assert/check と expected observable を固定し、その同じ観測対象へ Change A と Change B を順に trace してから PASS/FAIL を述べるようにする。これにより、比較対象が同一の観測点に揃い、結論ラベル先行の推測を減らせる。
+
+## 変更内容
+
+ANALYSIS OF TEST BEHAVIOR の per-test ブロックを、side ごとの PASS/FAIL claim より先に観測対象を記録する順序へ置換した。あわせて Compare checklist の既存 trace 行を同じ意図の順序指定に置換し、必須要素の総量は増やしていない。
+
+Trigger line (final): "Observed assert/check: [file:line and expected observable]"
+
+この Trigger line は proposal の差分プレビューにあった Trigger line と一致しており、per-test ブロック内で side claim の前に配置されている。
+
+## 期待効果
+
+同じ assert/check への到達性で両側を比較するため、内部構造の違いだけで観測結果の差分と誤認するリスクと、表面ラベル一致だけで観測差を見落とすリスクの両方を下げる。変更は template の順序入替と checklist の置換に限定され、汎用的な比較推論の手順改善に留まる。

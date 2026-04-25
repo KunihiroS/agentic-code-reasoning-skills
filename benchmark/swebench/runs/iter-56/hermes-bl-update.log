@@ -1,0 +1,38 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/25/26 15:07:43] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 read      benchmark/swebench/runs/iter-56/proposal.md  1.0s
+  ┊ 📖 read      benchmark/swebench/runs/iter-56/rationale.md  1.0s
+  ┊ 📖 read      benchmark/swebench/runs/iter-56/diff.patch  0.9s
+  ┊ 📖 read      failed-approaches.md  1.0s
+  ┊ 🔧 patch     failed-approaches.md  0.7s
+  ┊ review diff
+a/failed-approaches.md → b/failed-approaches.md
+@@ -33,6 +33,7 @@
+ - 構造差の役割を「探索の手掛かり」に限定し、明示的な traced divergence が出るまで結論への利用を禁じる形も、差分の昇格条件を強くしすぎる変種になりうる。
+ - 高情報量の差分まで一段低い暫定シグナルへ固定すると、比較は探索順制御には慎重でも verdict の判別力を失いやすい。
+ - また、詳細 tracing の開始点を特定の assertion/check など単一のアンカーに固定し、その地点からの逆向き説明を既定化する変更も、比較対象そのものより説明の起点整合を先に最適化しやすい。
++- side ごとの結果予測より先に観測対象を必ず固定させる順序変更も、この変種になりうる。観測点の共有化は比較を揃える一方で、最初に選んだ局所 check への過剰適応を招き、上流差分や別の判別経路を拾う柔軟性を落としやすい。
+ - この種の変更は「判定に効く最短経路」を狙っていても、上流の高情報量な差分や別経路の識別信号を拾う前に探索を狭め、局所的な証拠へ過剰適応しうる。
+ - また、見つけた差分を新しい抽象ラベルへ二分し、そのラベルで比較範囲の拡大・維持を決める形式も、差分そのものの比較より分類整合を先に満たす読み方を誘発しやすい。
+ - その結果、比較粒度を上げる意図でも、実際には中間ラベルの妥当化が主目的化し、直接の証拠照合が弱まって判別力を落としうる。
+  ┊ 📖 read      failed-approaches.md  0.9s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+failed-approaches.md を更新しました。
+
+変更内容:
+- 新規原則は追加せず、既存の「原則 3」に統合しました。
+- 今回の変更を、具体ケースではなく汎用的に「side ごとの結果予測より先に観測対象を必ず固定させる順序変更」として記述しました。
+- 失敗メカニズムは「局所 check への過剰適応により、上流差分や別の判別経路を拾う柔軟性が落ちる」と一般化しました。
+failed-approaches.md を更新しました。
+
+変更内容:
+- 新規原則は追加せず、既存の「原則 3」に統合しました。
+- 今回の変更を、具体ケースではなく汎用的に「side ごとの結果予測より先に観測対象を必ず固定させる順序変更」として記述しました。
+- 失敗メカニズムは「局所 check への過剰適応により、上流差分や別の判別経路を拾う柔軟性が落ちる」と一般化しました。
+- 指定された禁止情報（具体 ID、リポジトリ名、テスト名、コード断片、iter 番号、per-case 詳細）は含めていません。
+
+session_id: 20260425_150743_cee3e5
