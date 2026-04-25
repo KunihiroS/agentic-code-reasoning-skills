@@ -232,10 +232,11 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
-  If NOT EQUIVALENT were true, a counterexample would look like:
-    [describe concretely: what test, what input, what diverging behavior]
-  I searched for exactly that pattern:
-    Searched for: [specific pattern — test name, code path, or input type]
+  If you already observed a semantic difference, name that difference first and test whether one concrete relevant test/input reaches the same assertion outcome on both sides.
+  When claiming EQUIVALENT after observing a semantic difference, anchor the no-counterexample argument to that exact difference with one concrete relevant test/input and the same traced assertion outcome on both sides; otherwise mark the impact UNVERIFIED.
+  If NOT EQUIVALENT were true, a counterexample would be this specific test/input diverging at [assert/check:file:line].
+  I searched for exactly that anchored pattern:
+    Searched for: [specific pattern — the observed difference, relevant test/input, and assertion/check]
     Found: [result — cite file:line, or NONE FOUND with search details]
   Conclusion: no counterexample exists because [brief reason]
 
@@ -261,6 +262,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
 ---
+
 
 ## Diagnose
 
