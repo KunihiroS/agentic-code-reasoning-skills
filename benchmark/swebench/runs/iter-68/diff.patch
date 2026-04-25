@@ -1,0 +1,15 @@
+diff --git a/SKILL.md b/SKILL.md
+index c5f0453d..a419c697 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -202,8 +202,8 @@ EDGE CASES RELEVANT TO EXISTING TESTS:
+ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
+   Test [name] will [PASS/FAIL] with Change A because [reason]
+   Test [name] will [FAIL/PASS] with Change B because [reason]
+-  Diverging assertion: [test_file:line — the specific assert/check that produces a different result]
+-  Therefore changes produce DIFFERENT test outcomes.
++  Divergence claim: At [file:line], Change A/B produces [behavior] that contradicts P[N]/test expectation [T] because [reason].
++  Therefore Claim D[N] predicts DIFFERENT test outcomes for the named test.
+ 
+ NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
+   If you already observed a semantic difference, name that difference first and test whether one concrete relevant test/input reaches the same assertion outcome on both sides.

@@ -179,11 +179,12 @@ ANALYSIS OF TEST BEHAVIOR:
 
 For each relevant test:
   Test: [name]
-  Prediction pair for Test [name]:
-    A: [PASS/FAIL] because [trace from changed code to test outcome — cite file:line]
-    B: [PASS/FAIL] because [trace from changed code to test outcome — cite file:line]
-  Trigger line: "Do not write SAME/DIFFERENT until both A and B predictions for this test are present."
-  Comparison: SAME / DIFFERENT outcome, based on the A/B prediction pair
+  Observed assert/check: [file:line and expected observable]
+  Claim C[N].1: Trace Change A to that check, then state [PASS/FAIL]
+                because [trace from changed code to test assertion outcome — cite file:line]
+  Claim C[N].2: Trace Change B to that same check, then state [PASS/FAIL]
+                because [trace from changed code to test assertion outcome — cite file:line]
+  Comparison: SAME / DIFFERENT outcome
 
 For pass-to-pass tests (if changes could affect them differently):
   Test: [name]
@@ -205,10 +206,11 @@ COUNTEREXAMPLE (required if claiming NOT EQUIVALENT):
   Therefore changes produce DIFFERENT test outcomes.
 
 NO COUNTEREXAMPLE EXISTS (required if claiming EQUIVALENT):
-  If NOT EQUIVALENT were true, a counterexample would look like:
-    [describe concretely: what test, what input, what diverging behavior]
-  I searched for exactly that pattern:
-    Searched for: [specific pattern — test name, code path, or input type]
+  If you already observed a semantic difference, name that difference first and test whether one concrete relevant test/input reaches the same assertion outcome on both sides.
+  When claiming EQUIVALENT after observing a semantic difference, anchor the no-counterexample argument to that exact difference with one concrete relevant test/input and the same traced assertion outcome on both sides; otherwise mark the impact UNVERIFIED.
+  If NOT EQUIVALENT were true, a counterexample would be this specific test/input diverging at [assert/check:file:line].
+  I searched for exactly that anchored pattern:
+    Searched for: [specific pattern — the observed difference, relevant test/input, and assertion/check]
     Found: [result — cite file:line, or NONE FOUND with search details]
   Conclusion: no counterexample exists because [brief reason]
 
@@ -229,7 +231,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
 - Identify changed files for both sides
 - Identify fail-to-pass AND pass-to-pass tests
 - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
-- Record each test's Change A and Change B PASS/FAIL predictions as a pair before writing SAME/DIFFERENT.
+- For each relevant test, identify the observed assert/check before predicting either side
 - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
 - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
 
