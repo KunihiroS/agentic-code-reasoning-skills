@@ -1,0 +1,21 @@
+# Iteration 64 — Overfitting 監査
+
+## 判定: FAIL
+## 合計スコア: 13/18
+
+| # | 項目 | スコア | 根拠 |
+|---|------|--------|------|
+| R1 | 汎化性 | 3 | diff/rationale には、ベンチマーク対象リポジトリのリポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、実装コード引用は含まれていない。変更内容も「PASS/FAIL link」「caller/test reachability」「counterexample search」などの抽象的な探索方針であり、任意の言語・フレームワークのコード比較に適用可能。 |
+| R2 | 研究コアの踏襲 | 3 | README.md と docs/design.md が示すコア（明示的な premises、仮説駆動探索、手続き間トレース、反証、形式的結論）を削除していない。むしろ Step 3 の次アクション理由を、テスト結果への到達可能性や反例探索に接続させるため、証拠付き certificate を作る方向には整合している。 |
+| R3 | 推論プロセスの改善 | 3 | 結論ラベルを直接指示するのではなく、「内部挙動は VERIFIED だが PASS/FAIL への caller/test link がない」場面で次に読む対象を決める探索順を改善している。Change A/B の PASS/FAIL prediction pair を根拠づけるためのプロセス改善として明確。 |
+| R4 | 反証可能性の維持 | 2 | INFO GAIN を PASS/FAIL または counterexample uncertainty に結びつける点は反証可能性を一定程度保つ。ただし、情報利得が verdict 近傍の不確実性に狭まるため、まだ PASS/FAIL claim として定式化できない有力な反証材料を拾いにくくなる軽微な懸念がある。 |
+| R5 | 複雑性の抑制 | 1 | 差分は小さいが、failed-approaches.md の原則 6 が警告する「次に読む理由」と「反証可能な情報利得」を verdict/PASS/FAIL 近傍へ圧縮・単一化する方向にかなり近い。OPTIONAL だった INFO GAIN を必須化し、Trigger line も追加しているため、表面上は数行でも探索理由の制約が増え、既存テンプレートの認知負荷を不当に高めるリスクがある。 |
+| R6 | 回帰リスク | 1 | failed-approaches.md の原則 6（情報利得を verdict 反転可能性へ寄せすぎる危険）および原則 5（次に読む対象を近傍の単一路線へ固定しすぎる危険）に類似する。さらに Compare checklist の「changed code から呼ばれる全関数」から「unresolved PASS/FAIL path 上の関数」への置換は、初期には PASS/FAIL path と認識できない補助関数や内部差分を読み落とす回帰を生みうる。既に正しく判定できていたケースで、探索が caller/test link 充足に早く収束しすぎる可能性が高い。 |
+
+## 総合コメント
+
+R1〜R4 は概ね良好で、変更はベンチマーク固有識別子を含まず、研究コアである証拠ベースの半形式推論にも沿っている。狙いも、内部挙動の確認だけで満足せず PASS/FAIL prediction pair へ接続させるという汎用的な改善である。
+
+しかし、failed-approaches.md との照合では重大な懸念がある。今回の rationale は INFO GAIN を optional ではない探索理由として統合したと説明しており、これは原則 6 の「探索理由と反証可能な情報利得を同じ短い要求に潰しすぎない」「情報利得を verdict 反転可能性だけで名指させる形へ置換する危険」に近い。また Trigger line は nearest caller/test reference を優先するため、原則 5 の「次に何を見るかを一つの近傍観測へ強く固定する」失敗パターンにも接近している。
+
+合計は 13/18 だが、R5 と R6 が 1 点であり、合格基準「全項目 2 以上」を満たさないため FAIL と判定する。

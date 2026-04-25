@@ -1,0 +1,96 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-64/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 3b846203..b564561b 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -63,8 +63,9 @@ HYPOTHESIS UPDATE:
+ UNRESOLVED:
+   - [remaining questions]
+ 
+-NEXT ACTION RATIONALE: [why the next file or step is justified]
+-OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
++NEXT ACTION RATIONALE: [which missing PASS/FAIL link this read resolves: side behavior, caller/test reachability, or counterexample search]
++Trigger line: "If a side's behavior is VERIFIED but its caller/test link to PASS/FAIL is still missing, read the nearest caller or test reference next before tracing more internal helpers."
++INFO GAIN: [what PASS/FAIL or counterexample uncertainty this action resolves]
+ ```
+ 
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
+@@ -228,7 +229,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - For large patches (>200 lines), rely on structural comparison and high-level semantic analysis rather than exhaustive line-by-line tracing
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+-- For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
++- For each function on the unresolved PASS/FAIL path, read its definition and record it in the interprocedural trace table (Step 4)
+ - Record each test's Change A and Change B PASS/FAIL predictions as a pair before writing SAME/DIFFERENT.
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+
+rationale:
+# Iteration 64 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 提案内に具体値の指定なし
+- 失敗ケース: 提案内に具体 ID の指定なし
+- 失敗原因の分析: 変更側の内部挙動を読んだ時点で探索が満足し、既知の挙動が実際の PASS/FAIL へ接続するかを確認する link が未完成のまま結論へ進むことがある。これにより、到達しない差分を結果差と誤認する場合と、到達する差分を見落とす場合の両方が起きうる。
+
+## 改善仮説
+
+既に読めた内部挙動をさらに詳細化する前に、未完成の PASS/FAIL link を解く caller/test reference を優先して読むようにすれば、EQUIVALENT/NOT_EQUIVALENT の結論条件を増やさずに、D1 に必要な prediction pair の根拠が揃いやすくなる。
+
+## 変更内容
+
+Step 3 の NEXT ACTION RATIONALE を、一般的な次アクション正当化から、どの未完成 PASS/FAIL link を解くかの記述へ置換した。あわせて、INFO GAIN を PASS/FAIL または counterexample uncertainty に絞り、optional ではない探索理由として統合した。
+
+Trigger line (final): "If a side's behavior is VERIFIED but its caller/test link to PASS/FAIL is still missing, read the nearest caller or test reference next before tracing more internal helpers."
+
+この Trigger line は提案の差分プレビューにあった planned Trigger line と一致しており、分岐を発火させる Step 3 の次読みに配置した。
+
+Compare checklist では、changed code から呼ばれる全関数を広く読む要求を、unresolved PASS/FAIL path 上の関数を読む要求へ置換した。これにより、新しい必須ゲートを純増させず、既存の広い coverage 要求を prediction pair 完成に直結する探索へ支払った。
+
+## 期待効果
+
+内部挙動は部分的に VERIFIED だが caller/test link が未読の場面で、次の行動が内部 helper の追加追跡から nearest caller/test reference の確認へ変わる。これにより、同じ結論ラベルを直接指示せずに、PASS/FAIL 予測の片側または両側の不足を前倒しで埋められるため、偽の差分判断と偽の同等判断の双方を減らすことが期待できる。
