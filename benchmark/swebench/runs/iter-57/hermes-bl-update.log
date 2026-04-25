@@ -1,0 +1,43 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/25/26 16:43:18] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📖 read      benchmark/swebench/runs/iter-57/proposal.md  0.9s
+  ┊ 📖 read      benchmark/swebench/runs/iter-57/rationale.md  1.0s
+  ┊ 📖 read      benchmark/swebench/runs/iter-57/diff.patch  1.0s
+  ┊ 📖 read      failed-approaches.md  1.0s
+  ┊ 🔧 patch     failed-approaches.md  0.7s
+  ┊ review diff
+a/failed-approaches.md → b/failed-approaches.md
+@@ -57,4 +57,6 @@
+ - 特に optional な補助欄を削除して required 欄へ吸収する形では、モデルが「理由らしい一文」を満たすだけで、どの仮説が確認・反証されるかを保持しないことがある。
+ - 逆に、情報利得を verdict 反転可能性だけで名指させる形へ置換しても、探索が現在の結論候補に早く従属し、まだ verdict claim として定式化できない有力証拠を拾いにくくなる。
+ - その際に証拠セクションの完遂要求まで弱めると、必要な trace と単なる追加探索の区別が曖昧になり、confidence-only として早く閉じる方向へ寄りやすい。
++- optional な情報利得欄を、読む前に最小の判別対象を名指す必須欄へ置換する形も危うい。反証可能性を強める意図でも、探索理由が「どの artifact を選ぶか」の正当化へ寄り、仮説間の不確実性を柔軟に保持しにくくなる。
++- その結果、広すぎる探索を避けるつもりが、事前に選んだ判別対象への過剰適応や、見つからない場合の形式的な一段拡張に流れ、別経路の高情報量な証拠を拾いにくくなりうる。
+ - これは 4 の premature closure とも 5 の探索順固定とも近く、手順量を減らしたこと自体ではなく、探索を判定へつなぐ中間表現まで圧縮・単一化したことで判別力を落とす失敗である。
+  ┊ 📖 read      failed-approaches.md  0.9s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+failed-approaches.md を更新しました。
+
+変更内容:
+- 新規原則は追加せず、既存の「6. 近接する欄の統合で、探索理由と反証可能な情報利得を同じ短い要求に潰しすぎない」に統合
+- 今回の失敗を、以下の汎用メカニズムとして抽象化
+  - optional な情報利得欄を、読む前の判別対象選択へ置換すると危うい
+  - 反証可能性を強める意図でも、探索理由が対象選択の正当化へ寄りやすい
+  - 事前に選んだ判別対象への過剰適応や、形式的な探索拡張に流れ、別経路の高情報量な証拠を拾いにくくなる
+
+failed-approaches.md を更新しました。
+
+変更内容:
+- 新規原則は追加せず、既存の「6. 近接する欄の統合で、探索理由と反証可能な情報利得を同じ短い要求に潰しすぎない」に統合
+- 今回の失敗を、以下の汎用メカニズムとして抽象化
+  - optional な情報利得欄を、読む前の判別対象選択へ置換すると危うい
+  - 反証可能性を強める意図でも、探索理由が対象選択の正当化へ寄りやすい
+  - 事前に選んだ判別対象への過剰適応や、形式的な探索拡張に流れ、別経路の高情報量な証拠を拾いにくくなる
+
+禁止されていた具体 ID、iter 番号、リポジトリ名、テスト名、per-case 詳細は追加していません。
+
+session_id: 20260425_164318_3fe5ca

@@ -1,0 +1,21 @@
+diff --git a/SKILL.md b/SKILL.md
+index 22dea8b9..b3eda0aa 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -64,7 +64,7 @@ UNRESOLVED:
+   - [remaining questions]
+ 
+ NEXT ACTION RATIONALE: [why the next file or step is justified]
+-OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
++DISCRIMINATIVE READ TARGET: [smallest source/test artifact likely to separate at least two live hypotheses; if none exists, write NOT FOUND and broaden one step]
+ ```
+ 
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
+@@ -86,7 +86,6 @@ For every function or method encountered on a relevant code path, record:
+ - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
+ 
+ ### Step 5: Refutation check (required)
+-This step is **mandatory**, not optional.
+ 
+ **Scope**: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim — especially:
+ - "No test exercises this difference" — before asserting this, describe what such a test would look like and show you searched for exactly that pattern.

@@ -1,0 +1,90 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-57/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 22dea8b9..b3eda0aa 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -64,7 +64,7 @@ UNRESOLVED:
+   - [remaining questions]
+ 
+ NEXT ACTION RATIONALE: [why the next file or step is justified]
+-OPTIONAL — INFO GAIN: [what uncertainty this action resolves; which hypothesis/claim it would confirm vs refute]
++DISCRIMINATIVE READ TARGET: [smallest source/test artifact likely to separate at least two live hypotheses; if none exists, write NOT FOUND and broaden one step]
+ ```
+ 
+ Steps 3 and 4 work together: Step 3 is your real-time exploration journal. Step 4 is the accumulated function-behavior record you build *during* Step 3 — **add a row to Step 4 each time you read a function definition in Step 3.** Do not reconstruct the table from memory after the fact.
+@@ -86,7 +86,6 @@ For every function or method encountered on a relevant code path, record:
+ - For exception handling inside loops or multi-branch control flows: after recording the inferred behavior, ask "if this trace were wrong, what concrete input would produce different behavior?" Trace that input through the code before finalizing the row.
+ 
+ ### Step 5: Refutation check (required)
+-This step is **mandatory**, not optional.
+ 
+ **Scope**: Apply counterfactual reasoning not only at the final conclusion, but at every key intermediate claim — especially:
+ - "No test exercises this difference" — before asserting this, describe what such a test would look like and show you searched for exactly that pattern.
+
+rationale:
+# Iteration 57 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: 未記載
+- 失敗ケース: 個別ケース名は記載しない
+- 失敗原因の分析: 広い構造読みだけで過度な非同等判断に寄る場合と、最初に見えた差分の下流確認だけで過度な同等判断に寄る場合の両方があり、結論規則ではなく次に読む対象の選び方を改善する必要がある。
+
+## 改善仮説
+
+次に読む対象を選ぶ時点で、現在の複数仮説を最も分離できる最小の source/test artifact を明示すれば、目立つ変更箇所や広すぎる周辺読みへの固定を避け、同じ証拠量でも同等・非同等の判別に使える観察を増やせる。
+
+Trigger line (final): "DISCRIMINATIVE READ TARGET: [smallest source/test artifact likely to separate at least two live hypotheses; if none exists, write NOT FOUND and broaden one step]"
+
+この Trigger line は proposal の差分プレビューにあった Trigger line と一致しており、次に読む対象を選ぶ分岐を発火させる位置に入っている。
+
+## 変更内容
+
+Step 3 の探索ジャーナルで、任意の情報利得欄を、少なくとも 2 つの live hypotheses を分離しうる最小の source/test artifact を先に名指しする欄へ置換した。あわせて、必須ゲートの純増を避けるため、別ステップにあった冗長な必須強調文を削除した。
+
+## 期待効果
+
+探索前の意思決定が「読む理由の説明」から「分離できる観察の事前指定」に変わるため、最初の差分だけに引っ張られる誤判定と、広く読みすぎて未確定性を増やす誤判定の両方を減らすことが期待される。新しい結論条件は追加せず、既存欄の置換と冗長文の削除に留めるため、研究コアと反証手順への影響は限定的である。
