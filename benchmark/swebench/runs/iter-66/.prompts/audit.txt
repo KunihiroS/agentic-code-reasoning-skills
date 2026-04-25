@@ -1,0 +1,89 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-66/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 3b846203..4422648e 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -116,9 +116,9 @@ If the opposite answer were true, what evidence would exist?
+ Before writing the formal conclusion, check each item below. If any answer is **NO**, fix it before Step 6.
+ 
+ - [ ] Every PASS/FAIL or EQUIVALENT/NOT_EQUIVALENT claim traces to a specific `file:line` — not inferred from function names.
+-- [ ] Every function in the trace table is marked **VERIFIED**, or explicitly **UNVERIFIED** with a stated assumption that does not alter the conclusion.
++- [ ] Trigger line: "Name the weakest evidence link for the planned verdict; if it could flip ANSWER, inspect or refute it before concluding; if it only affects certainty, lower CONFIDENCE instead of changing ANSWER."
+ - [ ] The Step 5 refutation or alternative-hypothesis check involved at least one actual file search or code inspection — not reasoning alone.
+-- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports.
++- [ ] The conclusion I am about to write asserts nothing beyond what the traced evidence supports, including any VERIFIED/UNVERIFIED trace-table assumptions.
+ 
+ ### Step 6: Formal conclusion
+ Write a conclusion that:
+
+rationale:
+# Iteration 66 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: proposal に具体値の記載なし
+- 失敗ケース: proposal に固有ケースの記載なし
+- 失敗原因の分析: 結論直前の自己チェックが、証拠が追跡済みかどうかの確認に寄り、planned verdict を支える最弱の証拠リンクが ANSWER と CONFIDENCE のどちらに影響するかを分岐させにくい。これにより、弱い仮定を過度に保留へ倒す、または弱いリンクを confidence 記述だけに吸収して premature closure するリスクが残る。
+
+## 改善仮説
+
+結論直前に最弱の証拠リンクを明示し、そのリンクが ANSWER を反転しうる場合だけ一点の追加 inspection/refutation を要求し、反転しない弱さは ANSWER ではなく CONFIDENCE に反映する。これにより、未検証項目を広く既定保留にせず、EQUIVALENT と NOT_EQUIVALENT の両方向で誤判定と過信を減らせる。
+
+## 変更内容
+
+Step 5.5 の既存チェックのうち、trace table の VERIFIED/UNVERIFIED 状態だけを必須判定する行を、planned verdict の最弱リンクを ANSWER/CONFIDENCE 影響へ写像する Trigger line に置換した。あわせて、結論が証拠を超えないことを確認する隣接行へ VERIFIED/UNVERIFIED trace-table assumptions を統合し、必須ゲートの総量を増やさない形にした。
+
+Trigger line (final): "Name the weakest evidence link for the planned verdict; if it could flip ANSWER, inspect or refute it before concluding; if it only affects certainty, lower CONFIDENCE instead of changing ANSWER."
+
+この Trigger line は proposal の差分プレビューにあった planned 文言と同一の意思決定内容であり、末尾の注意書きではなく Step 5.5 の分岐を発火させるチェック項目として配置した。
+
+## 期待効果
+
+Before: IF all Step 5.5 boxes can be checked THEN proceed to FORMAL CONCLUSION because evidence is traced and unsupported claims are excluded.
+
+After: IF the planned verdict has a weakest evidence link that could flip ANSWER THEN perform one targeted inspection/refutation before FORMAL CONCLUSION; otherwise proceed and set CONFIDENCE according to that link because the weakness is mapped to ANSWER vs CONFIDENCE impact.
+
+この変更により、弱い証拠リンクが結論そのものを変える可能性がある場合は追加確認へ進み、結論は変えないが確実性だけを下げるべき場合は CONFIDENCE に反映できる。新しい必須ゲートの純増ではなく既存チェックの置換・統合なので、結論前の判定手順の総量を増やさずに compare の意思決定点を変えられる。
