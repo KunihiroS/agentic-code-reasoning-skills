@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
-# SWE-bench Patch Equivalence Benchmark
+# SWE-bench Localize Benchmark
 # Usage:
-#   bash benchmark/swebench/run_benchmark.sh                          # all pairs, both variants
-#   bash benchmark/swebench/run_benchmark.sh --offset 0 --limit 5     # batch 1
-#   bash benchmark/swebench/run_benchmark.sh --variant with_skill      # one variant only
-#   bash benchmark/swebench/run_benchmark.sh --instance django__django-11490
+#   bash benchmark/swebench/run_benchmark_localize.sh
+#   bash benchmark/swebench/run_benchmark_localize.sh --variant with_skill
+#   bash benchmark/swebench/run_benchmark_localize.sh --fast-subset
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SKILL_PATH="$REPO_ROOT/SKILL.md"
-PAIRS_JSON="$REPO_ROOT/benchmark/swebench/data/pairs.json"
-TEMPLATE="$REPO_ROOT/benchmark/swebench/data/prompt_template.md"
+TASKS_JSON="$REPO_ROOT/benchmark/swebench/data/localize_tasks.json"
+TEMPLATE="$REPO_ROOT/benchmark/swebench/data/prompt_template_localize_medium.md"
 RUNS_DIR="$REPO_ROOT/benchmark/swebench/runs/iter-1"
 DJANGO_REPO="/tmp/bench_workspace/django"
 
@@ -22,9 +21,7 @@ OFFSET=0
 INSTANCE_FILTER=""
 FAST_SUBSET=0
 
-# Phase 2: Staged Evaluation 用の fast subset (5 ケース、EQUIV 3 + NOT_EQ 2)
-# 選定基準: 失敗頻度が中程度のケースを混ぜて代表性を確保しつつ、
-# 持続的失敗ケース (15368) を含めて「ベースラインからの回帰」を検出できるようにする
+# Staged eval subset (same instances as compare for consistency)
 FAST_SUBSET_INSTANCES="django__django-15368 django__django-14089 django__django-15315 django__django-13417 django__django-11999"
 
 while [[ $# -gt 0 ]]; do
@@ -70,7 +67,7 @@ run_single() {
 
   local FULL_PROMPT
   if [[ "$VARIANT" == "with_skill" ]]; then
-    FULL_PROMPT="まず以下のスキルを読み、その手順に厳密に従って分析してください。スキルの 'compare' モードを使用してください。
+    FULL_PROMPT="まず以下のスキルを読み、その手順に厳密に従って分析してください。スキルの 'localize' モードを使用してください。
 
 ---SKILL START---
 $(cat "$SKILL_PATH")
@@ -84,13 +81,9 @@ $PROMPT_BODY"
   echo "[START] $INSTANCE / $VARIANT  $(date '+%H:%M:%S')"
   local START_SEC=$(date +%s)
 
-  # Pi 経由で github-copilot/claude-haiku-4.5 を呼ぶ。
-  # @file 構文を使うため、プロンプトをファイルに書き出してから渡す。
   echo "$FULL_PROMPT" > "$OUT_DIR/prompt.txt"
 
   cd "$WORK_DIR"
-  # < /dev/null は必須: pi が stdin を継承すると親の while ループの残りを
-  # 食ってしまい、Staged Eval が 1 ケースで止まる
   pi -p --no-session \
     --provider "$PROVIDER" \
     --model "$MODEL" \
@@ -103,47 +96,40 @@ $PROMPT_BODY"
   local END_SEC=$(date +%s)
   local DURATION=$(( END_SEC - START_SEC ))
 
-  # grade.py 互換のスタブ output.json を生成（cost/turns は Pi では取得できないため 0）
+  # Stub output.json for grade compatibility
   python3 -c "
 import json
 try:
     text = open('$OUT_DIR/output.md').read()
-except Exception:
+except:
     text = ''
-json.dump({'result': text, 'total_cost_usd': 0, 'num_turns': 0},
-          open('$OUT_DIR/output.json', 'w'))
-" || true
-
-  printf '{"instance":"%s","variant":"%s","model":"%s","duration_sec":%d}\n' \
-    "$INSTANCE" "$VARIANT" "$MODEL" "$DURATION" > "$OUT_DIR/timing.json"
-
+json.dump({'total_cost_usd': 0, 'num_turns': 0, 'duration_seconds': $DURATION, 'output_length': len(text)},
+          open('$OUT_DIR/output.json', 'w'), indent=2)
+"
   echo "[DONE]  $INSTANCE / $VARIANT  ${DURATION}s"
 }
 
-# Build prompts from pairs.json and run
+# Build prompts from localize_tasks.json and run
 source "$REPO_ROOT/.venv/bin/activate" 2>/dev/null || true
 
 python3 -c "
 import signal, sys
 signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 import json
-pairs = json.load(open('$PAIRS_JSON'))
+tasks = json.load(open('$TASKS_JSON'))
 template = open('$TEMPLATE').read()
-for i, p in enumerate(pairs):
+for i, t in enumerate(tasks):
     prompt = template.format(
-        repo=p['repo'],
-        version=p['version'],
-        base_commit=p['base_commit'],
-        problem_statement=p['problem_statement'],
-        gold_patch=p['gold_patch'],
-        agent_patch=p['agent_patch'],
-        fail_to_pass=json.dumps(p['fail_to_pass']),
+        repo=t['repo'],
+        version=t['version'],
+        base_commit=t['base_commit'],
+        problem_statement=t['problem_statement'],
+        fail_to_pass=json.dumps(t['fail_to_pass']),
     )
     print(json.dumps({
         'index': i,
-        'instance_id': p['instance_id'],
-        'base_commit': p['base_commit'],
-        'ground_truth': p['ground_truth'],
+        'instance_id': t['instance_id'],
+        'base_commit': t['base_commit'],
         'prompt': prompt,
     }))
 " | {
@@ -152,16 +138,10 @@ for i, p in enumerate(pairs):
     IDX=$(echo "$line" | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['index'])")
     INSTANCE=$(echo "$line" | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['instance_id'])")
     BASE_COMMIT=$(echo "$line" | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['base_commit'])")
-    GT=$(echo "$line" | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['ground_truth'])")
     PROMPT_BODY=$(echo "$line" | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['prompt'])")
 
-    # Apply offset
     if [[ $IDX -lt $OFFSET ]]; then continue; fi
-
-    # Apply instance filter
     if [[ -n "$INSTANCE_FILTER" && "$INSTANCE" != "$INSTANCE_FILTER" ]]; then continue; fi
-
-    # Apply fast-subset filter (Phase 2 Staged Evaluation)
     if [[ "$FAST_SUBSET" -eq 1 ]]; then
       if ! [[ " $FAST_SUBSET_INSTANCES " == *" $INSTANCE "* ]]; then continue; fi
     fi
@@ -169,7 +149,7 @@ for i, p in enumerate(pairs):
     VARIANTS=("without_skill" "with_skill")
     if [[ -n "$VARIANT_FILTER" ]]; then VARIANTS=("$VARIANT_FILTER"); fi
 
-    echo "--- [$((IDX+1))] $INSTANCE ($GT) ---"
+    echo "--- [$((IDX+1))] $INSTANCE ---"
     for V in "${VARIANTS[@]}"; do
       run_single "$INSTANCE" "$V" "$BASE_COMMIT" "$PROMPT_BODY"
     done
@@ -179,5 +159,5 @@ for i, p in enumerate(pairs):
   done
 
   echo ""
-  echo "=== Benchmark complete: $COUNT instances ==="
+  echo "=== Localize Benchmark complete: $COUNT instances ==="
 }
