@@ -1,0 +1,13 @@
+diff --git a/SKILL.md b/SKILL.md
+index 4ff08457..63769eb5 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -182,7 +182,7 @@ For each relevant test:
+   Test: [name]
+   Claim C[N].1: With Change A, this test reaches assert/check [file:line] with result [PASS/FAIL/UNVERIFIED].
+   Claim C[N].2: With Change B, this test reaches the same assert/check with result [PASS/FAIL/UNVERIFIED].
+-  Comparison: SAME / DIFFERENT assertion-result outcome; note any internal semantic difference separately.
++  Comparison: SAME / DIFFERENT only when both traced assert/check results are PASS/FAIL; if either side is UNVERIFIED, write Impact: UNVERIFIED instead of using it as equivalence evidence.
+   Trigger line (planned): "For each relevant test, compare the traced assert/check result, not merely the internal semantic behavior; semantic differences are verdict-bearing only when they change that result."
+ 
+ For pass-to-pass tests (if changes could affect them differently):

@@ -1,0 +1,47 @@
+DuckDuckGo MCP Server initialized:
+  SafeSearch: MODERATE (kp=-1)
+  Default Region: none
+[04/25/26 10:14:26] INFO     Processing request of type            server.py:727
+                             ListToolsRequest                                   
+  ┊ 📋 plan      3 task(s)  0.0s
+  ┊ 📖 read      benchmark/swebench/runs/iter-53/proposal.md  1.0s
+  ┊ 📖 read      benchmark/swebench/runs/iter-53/rationale.md  1.0s
+  ┊ 📖 read      benchmark/swebench/runs/iter-53/diff.patch  1.0s
+  ┊ 📖 read      failed-approaches.md  1.0s
+  ┊ 📋 plan      update 3 task(s)  0.0s
+  ┊ 🔧 patch     failed-approaches.md  0.7s
+  ┊ review diff
+a/failed-approaches.md → b/failed-approaches.md
+@@ -22,6 +22,8 @@
+ - その結果、比較の前提となる関連範囲が不必要に膨らみ、局所的な有力証拠より「まだ拾えるかもしれない間接経路」の救済が優先されやすい。
+ - 結論直前に重複した self-check や禁止事項を足し、未解決項目が 1 つでもあれば再探索へ戻す構造にすると、新しい証拠生成より checklist 充足が優先され、局所的で非決定的な不確実性まで広く保留側へ倒れやすい。
+ - これは 1 と同様に、差分を丁寧に扱ったこと自体ではなく、未解決状態での fallback を Guardrail 化したことで過剰適応を招く失敗として理解できる。
++- 比較欄で未検証の結果を verdict 証拠として扱わないよう明示する変更も、局所的な語彙修正のつもりでも、実際には「未検証なら比較ラベルを避ける」という保留側の既定分岐を強めうる。
++- 特に既存テンプレートの二択ラベルを、確定結果が揃った場合だけ使える条件付きラベルへ狭めると、未知の扱いを改善するより先に、比較判断そのものを非確定化する圧力が増えやすい。
+ - 曖昧さへの対処は局所的な補助手順に留め、広い既定動作としては追加しない方がよい。
+ 
+ 3. 差分の昇格条件を新しい抽象ラベルや必須の言い換え形式で強くゲートしすぎない
+  ┊ 📋 plan      update 2 task(s)  0.0s
+  ┊ 📖 read      failed-approaches.md  0.9s
+  ┊ 📋 plan      update 1 task(s)  0.0s
+
+╭─ ⚕ Hermes ───────────────────────────────────────────────────────────────────╮
+failed-approaches.md を更新しました。
+
+変更内容:
+- 新規原則として増やすのではなく、既存の「原則 2. 未確定な relevance や脆い仮定を、常に保留側へ倒す既定動作にしすぎない」に統合しました。
+- 今回の変更を、未検証結果を比較証拠から外す局所修正が、結果的に「未検証なら比較ラベルを避ける」という保留側の既定分岐を強める失敗として一般化しました。
+
+確認:
+- 許可された 4 ファイル以外は read / search / list していません。
+failed-approaches.md を更新しました。
+
+変更内容:
+- 新規原則として増やすのではなく、既存の「原則 2. 未確定な relevance や脆い仮定を、常に保留側へ倒す既定動作にしすぎない」に統合しました。
+- 今回の変更を、未検証結果を比較証拠から外す局所修正が、結果的に「未検証なら比較ラベルを避ける」という保留側の既定分岐を強める失敗として一般化しました。
+
+確認:
+- 許可された 4 ファイル以外は read / search / list していません。
+- 追記内容には、具体的な数値 ID、リポジトリ名、テスト名、コード断片、iter 番号、per-case 詳細は含めていません。
+
+session_id: 20260425_101426_0402e6

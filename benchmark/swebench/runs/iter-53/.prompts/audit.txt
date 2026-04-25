@@ -1,0 +1,82 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-53/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index 4ff08457..63769eb5 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -182,7 +182,7 @@ For each relevant test:
+   Test: [name]
+   Claim C[N].1: With Change A, this test reaches assert/check [file:line] with result [PASS/FAIL/UNVERIFIED].
+   Claim C[N].2: With Change B, this test reaches the same assert/check with result [PASS/FAIL/UNVERIFIED].
+-  Comparison: SAME / DIFFERENT assertion-result outcome; note any internal semantic difference separately.
++  Comparison: SAME / DIFFERENT only when both traced assert/check results are PASS/FAIL; if either side is UNVERIFIED, write Impact: UNVERIFIED instead of using it as equivalence evidence.
+   Trigger line (planned): "For each relevant test, compare the traced assert/check result, not merely the internal semantic behavior; semantic differences are verdict-bearing only when they change that result."
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+
+rationale:
+# Iteration 53 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: proposal.md に記載なし（この実装手順では追加参照なし）
+- 失敗ケース: 個別ケース ID は記載しない
+- 失敗原因の分析: per-test comparison 欄で assert/check result が未検証の場合でも SAME/DIFFERENT の比較証拠として消費されやすく、未知の結果が EQUIV/NOT_EQUIV の根拠に混ざる可能性があった。
+
+## 改善仮説
+
+Per-test comparison 欄で、両側の traced assert/check result が PASS/FAIL として確定している場合だけ SAME/DIFFERENT を使い、未検証が混じる場合は impact UNVERIFIED として残せば、未知の結果を verdict-bearing evidence として誤消費する premature verdict が減る。
+
+## 変更内容
+
+Compare template の relevant test analysis にある Comparison 行を 1 行置換し、UNVERIFIED を SAME/DIFFERENT の根拠にしない条件を明示した。
+
+Trigger line (final): "Comparison: SAME / DIFFERENT only when both traced assert/check results are PASS/FAIL; if either side is UNVERIFIED, write Impact: UNVERIFIED instead of using it as equivalence evidence."
+
+この Trigger line は proposal の差分プレビューにあった planned line と一致しており、per-test comparison の分岐を発火させる位置に入っている。
+
+## 期待効果
+
+未検証の assert/check result を equivalence/non-equivalence の証拠として扱う分岐が減り、SAME/DIFFERENT と Impact: UNVERIFIED の使い分けが明確になる。新しい必須ゲートは追加せず既存行の置換に留めたため、結論前の判定手順の総量は増えていない。
