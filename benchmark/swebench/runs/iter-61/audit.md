@@ -1,0 +1,19 @@
+# Iteration 61 — Overfitting 監査
+
+## 判定: PASS
+## 合計スコア: 17/18
+
+| # | 項目 | スコア | 根拠 |
+|---|------|--------|------|
+| R1 | 汎化性 | 3 | diff/rationale にベンチマーク対象リポジトリの固有識別子（リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、実装コード引用）は含まれていない。変更内容も「assertion-facing value/API contract」と各 side の値を比較前に明示するという、言語・フレームワーク非依存の比較手順である。SKILL.md 自身の文言引用や一般概念名のみであり、R1 の減点対象外に収まる。 |
+| R2 | 研究コアの踏襲 | 3 | README.md / docs/design.md / 原論文が強調する、明示的 premise、コードパス trace、形式的結論、unsupported claim の防止という semi-formal reasoning の中核と整合する。既存の per-test trace 行を弱めず、比較前に観測される値/API contract を明示させるため、patch equivalence verification の per-test iteration と interprocedural tracing をむしろ強化している。 |
+| R3 | 推論プロセスの改善 | 3 | 結論ラベルを直接誘導せず、SAME/DIFFERENT 判断の直前に「テスト assertion が実際に読む比較点」と「各 side の値」をそろえる手順を追加している。これは内部実装差の印象や高レベル説明だけで判定するのを避ける、具体的な推論粒度の改善である。 |
+| R4 | 反証可能性の維持 | 3 | assertion-facing value/API contract と各 side の値を明示すると、反例の有無を確認する対象が観測可能な形で具体化される。既存の counterexample obligation や semantic difference trace を削除・簡略化しておらず、比較主張を反証しやすくしている。 |
+| R5 | 複雑性の抑制 | 3 | 既存 checklist の 1 行を置換しただけで、項目数・ネスト・新セクションは増えていない。文はやや長くなるが、比較点を明確化するための局所的な追記であり、複雑性増加は最小限である。 |
+| R6 | 回帰リスク | 2 | 影響範囲は Compare checklist の 1 行に限定され、既存の trace/counterexample 手順を維持するため大きな回帰リスクは低い。一方で failed-approaches.md には「観測対象を固定しすぎる」変更が探索の柔軟性を落とすリスクが記録されており、本変更も assertion-facing point への整列を強める点で軽微な懸念はある。ただし、これは trace 後・比較直前の照合点を明示する補助手順であり、探索開始点を単一アンカーへ固定するものではないため、改善見込みが上回る。 |
+
+## 総合コメント
+
+この変更は、ベンチマーク固有情報を含まず、SKILL.md の Compare 手順における per-test 比較の観測点を明確にする汎用的な改善である。研究コアである semi-formal reasoning、interprocedural tracing、counterexample obligation を弱めず、むしろ「何を比較しているのか」を assertion-facing value/API contract と side-specific value に落とすことで、証拠と結論の接続を強化している。
+
+主な懸念は、過去の失敗原則にある「観測点の固定」や「局所 check への過剰適応」に近づきすぎないかという点である。しかし今回の文言は、trace の前に探索対象を固定するのではなく、両 side を trace した後の比較直前に値/API contract を名指す要求であり、既存の semantic difference trace と counterexample/no-counterexample 手順も残っている。そのため軽微な回帰リスクに留まり、合格基準（全項目 2 以上、合計 12/18 以上）を満たす。

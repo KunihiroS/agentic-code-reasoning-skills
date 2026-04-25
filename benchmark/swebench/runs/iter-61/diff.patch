@@ -1,0 +1,13 @@
+diff --git a/SKILL.md b/SKILL.md
+index f20498e3..fcd80f38 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -229,7 +229,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+-- Trace each test through both changes separately before comparing
++- Trace each test through both changes separately; before comparing, name the assertion-facing value/API contract and each side's value at that point.
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
