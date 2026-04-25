@@ -1,0 +1,99 @@
+あなたは SKILL.md の変更に対する監査役です。
+
+【参照してよいファイルの完全なリスト】
+- Objective.md (Audit Rubric セクション)
+- README.md
+- docs/design.md
+- docs/reference/agentic-code-reasoning.pdf
+- failed-approaches.md
+- SKILL.md (変更前後の確認用)
+
+この 6 ファイル以外を read / search / list してはいけません。
+
+【出力先】
+benchmark/swebench/runs/iter-63/audit.md
+
+【タスク】
+プロンプトに添付された diff と rationale を Audit Rubric の 6 項目 (R1〜R6) で採点し、
+Objective.md の audit.md フォーマットに従って結果を出力してください。
+(注: 旧 R7 は R1 に統合されました)
+
+合格基準: 全項目 2 以上、かつ合計 12/18 以上
+
+【出力フォーマット】
+audit.md の冒頭で、必ず以下のいずれかの形式で判定を明示してください:
+- 合格時: `## 判定: PASS` または `## 監査結果: PASS`
+- 不合格時: `## 判定: FAIL` または `## 監査結果: FAIL`
+
+【R1 採点の厳密な定義】
+R1 (汎化性) は「ベンチマーク対象リポジトリへの過剰適合」を測る項目です。
+以下の区別を厳密に守ってください:
+
+- 1 点 (NG): diff や rationale に **ベンチマーク対象リポジトリの固有識別子**
+  (リポジトリ名、ファイルパス、関数名、クラス名、テスト名、テスト ID、
+   実装コードの引用) が含まれている場合
+- 2-3 点 (OK): 以下は減点対象**外**:
+  * SKILL.md 自身の文言引用 (変更前/後の対比表示)
+  * 一般概念名 ("Guardrail #4", "observational equivalence",
+    "test oracle", "call chain" 等)
+  * 抽象的な日本語/英語の説明文
+  * proposal/rationale 自体の構造を示すマークダウン記号 (``` ブロック等)
+    ※ ``` ブロック内が SKILL.md の自己引用や疑似コード例である場合は OK
+    ※ ``` ブロック内がベンチマーク対象リポジトリの実コードである場合のみ NG
+
+diff:
+diff --git a/SKILL.md b/SKILL.md
+index fcd80f38..3b846203 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -179,11 +179,11 @@ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
+   Test: [name]
+-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
+-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
+-  Comparison: SAME / DIFFERENT outcome
++  Prediction pair for Test [name]:
++    A: [PASS/FAIL] because [trace from changed code to test outcome — cite file:line]
++    B: [PASS/FAIL] because [trace from changed code to test outcome — cite file:line]
++  Trigger line: "Do not write SAME/DIFFERENT until both A and B predictions for this test are present."
++  Comparison: SAME / DIFFERENT outcome, based on the A/B prediction pair
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+   Test: [name]
+@@ -229,7 +229,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+-- Trace each test through both changes separately; before comparing, name the assertion-facing value/API contract and each side's value at that point.
++- Record each test's Change A and Change B PASS/FAIL predictions as a pair before writing SAME/DIFFERENT.
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 
+
+rationale:
+# Iteration 63 — 変更理由
+
+## 前イテレーションの分析
+
+- 前回スコア: proposal.md に記載なし
+- 失敗ケース: proposal.md に個別ケースの記載なし
+- 失敗原因の分析: per-test compare で片側の trace と比較判断が混ざり、両変更の PASS/FAIL 予測が揃う前に SAME/DIFFERENT へ進むことがある。これにより、片側説明へのアンカリングによる偽 EQUIV と、局所的な意味差からの premature な偽 NOT_EQUIV の両方が起きうる。
+
+## 改善仮説
+
+各テストの比較を、説明の類似性ではなく Change A / Change B の独立した PASS/FAIL 予測ペアの比較として直列化すると、SAME/DIFFERENT の判断がテスト結果の同一/相違に基づきやすくなる。
+
+## 変更内容
+
+Compare template の per-test 記述を `Claim C[N].1` / `Claim C[N].2` から `Prediction pair` へ置換し、A と B の PASS/FAIL 予測を先に揃えてから Comparison を書く順序にした。あわせて Compare checklist の既存項目を、同じ趣旨の prediction-pair 要求へ置換し、必須ゲートの純増にならないようにした。
+
+Trigger line (final): "Do not write SAME/DIFFERENT until both A and B predictions for this test are present."
+
+この Trigger line は proposal の差分プレビューにあった planned Trigger line と一致しており、Decision-point delta の分岐を発火させる場所である per-test template 内に配置した。
+
+## 期待効果
+
+Before では、片側 trace が十分に似ている/違うように見えた時点で `Comparison: SAME / DIFFERENT outcome` を書きがちだった。After では、同じテストについて A/B の PASS/FAIL 予測が両方記録されている場合だけ Comparison に進み、不足していれば missing side prediction を先に埋める。これにより、比較単位が説明文の印象ではなく outcome pair になり、EQUIV/NOT_EQUIV 双方の premature comparison を減らすことが期待できる。

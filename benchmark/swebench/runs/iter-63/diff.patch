@@ -1,0 +1,30 @@
+diff --git a/SKILL.md b/SKILL.md
+index fcd80f38..3b846203 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -179,11 +179,11 @@ ANALYSIS OF TEST BEHAVIOR:
+ 
+ For each relevant test:
+   Test: [name]
+-  Claim C[N].1: With Change A, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
+-  Claim C[N].2: With Change B, this test will [PASS/FAIL]
+-                because [trace from changed code to test assertion outcome — cite file:line]
+-  Comparison: SAME / DIFFERENT outcome
++  Prediction pair for Test [name]:
++    A: [PASS/FAIL] because [trace from changed code to test outcome — cite file:line]
++    B: [PASS/FAIL] because [trace from changed code to test outcome — cite file:line]
++  Trigger line: "Do not write SAME/DIFFERENT until both A and B predictions for this test are present."
++  Comparison: SAME / DIFFERENT outcome, based on the A/B prediction pair
+ 
+ For pass-to-pass tests (if changes could affect them differently):
+   Test: [name]
+@@ -229,7 +229,7 @@ CONFIDENCE: [HIGH / MEDIUM / LOW]
+ - Identify changed files for both sides
+ - Identify fail-to-pass AND pass-to-pass tests
+ - For each function called in changed code, read its definition and record in the interprocedural trace table (Step 4)
+-- Trace each test through both changes separately; before comparing, name the assertion-facing value/API contract and each side's value at that point.
++- Record each test's Change A and Change B PASS/FAIL predictions as a pair before writing SAME/DIFFERENT.
+ - When a semantic difference is found, trace at least one relevant test through the differing path before concluding it has no impact
+ - Provide a counterexample (if different) or justify no counterexample exists (if equivalent)
+ 

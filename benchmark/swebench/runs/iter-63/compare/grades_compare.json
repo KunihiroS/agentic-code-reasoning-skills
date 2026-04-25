@@ -1,0 +1,362 @@
+[
+  {
+    "instance_id": "instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 40
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-b433bd05ce405837804693bebd5f4b88d87133c8",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 181
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-3587cca7840f636489449113969a5066025dd5bf",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 43
+  },
+  {
+    "instance_id": "instance_gravitational__teleport-3587cca7840f636489449113969a5066025dd5bf",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 208
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-a5afad27e52fd336163063ba40dcadc80233ae10-vd59a5728dfc977f44533186ace531248c2917516",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 37
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-a5afad27e52fd336163063ba40dcadc80233ae10-vd59a5728dfc977f44533186ace531248c2917516",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 202
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 53
+  },
+  {
+    "instance_id": "instance_NodeBB__NodeBB-767973717be700f46f06f3e7f4fc550c63509046-vnan",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 189
+  },
+  {
+    "instance_id": "instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 71
+  },
+  {
+    "instance_id": "instance_element-hq__element-web-772df3021201d9c73835a626df8dcb6334ad9a3e-vnan",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 215
+  },
+  {
+    "instance_id": "instance_element-hq__element-web-8f3c8b35153d2227af45f32e46bd1e15bd60b71f-vnan",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 12
+  },
+  {
+    "instance_id": "instance_element-hq__element-web-8f3c8b35153d2227af45f32e46bd1e15bd60b71f-vnan",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 197
+  },
+  {
+    "instance_id": "instance_tutao__tutanota-09c2776c0fce3db5c6e18da92b5a45dce9f013aa-vbc0d9ba8f0071fbe982809910959a6ff8884dbbf",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 92
+  },
+  {
+    "instance_id": "instance_tutao__tutanota-09c2776c0fce3db5c6e18da92b5a45dce9f013aa-vbc0d9ba8f0071fbe982809910959a6ff8884dbbf",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 191
+  },
+  {
+    "instance_id": "instance_ansible__ansible-6cc97447aac5816745278f3735af128afb255c81-v0f01c69f1e2528b935359cfe578530722bca2c59",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 58
+  },
+  {
+    "instance_id": "instance_ansible__ansible-6cc97447aac5816745278f3735af128afb255c81-v0f01c69f1e2528b935359cfe578530722bca2c59",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 271
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-4a72295de7b91faa59d90a5bee91535bbe76755d",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 67
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-4a72295de7b91faa59d90a5bee91535bbe76755d",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 233
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 38
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-3d5a345f94c2adc8a0eaa102c189c08ad4c0f8e8",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 204
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 73
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-d0dceae0943b8df16e579c2d9437e11760a0626a",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 280
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-2ca5dfb3513e4e786d2b037075617cccc286d5c3",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 48
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-2ca5dfb3513e4e786d2b037075617cccc286d5c3",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 271
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-406f9396ad65696d58865b3a6283109cd4eaf40e",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 33
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-406f9396ad65696d58865b3a6283109cd4eaf40e",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 263
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-e91615cf07966da41756017a7d571f9fc0fdbe80",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 44
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-e91615cf07966da41756017a7d571f9fc0fdbe80",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 196
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 44
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-e50808c03e4b9d25a6a78af9c61a3b1616ea356b",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 212
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-65581fef4aa807540cb933753d085feb0d7e736f",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 34
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-65581fef4aa807540cb933753d085feb0d7e736f",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 180
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-e12a14a87d392ac70ee4cc8079e3c3e0103dbcb2",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 44
+  },
+  {
+    "instance_id": "instance_navidrome__navidrome-e12a14a87d392ac70ee4cc8079e3c3e0103dbcb2",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 261
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-524f277313606f8cd29b299617d6565c01642e15",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 76
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-524f277313606f8cd29b299617d6565c01642e15",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 290
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-ebb3f84c74d61eee4d8c6875140b990eee62e146",
+    "variant": "without_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 54
+  },
+  {
+    "instance_id": "instance_flipt-io__flipt-ebb3f84c74d61eee4d8c6875140b990eee62e146",
+    "variant": "with_skill",
+    "ground_truth": "NOT_EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 162
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904",
+    "variant": "without_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "NOT_EQUIVALENT",
+    "correct": false,
+    "cost_usd": 0,
+    "duration_seconds": 106
+  },
+  {
+    "instance_id": "instance_future-architect__vuls-407407d306e9431d6aa0ab566baa6e44e5ba2904",
+    "variant": "with_skill",
+    "ground_truth": "EQUIVALENT",
+    "predicted": "EQUIVALENT",
+    "correct": true,
+    "cost_usd": 0,
+    "duration_seconds": 250
+  }
+]

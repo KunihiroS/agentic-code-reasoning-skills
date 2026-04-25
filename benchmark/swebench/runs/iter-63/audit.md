@@ -1,0 +1,19 @@
+# Iteration 63 — Overfitting 監査
+
+## 判定: PASS
+## 合計スコア: 17/18
+
+| # | 項目 | スコア | 根拠 |
+|---|------|--------|------|
+| R1 | 汎化性 | 3 | diff/rationale にベンチマーク対象リポジトリの固有識別子（リポジトリ名、実ファイルパス、関数名、クラス名、テスト名、テスト ID、実装コード引用）は含まれていない。`Test [name]`、`file:line`、`PASS/FAIL`、`Change A/B` は SKILL.md テンプレート上のプレースホルダであり、対象リポジトリ固有情報ではない。変更内容も「各テストで A/B の結果予測を揃えてから比較する」という言語・フレームワーク非依存の推論手順である。 |
+| R2 | 研究コアの踏襲 | 3 | README.md と docs/design.md が説明するコア（明示的な前提、per-item/per-test tracing、手続き間の証拠収集、反証、形式的結論）を弱めず、特に patch equivalence の per-test iteration と structured certificate 性を強化している。原論文の semi-formal reasoning も、明示的証拠・実行経路 trace・formal conclusion により unsupported claim を防ぐ設計であり、本変更はその方向に沿う。 |
+| R3 | 推論プロセスの改善 | 3 | 結論や特定 verdict を直接指示しておらず、SAME/DIFFERENT を書く前に Change A と Change B の PASS/FAIL 予測を独立に記録させる手順改善である。片側 trace へのアンカリングや、説明文の印象だけで比較する流れを抑え、比較単位を outcome pair に揃える効果がある。 |
+| R4 | 反証可能性の維持 | 3 | 反証ステップや counterexample/no-counterexample 要求は削除されていない。むしろ各テストで A/B の結果予測を明示するため、DIFFERENT なら counterexample の候補、SAME なら反例不在の確認対象が見えやすくなる。反証の粒度を test outcome レベルで明確化している。 |
+| R5 | 複雑性の抑制 | 3 | 変更は小規模で、既存の Claim C[N].1/C[N].2 形式を Prediction pair 形式へ置換し、checklist も同趣旨の 1 行に差し替えている。必須ゲートの大幅な純増や深い条件分岐はなく、むしろ比較順序を明確化する局所的なテンプレート整理である。 |
+| R6 | 回帰リスク | 2 | 影響範囲は Compare の per-test 記述と checklist の一部に限定され、一般には premature comparison を減らす改善が期待できる。一方で、旧 checklist の「assertion-facing value/API contract と各 side の値を名指す」要求を削っているため、特定の微妙な同値/非同値判定で観測点の明示が弱まる軽微な回帰リスクはある。ただし A/B PASS/FAIL pair は最終的な test outcome 比較に直結しており、改善見込みが上回る。 |
+
+## 総合コメント
+
+本変更は、特定ケースの固有情報に依存せず、SKILL.md の Compare テンプレートにおける比較順序を「片側説明 → 比較」から「A/B の結果予測ペア → 比較」へ明確化するものです。研究コアである per-test iteration、証拠に基づく tracing、formal conclusion の流れを維持・強化しており、反証可能な outcome pair を先に作る点で推論プロセスにも明確な改善があります。
+
+failed-approaches.md の観点では、未確定性を広く保留側へ倒す新しい既定動作や、特定の抽象ラベル分類を強制する変更ではありません。旧 checklist から assertion-facing value/API contract の明示が消える点だけは軽微な回帰リスクとして扱いましたが、変更規模は小さく、合格基準（全項目 2 以上、合計 12/18 以上）を満たします。
