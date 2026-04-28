@@ -60,7 +60,6 @@ PLAN.md
 docs/evaluation/*
 !docs/evaluation/benchmark-progression.md
 resources/
-CLAUDE.md
 amc-activity.log
 
 # Temporary files
@@ -77,4 +76,3 @@ benchmark/swebench/runs/compare-pro-triage-*/
 benchmark/swebench/runs/localize-*/
 benchmark/swebench/runs/variance-*/
 benchmark/swebench/runs/archive.jsonl.old
-
