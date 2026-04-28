@@ -61,6 +61,7 @@ docs/evaluation/*
 !docs/evaluation/benchmark-progression.md
 resources/
 amc-activity.log
+.hermes/
 
 # Temporary files
 *.tmp
