@@ -67,12 +67,22 @@ export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"
 
 cd "$REPO_DIR"
 
+# main を汚さないため、git push は opt-in（AUTO_IMPROVE_PUSH=1 のときのみ実行）。
+# 既定はローカルコミットのみ — リモートへの反映は手動で行う。
+AUTO_IMPROVE_PUSH="${AUTO_IMPROVE_PUSH:-0}"
+
 # =============================================================================
 # ユーティリティ
 # =============================================================================
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] [iter-$current_iter] $1"
+}
+
+git_push_safe() {
+  if [ "$AUTO_IMPROVE_PUSH" = "1" ]; then
+    git push "$@" 2>&1 || true
+  fi
 }
 
 get_score_from_json() {
@@ -318,8 +328,8 @@ for e in scored[-10:]:
   git add prompts/ "$meta_dir"
   git commit -m "meta-v${new_version}: テンプレート更新 by メタエージェント" 2>&1 || true
   git tag -f "meta-v${new_version}" 2>/dev/null || true
-  git push 2>&1 || true
-  git push --tags 2>&1 || true
+  git_push_safe
+  git_push_safe --tags
 
   log "メタエージェント完了: template_v${new_version} をコミット・プッシュ"
   return 0
@@ -565,7 +575,7 @@ for r in rejections[-5:]:
     append_archive "$current_iter" "$parent_genid" "" "" "false"
     git add "$ITER_DIR" || true
     git commit -m "iter-${current_iter}: discussion NO → skip (H2)" 2>/dev/null || true
-    git push 2>/dev/null || true
+    git_push_safe
     continue
   fi
 
@@ -588,7 +598,7 @@ for r in rejections[-5:]:
     append_archive "$current_iter" "$parent_genid" "" "" "false"
     git add "$ITER_DIR" || true
     git commit -m "iter-${current_iter}: H1 制約違反 (${added_lines} 行) — 破棄" || true
-    git push || true
+    git_push_safe
     continue
   fi
 
@@ -630,7 +640,7 @@ for r in rejections[-5:]:
     append_archive "$current_iter" "$parent_genid" "" "" "false"
     git add "$ITER_DIR" || true
     git commit -m "iter-${current_iter}: 監査 FAIL — 破棄" || true
-    git push || true
+    git_push_safe
     continue
   fi
 
@@ -678,10 +688,10 @@ for r in rejections[-5:]:
   fi
 
   # === 7. コミット・プッシュ ===
-  log "コミット・プッシュ..."
+  log "コミット (push は AUTO_IMPROVE_PUSH=1 のときのみ)..."
   git add -A
   git commit -m "iter-${current_iter}: compare=${compare_score}% (parent=iter-${parent_genid})" || true
-  git push || true
+  git_push_safe
 
   # === 7.5. Worktree クリーンアップ ===
   log "Worktree クリーンアップ..."

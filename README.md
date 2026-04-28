@@ -139,6 +139,7 @@ The marker `v1.1.0-iter46` points to the iter-46 compare-mode candidate commit f
 │       └── append_archive_entry.py # Archive writer with template versioning
 ├── docs/
 │   ├── design.md               # Design rationale
+│   ├── iteration-workflow.md   # How to iterate on SKILL.md from main
 │   ├── reference/              # Original paper PDF
 │   └── archive/                # Historical plans (meta-agent design, branch consolidation, auto-improve update log)
 ├── Objective.md                # Experiment objectives and audit rubric
